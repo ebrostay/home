@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Calm Stays Near The Ebro</title>
+    <meta
+      name="description"
+      content="Ebrostay is a quiet base for slow travel, river days, cycling routes, and relaxed breaks near the Ebro."
+    >
+    <meta property="og:title" content="Ebrostay | Calm Stays Near The Ebro">
+    <meta
+      property="og:description"
+      content="A simple, comfortable stay for travelers who want the river, local food, and room to breathe."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/ebrostay-hero.png">
+    <link rel="canonical" href="https://ebrostay.com/">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Ebrostay home">
+        <span class="brand-mark" aria-hidden="true">E</span>
+        <span>Ebrostay</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#stay">Stay</a>
+        <a href="#experiences">Explore</a>
+        <a href="#location">Location</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="nav-cta" href="#contact">Check dates</a>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-label="Ebrostay introduction">
+        <img class="hero-image" src="assets/ebrostay-hero.png" alt="A calm riverside guesthouse terrace near the Ebro at golden hour">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Slow stays near the Ebro</p>
+          <h1>Ebrostay</h1>
+          <p class="hero-copy">
+            A quiet, practical base for river days, cycling routes, local food, and unhurried breaks in the Ebro landscape.
+          </p>
+          <div class="hero-actions" aria-label="Main actions">
+            <a class="button primary" href="#contact">Request a stay</a>
+            <a class="button secondary" href="#experiences">See the area</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro" id="stay">
+        <div>
+          <p class="section-kicker">The stay</p>
+          <h2>Simple comfort, local rhythm, easy days.</h2>
+        </div>
+        <p>
+          Ebrostay is designed for guests who want a calm place to land: clean rooms, useful local guidance, and a relaxed
+          setting close to the river. It works for weekend escapes, cycling stops, remote-work breaks, and small family trips.
+        </p>
+      </section>
+
+      <section class="feature-grid" aria-label="Stay highlights">
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">01</span>
+          <h3>Restful rooms</h3>
+          <p>Comfortable essentials, uncluttered design, and space to reset after a day outside.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">02</span>
+          <h3>Local recommendations</h3>
+          <p>Food, walks, viewpoints, river routes, and quiet corners selected for real travelers.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">03</span>
+          <h3>Flexible stays</h3>
+          <p>Useful for short breaks, longer slow-travel plans, and practical overnight stops.</p>
+        </article>
+      </section>
+
+      <section class="split-section" id="experiences">
+        <div class="split-copy">
+          <p class="section-kicker">Explore</p>
+          <h2>River mornings, market lunches, golden-hour walks.</h2>
+          <p>
+            Build your days around the pace of the Ebro: cycling routes, birdwatching, village markets, rice fields, river
+            views, and relaxed meals that make the trip feel grounded rather than rushed.
+          </p>
+        </div>
+        <div class="experience-list" aria-label="Local experiences">
+          <div>
+            <strong>Cycle</strong>
+            <span>Flat river routes and scenic roads for relaxed rides.</span>
+          </div>
+          <div>
+            <strong>Taste</strong>
+            <span>Rice dishes, seafood, markets, and local terraces.</span>
+          </div>
+          <div>
+            <strong>Unwind</strong>
+            <span>Quiet mornings, warm evenings, and space away from crowds.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="location-band" id="location">
+        <div>
+          <p class="section-kicker">Location</p>
+          <h2>A calm base for the Ebro region.</h2>
+        </div>
+        <p>
+          The site is ready to be updated with the exact address, check-in details, maps, room names, rates, and live
+          availability once those details are ready.
+        </p>
+      </section>
+
+      <section class="contact-section" id="contact">
+        <div class="contact-copy">
+          <p class="section-kicker">Book direct</p>
+          <h2>Ask about dates, rates, or the best time to visit.</h2>
+          <p>
+            This first version uses a simple mail form so the site can stay free on GitHub Pages. It can later be connected
+            to a booking engine, form service, or calendar if you choose one.
+          </p>
+        </div>
+        <form class="inquiry-form" id="inquiryForm">
+          <label>
+            Name
+            <input name="name" autocomplete="name" required>
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <label>
+            Dates
+            <input name="dates" placeholder="Example: 12-16 September">
+          </label>
+          <label>
+            Message
+            <textarea name="message" rows="5" placeholder="Tell us how many guests and what kind of stay you want."></textarea>
+          </label>
+          <button class="button primary form-button" type="submit">Prepare inquiry</button>
+          <p class="form-note">Your email app will open with the message ready to send.</p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>© <span id="year"></span> Ebrostay</span>
+      <a href="mailto:hello@ebrostay.com">hello@ebrostay.com</a>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

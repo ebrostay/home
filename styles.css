@@ -53,7 +53,8 @@ a {
 .brand,
 .nav-links,
 .nav-cta,
-.button {
+.button,
+.language-option {
   text-decoration: none;
 }
 
@@ -83,6 +84,37 @@ a {
 .nav-links a,
 .nav-cta {
   opacity: 0.94;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.language-switch {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.language-option {
+  min-width: 42px;
+  min-height: 36px;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.language-option.is-active {
+  color: #201207;
+  background: var(--sun);
 }
 
 .nav-cta {
@@ -351,10 +383,23 @@ textarea {
   .site-header {
     position: absolute;
     align-items: flex-start;
+    gap: 12px;
   }
 
   .nav-links {
     display: none;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .nav-cta {
+    display: none;
+  }
+
+  .language-option {
+    min-width: 38px;
   }
 
   .hero {

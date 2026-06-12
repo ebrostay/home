@@ -1,20 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ebrostay | Calm Stays Near The Ebro</title>
+    <title data-i18n="meta.title">Ebrostay | Gestión de propiedades en Zaragoza</title>
     <meta
       name="description"
-      content="Ebrostay is a quiet base for slow travel, river days, cycling routes, and relaxed breaks near the Ebro."
+      data-i18n-attr="content:meta.description"
+      content="Ebrostay gestiona viviendas turísticas y alquileres de media estancia en Zaragoza con atención local, comunicación clara y cuidado operativo."
     >
-    <meta property="og:title" content="Ebrostay | Calm Stays Near The Ebro">
+    <meta property="og:title" content="Ebrostay | Gestión de propiedades en Zaragoza">
     <meta
       property="og:description"
-      content="A simple, comfortable stay for travelers who want the river, local food, and room to breathe."
+      content="Gestión local de propiedades en Zaragoza para propietarios que quieren ingresos estables y huéspedes bien atendidos."
     >
     <meta property="og:type" content="website">
-    <meta property="og:image" content="assets/ebrostay-hero.png">
+    <meta property="og:image" content="assets/ebrostay-zaragoza-hero.png">
     <link rel="canonical" href="https://ebrostay.com/">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
@@ -26,124 +27,126 @@
         <span>Ebrostay</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
-        <a href="#stay">Stay</a>
-        <a href="#experiences">Explore</a>
-        <a href="#location">Location</a>
-        <a href="#contact">Contact</a>
+        <a href="#owners" data-i18n="nav.owners">Propietarios</a>
+        <a href="#services" data-i18n="nav.services">Servicios</a>
+        <a href="#guests" data-i18n="nav.guests">Huéspedes</a>
+        <a href="#contact" data-i18n="nav.contact">Contacto</a>
       </nav>
-      <a class="nav-cta" href="#contact">Check dates</a>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-cta" href="#contact" data-i18n="nav.cta">Hablar</a>
+      </div>
     </header>
 
     <main id="top">
       <section class="hero" aria-label="Ebrostay introduction">
-        <img class="hero-image" src="assets/ebrostay-hero.png" alt="A calm riverside guesthouse terrace near the Ebro at golden hour">
+        <img class="hero-image" src="assets/ebrostay-zaragoza-hero.png" alt="Elegant residential property in Zaragoza" data-i18n-attr="alt:hero.imageAlt">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-          <p class="eyebrow">Slow stays near the Ebro</p>
+          <p class="eyebrow" data-i18n="hero.kicker">Gestión de propiedades en Zaragoza</p>
           <h1>Ebrostay</h1>
-          <p class="hero-copy">
-            A quiet, practical base for river days, cycling routes, local food, and unhurried breaks in the Ebro landscape.
+          <p class="hero-copy" data-i18n="hero.copy">
+            Cuidamos viviendas turísticas y alquileres de media estancia con atención local, procesos claros y una experiencia fiable para propietarios y huéspedes.
           </p>
           <div class="hero-actions" aria-label="Main actions">
-            <a class="button primary" href="#contact">Request a stay</a>
-            <a class="button secondary" href="#experiences">See the area</a>
+            <a class="button primary" href="#contact" data-i18n="hero.primary">Quiero gestionar mi vivienda</a>
+            <a class="button secondary" href="#services" data-i18n="hero.secondary">Ver servicios</a>
           </div>
         </div>
       </section>
 
-      <section class="section intro" id="stay">
+      <section class="section intro" id="owners">
         <div>
-          <p class="section-kicker">The stay</p>
-          <h2>Simple comfort, local rhythm, easy days.</h2>
+          <p class="section-kicker" data-i18n="owners.kicker">Para propietarios</p>
+          <h2 data-i18n="owners.title">Más tranquilidad, menos gestión diaria.</h2>
         </div>
-        <p>
-          Ebrostay is designed for guests who want a calm place to land: clean rooms, useful local guidance, and a relaxed
-          setting close to the river. It works for weekend escapes, cycling stops, remote-work breaks, and small family trips.
+        <p data-i18n="owners.copy">
+          Ebrostay ayuda a propietarios en Zaragoza a preparar, publicar y operar sus viviendas con criterio profesional. Nos ocupamos de la coordinación diaria para que el inmueble trabaje mejor sin convertirse en una carga.
         </p>
       </section>
 
-      <section class="feature-grid" aria-label="Stay highlights">
+      <section class="feature-grid" id="services" aria-label="Property management services">
         <article class="feature-card">
           <span class="feature-icon" aria-hidden="true">01</span>
-          <h3>Restful rooms</h3>
-          <p>Comfortable essentials, uncluttered design, and space to reset after a day outside.</p>
+          <h3 data-i18n="services.card1.title">Optimización del anuncio</h3>
+          <p data-i18n="services.card1.copy">Presentación, precios, textos y mejoras prácticas para aumentar la confianza desde el primer vistazo.</p>
         </article>
         <article class="feature-card">
           <span class="feature-icon" aria-hidden="true">02</span>
-          <h3>Local recommendations</h3>
-          <p>Food, walks, viewpoints, river routes, and quiet corners selected for real travelers.</p>
+          <h3 data-i18n="services.card2.title">Operativa local</h3>
+          <p data-i18n="services.card2.copy">Coordinación de entradas, limpiezas, incidencias, reposición y comunicación con huéspedes.</p>
         </article>
         <article class="feature-card">
           <span class="feature-icon" aria-hidden="true">03</span>
-          <h3>Flexible stays</h3>
-          <p>Useful for short breaks, longer slow-travel plans, and practical overnight stops.</p>
+          <h3 data-i18n="services.card3.title">Seguimiento claro</h3>
+          <p data-i18n="services.card3.copy">Información ordenada sobre reservas, estado de la vivienda y próximos pasos importantes.</p>
         </article>
       </section>
 
-      <section class="split-section" id="experiences">
+      <section class="split-section" id="guests">
         <div class="split-copy">
-          <p class="section-kicker">Explore</p>
-          <h2>River mornings, market lunches, golden-hour walks.</h2>
-          <p>
-            Build your days around the pace of the Ebro: cycling routes, birdwatching, village markets, rice fields, river
-            views, and relaxed meals that make the trip feel grounded rather than rushed.
+          <p class="section-kicker" data-i18n="guests.kicker">Para huéspedes</p>
+          <h2 data-i18n="guests.title">Estancias cómodas, bien comunicadas y sin fricción.</h2>
+          <p data-i18n="guests.copy">
+            Una buena gestión también se nota en la experiencia del huésped: instrucciones claras, respuesta ágil y viviendas preparadas para llegar, instalarse y disfrutar Zaragoza.
           </p>
         </div>
-        <div class="experience-list" aria-label="Local experiences">
+        <div class="experience-list" aria-label="Guest experience">
           <div>
-            <strong>Cycle</strong>
-            <span>Flat river routes and scenic roads for relaxed rides.</span>
+            <strong data-i18n="guests.item1.title">Llegada</strong>
+            <span data-i18n="guests.item1.copy">Información práctica antes del viaje y procesos de check-in bien coordinados.</span>
           </div>
           <div>
-            <strong>Taste</strong>
-            <span>Rice dishes, seafood, markets, and local terraces.</span>
+            <strong data-i18n="guests.item2.title">Estancia</strong>
+            <span data-i18n="guests.item2.copy">Soporte local, vivienda cuidada y detalles esenciales revisados.</span>
           </div>
           <div>
-            <strong>Unwind</strong>
-            <span>Quiet mornings, warm evenings, and space away from crowds.</span>
+            <strong data-i18n="guests.item3.title">Zaragoza</strong>
+            <span data-i18n="guests.item3.copy">Recomendaciones útiles para moverse, comer y aprovechar la ciudad.</span>
           </div>
         </div>
       </section>
 
       <section class="location-band" id="location">
         <div>
-          <p class="section-kicker">Location</p>
-          <h2>A calm base for the Ebro region.</h2>
+          <p class="section-kicker" data-i18n="location.kicker">Base local</p>
+          <h2 data-i18n="location.title">Conocimiento de Zaragoza, atención cercana.</h2>
         </div>
-        <p>
-          The site is ready to be updated with the exact address, check-in details, maps, room names, rates, and live
-          availability once those details are ready.
+        <p data-i18n="location.copy">
+          Trabajamos con propiedades urbanas y estancias flexibles en Zaragoza, combinando enfoque comercial, cuidado del inmueble y comunicación humana.
         </p>
       </section>
 
       <section class="contact-section" id="contact">
         <div class="contact-copy">
-          <p class="section-kicker">Book direct</p>
-          <h2>Ask about dates, rates, or the best time to visit.</h2>
-          <p>
-            This first version uses a simple mail form so the site can stay free on GitHub Pages. It can later be connected
-            to a booking engine, form service, or calendar if you choose one.
+          <p class="section-kicker" data-i18n="contact.kicker">Contacto</p>
+          <h2 data-i18n="contact.title">Cuéntanos qué propiedad quieres gestionar.</h2>
+          <p data-i18n="contact.copy">
+            Este primer formulario prepara un correo directo. Podemos adaptar la web después con tarifas, fotos reales, calendarios o una página específica para huéspedes.
           </p>
         </div>
         <form class="inquiry-form" id="inquiryForm">
           <label>
-            Name
+            <span data-i18n="form.name">Nombre</span>
             <input name="name" autocomplete="name" required>
           </label>
           <label>
-            Email
+            <span data-i18n="form.email">Email</span>
             <input name="email" type="email" autocomplete="email" required>
           </label>
           <label>
-            Dates
-            <input name="dates" placeholder="Example: 12-16 September">
+            <span data-i18n="form.property">Propiedad</span>
+            <input name="property" data-i18n-attr="placeholder:form.propertyPlaceholder" placeholder="Barrio, tipo de vivienda o situación actual">
           </label>
           <label>
-            Message
-            <textarea name="message" rows="5" placeholder="Tell us how many guests and what kind of stay you want."></textarea>
+            <span data-i18n="form.message">Mensaje</span>
+            <textarea name="message" rows="5" data-i18n-attr="placeholder:form.messagePlaceholder" placeholder="Cuéntanos qué necesitas: gestión completa, mejora del anuncio, coordinación local, etc."></textarea>
           </label>
-          <button class="button primary form-button" type="submit">Prepare inquiry</button>
-          <p class="form-note">Your email app will open with the message ready to send.</p>
+          <button class="button primary form-button" type="submit" data-i18n="form.button">Preparar correo</button>
+          <p class="form-note" data-i18n="form.note">Se abrirá tu app de correo con el mensaje listo para enviar.</p>
         </form>
       </section>
     </main>

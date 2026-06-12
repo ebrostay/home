@@ -22,7 +22,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-9">
+    <link rel="stylesheet" href="styles.css?v=admin-10">
   </head>
   <body>
     <header class="site-header">
@@ -43,7 +43,7 @@
         </div>
         <button class="auth-button" id="authButton" type="button" hidden data-i18n="auth.login">Entrar</button>
         <div class="user-chip" id="userChip" hidden>
-          <button class="admin-link" id="accountButton" type="button" data-i18n="bookings.button">Mi cuenta</button>
+          <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
           <a class="admin-link" id="adminLink" href="admin.html" hidden data-i18n="auth.admin">Administración</a>
           <span class="user-email" id="userEmail"></span>
           <button class="logout-button" id="logoutButton" type="button" data-i18n="auth.logout">Salir</button>
@@ -70,6 +70,10 @@
             <label>
               <span data-i18n="search.moveIn">Entrada</span>
               <input name="checkIn" type="text">
+            </label>
+            <label>
+              <span data-i18n="search.moveOut">Salida</span>
+              <input name="checkOut" type="text">
             </label>
             <label>
               <span data-i18n="search.guests">Personas</span>
@@ -303,18 +307,6 @@
       </div>
     </dialog>
 
-    <dialog class="auth-dialog" id="accountDialog">
-      <div class="auth-form account-panel">
-        <h3 data-i18n="account.title">Mi cuenta</h3>
-        <span class="user-email" id="accountEmail"></span>
-        <h4 data-i18n="bookings.title">Mis reservas</h4>
-        <p data-i18n="bookings.copy">Las estancias confirmadas con tu cuenta aparecen aquí.</p>
-        <ul class="bookings-list" id="bookingsList"></ul>
-        <button class="details-button danger" id="deleteAccountButton" type="button" data-i18n="account.deactivate">Desactivar mi cuenta</button>
-        <button class="auth-close" id="accountClose" type="button" data-i18n="account.close">Cerrar</button>
-      </div>
-    </dialog>
-
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -323,9 +315,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-9"></script>
-    <script src="data.js?v=admin-9"></script>
-    <script src="backend.js?v=admin-9"></script>
-    <script src="site.js?v=admin-9"></script>
+    <script src="supabase-config.js?v=admin-10"></script>
+    <script src="data.js?v=admin-10"></script>
+    <script src="backend.js?v=admin-10"></script>
+    <script src="site.js?v=admin-10"></script>
   </body>
 </html>

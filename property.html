@@ -14,7 +14,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-9">
+    <link rel="stylesheet" href="styles.css?v=admin-10">
   </head>
   <body>
     <header class="site-header">
@@ -101,12 +101,12 @@
                 <input id="bookingStart" type="text">
               </label>
               <label>
-                <span data-i18n="book.months">Duración</span>
-                <select id="bookingMonths"></select>
+                <span data-i18n="book.end">Salida</span>
+                <input id="bookingEnd" type="text">
               </label>
               <ul class="movein-rows" id="bookingSummary"></ul>
               <button class="button primary" id="bookingButton" type="button" data-i18n="book.button">Reservar y pagar</button>
-              <p class="booking-note" data-i18n="book.note">Pagas el primer mes para confirmar la reserva. La fianza y los meses siguientes se gestionan directamente con Ebrostay.</p>
+              <p class="booking-note" data-i18n="book.note">Pagas ahora la estancia completa y la fianza para confirmar la reserva. La fianza es reembolsable al finalizar la estancia.</p>
               <p class="auth-message" id="bookingMessage" role="status"></p>
             </div>
             <h3 data-i18n="detail.requestTitle">¿Te interesa esta vivienda?</h3>
@@ -136,9 +136,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-9"></script>
-    <script src="data.js?v=admin-9"></script>
-    <script src="backend.js?v=admin-9"></script>
-    <script src="property.js?v=admin-9"></script>
+    <script src="supabase-config.js?v=admin-10"></script>
+    <script src="data.js?v=admin-10"></script>
+    <script src="backend.js?v=admin-10"></script>
+    <script src="property.js?v=admin-10"></script>
   </body>
 </html>

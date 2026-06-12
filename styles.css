@@ -188,10 +188,10 @@ textarea {
 
 .hero-search {
   display: grid;
-  grid-template-columns: minmax(190px, 1.2fr) 180px 130px auto;
+  grid-template-columns: minmax(160px, 1.2fr) 150px 150px 110px auto;
   gap: 10px;
   align-items: end;
-  width: min(880px, 100%);
+  width: min(980px, 100%);
   margin-top: 28px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
@@ -1928,4 +1928,61 @@ a.property-media {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.account-page .account-loading {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.account-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.account-heading h1 {
+  margin: 0;
+}
+
+.account-heading .user-email {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.account-bookings {
+  max-height: none;
+  margin-top: 18px;
+  max-width: 720px;
+}
+
+.account-bookings li {
+  padding: 16px 18px;
+  background: #fff;
+}
+
+.booking-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.account-actions {
+  margin-top: 38px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  max-width: 720px;
+}
+
+.account-actions h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.account-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }

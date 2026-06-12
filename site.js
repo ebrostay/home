@@ -19,12 +19,6 @@ const userChip = document.querySelector("#userChip");
 const userEmail = document.querySelector("#userEmail");
 const logoutButton = document.querySelector("#logoutButton");
 const adminLink = document.querySelector("#adminLink");
-const accountButton = document.querySelector("#accountButton");
-const accountDialog = document.querySelector("#accountDialog");
-const accountClose = document.querySelector("#accountClose");
-const accountEmail = document.querySelector("#accountEmail");
-const bookingsList = document.querySelector("#bookingsList");
-const deleteAccountButton = document.querySelector("#deleteAccountButton");
 const authProviders = document.querySelector("#authProviders");
 const authTabs = document.querySelector("#authTabs");
 const authTitle = document.querySelector("#authTitle");
@@ -69,7 +63,16 @@ function setupDatePickers() {
     disableMobile: true
   };
   const heroCheckIn = heroSearch?.querySelector('[name="checkIn"]');
-  if (heroCheckIn) datePickers.hero = flatpickr(heroCheckIn, { ...base });
+  const heroCheckOut = heroSearch?.querySelector('[name="checkOut"]');
+  if (heroCheckOut) datePickers.heroOut = flatpickr(heroCheckOut, { ...base });
+  if (heroCheckIn) {
+    datePickers.hero = flatpickr(heroCheckIn, {
+      ...base,
+      onChange: (dates) => {
+        if (dates[0]) datePickers.heroOut?.set("minDate", dates[0]);
+      }
+    });
+  }
   const checkInElement = document.querySelector("#checkIn");
   const checkOutElement = document.querySelector("#checkOut");
   if (checkInElement && checkOutElement) {
@@ -337,7 +340,8 @@ function renderProperties() {
           <div class="property-actions">
             <a class="details-button" href="${detailUrl}">${t("listing.view")}</a>
             <button class="details-button" type="button" data-map-focus="${property.id}">${t("listing.map")}</button>
-            <button class="button primary request-button" type="button" data-request="${property.id}">${t("listing.request")}</button>
+            <button class="details-button request-button" type="button" data-request="${property.id}">${t("listing.request")}</button>
+            <a class="button primary request-button" href="${detailUrl}#book">${t("listing.book")}</a>
           </div>
         </div>
       </article>
@@ -406,10 +410,16 @@ if (heroSearch && availabilityFilter) {
     const data = new FormData(heroSearch);
     availabilityFilter.elements.city.value = data.get("city") || "Zaragoza";
     const heroDate = data.get("checkIn")?.toString() || "";
+    const heroOutDate = data.get("checkOut")?.toString() || "";
     if (datePickers.checkIn) {
       heroDate ? datePickers.checkIn.setDate(heroDate, true) : datePickers.checkIn.clear();
     } else {
       availabilityFilter.elements.checkIn.value = heroDate;
+    }
+    if (datePickers.checkOut) {
+      heroOutDate ? datePickers.checkOut.setDate(heroOutDate, true) : datePickers.checkOut.clear();
+    } else {
+      availabilityFilter.elements.checkOut.value = heroOutDate;
     }
     availabilityFilter.elements.guestCount.value = data.get("guestCount") || "2";
     statusOverride = null;
@@ -760,69 +770,3 @@ if (window.EbrostayBackend) {
   });
 }
 
-function formatBookingDate(value) {
-  return new Intl.DateTimeFormat(currentLanguage === "es" ? "es-ES" : "en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(dateValue(value));
-}
-
-async function openAccountDialog() {
-  if (!accountDialog) return;
-  accountEmail.textContent = EbrostayBackend.getUser()?.email || "";
-  deleteAccountButton.dataset.armed = "";
-  deleteAccountButton.textContent = t("account.deactivate");
-  bookingsList.innerHTML = "";
-  accountDialog.showModal();
-
-  const bookings = await EbrostayBackend.loadMyBookings();
-  if (bookings === null) {
-    bookingsList.innerHTML = `<li class="bookings-empty">${t("bookings.error")}</li>`;
-    return;
-  }
-
-  const links = (booking) => [
-    booking.invoice_url && `<a href="${booking.invoice_url}" target="_blank" rel="noopener">${t("bookings.invoice")}</a>`,
-    booking.invoice_pdf && `<a href="${booking.invoice_pdf}" target="_blank" rel="noopener">${t("bookings.pdf")}</a>`,
-    booking.receipt_url && `<a href="${booking.receipt_url}" target="_blank" rel="noopener">${t("bookings.receipt")}</a>`
-  ].filter(Boolean).join(" ");
-
-  const paidItems = bookings.paid.map((booking) => `
-    <li>
-      <strong>${booking.property_name}</strong>
-      <span>${formatBookingDate(booking.start_date)} &ndash; ${formatBookingDate(booking.end_date)}</span>
-      <span class="booking-paid">${interpolate("cond.eur", { amount: booking.amount_eur })} &middot; ${t("bookings.paidLabel")}</span>
-      ${links(booking) ? `<span class="booking-links">${links(booking)}</span>` : ""}
-    </li>
-  `);
-  const assignedItems = bookings.assigned.map((booking) => `
-    <li>
-      <strong>${booking.propertyName}</strong>
-      <span>${formatBookingDate(booking.startDate)} &ndash; ${formatBookingDate(booking.endDate)}</span>
-    </li>
-  `);
-  const items = [...paidItems, ...assignedItems];
-  bookingsList.innerHTML = items.length
-    ? items.join("")
-    : `<li class="bookings-empty">${t("bookings.empty")}</li>`;
-}
-
-if (accountButton) {
-  accountButton.addEventListener("click", openAccountDialog);
-  accountClose?.addEventListener("click", () => accountDialog.close());
-  deleteAccountButton?.addEventListener("click", async () => {
-    if (deleteAccountButton.dataset.armed !== "yes") {
-      deleteAccountButton.dataset.armed = "yes";
-      deleteAccountButton.textContent = t("account.deactivateConfirm");
-      return;
-    }
-    const error = await EbrostayBackend.deactivateAccount();
-    if (error) {
-      deleteAccountButton.dataset.armed = "";
-      deleteAccountButton.textContent = t("account.deactivateError");
-      return;
-    }
-    accountDialog.close();
-  });
-}

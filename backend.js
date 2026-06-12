@@ -204,7 +204,7 @@ const EbrostayBackend = (() => {
     const sb = getClient();
     const [paidResult, assignedResult] = await Promise.all([
       sb.from("bookings")
-        .select("property_name, start_date, end_date, months, amount_eur, status, invoice_url, invoice_pdf, receipt_url")
+        .select("property_id, property_name, start_date, end_date, months, amount_eur, status, invoice_url, invoice_pdf, receipt_url")
         .eq("user_id", user.id)
         .order("start_date"),
       sb.from("availability_blocks")
@@ -223,11 +223,11 @@ const EbrostayBackend = (() => {
     };
   }
 
-  async function createBookingCheckout(propertyId, startDate, months) {
+  async function createBookingCheckout(propertyId, startDate, endDate) {
     const sb = getClient();
     try {
       const { data, error } = await sb.functions.invoke("create-booking-checkout", {
-        body: { propertyId, startDate, months }
+        body: { propertyId, startDate, endDate }
       });
       if (error) {
         let code = "server_error";

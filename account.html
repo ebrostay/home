@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Mi cuenta</title>
+    <meta name="description" content="Tus reservas y facturas en Ebrostay.">
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css?v=admin-10">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Ebrostay home">
+        <img class="brand-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="index.html#search" data-i18n="nav.search">Buscar</a>
+        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
+        <a href="index.html#owners" data-i18n="nav.owners">Propietarios</a>
+        <a href="index.html#contact" data-i18n="nav.contact">Contacto</a>
+      </nav>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
+      </div>
+    </header>
+
+    <main class="detail-page account-page">
+      <a class="detail-back" href="index.html">&larr; <span data-i18n="admin.back">Volver al sitio</span></a>
+
+      <section class="account-loading" id="accountLoading">
+        <p data-i18n="account.loading">Cargando tu cuenta…</p>
+      </section>
+
+      <section id="signedOutPanel" hidden>
+        <p class="section-kicker" data-i18n="account.title">Mi cuenta</p>
+        <h1 data-i18n="account.signedOutTitle">Inicia sesión para ver tus reservas.</h1>
+        <p data-i18n="account.signedOutCopy">Tus estancias pagadas y asignadas, con sus facturas y recibos, aparecen aquí cuando entras con tu cuenta.</p>
+        <a class="button primary" href="index.html#login" data-i18n="auth.login">Entrar</a>
+      </section>
+
+      <section id="accountPanel" hidden>
+        <p class="section-kicker" data-i18n="account.title">Mi cuenta</p>
+        <div class="account-heading">
+          <h1 data-i18n="bookings.title">Mis reservas</h1>
+          <span class="user-email" id="accountEmail"></span>
+        </div>
+        <p data-i18n="bookings.copy">Las estancias confirmadas con tu cuenta aparecen aquí.</p>
+        <ul class="bookings-list account-bookings" id="bookingsList"></ul>
+
+        <section class="account-actions">
+          <h2 data-i18n="account.sessionTitle">Sesión y cuenta</h2>
+          <div class="account-actions-row">
+            <button class="details-button" id="logoutButton" type="button" data-i18n="auth.logout">Salir</button>
+            <button class="details-button danger" id="deleteAccountButton" type="button" data-i18n="account.deactivate">Desactivar mi cuenta</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-brand">
+        <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+        <span>&copy; <span id="year"></span> Ebrostay</span>
+      </span>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=admin-10"></script>
+    <script src="data.js?v=admin-10"></script>
+    <script src="backend.js?v=admin-10"></script>
+    <script src="account.js?v=admin-10"></script>
+  </body>
+</html>

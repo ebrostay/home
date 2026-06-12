@@ -166,6 +166,7 @@ function renderMoveInCost() {
 }
 
 let bookingPicker = null;
+let bookingEndPicker = null;
 
 function bookingEndDate(startDate, months) {
   const start = new Date(`${startDate}T00:00:00Z`);
@@ -175,19 +176,38 @@ function bookingEndDate(startDate, months) {
   return end.toISOString().slice(0, 10);
 }
 
+// Billed months for a stay: whole months from the start date, rounded up,
+// minimum one. Mirrors the server-side computation in the checkout function.
+function billedMonths(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  let months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth());
+  if (months < 1) months = 1;
+  while (bookingEndDate(startDate, months) < endDate) months += 1;
+  return months;
+}
+
+function monthsText(months) {
+  return months === 1 ? t("cond.month") : interpolate("cond.months", { count: months });
+}
+
 function updateBookingSummary() {
   const summary = document.querySelector("#bookingSummary");
   const startDate = document.querySelector("#bookingStart")?.value;
-  const months = Number(document.querySelector("#bookingMonths")?.value) || 1;
+  const endDate = document.querySelector("#bookingEnd")?.value;
   if (!summary) return;
-  if (!startDate) {
+  if (!startDate || !endDate || endDate <= startDate) {
     summary.innerHTML = "";
     return;
   }
-  const endDate = bookingEndDate(startDate, months);
+  const months = billedMonths(startDate, endDate);
+  const rent = months * property.priceNumber;
+  const deposit = property.depositAmount || 0;
   summary.innerHTML = `
     <li><span>${t("book.stay")}</span><span>${formatDate(dateValue(startDate))} &ndash; ${formatDate(dateValue(endDate))}</span></li>
-    <li class="is-total"><span>${t("book.payNow")}</span><span>${interpolate("cond.eur", { amount: property.priceNumber })}</span></li>
+    <li><span>${t("book.rent")} (${monthsText(months)})</span><span>${interpolate("cond.eur", { amount: rent })}</span></li>
+    ${deposit ? `<li><span>${t("cond.deposit")}</span><span>${interpolate("cond.eur", { amount: deposit })}</span></li>` : ""}
+    <li class="is-total"><span>${t("book.payNow")}</span><span>${interpolate("cond.eur", { amount: rent + deposit })}</span></li>
   `;
 }
 
@@ -207,23 +227,39 @@ function initBookingWidget() {
   }
   widget.hidden = false;
 
-  const monthsSelect = document.querySelector("#bookingMonths");
-  const previous = Number(monthsSelect.value) || 1;
-  monthsSelect.innerHTML = Array.from({ length: 11 }, (_, index) => index + 1)
-    .map((m) => `<option value="${m}" ${m === previous ? "selected" : ""}>${m === 1 ? t("cond.month") : interpolate("cond.months", { count: m })}</option>`)
-    .join("");
-
   const today = new Date().toISOString().slice(0, 10);
   const availableFrom = property.availableFrom || today;
-  bookingPicker?.destroy();
-  bookingPicker = flatpickr(document.querySelector("#bookingStart"), {
+  const minStart = availableFrom > today ? availableFrom : today;
+  const disabledRanges = property.unavailable.map(([from, to]) => ({ from, to }));
+  const baseConfig = {
     dateFormat: "Y-m-d",
     altInput: true,
     altFormat: "j M Y",
-    minDate: availableFrom > today ? availableFrom : today,
-    disable: property.unavailable.map(([from, to]) => ({ from, to })),
-    locale: currentLanguage === "es" ? flatpickr.l10ns.es : "default",
+    disable: disabledRanges,
+    locale: currentLanguage === "es" ? flatpickr.l10ns.es : "default"
+  };
+  const minEndFor = (startDate) =>
+    bookingEndDate(startDate, Math.max(1, property.minStayMonths || 1));
+
+  bookingPicker?.destroy();
+  bookingEndPicker?.destroy();
+  bookingEndPicker = flatpickr(document.querySelector("#bookingEnd"), {
+    ...baseConfig,
+    minDate: minEndFor(minStart),
     onChange: updateBookingSummary
+  });
+  bookingPicker = flatpickr(document.querySelector("#bookingStart"), {
+    ...baseConfig,
+    minDate: minStart,
+    onChange: (dates, dateString) => {
+      if (dateString) {
+        bookingEndPicker.set("minDate", minEndFor(dateString));
+        if (!bookingEndPicker.input.value || bookingEndPicker.input.value < minEndFor(dateString)) {
+          bookingEndPicker.setDate(minEndFor(dateString), false);
+        }
+      }
+      updateBookingSummary();
+    }
   });
   updateBookingSummary();
 
@@ -240,9 +276,13 @@ const BOOKING_ERROR_KEYS = {
 
 document.querySelector("#bookingButton")?.addEventListener("click", async () => {
   const startDate = document.querySelector("#bookingStart")?.value;
-  const months = Number(document.querySelector("#bookingMonths")?.value) || 1;
+  const endDate = document.querySelector("#bookingEnd")?.value;
   if (!startDate) {
     bookingPicker?.open();
+    return;
+  }
+  if (!endDate || endDate <= startDate) {
+    bookingEndPicker?.open();
     return;
   }
   if (!EbrostayBackend.getUser()) {
@@ -252,7 +292,7 @@ document.querySelector("#bookingButton")?.addEventListener("click", async () => 
   const button = document.querySelector("#bookingButton");
   button.disabled = true;
   bookingMessage("book.redirecting", false);
-  const { url, code } = await EbrostayBackend.createBookingCheckout(property.id, startDate, months);
+  const { url, code } = await EbrostayBackend.createBookingCheckout(property.id, startDate, endDate);
   if (url) {
     window.location.href = url;
     return;
@@ -361,6 +401,13 @@ async function boot() {
 
   initDetailMap();
   applyLanguage(currentLanguage);
+
+  // "Reservar" buttons on the listing cards land here with #book
+  if (window.location.hash === "#book") {
+    const widget = document.querySelector("#bookingWidget");
+    const target = widget && !widget.hidden ? widget : document.querySelector(".detail-request-card");
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 boot();

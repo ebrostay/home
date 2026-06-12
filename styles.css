@@ -211,8 +211,15 @@ a {
   background: rgba(255, 255, 255, 0.09);
 }
 
+.button.ghost {
+  border-color: var(--line);
+  color: var(--ink);
+  background: #fff;
+}
+
 .section,
 .feature-grid,
+.availability-section,
 .split-section,
 .location-band,
 .contact-section,
@@ -274,6 +281,107 @@ p {
 }
 
 .feature-card p {
+  margin: 0;
+}
+
+.availability-section {
+  padding: 74px 0 88px;
+}
+
+.availability-heading {
+  display: grid;
+  grid-template-columns: 0.95fr 1fr;
+  gap: clamp(28px, 6vw, 70px);
+  align-items: end;
+  margin-bottom: 28px;
+}
+
+.availability-heading p:last-child {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.availability-filter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(23, 33, 28, 0.08);
+}
+
+.availability-filter input {
+  min-height: 48px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-actions .button {
+  min-width: 104px;
+}
+
+.availability-status {
+  min-height: 24px;
+  margin: 18px 0;
+  color: var(--reed);
+  font-weight: 800;
+}
+
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.property-card {
+  display: grid;
+  gap: 16px;
+  min-height: 280px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(23, 33, 28, 0.06);
+}
+
+.property-card.is-unavailable {
+  opacity: 0.54;
+}
+
+.property-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.property-meta span,
+.availability-pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--mist);
+  color: var(--reed);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.availability-pill.is-open {
+  background: rgba(65, 109, 119, 0.13);
+  color: var(--river);
+}
+
+.availability-pill.is-blocked {
+  background: rgba(215, 141, 72, 0.15);
+  color: #8b4b17;
+}
+
+.property-card h3,
+.property-card p {
   margin: 0;
 }
 
@@ -413,6 +521,9 @@ textarea {
 
   .intro,
   .feature-grid,
+  .availability-heading,
+  .availability-filter,
+  .property-grid,
   .split-section,
   .location-band,
   .contact-section {
@@ -421,6 +532,15 @@ textarea {
 
   .feature-grid {
     padding-bottom: 60px;
+  }
+
+  .availability-section {
+    padding: 58px 0 64px;
+  }
+
+  .filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .split-section {

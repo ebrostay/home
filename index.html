@@ -29,6 +29,7 @@
       <nav class="nav-links" aria-label="Primary">
         <a href="#owners" data-i18n="nav.owners">Propietarios</a>
         <a href="#services" data-i18n="nav.services">Servicios</a>
+        <a href="#availability" data-i18n="nav.availability">Disponibilidad</a>
         <a href="#guests" data-i18n="nav.guests">Huéspedes</a>
         <a href="#contact" data-i18n="nav.contact">Contacto</a>
       </nav>
@@ -53,7 +54,7 @@
           </p>
           <div class="hero-actions" aria-label="Main actions">
             <a class="button primary" href="#contact" data-i18n="hero.primary">Quiero gestionar mi vivienda</a>
-            <a class="button secondary" href="#services" data-i18n="hero.secondary">Ver servicios</a>
+            <a class="button secondary" href="#availability" data-i18n="hero.secondary">Ver disponibilidad</a>
           </div>
         </div>
       </section>
@@ -84,6 +85,40 @@
           <h3 data-i18n="services.card3.title">Seguimiento claro</h3>
           <p data-i18n="services.card3.copy">Información ordenada sobre reservas, estado de la vivienda y próximos pasos importantes.</p>
         </article>
+      </section>
+
+      <section class="availability-section" id="availability">
+        <div class="availability-heading">
+          <div>
+            <p class="section-kicker" data-i18n="availability.kicker">Disponibilidad</p>
+            <h2 data-i18n="availability.title">Filtra propiedades por fechas.</h2>
+          </div>
+          <p data-i18n="availability.copy">
+            Selecciona entrada, salida y número de huéspedes para ver qué propiedades de ejemplo están disponibles. Las fechas se pueden conectar más adelante a calendarios reales.
+          </p>
+        </div>
+
+        <form class="availability-filter" id="availabilityFilter">
+          <label>
+            <span data-i18n="availability.checkIn">Entrada</span>
+            <input id="checkIn" name="checkIn" type="date" required>
+          </label>
+          <label>
+            <span data-i18n="availability.checkOut">Salida</span>
+            <input id="checkOut" name="checkOut" type="date" required>
+          </label>
+          <label>
+            <span data-i18n="availability.guests">Huéspedes</span>
+            <input id="guestCount" name="guestCount" type="number" min="1" max="8" value="2">
+          </label>
+          <div class="filter-actions">
+            <button class="button primary" type="submit" data-i18n="availability.filter">Filtrar</button>
+            <button class="button ghost" id="resetAvailability" type="button" data-i18n="availability.reset">Reiniciar</button>
+          </div>
+        </form>
+
+        <p class="availability-status" id="availabilityStatus" role="status"></p>
+        <div class="property-grid" id="propertyGrid" aria-live="polite"></div>
       </section>
 
       <section class="split-section" id="guests">

@@ -151,8 +151,8 @@ const translations = {
     "auth.error": "No se pudo iniciar sesión. Revisa los datos.",
     "auth.signupError": "No se pudo crear la cuenta. Revisa los datos.",
     "auth.admin": "Administración",
-    "admin.title": "Gestión de disponibilidad",
-    "admin.copy": "Añade o elimina periodos reservados por vivienda. Los cambios se publican al momento.",
+    "admin.title": "Panel de administración",
+    "admin.copy": "Gestiona anuncios, fotos, precios y disponibilidad. Los cambios se publican al momento.",
     "admin.signinFirst": "Inicia sesión con tu cuenta de administración.",
     "admin.notAdmin": "Tu cuenta no tiene permisos de administración.",
     "admin.notConfigured": "Supabase no está configurado todavía. Completa supabase-config.js.",
@@ -197,7 +197,18 @@ const translations = {
     "admin.flag.checked": "Verificada",
     "admin.flag.deposit": "Depósito protegido",
     "admin.flag.bills": "Gastos incluidos",
-    "admin.flag.published": "Publicada en la web"
+    "admin.flag.published": "Publicada en la web",
+    "admin.published": "Publicada",
+    "admin.unpublished": "No publicada",
+    "admin.guestsUnit": "personas",
+    "admin.availability": "Disponibilidad",
+    "admin.saveChanges": "Guardar cambios",
+    "admin.section.basic": "Información básica",
+    "admin.section.price": "Precio",
+    "admin.section.textsEs": "Textos en español",
+    "admin.section.textsEn": "Textos en inglés",
+    "admin.section.location": "Ubicación",
+    "admin.section.status": "Estado"
   },
   en: {
     "meta.title": "Ebrostay | Verified rentals in Zaragoza",
@@ -348,8 +359,8 @@ const translations = {
     "auth.error": "Could not sign in. Check your details.",
     "auth.signupError": "Could not create the account. Check your details.",
     "auth.admin": "Admin",
-    "admin.title": "Availability management",
-    "admin.copy": "Add or remove booked periods per home. Changes go live immediately.",
+    "admin.title": "Admin panel",
+    "admin.copy": "Manage listings, photos, prices, and availability. Changes go live immediately.",
     "admin.signinFirst": "Sign in with your admin account.",
     "admin.notAdmin": "Your account does not have admin permissions.",
     "admin.notConfigured": "Supabase is not configured yet. Fill in supabase-config.js.",
@@ -394,7 +405,18 @@ const translations = {
     "admin.flag.checked": "Verified",
     "admin.flag.deposit": "Deposit protected",
     "admin.flag.bills": "Bills included",
-    "admin.flag.published": "Published on the website"
+    "admin.flag.published": "Published on the website",
+    "admin.published": "Published",
+    "admin.unpublished": "Not published",
+    "admin.guestsUnit": "guests",
+    "admin.availability": "Availability",
+    "admin.saveChanges": "Save changes",
+    "admin.section.basic": "Basic information",
+    "admin.section.price": "Price",
+    "admin.section.textsEs": "Spanish texts",
+    "admin.section.textsEn": "English texts",
+    "admin.section.location": "Location",
+    "admin.section.status": "Status"
   }
 };
 

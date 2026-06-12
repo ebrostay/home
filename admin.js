@@ -9,6 +9,7 @@ const adminProperties = document.querySelector("#adminProperties");
 
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
 let adminRows = [];
+let selectedPropertyId = null;
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -20,14 +21,25 @@ function formatDate(value) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+// Page-level notices stay inline; everything else floats as a toast so it is
+// visible no matter how far down the page the action happened.
+const PAGE_STATUS_KEYS = new Set(["admin.notConfigured", "admin.notAdmin"]);
+let statusTimer;
+
 function showStatus(key) {
+  clearTimeout(statusTimer);
   adminStatus.hidden = false;
   adminStatus.dataset.statusKey = key;
   adminStatus.textContent = t(key);
+  adminStatus.classList.toggle("is-toast", !PAGE_STATUS_KEYS.has(key));
+  adminStatus.classList.toggle("is-error", key === "admin.error");
+  if (key === "admin.saved") statusTimer = setTimeout(hideStatus, 2600);
+  if (key === "admin.error") statusTimer = setTimeout(hideStatus, 5000);
 }
 
 function hideStatus() {
   adminStatus.hidden = true;
+  adminStatus.classList.remove("is-toast", "is-error");
   delete adminStatus.dataset.statusKey;
 }
 
@@ -81,19 +93,23 @@ function renderPhotos(row) {
           ${index === 0 ? `<span class="admin-photo-cover">${t("admin.cover")}</span>` : ""}
           <div class="admin-photo-actions">
             ${index === 0 ? "" : `<button class="details-button" type="button" data-cover-photo="${photo.id}" data-property="${row.id}">${t("admin.makeCover")}</button>`}
-            <button class="details-button" type="button" data-delete-photo="${photo.id}" data-path="${escapeValue(photo.storage_path)}">${t("admin.delete")}</button>
+            <button class="details-button danger" type="button" data-delete-photo="${photo.id}" data-path="${escapeValue(photo.storage_path)}">${t("admin.delete")}</button>
           </div>
         </figure>
       `).join("")
     : `<p class="admin-empty-note">${t("admin.noPhotos")}</p>`;
 
   return `
-    <h3>${t("admin.photos")}</h3>
-    <div class="admin-photo-grid">${items}</div>
-    <label class="admin-upload">
-      <span class="button ghost">${t("admin.addPhotos")}</span>
-      <input type="file" accept="image/*" multiple hidden data-photo-input="${row.id}">
-    </label>
+    <section class="admin-section">
+      <div class="admin-section-head">
+        <h3>${t("admin.photos")}</h3>
+        <label class="admin-upload">
+          <span class="button ghost">${t("admin.addPhotos")}</span>
+          <input type="file" accept="image/*" multiple hidden data-photo-input="${row.id}">
+        </label>
+      </div>
+      <div class="admin-photo-grid">${items}</div>
+    </section>
   `;
 }
 
@@ -118,57 +134,86 @@ function renderEditForm(row) {
     <details class="admin-edit">
       <summary>${t("admin.editDetails")}</summary>
       <form class="admin-form" data-edit-form="${row.id}">
-        ${text("admin.field.name", "name", row.name)}
-        ${text("admin.field.priceLabel", "price_label", row.price_label)}
-        ${text("admin.field.priceNumber", "price_number", row.price_number, "number")}
-        ${text("admin.field.guests", "guests", row.guests, "number")}
-        ${text("admin.field.areaEs", "area_es", row.area_es)}
-        ${text("admin.field.areaEn", "area_en", row.area_en)}
-        ${area("admin.field.copyEs", "copy_es", row.copy_es)}
-        ${area("admin.field.copyEn", "copy_en", row.copy_en)}
-        ${area("admin.field.detailsEs", "details_es", row.details_es)}
-        ${area("admin.field.detailsEn", "details_en", row.details_en)}
-        ${text("admin.field.priceNoteEs", "price_note_es", row.price_note_es)}
-        ${text("admin.field.priceNoteEn", "price_note_en", row.price_note_en)}
-        ${text("admin.field.rating", "rating", row.rating, "number")}
-        <label>
-          <span>${t("admin.field.type")}</span>
-          <select name="type">
-            ${TYPE_KEYS.map((key) => `<option value="${key}" ${row.type === key ? "selected" : ""}>${t(`type.${key}`)}</option>`).join("")}
-          </select>
-        </label>
-        ${text("admin.field.addressKey", "address_key", row.address_key)}
-        ${text("admin.field.city", "city", row.city)}
-        ${text("admin.field.lat", "lat", row.lat, "number")}
-        ${text("admin.field.lng", "lng", row.lng, "number")}
-        <fieldset class="admin-amenities admin-wide">
+        <fieldset class="admin-group">
+          <legend>${t("admin.section.basic")}</legend>
+          ${text("admin.field.name", "name", row.name)}
+          <label>
+            <span>${t("admin.field.type")}</span>
+            <select name="type">
+              ${TYPE_KEYS.map((key) => `<option value="${key}" ${row.type === key ? "selected" : ""}>${t(`type.${key}`)}</option>`).join("")}
+            </select>
+          </label>
+          ${text("admin.field.guests", "guests", row.guests, "number")}
+          ${text("admin.field.rating", "rating", row.rating, "number")}
+        </fieldset>
+        <fieldset class="admin-group">
+          <legend>${t("admin.section.price")}</legend>
+          ${text("admin.field.priceLabel", "price_label", row.price_label)}
+          ${text("admin.field.priceNumber", "price_number", row.price_number, "number")}
+          ${text("admin.field.priceNoteEs", "price_note_es", row.price_note_es)}
+          ${text("admin.field.priceNoteEn", "price_note_en", row.price_note_en)}
+        </fieldset>
+        <fieldset class="admin-group">
+          <legend>${t("admin.section.textsEs")}</legend>
+          ${text("admin.field.areaEs", "area_es", row.area_es)}
+          ${area("admin.field.copyEs", "copy_es", row.copy_es)}
+          ${area("admin.field.detailsEs", "details_es", row.details_es)}
+        </fieldset>
+        <fieldset class="admin-group">
+          <legend>${t("admin.section.textsEn")}</legend>
+          ${text("admin.field.areaEn", "area_en", row.area_en)}
+          ${area("admin.field.copyEn", "copy_en", row.copy_en)}
+          ${area("admin.field.detailsEn", "details_en", row.details_en)}
+        </fieldset>
+        <fieldset class="admin-group">
+          <legend>${t("admin.section.location")}</legend>
+          ${text("admin.field.city", "city", row.city)}
+          ${text("admin.field.addressKey", "address_key", row.address_key)}
+          ${text("admin.field.lat", "lat", row.lat, "number")}
+          ${text("admin.field.lng", "lng", row.lng, "number")}
+        </fieldset>
+        <fieldset class="admin-group admin-chips">
           <legend>${t("admin.field.amenities")}</legend>
           ${AMENITY_KEYS.map((key) => `
             <label class="admin-flag"><input type="checkbox" name="amenities" value="${key}" ${(row.amenities || []).includes(key) ? "checked" : ""}> <span>${t(`amenity.${key}`)}</span></label>
           `).join("")}
         </fieldset>
-        <fieldset class="admin-amenities admin-wide">
-          <legend>&nbsp;</legend>
+        <fieldset class="admin-group admin-chips">
+          <legend>${t("admin.section.status")}</legend>
           ${flag("admin.flag.isNew", "is_new", row.is_new)}
           ${flag("admin.flag.checked", "checked", row.checked)}
           ${flag("admin.flag.deposit", "deposit_protected", row.deposit_protected)}
           ${flag("admin.flag.bills", "bills_included", row.bills_included)}
           ${flag("admin.flag.published", "is_published", row.is_published)}
         </fieldset>
-        <button class="button primary admin-wide" type="submit">${t("admin.save")}</button>
+        <button class="button primary" type="submit">${t("admin.saveChanges")}</button>
       </form>
     </details>
   `;
 }
 
 function renderAdmin() {
+  if (!adminRows.some((row) => row.id === selectedPropertyId)) {
+    selectedPropertyId = adminRows[0]?.id || null;
+  }
+
   const openEditors = new Set(
     [...adminProperties.querySelectorAll(".admin-edit[open]")]
       .map((details) => details.closest("[data-property]")?.dataset.property)
       .filter(Boolean)
   );
 
-  adminProperties.innerHTML = adminRows.map((row) => {
+  const tabs = `
+    <nav class="admin-tabs" aria-label="${t("admin.title")}">
+      ${adminRows.map((row) => `
+        <button class="admin-tab ${row.id === selectedPropertyId ? "is-active" : ""}" type="button" data-tab="${row.id}">
+          <span class="admin-tab-dot ${row.is_published ? "is-live" : ""}"></span>${row.name}
+        </button>
+      `).join("")}
+    </nav>
+  `;
+
+  adminProperties.innerHTML = tabs + adminRows.map((row) => {
     const blocks = (row.availability_blocks || [])
       .slice()
       .sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
@@ -176,36 +221,45 @@ function renderAdmin() {
       ? blocks.map((block) => `
           <li>
             <span>${formatDate(block.start_date)} &ndash; ${formatDate(block.end_date)}</span>
-            <button class="details-button" type="button" data-delete-block="${block.id}">${t("admin.delete")}</button>
+            <button class="details-button danger" type="button" data-delete-block="${block.id}">${t("admin.delete")}</button>
           </li>
         `).join("")
       : `<li class="admin-empty">${t("admin.noBlocks")}</li>`;
 
     return `
-      <section class="admin-card" data-property="${row.id}">
-        <h2>${row.name}</h2>
+      <section class="admin-card" data-property="${row.id}" ${row.id === selectedPropertyId ? "" : "hidden"}>
+        <header class="admin-card-head">
+          <div>
+            <h2>${row.name}</h2>
+            <p class="admin-card-meta">${row.price_label} &middot; ${row.guests} ${t("admin.guestsUnit")}${row.rating ? ` &middot; &#9733; ${row.rating}` : ""}</p>
+          </div>
+          <span class="admin-chip ${row.is_published ? "is-live" : "is-off"}">${t(row.is_published ? "admin.published" : "admin.unpublished")}</span>
+        </header>
         ${renderPhotos(row)}
         ${renderEditForm(row)}
-        <form class="admin-available" data-available-form="${row.id}">
-          <label>
-            <span>${t("admin.availableFrom")}</span>
-            <input name="availableFrom" type="date" value="${row.available_from || ""}">
-          </label>
-          <button class="button ghost" type="submit">${t("admin.save")}</button>
-        </form>
-        <h3>${t("admin.blocks")}</h3>
-        <ul class="admin-blocks">${blockItems}</ul>
-        <form class="admin-add-block" data-block-form="${row.id}">
-          <label>
-            <span>${t("admin.from")}</span>
-            <input name="startDate" type="date" required>
-          </label>
-          <label>
-            <span>${t("admin.to")}</span>
-            <input name="endDate" type="date" required>
-          </label>
-          <button class="button primary" type="submit">${t("admin.add")}</button>
-        </form>
+        <section class="admin-section">
+          <h3>${t("admin.availability")}</h3>
+          <form class="admin-available" data-available-form="${row.id}">
+            <label>
+              <span>${t("admin.availableFrom")}</span>
+              <input name="availableFrom" type="date" value="${row.available_from || ""}">
+            </label>
+            <button class="button ghost" type="submit">${t("admin.save")}</button>
+          </form>
+          <h4>${t("admin.blocks")}</h4>
+          <ul class="admin-blocks">${blockItems}</ul>
+          <form class="admin-add-block" data-block-form="${row.id}">
+            <label>
+              <span>${t("admin.from")}</span>
+              <input name="startDate" type="date" required>
+            </label>
+            <label>
+              <span>${t("admin.to")}</span>
+              <input name="endDate" type="date" required>
+            </label>
+            <button class="button primary" type="submit">${t("admin.add")}</button>
+          </form>
+        </section>
       </section>
     `;
   }).join("");
@@ -335,6 +389,13 @@ function editPayloadFromForm(form) {
 
 if (adminProperties) {
   adminProperties.addEventListener("click", async (event) => {
+    const tabId = event.target.closest("[data-tab]")?.dataset.tab;
+    if (tabId) {
+      selectedPropertyId = tabId;
+      renderAdmin();
+      return;
+    }
+
     const sb = EbrostayBackend.getClient();
     const blockId = event.target.closest("[data-delete-block]")?.dataset.deleteBlock;
     const deletePhoto = event.target.closest("[data-delete-photo]");

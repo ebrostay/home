@@ -10,6 +10,16 @@ const quickButtons = document.querySelectorAll("[data-quick]");
 const sortBy = document.querySelector("#sortBy");
 const googleMap = document.querySelector("#googleMap");
 const mapAddressButtons = document.querySelectorAll("[data-map-address]");
+const authButton = document.querySelector("#authButton");
+const authDialog = document.querySelector("#authDialog");
+const authForm = document.querySelector("#authForm");
+const authMessage = document.querySelector("#authMessage");
+const authClose = document.querySelector("#authClose");
+const userChip = document.querySelector("#userChip");
+const userEmail = document.querySelector("#userEmail");
+const logoutButton = document.querySelector("#logoutButton");
+const adminLink = document.querySelector("#adminLink");
+const formNote = document.querySelector(".form-note");
 
 const mapSources = {
   pedro: "https://www.google.com/maps?q=Pedro%20II%20El%20Catolico%203%2C%20Zaragoza%20Spain&output=embed",
@@ -387,8 +397,10 @@ if (propertyGrid) {
 
     if (favoriteId) {
       event.preventDefault();
-      favorites.has(favoriteId) ? favorites.delete(favoriteId) : favorites.add(favoriteId);
+      const turnedOn = !favorites.has(favoriteId);
+      turnedOn ? favorites.add(favoriteId) : favorites.delete(favoriteId);
       localStorage.setItem("ebrostay-favorites", JSON.stringify([...favorites]));
+      if (window.EbrostayBackend?.getUser()) EbrostayBackend.saveFavorite(favoriteId, turnedOn);
       renderProperties();
     }
 
@@ -409,18 +421,130 @@ if (propertyGrid) {
 }
 
 if (inquiryForm) {
-  inquiryForm.addEventListener("submit", (event) => {
+  inquiryForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(inquiryForm);
     const name = formData.get("name")?.toString().trim() || "Guest";
     const email = formData.get("email")?.toString().trim() || "";
     const property = formData.get("property")?.toString().trim() || t("email.propertyFallback");
     const message = formData.get("message")?.toString().trim() || t("email.defaultMessage");
+
+    if (window.EbrostayBackend?.isConfigured()) {
+      const { ok } = await EbrostayBackend.sendInquiry({
+        name,
+        email,
+        property,
+        message,
+        language: currentLanguage
+      });
+      if (formNote) {
+        formNote.textContent = ok ? t("form.sent") : t("form.errorSend");
+        formNote.classList.toggle("is-success", ok);
+        formNote.classList.toggle("is-error", !ok);
+      }
+      if (ok) inquiryForm.reset();
+      return;
+    }
+
     const subject = encodeURIComponent(`${t("email.subject")} ${name}`);
     const body = encodeURIComponent(`Name / Nombre: ${name}\nEmail: ${email}\nProperty / Propiedad: ${property}\n\n${message}`);
     window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
   });
 }
 
+function updateAuthUI(user) {
+  const configured = Boolean(window.EbrostayBackend?.isConfigured());
+  if (authButton) authButton.hidden = !configured || Boolean(user);
+  if (userChip) userChip.hidden = !configured || !user;
+  if (user && userEmail) userEmail.textContent = user.email || "";
+  if (adminLink) adminLink.hidden = !EbrostayBackend?.getIsAdmin();
+}
+
+async function syncFavorites() {
+  const remote = await EbrostayBackend.loadFavorites();
+  if (remote === null) return;
+  const merged = new Set(remote);
+  favorites.forEach((id) => {
+    if (!merged.has(id)) {
+      merged.add(id);
+      EbrostayBackend.saveFavorite(id, true);
+    }
+  });
+  favorites = merged;
+  localStorage.setItem("ebrostay-favorites", JSON.stringify([...favorites]));
+  renderProperties();
+}
+
+if (authButton && authDialog) {
+  authButton.addEventListener("click", () => {
+    if (authMessage) {
+      authMessage.textContent = "";
+      authMessage.className = "auth-message";
+    }
+    authDialog.showModal();
+  });
+}
+
+if (authClose) {
+  authClose.addEventListener("click", () => authDialog?.close());
+}
+
+if (authForm) {
+  authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const action = event.submitter?.dataset.authAction || "signin";
+    const formData = new FormData(authForm);
+    const email = formData.get("email")?.toString().trim() || "";
+    const password = formData.get("password")?.toString() || "";
+    authMessage.className = "auth-message";
+
+    if (action === "signup") {
+      const { needsConfirmation, error } = await EbrostayBackend.signUp(email, password);
+      if (error) {
+        authMessage.textContent = t("auth.signupError");
+        authMessage.classList.add("is-error");
+      } else if (needsConfirmation) {
+        authMessage.textContent = t("auth.checkEmail");
+        authMessage.classList.add("is-success");
+      } else {
+        authDialog?.close();
+        authForm.reset();
+      }
+      return;
+    }
+
+    const error = await EbrostayBackend.signIn(email, password);
+    if (error) {
+      authMessage.textContent = t("auth.error");
+      authMessage.classList.add("is-error");
+    } else {
+      authDialog?.close();
+      authForm.reset();
+    }
+  });
+}
+
+if (logoutButton) {
+  logoutButton.addEventListener("click", () => EbrostayBackend.signOut());
+}
+
 initListingsMap();
 applyLanguage(currentLanguage);
+
+if (window.EbrostayBackend) {
+  EbrostayBackend.init({
+    onPropertiesLoaded: () => {
+      mapNeedsFit = true;
+      renderProperties();
+    },
+    onAuthChanged: (user) => {
+      updateAuthUI(user);
+      if (user) {
+        syncFavorites();
+      } else {
+        favorites = new Set(JSON.parse(localStorage.getItem("ebrostay-favorites") || "[]"));
+        renderProperties();
+      }
+    }
+  });
+}

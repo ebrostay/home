@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Administración</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css?v=supabase-1">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Ebrostay home">
+        <img class="brand-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+      </a>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
+      </div>
+    </header>
+
+    <main class="detail-page admin-page">
+      <p class="section-kicker" data-i18n="auth.admin">Administración</p>
+      <h1 data-i18n="admin.title">Gestión de disponibilidad</h1>
+      <p data-i18n="admin.copy">Añade o elimina periodos reservados por vivienda. Los cambios se publican al momento.</p>
+
+      <p class="admin-status" id="adminStatus" role="status" hidden></p>
+
+      <form class="auth-form admin-login" id="adminLogin" hidden>
+        <p data-i18n="admin.signinFirst">Inicia sesión con tu cuenta de administración.</p>
+        <label>
+          <span data-i18n="auth.email">Email</span>
+          <input name="email" type="email" autocomplete="email" required>
+        </label>
+        <label>
+          <span data-i18n="auth.password">Contraseña</span>
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <p class="auth-message" id="adminLoginMessage" role="status"></p>
+        <button class="button primary" type="submit" data-i18n="auth.signin">Iniciar sesión</button>
+      </form>
+
+      <div class="admin-toolbar" id="adminToolbar" hidden>
+        <span class="user-email" id="adminUserEmail"></span>
+        <button class="logout-button" id="adminLogout" type="button" data-i18n="auth.logout">Salir</button>
+      </div>
+
+      <div class="admin-properties" id="adminProperties"></div>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-brand">
+        <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+        <span>&copy; <span id="year"></span> Ebrostay</span>
+      </span>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=supabase-1"></script>
+    <script src="data.js?v=supabase-1"></script>
+    <script src="backend.js?v=supabase-1"></script>
+    <script src="admin.js?v=supabase-1"></script>
+  </body>
+</html>

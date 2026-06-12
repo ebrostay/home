@@ -1,9 +1,6 @@
 const params = new URLSearchParams(window.location.search);
-const property = properties.find((item) => item.id === params.get("id"));
-
-if (!property) {
-  window.location.replace("index.html#search");
-}
+const propertyId = params.get("id");
+let property = null;
 
 const languageButtons = document.querySelectorAll("[data-lang]");
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
@@ -123,7 +120,17 @@ function applyLanguage(language) {
   updateDetailMarker();
 }
 
-if (property) {
+async function boot() {
+  if (window.EbrostayBackend?.isConfigured()) {
+    await EbrostayBackend.init({});
+  }
+
+  property = properties.find((item) => item.id === propertyId);
+  if (!property) {
+    window.location.replace("index.html#search");
+    return;
+  }
+
   const year = document.querySelector("#year");
   if (year) year.textContent = new Date().getFullYear();
 
@@ -136,3 +143,5 @@ if (property) {
   initDetailMap();
   applyLanguage(currentLanguage);
 }
+
+boot();

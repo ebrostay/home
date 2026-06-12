@@ -1,0 +1,179 @@
+// Ebrostay Supabase backend bridge.
+// When supabase-config.js has credentials, listings, availability,
+// favorites, auth, and the contact form all run on Supabase.
+// Without credentials every feature falls back to the static behavior.
+
+const EbrostayBackend = (() => {
+  let client = null;
+  let user = null;
+  let isAdmin = false;
+  let callbacks = {};
+
+  function isConfigured() {
+    return Boolean(
+      typeof SUPABASE_URL === "string" &&
+      SUPABASE_URL.startsWith("https://") &&
+      typeof SUPABASE_ANON_KEY === "string" &&
+      SUPABASE_ANON_KEY.length > 20 &&
+      typeof window.supabase !== "undefined"
+    );
+  }
+
+  function getClient() {
+    if (!client && isConfigured()) {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+    return client;
+  }
+
+  function mapRowToProperty(row) {
+    const key = `db.${row.id}`;
+    const set = (suffix, es, en) => {
+      translations.es[`${key}.${suffix}`] = es ?? en ?? "";
+      translations.en[`${key}.${suffix}`] = en ?? es ?? "";
+    };
+    set("name", row.name, row.name);
+    set("area", row.area_es, row.area_en);
+    set("copy", row.copy_es, row.copy_en);
+    set("details", row.details_es, row.details_en);
+    if (row.price_note_es || row.price_note_en) set("priceNote", row.price_note_es, row.price_note_en);
+
+    return {
+      id: row.id,
+      city: row.city,
+      type: row.type,
+      addressKey: row.address_key,
+      nameKey: `${key}.name`,
+      areaKey: `${key}.area`,
+      copyKey: `${key}.copy`,
+      detailsKey: `${key}.details`,
+      priceNoteKey: (row.price_note_es || row.price_note_en) ? `${key}.priceNote` : undefined,
+      lat: row.lat,
+      lng: row.lng,
+      guests: row.guests,
+      price: row.price_label,
+      priceNumber: row.price_number,
+      rating: row.rating === null ? null : Number(row.rating),
+      availableFrom: row.available_from,
+      isNew: row.is_new,
+      checked: row.checked,
+      depositProtected: row.deposit_protected,
+      billsIncluded: row.bills_included,
+      amenities: row.amenities || [],
+      unavailable: (row.availability_blocks || [])
+        .map((block) => [block.start_date, block.end_date])
+        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    };
+  }
+
+  async function loadProperties() {
+    const sb = getClient();
+    if (!sb) return false;
+    const { data, error } = await sb
+      .from("properties")
+      .select("*, availability_blocks(start_date, end_date)")
+      .eq("is_published", true)
+      .order("price_number", { ascending: true });
+    if (error || !data || data.length === 0) {
+      if (error) console.warn("Supabase properties load failed, using built-in data:", error.message);
+      return false;
+    }
+    properties.length = 0;
+    properties.push(...data.map(mapRowToProperty));
+    return true;
+  }
+
+  async function refreshAuth() {
+    const sb = getClient();
+    if (!sb) return;
+    const { data } = await sb.auth.getUser();
+    user = data?.user || null;
+    isAdmin = false;
+    if (user) {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+      isAdmin = Boolean(profile?.is_admin);
+    }
+    callbacks.onAuthChanged?.(user, isAdmin);
+  }
+
+  async function init(handlers) {
+    callbacks = handlers || {};
+    if (!isConfigured()) return;
+    const sb = getClient();
+
+    sb.auth.onAuthStateChange(() => {
+      refreshAuth();
+    });
+
+    const loaded = await loadProperties();
+    if (loaded) callbacks.onPropertiesLoaded?.();
+    await refreshAuth();
+  }
+
+  async function signIn(email, password) {
+    const { error } = await getClient().auth.signInWithPassword({ email, password });
+    return error;
+  }
+
+  async function signUp(email, password) {
+    const { data, error } = await getClient().auth.signUp({ email, password });
+    return { needsConfirmation: Boolean(data?.user && !data?.session), error };
+  }
+
+  async function signOut() {
+    await getClient().auth.signOut();
+  }
+
+  async function loadFavorites() {
+    if (!user) return null;
+    const { data, error } = await getClient().from("favorites").select("property_id");
+    if (error) return null;
+    return data.map((row) => row.property_id);
+  }
+
+  async function saveFavorite(propertyId, on) {
+    if (!user) return;
+    const sb = getClient();
+    if (on) {
+      await sb.from("favorites").upsert({ user_id: user.id, property_id: propertyId });
+    } else {
+      await sb.from("favorites").delete().match({ user_id: user.id, property_id: propertyId });
+    }
+  }
+
+  async function sendInquiry(fields) {
+    const sb = getClient();
+    if (!sb) return { ok: false };
+    const { error } = await sb.from("inquiries").insert({
+      name: fields.name,
+      email: fields.email,
+      property: fields.property,
+      message: fields.message,
+      language: fields.language,
+      user_id: user?.id || null
+    });
+    if (error) console.warn("Inquiry insert failed:", error.message);
+    return { ok: !error };
+  }
+
+  return {
+    isConfigured,
+    getClient,
+    init,
+    refreshAuth,
+    signIn,
+    signUp,
+    signOut,
+    loadFavorites,
+    saveFavorite,
+    sendInquiry,
+    getUser: () => user,
+    getIsAdmin: () => isAdmin
+  };
+})();
+
+window.EbrostayBackend = EbrostayBackend;

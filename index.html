@@ -21,7 +21,7 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     >
-    <link rel="stylesheet" href="styles.css?v=detail-1">
+    <link rel="stylesheet" href="styles.css?v=supabase-1">
   </head>
   <body>
     <header class="site-header">
@@ -38,6 +38,12 @@
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <button class="auth-button" id="authButton" type="button" hidden data-i18n="auth.login">Entrar</button>
+        <div class="user-chip" id="userChip" hidden>
+          <a class="admin-link" id="adminLink" href="admin.html" hidden data-i18n="auth.admin">Administración</a>
+          <span class="user-email" id="userEmail"></span>
+          <button class="logout-button" id="logoutButton" type="button" data-i18n="auth.logout">Salir</button>
         </div>
         <a class="nav-cta" href="#contact" data-i18n="nav.cta">Publicar vivienda</a>
       </div>
@@ -249,12 +255,36 @@
       <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
+    <dialog class="auth-dialog" id="authDialog">
+      <form class="auth-form" id="authForm">
+        <h3 data-i18n="auth.title">Accede a tu cuenta</h3>
+        <p data-i18n="auth.copy">Guarda viviendas para verlas más tarde desde cualquier dispositivo.</p>
+        <label>
+          <span data-i18n="auth.email">Email</span>
+          <input name="email" type="email" autocomplete="email" required>
+        </label>
+        <label>
+          <span data-i18n="auth.password">Contraseña</span>
+          <input name="password" type="password" minlength="6" autocomplete="current-password" required>
+        </label>
+        <p class="auth-message" id="authMessage" role="status"></p>
+        <div class="auth-actions">
+          <button class="button primary" type="submit" data-auth-action="signin" data-i18n="auth.signin">Iniciar sesión</button>
+          <button class="button ghost" type="submit" data-auth-action="signup" data-i18n="auth.signup">Crear cuenta</button>
+        </div>
+        <button class="auth-close" id="authClose" type="button" data-i18n="auth.close">Cerrar</button>
+      </form>
+    </dialog>
+
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="data.js?v=detail-1"></script>
-    <script src="site.js?v=detail-1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=supabase-1"></script>
+    <script src="data.js?v=supabase-1"></script>
+    <script src="backend.js?v=supabase-1"></script>
+    <script src="site.js?v=supabase-1"></script>
   </body>
 </html>

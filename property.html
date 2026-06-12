@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Vivienda en Zaragoza</title>
+    <meta name="description" content="Vivienda amueblada gestionada por Ebrostay en Zaragoza.">
+    <meta name="robots" content="index,follow">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    >
+    <link rel="stylesheet" href="styles.css?v=detail-1">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Ebrostay home">
+        <img class="brand-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="index.html#search" data-i18n="nav.search">Buscar</a>
+        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
+        <a href="index.html#owners" data-i18n="nav.owners">Propietarios</a>
+        <a href="index.html#contact" data-i18n="nav.contact">Contacto</a>
+      </nav>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-cta" href="index.html#contact" data-i18n="nav.cta">Publicar vivienda</a>
+      </div>
+    </header>
+
+    <main class="detail-page">
+      <a class="detail-back" href="index.html#search">&larr; <span data-i18n="detail.back">Volver a resultados</span></a>
+
+      <div class="detail-media" id="detailMedia">
+        <span class="availability-pill" data-i18n="listing.available">Disponible</span>
+      </div>
+
+      <div class="detail-layout">
+        <article class="detail-content">
+          <p class="section-kicker" id="detailKicker"></p>
+          <h1 id="detailName"></h1>
+          <p class="detail-copy" id="detailCopy"></p>
+          <div class="property-badges" id="detailBadges"></div>
+          <div class="property-meta" id="detailMeta"></div>
+
+          <section class="detail-section">
+            <h2 data-i18n="detail.about">Sobre esta vivienda</h2>
+            <p id="detailDetails"></p>
+          </section>
+
+          <section class="detail-section">
+            <h2 data-i18n="detail.amenities">Comodidades</h2>
+            <div class="amenity-list amenity-grid" id="detailAmenities"></div>
+          </section>
+
+          <section class="detail-section">
+            <h2 data-i18n="detail.blocked">Fechas ya reservadas</h2>
+            <p data-i18n="detail.blockedCopy">Estas fechas no están disponibles ahora mismo. Para otras fechas, envía tu solicitud.</p>
+            <ul class="blocked-dates" id="detailBlocked"></ul>
+          </section>
+
+          <section class="detail-section">
+            <h2 data-i18n="detail.location">Ubicación</h2>
+            <p data-i18n="detail.locationCopy">Ubicación aproximada de la vivienda en Zaragoza.</p>
+            <div class="detail-map" id="detailMap"></div>
+          </section>
+        </article>
+
+        <aside class="detail-aside">
+          <div class="detail-request-card">
+            <div class="property-price">
+              <strong id="detailPrice"></strong>
+              <span class="price-note" id="detailPriceNote" hidden></span>
+            </div>
+            <span class="detail-available" id="detailAvailable"></span>
+            <h3 data-i18n="detail.requestTitle">¿Te interesa esta vivienda?</h3>
+            <p data-i18n="detail.requestCopy">Escríbenos y confirmamos disponibilidad, condiciones y siguiente paso.</p>
+            <a class="button primary" id="detailEmailButton" href="#"><span data-i18n="detail.emailButton">Solicitar por email</span></a>
+            <a class="button whatsapp-button" id="detailWhatsappButton" href="#" target="_blank" rel="noopener"><span data-i18n="detail.whatsapp">WhatsApp</span></a>
+            <a class="detail-form-link" href="index.html#contact" data-i18n="detail.formLink">O usa el formulario de contacto</a>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-brand">
+        <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+        <span>&copy; <span id="year"></span> Ebrostay</span>
+      </span>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="data.js?v=detail-1"></script>
+    <script src="property.js?v=detail-1"></script>
+  </body>
+</html>

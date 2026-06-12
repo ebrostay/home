@@ -425,19 +425,32 @@ textarea {
   height: 100%;
   background:
     linear-gradient(135deg, rgba(47, 107, 85, 0.16), rgba(55, 111, 131, 0.12)),
-    url("assets/ebrostay-hero.png") center / cover;
+    url("assets/ebrostay-hero.webp") center / cover;
+}
+
+a.property-media {
+  display: block;
 }
 
 .property-pedro {
   background:
     linear-gradient(135deg, rgba(55, 111, 131, 0.16), rgba(200, 121, 58, 0.16)),
-    url("assets/ebrostay-zaragoza-hero.png") center / cover;
+    url("assets/ebrostay-zaragoza-hero.webp") center / cover;
 }
 
 .property-movera {
   background:
     linear-gradient(135deg, rgba(24, 33, 29, 0.14), rgba(200, 121, 58, 0.14)),
-    url("assets/ebrostay-hero.png") center / cover;
+    url("assets/ebrostay-hero.webp") center / cover;
+}
+
+.property-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.property-title-link:hover {
+  text-decoration: underline;
 }
 
 .availability-pill {
@@ -552,13 +565,26 @@ textarea {
 }
 
 .details-button {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px 12px;
   color: var(--ink);
   background: #fff;
   font-weight: 850;
+  text-decoration: none;
   cursor: pointer;
+}
+
+.whatsapp-button {
+  color: #fff;
+  background: #1da851;
+  text-decoration: none;
+}
+
+.contact-copy .whatsapp-button {
+  margin-top: 18px;
 }
 
 .request-button {
@@ -758,6 +784,157 @@ textarea {
   height: auto;
 }
 
+.detail-page {
+  width: min(1240px, calc(100% - 38px));
+  margin: 0 auto;
+  padding: 28px 0 76px;
+}
+
+.detail-back {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: var(--green);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.detail-back:hover {
+  text-decoration: underline;
+}
+
+.detail-media {
+  position: relative;
+  min-height: clamp(260px, 38vw, 440px);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 26px;
+  align-items: start;
+  margin-top: 26px;
+}
+
+.detail-content h1 {
+  margin: 0 0 14px;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.detail-copy {
+  margin: 0 0 16px;
+  font-size: 1.06rem;
+}
+
+.detail-content .property-badges,
+.detail-content .property-meta {
+  margin-bottom: 14px;
+}
+
+.detail-section {
+  margin-top: 34px;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+}
+
+.detail-section h2 {
+  margin-bottom: 12px;
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+}
+
+.amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.amenity-grid span {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.blocked-dates {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.blocked-dates li {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 700;
+  width: fit-content;
+}
+
+.detail-map {
+  position: relative;
+  min-height: 360px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--mist);
+  z-index: 0;
+}
+
+.detail-aside {
+  position: sticky;
+  top: 92px;
+}
+
+.detail-request-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(24, 33, 29, 0.07);
+}
+
+.detail-request-card .property-price {
+  justify-items: start;
+}
+
+.detail-request-card .property-price strong {
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.detail-available {
+  color: var(--green);
+  font-weight: 850;
+  font-size: 0.92rem;
+}
+
+.detail-request-card h3 {
+  margin-top: 6px;
+}
+
+.detail-request-card p {
+  margin: 0;
+}
+
+.detail-request-card .button {
+  width: 100%;
+}
+
+.detail-form-link {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 750;
+  text-align: center;
+}
+
 @media (max-width: 1080px) {
   .marketplace-layout {
     grid-template-columns: 260px minmax(0, 1fr);
@@ -808,8 +985,13 @@ textarea {
   .how-section,
   .steps,
   .owner-band,
-  .contact-section {
+  .contact-section,
+  .detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .detail-aside {
+    position: static;
   }
 
   .marketplace-toolbar {

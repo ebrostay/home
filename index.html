@@ -10,9 +10,9 @@
       content="Busca viviendas amuebladas y gestionadas por Ebrostay en Zaragoza. Filtra por fechas, presupuesto, capacidad y tipo de propiedad."
     >
     <meta property="og:title" content="Ebrostay | Alquileres verificados en Zaragoza">
-    <meta property="og:description" content="Viviendas amuebladas de media estancia en Zaragoza con gestion local y soporte claro.">
+    <meta property="og:description" content="Viviendas amuebladas de media estancia en Zaragoza con gestión local y soporte claro.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="assets/ebrostay-zaragoza-hero.png">
+    <meta property="og:image" content="https://ebrostay.com/assets/ebrostay-og.jpg">
     <link rel="canonical" href="https://ebrostay.com/">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link
@@ -21,16 +21,16 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     >
-    <link rel="stylesheet" href="styles.css?v=map-1">
+    <link rel="stylesheet" href="styles.css?v=detail-1">
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Ebrostay home">
-        <img class="brand-logo" src="assets/ebrostay-logo.png" alt="Ebrostay">
+        <img class="brand-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#search" data-i18n="nav.search">Buscar</a>
-        <a href="#how" data-i18n="nav.how">Como funciona</a>
+        <a href="#how" data-i18n="nav.how">Cómo funciona</a>
         <a href="#owners" data-i18n="nav.owners">Propietarios</a>
         <a href="#contact" data-i18n="nav.contact">Contacto</a>
       </nav>
@@ -45,13 +45,13 @@
 
     <main id="top">
       <section class="hero">
-        <img class="hero-image" src="assets/ebrostay-zaragoza-hero.png" alt="Apartamento amueblado en Zaragoza" data-i18n-attr="alt:hero.imageAlt">
+        <img class="hero-image" src="assets/ebrostay-zaragoza-hero.webp" alt="Apartamento amueblado en Zaragoza" data-i18n-attr="alt:hero.imageAlt">
         <div class="hero-overlay"></div>
         <div class="hero-content">
           <p class="eyebrow" data-i18n="hero.kicker">Alquileres de media estancia en Zaragoza</p>
           <h1 data-i18n="hero.title">Encuentra una vivienda lista para entrar.</h1>
           <p class="hero-copy" data-i18n="hero.copy">
-            Apartamentos, habitaciones y casas amuebladas con gestion local, disponibilidad clara y soporte antes de llegar.
+            Apartamentos, habitaciones y casas amuebladas con gestión local, disponibilidad clara y soporte antes de llegar.
           </p>
           <form class="hero-search" id="heroSearch">
             <label>
@@ -70,7 +70,7 @@
           </form>
           <div class="trust-row" aria-label="Trust signals">
             <span data-i18n="hero.trust1">Viviendas verificadas</span>
-            <span data-i18n="hero.trust2">Gestion local</span>
+            <span data-i18n="hero.trust2">Gestión local</span>
             <span data-i18n="hero.trust3">Solicitud online</span>
           </div>
         </div>
@@ -79,7 +79,7 @@
       <section class="marketplace" id="search">
         <div class="marketplace-toolbar">
           <div>
-            <p class="section-kicker" data-i18n="market.kicker">Busqueda</p>
+            <p class="section-kicker" data-i18n="market.kicker">Búsqueda</p>
             <h2 data-i18n="market.title">Viviendas disponibles en Zaragoza</h2>
           </div>
           <div class="result-tools">
@@ -87,8 +87,8 @@
             <label class="sort-control">
               <span data-i18n="filters.sort">Ordenar</span>
               <select id="sortBy" name="sortBy" form="availabilityFilter">
-                <option value="best" data-i18n="filters.sortBest">Mejor opcion</option>
-                <option value="price" data-i18n="filters.sortPrice">Precio mas bajo</option>
+                <option value="best" data-i18n="filters.sortBest">Mejor opción</option>
+                <option value="price" data-i18n="filters.sortPrice">Precio más bajo</option>
                 <option value="new" data-i18n="filters.sortNew">Novedades</option>
               </select>
             </label>
@@ -121,13 +121,13 @@
                 <select id="propertyType" name="propertyType">
                   <option value="all" data-i18n="filters.typeAll">Todos</option>
                   <option value="apartment" data-i18n="filters.typeApartment">Apartamento</option>
-                  <option value="room" data-i18n="filters.typeRoom">Habitacion</option>
+                  <option value="room" data-i18n="filters.typeRoom">Habitación</option>
                   <option value="home" data-i18n="filters.typeHome">Casa</option>
                 </select>
               </label>
               <label>
-                <span data-i18n="filters.budget">Presupuesto mensual maximo</span>
-                <input id="maxBudget" name="maxBudget" type="number" min="0" step="25" placeholder="Sin limite" data-i18n-attr="placeholder:filters.anyBudget">
+                <span data-i18n="filters.budget">Presupuesto mensual máximo</span>
+                <input id="maxBudget" name="maxBudget" type="number" min="0" step="1" placeholder="Sin límite" data-i18n-attr="placeholder:filters.anyBudget">
               </label>
               <fieldset class="checkbox-group">
                 <legend data-i18n="filters.mustHave">Imprescindible</legend>
@@ -145,7 +145,7 @@
             <div class="quick-filters" aria-label="Quick filters">
               <button type="button" data-quick="checked" data-i18n="quick.verified">Verificadas</button>
               <button type="button" data-quick="bills" data-i18n="quick.bills">Gastos incluidos</button>
-              <button type="button" data-quick="deposit" data-i18n="quick.deposit">Deposito protegido</button>
+              <button type="button" data-quick="deposit" data-i18n="quick.deposit">Depósito protegido</button>
             </div>
             <div class="property-list" id="propertyGrid" aria-live="polite"></div>
           </section>
@@ -163,11 +163,11 @@
                 ></iframe>
               </div>
               <div class="map-copy">
-                <strong data-i18n="map.title">Mapa de barrios</strong>
-                <span data-i18n="map.copy">Vista orientativa para comparar zonas antes de solicitar una vivienda.</span>
+                <strong data-i18n="map.title">Mapa de viviendas</strong>
+                <span data-i18n="map.copy">Cada pin muestra el precio mensual de una vivienda. Toca un pin para resaltar la vivienda o usa los botones para ir a cada dirección.</span>
               </div>
               <div class="map-addresses" aria-label="Map address selector">
-                <button class="is-active" type="button" data-map-address="pedro" data-i18n="map.pedro">Pedro II el Catolico 3</button>
+                <button class="is-active" type="button" data-map-address="pedro" data-i18n="map.pedro">Pedro II el Católico 3</button>
                 <button type="button" data-map-address="movera" data-i18n="map.movera">Movera 7</button>
               </div>
             </div>
@@ -177,24 +177,24 @@
 
       <section class="how-section" id="how">
         <div>
-          <p class="section-kicker" data-i18n="how.kicker">Como funciona</p>
+          <p class="section-kicker" data-i18n="how.kicker">Cómo funciona</p>
           <h2 data-i18n="how.title">Busca, solicita y llega con todo claro.</h2>
         </div>
         <div class="steps">
           <article>
             <span>01</span>
             <h3 data-i18n="how.step1.title">Filtra</h3>
-            <p data-i18n="how.step1.copy">Elige fechas, presupuesto, capacidad y comodidades para reducir la busqueda.</p>
+            <p data-i18n="how.step1.copy">Elige fechas, presupuesto, capacidad y comodidades para reducir la búsqueda.</p>
           </article>
           <article>
             <span>02</span>
             <h3 data-i18n="how.step2.title">Revisa</h3>
-            <p data-i18n="how.step2.copy">Compara viviendas verificadas, detalles, ubicacion, precio mensual y disponibilidad.</p>
+            <p data-i18n="how.step2.copy">Compara viviendas verificadas, detalles, ubicación, precio mensual y disponibilidad.</p>
           </article>
           <article>
             <span>03</span>
             <h3 data-i18n="how.step3.title">Solicita</h3>
-            <p data-i18n="how.step3.copy">Envia una solicitud y Ebrostay confirma disponibilidad, condiciones y siguiente paso.</p>
+            <p data-i18n="how.step3.copy">Envía una solicitud y Ebrostay confirma disponibilidad, condiciones y siguiente paso.</p>
           </article>
         </div>
       </section>
@@ -205,15 +205,18 @@
           <h2 data-i18n="owners.title">Publica y opera tu vivienda con ayuda local.</h2>
         </div>
         <p data-i18n="owners.copy">
-          Ebrostay prepara anuncios, coordina entradas, limpiezas, incidencias y comunicacion con huespedes para que tu propiedad funcione mejor sin absorber tu dia.
+          Ebrostay prepara anuncios, coordina entradas, limpiezas, incidencias y comunicación con huéspedes para que tu propiedad funcione mejor sin absorber tu día.
         </p>
       </section>
 
       <section class="contact-section" id="contact">
         <div class="contact-copy">
           <p class="section-kicker" data-i18n="contact.kicker">Contacto</p>
-          <h2 data-i18n="contact.title">Cuantanos que necesitas.</h2>
+          <h2 data-i18n="contact.title">Cuéntanos qué necesitas.</h2>
           <p data-i18n="contact.copy">El formulario prepara un correo directo con la vivienda o consulta seleccionada.</p>
+          <a class="button whatsapp-button" data-whatsapp href="https://wa.me/34678715418" target="_blank" rel="noopener">
+            <span data-i18n="contact.whatsapp">Escríbenos por WhatsApp</span>
+          </a>
         </div>
         <form class="inquiry-form" id="inquiryForm">
           <label>
@@ -226,24 +229,24 @@
           </label>
           <label>
             <span data-i18n="form.property">Propiedad o zona</span>
-            <input name="property" placeholder="Pedro II el Catolico 3, Movera 7..." data-i18n-attr="placeholder:form.propertyPlaceholder">
+            <input name="property" placeholder="Pedro II el Católico 3, Movera 7..." data-i18n-attr="placeholder:form.propertyPlaceholder">
           </label>
           <label>
             <span data-i18n="form.message">Mensaje</span>
-            <textarea name="message" rows="5" placeholder="Fechas, personas, presupuesto o gestion de propiedad..." data-i18n-attr="placeholder:form.messagePlaceholder"></textarea>
+            <textarea name="message" rows="5" placeholder="Fechas, personas, presupuesto o gestión de propiedad..." data-i18n-attr="placeholder:form.messagePlaceholder"></textarea>
           </label>
           <button class="button primary form-button" type="submit" data-i18n="form.button">Preparar correo</button>
-          <p class="form-note" data-i18n="form.note">Se abrira tu app de correo con el mensaje listo para enviar.</p>
+          <p class="form-note" data-i18n="form.note">Se abrirá tu app de correo con el mensaje listo para enviar.</p>
         </form>
       </section>
     </main>
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-logo.png" alt="Ebrostay">
+        <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
-      <a href="mailto:hello@ebrostay.com">hello@ebrostay.com</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
     <script
@@ -251,6 +254,7 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="site.js?v=map-1"></script>
+    <script src="data.js?v=detail-1"></script>
+    <script src="site.js?v=detail-1"></script>
   </body>
 </html>

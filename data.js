@@ -42,6 +42,7 @@ const translations = {
     "filters.sortNew": "Novedades",
     "filters.apply": "Aplicar filtros",
     "filters.reset": "Reiniciar",
+    "filters.show": "Filtros",
     "quick.verified": "Verificadas",
     "quick.bills": "Gastos incluidos",
     "quick.deposit": "Depósito protegido",
@@ -208,7 +209,15 @@ const translations = {
     "admin.section.textsEs": "Textos en español",
     "admin.section.textsEn": "Textos en inglés",
     "admin.section.location": "Ubicación",
-    "admin.section.status": "Estado"
+    "admin.section.status": "Estado",
+    "admin.field.address": "Dirección",
+    "admin.geocodePlaceholder": "Calle y número, ciudad (ej. Calle Movera 7, Zaragoza)",
+    "admin.geocodeFind": "Buscar coordenadas",
+    "admin.geocodeSearching": "Buscando la dirección...",
+    "admin.geocodeNone": "No se encontró la dirección. Prueba con más detalle.",
+    "admin.geocodeFound": "Coordenadas rellenadas para:",
+    "admin.geocodeError": "No se pudo buscar ahora mismo. Inténtalo de nuevo.",
+    "admin.geocodeHint": "Escribe la dirección y pulsa Buscar: la latitud y longitud (la chincheta del mapa) se rellenan solas. Después pulsa Guardar cambios."
   },
   en: {
     "meta.title": "Ebrostay | Verified rentals in Zaragoza",
@@ -250,6 +259,7 @@ const translations = {
     "filters.sortNew": "New arrivals",
     "filters.apply": "Apply filters",
     "filters.reset": "Reset",
+    "filters.show": "Filters",
     "quick.verified": "Verified",
     "quick.bills": "Bills included",
     "quick.deposit": "Deposit protected",
@@ -416,7 +426,15 @@ const translations = {
     "admin.section.textsEs": "Spanish texts",
     "admin.section.textsEn": "English texts",
     "admin.section.location": "Location",
-    "admin.section.status": "Status"
+    "admin.section.status": "Status",
+    "admin.field.address": "Address",
+    "admin.geocodePlaceholder": "Street and number, city (e.g. Calle Movera 7, Zaragoza)",
+    "admin.geocodeFind": "Find coordinates",
+    "admin.geocodeSearching": "Searching for the address...",
+    "admin.geocodeNone": "Address not found. Try adding more detail.",
+    "admin.geocodeFound": "Coordinates filled in for:",
+    "admin.geocodeError": "Could not search right now. Try again.",
+    "admin.geocodeHint": "Type the address and press Find: latitude and longitude (the map pin) are filled in automatically. Then press Save changes."
   }
 };
 

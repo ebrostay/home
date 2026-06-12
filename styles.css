@@ -296,7 +296,17 @@ p {
 }
 
 .sort-control {
+  display: grid;
+  gap: 4px;
   min-width: 188px;
+}
+
+.sort-control select {
+  width: 100%;
+}
+
+.filter-toggle {
+  display: none;
 }
 
 .marketplace-layout {
@@ -1401,6 +1411,36 @@ a.property-media {
   gap: 8px;
 }
 
+.admin-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.admin-geocode-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-geocode-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-geocode-row .details-button {
+  flex: 0 0 auto;
+}
+
+.admin-hint {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .admin-flag {
   display: inline-flex;
   align-items: center;
@@ -1472,7 +1512,6 @@ a.property-media {
   }
 
   .hero-search,
-  .marketplace-toolbar,
   .marketplace-layout,
   .property-card,
   .how-section,
@@ -1481,6 +1520,35 @@ a.property-media {
   .contact-section,
   .detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .marketplace-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .sort-control {
+    min-width: 0;
+  }
+
+  .filter-toggle {
+    display: inline-flex;
+    width: 100%;
+    margin-bottom: 14px;
+  }
+
+  .filter-toggle.is-active {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .filter-panel {
+    display: none;
+  }
+
+  .filter-panel.is-open {
+    display: block;
   }
 
   .detail-aside {

@@ -264,7 +264,7 @@ function renderProperties() {
       <article class="property-card" data-property-id="${property.id}">
         <a class="property-media property-${property.addressKey}" href="${detailUrl}" aria-label="${t(property.nameKey)}"${mediaStyle}>
           <span class="availability-pill">${t("listing.available")}</span>
-          <button class="favorite-button${isFavorite ? " is-active" : ""}" type="button" data-favorite="${property.id}" aria-label="${isFavorite ? t("listing.saved") : t("listing.favorite")}">${isFavorite ? "Saved" : "Save"}</button>
+          <button class="favorite-button${isFavorite ? " is-active" : ""}" type="button" data-favorite="${property.id}" aria-label="${isFavorite ? t("listing.saved") : t("listing.favorite")}">${isFavorite ? t("listing.saved") : t("listing.favorite")}</button>
         </a>
         <div class="property-body">
           <div class="property-title-row">
@@ -369,6 +369,17 @@ if (availabilityFilter) {
     activeFilter = getFilterFromForm(availabilityFilter, true);
     mapNeedsFit = true;
     renderProperties();
+    // on mobile the panel is a toggle; collapse it so results are visible
+    document.querySelector(".filter-panel")?.classList.remove("is-open");
+    filterToggle?.classList.remove("is-active");
+  });
+}
+
+const filterToggle = document.querySelector("#filterToggle");
+if (filterToggle) {
+  filterToggle.addEventListener("click", () => {
+    const open = document.querySelector(".filter-panel")?.classList.toggle("is-open");
+    filterToggle.classList.toggle("is-active", Boolean(open));
   });
 }
 

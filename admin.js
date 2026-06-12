@@ -167,6 +167,14 @@ function renderEditForm(row) {
         </fieldset>
         <fieldset class="admin-group">
           <legend>${t("admin.section.location")}</legend>
+          <div class="admin-wide">
+            <span class="admin-label">${t("admin.field.address")}</span>
+            <div class="admin-geocode-row">
+              <input type="text" data-geocode-input="${row.id}" placeholder="${t("admin.geocodePlaceholder")}">
+              <button class="details-button" type="button" data-geocode="${row.id}">${t("admin.geocodeFind")}</button>
+            </div>
+            <p class="admin-hint" data-geocode-status="${row.id}">${t("admin.geocodeHint")}</p>
+          </div>
           ${text("admin.field.city", "city", row.city)}
           ${text("admin.field.addressKey", "address_key", row.address_key)}
           ${text("admin.field.lat", "lat", row.lat, "number")}
@@ -356,6 +364,49 @@ async function uploadPhotos(propertyId, files) {
   await loadAdminData();
 }
 
+async function geocodeAddress(propertyId) {
+  const card = adminProperties.querySelector(`[data-property="${propertyId}"]`);
+  const input = card?.querySelector(`[data-geocode-input="${propertyId}"]`);
+  const status = card?.querySelector(`[data-geocode-status="${propertyId}"]`);
+  const form = card?.querySelector(`[data-edit-form="${propertyId}"]`);
+  const query = input?.value.trim();
+  if (!card || !form || !query) return;
+
+  status.textContent = t("admin.geocodeSearching");
+  const search = async (q) => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+      { headers: { Accept: "application/json" } }
+    );
+    const results = await response.json();
+    return Array.isArray(results) && results.length ? results[0] : null;
+  };
+
+  try {
+    // OpenStreetMap often lacks the house number or expects the official
+    // street name, so fall back to progressively looser queries
+    const cleanup = (value) => value.replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").replace(/^[\s,]+|[\s,]+$/g, "");
+    const noNumber = cleanup(query.replace(/\d+/g, " "));
+    const noStreetType = cleanup(noNumber.replace(/\b(calle|c\/|avenida|avda\.?|av\.?|paseo|plaza|pza\.?|camino|ronda)\s+(de\s+|del\s+|la\s+)?/gi, ""));
+    const candidates = [...new Set([query, noNumber, noStreetType].filter(Boolean))];
+
+    let match = null;
+    for (const candidate of candidates) {
+      match = await search(candidate);
+      if (match) break;
+    }
+    if (!match) {
+      status.textContent = t("admin.geocodeNone");
+      return;
+    }
+    form.querySelector('input[name="lat"]').value = Number(match.lat).toFixed(5);
+    form.querySelector('input[name="lng"]').value = Number(match.lon).toFixed(5);
+    status.textContent = `${t("admin.geocodeFound")} ${match.display_name}`;
+  } catch {
+    status.textContent = t("admin.geocodeError");
+  }
+}
+
 function editPayloadFromForm(form) {
   const formData = new FormData(form);
   const textOrNull = (name) => formData.get(name)?.toString().trim() || null;
@@ -396,6 +447,12 @@ if (adminProperties) {
       return;
     }
 
+    const geocodeId = event.target.closest("[data-geocode]")?.dataset.geocode;
+    if (geocodeId) {
+      await geocodeAddress(geocodeId);
+      return;
+    }
+
     const sb = EbrostayBackend.getClient();
     const blockId = event.target.closest("[data-delete-block]")?.dataset.deleteBlock;
     const deletePhoto = event.target.closest("[data-delete-photo]");
@@ -423,6 +480,14 @@ if (adminProperties) {
         .eq("id", coverPhoto.dataset.coverPhoto);
       if (error) showStatus("admin.error");
       else await loadAdminData();
+    }
+  });
+
+  adminProperties.addEventListener("keydown", (event) => {
+    const geocodeInput = event.target.closest("[data-geocode-input]");
+    if (geocodeInput && event.key === "Enter") {
+      event.preventDefault();
+      geocodeAddress(geocodeInput.dataset.geocodeInput);
     }
   });
 

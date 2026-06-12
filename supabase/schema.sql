@@ -32,6 +32,22 @@ create table if not exists public.properties (
   copy_en text,
   details_es text,
   details_en text,
+  bedrooms integer,
+  bathrooms integer,
+  size_m2 integer,
+  floor_number integer,
+  min_stay_months integer,
+  max_stay_months integer,
+  deposit_amount integer,
+  utilities_cap_eur integer,
+  pets_allowed boolean,
+  smoking_allowed boolean,
+  couples_allowed boolean,
+  self_checkin boolean,
+  energy_rating text,
+  video_url text,
+  beds_es text,
+  beds_en text,
   is_published boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -229,6 +245,19 @@ insert into public.availability_blocks (property_id, start_date, end_date) value
   ('movera0', '2026-07-26', '2026-08-02'),
   ('movera1', '2026-06-22', '2026-06-29'),
   ('movera1', '2026-08-01', '2026-08-16');
+
+-- Details already stated in the listing texts
+update public.properties set floor_number = coalesce(floor_number, 1) where id = 'pedro1';
+update public.properties set floor_number = coalesce(floor_number, 2) where id = 'pedro2';
+update public.properties set floor_number = coalesce(floor_number, 0) where id = 'movera0';
+update public.properties set
+  floor_number = coalesce(floor_number, 1),
+  bedrooms = coalesce(bedrooms, 3),
+  bathrooms = coalesce(bathrooms, 1),
+  utilities_cap_eur = coalesce(utilities_cap_eur, 50),
+  self_checkin = coalesce(self_checkin, true),
+  min_stay_months = coalesce(min_stay_months, 1)
+where id = 'movera1';
 
 -- ---------------------------------------------------------------------------
 -- After running this file:

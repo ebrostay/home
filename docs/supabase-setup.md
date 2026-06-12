@@ -72,6 +72,10 @@ upgrade file in the SQL Editor (each one is safe to run twice):
 - `supabase/upgrade-2026-06-property-photos.sql` — photo storage and
   the full property editor in admin.html (photos upload to the
   `property-photos` storage bucket; metadata in `property_photos`).
+- `supabase/upgrade-2026-06-property-details.sql` — richer listing
+  fields: bedrooms/bathrooms/size/floor, rental conditions (min/max
+  stay, deposit, utilities cap), policies (pets, smoking, couples,
+  self check-in), energy certificate, beds description, and video link.
 
 Fresh projects don't need these: `schema.sql` already includes them.
 

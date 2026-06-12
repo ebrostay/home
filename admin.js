@@ -74,7 +74,8 @@ async function loadAdminData() {
   renderAdmin();
 }
 
-const AMENITY_KEYS = ["wifi", "desk", "balcony", "lift", "ac", "heating", "kitchen", "terrace"];
+const AMENITY_KEYS = ["wifi", "desk", "balcony", "lift", "ac", "heating", "kitchen", "terrace", "washer", "dishwasher", "tv", "microwave", "oven", "parking"];
+const ENERGY_RATINGS = ["A", "B", "C", "D", "E", "F", "G"];
 const TYPE_KEYS = ["apartment", "room", "home"];
 
 function escapeValue(value) {
@@ -145,6 +146,10 @@ function renderEditForm(row) {
           </label>
           ${text("admin.field.guests", "guests", row.guests, "number")}
           ${text("admin.field.rating", "rating", row.rating, "number")}
+          ${text("admin.field.bedrooms", "bedrooms", row.bedrooms, "number")}
+          ${text("admin.field.bathrooms", "bathrooms", row.bathrooms, "number")}
+          ${text("admin.field.size", "size_m2", row.size_m2, "number")}
+          ${text("admin.field.floor", "floor_number", row.floor_number, "number")}
         </fieldset>
         <fieldset class="admin-group">
           <legend>${t("admin.section.price")}</legend>
@@ -154,16 +159,33 @@ function renderEditForm(row) {
           ${text("admin.field.priceNoteEn", "price_note_en", row.price_note_en)}
         </fieldset>
         <fieldset class="admin-group">
+          <legend>${t("admin.section.conditions")}</legend>
+          ${text("admin.field.minStay", "min_stay_months", row.min_stay_months, "number")}
+          ${text("admin.field.maxStay", "max_stay_months", row.max_stay_months, "number")}
+          ${text("admin.field.deposit", "deposit_amount", row.deposit_amount, "number")}
+          ${text("admin.field.utilitiesCap", "utilities_cap_eur", row.utilities_cap_eur, "number")}
+          <label>
+            <span>${t("admin.field.energy")}</span>
+            <select name="energy_rating">
+              <option value="">${t("admin.energyNone")}</option>
+              ${ENERGY_RATINGS.map((rating) => `<option value="${rating}" ${row.energy_rating === rating ? "selected" : ""}>${rating}</option>`).join("")}
+            </select>
+          </label>
+          ${text("admin.field.video", "video_url", row.video_url)}
+        </fieldset>
+        <fieldset class="admin-group">
           <legend>${t("admin.section.textsEs")}</legend>
           ${text("admin.field.areaEs", "area_es", row.area_es)}
           ${area("admin.field.copyEs", "copy_es", row.copy_es)}
           ${area("admin.field.detailsEs", "details_es", row.details_es)}
+          ${text("admin.field.bedsEs", "beds_es", row.beds_es)}
         </fieldset>
         <fieldset class="admin-group">
           <legend>${t("admin.section.textsEn")}</legend>
           ${text("admin.field.areaEn", "area_en", row.area_en)}
           ${area("admin.field.copyEn", "copy_en", row.copy_en)}
           ${area("admin.field.detailsEn", "details_en", row.details_en)}
+          ${text("admin.field.bedsEn", "beds_en", row.beds_en)}
         </fieldset>
         <fieldset class="admin-group">
           <legend>${t("admin.section.location")}</legend>
@@ -192,6 +214,10 @@ function renderEditForm(row) {
           ${flag("admin.flag.checked", "checked", row.checked)}
           ${flag("admin.flag.deposit", "deposit_protected", row.deposit_protected)}
           ${flag("admin.flag.bills", "bills_included", row.bills_included)}
+          ${flag("admin.flag.pets", "pets_allowed", row.pets_allowed)}
+          ${flag("admin.flag.smoking", "smoking_allowed", row.smoking_allowed)}
+          ${flag("admin.flag.couples", "couples_allowed", row.couples_allowed)}
+          ${flag("admin.flag.selfCheckin", "self_checkin", row.self_checkin)}
           ${flag("admin.flag.published", "is_published", row.is_published)}
         </fieldset>
         <button class="button primary" type="submit">${t("admin.saveChanges")}</button>
@@ -410,6 +436,10 @@ async function geocodeAddress(propertyId) {
 function editPayloadFromForm(form) {
   const formData = new FormData(form);
   const textOrNull = (name) => formData.get(name)?.toString().trim() || null;
+  const numberOrNull = (name) => {
+    const value = formData.get(name)?.toString().trim();
+    return value === "" || value == null || Number.isNaN(Number(value)) ? null : Number(value);
+  };
   return {
     name: formData.get("name")?.toString().trim() || "",
     price_label: formData.get("price_label")?.toString().trim() || "",
@@ -430,6 +460,22 @@ function editPayloadFromForm(form) {
     lat: Number(formData.get("lat")) || 0,
     lng: Number(formData.get("lng")) || 0,
     amenities: formData.getAll("amenities").map((value) => value.toString()),
+    bedrooms: numberOrNull("bedrooms"),
+    bathrooms: numberOrNull("bathrooms"),
+    size_m2: numberOrNull("size_m2"),
+    floor_number: numberOrNull("floor_number"),
+    min_stay_months: numberOrNull("min_stay_months"),
+    max_stay_months: numberOrNull("max_stay_months"),
+    deposit_amount: numberOrNull("deposit_amount"),
+    utilities_cap_eur: numberOrNull("utilities_cap_eur"),
+    energy_rating: textOrNull("energy_rating"),
+    video_url: textOrNull("video_url"),
+    beds_es: textOrNull("beds_es"),
+    beds_en: textOrNull("beds_en"),
+    pets_allowed: formData.has("pets_allowed"),
+    smoking_allowed: formData.has("smoking_allowed"),
+    couples_allowed: formData.has("couples_allowed"),
+    self_checkin: formData.has("self_checkin"),
     is_new: formData.has("is_new"),
     checked: formData.has("checked"),
     deposit_protected: formData.has("deposit_protected"),

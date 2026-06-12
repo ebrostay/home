@@ -280,6 +280,7 @@ function renderProperties() {
           <p>${t(property.copyKey)}</p>
           <div class="property-badges">${badges}</div>
           <div class="property-meta">
+            ${propertySpecs(property, t, interpolate).map((spec) => `<span>${spec}</span>`).join("")}
             <span>${interpolate("listing.capacity", { guests: property.guests })}</span>
             <span>${interpolate("listing.rating", { rating: property.rating })}</span>
             <span>${interpolate("listing.from", { date: formatDate(dateValue(property.availableFrom)) })}</span>

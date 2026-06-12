@@ -76,6 +76,37 @@ const translations = {
     "amenity.heating": "calefacción",
     "amenity.kitchen": "cocina equipada",
     "amenity.terrace": "terraza",
+    "amenity.washer": "lavadora",
+    "amenity.dishwasher": "lavavajillas",
+    "amenity.tv": "TV",
+    "amenity.microwave": "microondas",
+    "amenity.oven": "horno",
+    "amenity.parking": "parking",
+    "spec.bedroom": "1 habitación",
+    "spec.bedrooms": "{count} habitaciones",
+    "spec.bathroom": "1 baño",
+    "spec.bathrooms": "{count} baños",
+    "spec.size": "{size} m²",
+    "spec.floor": "Planta {floor}",
+    "spec.groundFloor": "Planta baja",
+    "detail.conditions": "Condiciones",
+    "detail.video": "Ver vídeo de la vivienda",
+    "cond.minStay": "Estancia mínima",
+    "cond.maxStay": "Estancia máxima",
+    "cond.month": "1 mes",
+    "cond.months": "{count} meses",
+    "cond.deposit": "Fianza",
+    "cond.eur": "{amount} EUR",
+    "cond.utilities": "Límite de suministros",
+    "cond.eurMonth": "{amount} EUR/mes",
+    "cond.energy": "Certificado energético",
+    "cond.beds": "Camas",
+    "cond.pets": "Mascotas",
+    "cond.smoking": "Se permite fumar",
+    "cond.couples": "Parejas",
+    "cond.selfCheckin": "Autoentrada con lockbox",
+    "common.yes": "Sí",
+    "common.no": "No",
     "properties.pedro1.name": "Pedro II el Católico 3 - 1 IZQ",
     "properties.pedro1.area": "Universidad - Pedro II el Católico",
     "properties.pedro1.copy": "Piso amueblado en Pedro II el Católico 3, preparado para estancias de media duración en Zaragoza.",
@@ -217,7 +248,25 @@ const translations = {
     "admin.geocodeNone": "No se encontró la dirección. Prueba con más detalle.",
     "admin.geocodeFound": "Coordenadas rellenadas para:",
     "admin.geocodeError": "No se pudo buscar ahora mismo. Inténtalo de nuevo.",
-    "admin.geocodeHint": "Escribe la dirección y pulsa Buscar: la latitud y longitud (la chincheta del mapa) se rellenan solas. Después pulsa Guardar cambios."
+    "admin.geocodeHint": "Escribe la dirección y pulsa Buscar: la latitud y longitud (la chincheta del mapa) se rellenan solas. Después pulsa Guardar cambios.",
+    "admin.field.bedrooms": "Habitaciones",
+    "admin.field.bathrooms": "Baños",
+    "admin.field.size": "Superficie (m²)",
+    "admin.field.floor": "Planta (0 = baja)",
+    "admin.section.conditions": "Condiciones",
+    "admin.field.minStay": "Estancia mínima (meses)",
+    "admin.field.maxStay": "Estancia máxima (meses)",
+    "admin.field.deposit": "Fianza (EUR)",
+    "admin.field.utilitiesCap": "Límite de suministros (EUR/mes)",
+    "admin.field.energy": "Certificado energético",
+    "admin.field.video": "Enlace de vídeo (opcional)",
+    "admin.field.bedsEs": "Camas (español, ej. 2 dobles y 1 individual)",
+    "admin.field.bedsEn": "Camas (inglés)",
+    "admin.energyNone": "Sin especificar",
+    "admin.flag.pets": "Mascotas permitidas",
+    "admin.flag.smoking": "Se permite fumar",
+    "admin.flag.couples": "Parejas permitidas",
+    "admin.flag.selfCheckin": "Autoentrada (lockbox)"
   },
   en: {
     "meta.title": "Ebrostay | Verified rentals in Zaragoza",
@@ -293,6 +342,37 @@ const translations = {
     "amenity.heating": "heating",
     "amenity.kitchen": "equipped kitchen",
     "amenity.terrace": "terrace",
+    "amenity.washer": "washing machine",
+    "amenity.dishwasher": "dishwasher",
+    "amenity.tv": "TV",
+    "amenity.microwave": "microwave",
+    "amenity.oven": "oven",
+    "amenity.parking": "parking",
+    "spec.bedroom": "1 bedroom",
+    "spec.bedrooms": "{count} bedrooms",
+    "spec.bathroom": "1 bathroom",
+    "spec.bathrooms": "{count} bathrooms",
+    "spec.size": "{size} m²",
+    "spec.floor": "Floor {floor}",
+    "spec.groundFloor": "Ground floor",
+    "detail.conditions": "Conditions",
+    "detail.video": "Watch the video tour",
+    "cond.minStay": "Minimum stay",
+    "cond.maxStay": "Maximum stay",
+    "cond.month": "1 month",
+    "cond.months": "{count} months",
+    "cond.deposit": "Deposit",
+    "cond.eur": "{amount} EUR",
+    "cond.utilities": "Utilities cap",
+    "cond.eurMonth": "{amount} EUR/month",
+    "cond.energy": "Energy certificate",
+    "cond.beds": "Beds",
+    "cond.pets": "Pets",
+    "cond.smoking": "Smoking allowed",
+    "cond.couples": "Couples",
+    "cond.selfCheckin": "Self check-in with lockbox",
+    "common.yes": "Yes",
+    "common.no": "No",
     "properties.pedro1.name": "Pedro II el Católico 3 - 1 IZQ",
     "properties.pedro1.area": "University - Pedro II el Católico",
     "properties.pedro1.copy": "Furnished flat at Pedro II el Católico 3, prepared for medium-stay rentals in Zaragoza.",
@@ -434,7 +514,25 @@ const translations = {
     "admin.geocodeNone": "Address not found. Try adding more detail.",
     "admin.geocodeFound": "Coordinates filled in for:",
     "admin.geocodeError": "Could not search right now. Try again.",
-    "admin.geocodeHint": "Type the address and press Find: latitude and longitude (the map pin) are filled in automatically. Then press Save changes."
+    "admin.geocodeHint": "Type the address and press Find: latitude and longitude (the map pin) are filled in automatically. Then press Save changes.",
+    "admin.field.bedrooms": "Bedrooms",
+    "admin.field.bathrooms": "Bathrooms",
+    "admin.field.size": "Size (m²)",
+    "admin.field.floor": "Floor (0 = ground)",
+    "admin.section.conditions": "Conditions",
+    "admin.field.minStay": "Minimum stay (months)",
+    "admin.field.maxStay": "Maximum stay (months)",
+    "admin.field.deposit": "Deposit (EUR)",
+    "admin.field.utilitiesCap": "Utilities cap (EUR/month)",
+    "admin.field.energy": "Energy certificate",
+    "admin.field.video": "Video link (optional)",
+    "admin.field.bedsEs": "Beds (Spanish, e.g. 2 dobles y 1 individual)",
+    "admin.field.bedsEn": "Beds (English)",
+    "admin.energyNone": "Not specified",
+    "admin.flag.pets": "Pets allowed",
+    "admin.flag.smoking": "Smoking allowed",
+    "admin.flag.couples": "Couples allowed",
+    "admin.flag.selfCheckin": "Self check-in (lockbox)"
   }
 };
 
@@ -454,6 +552,7 @@ const properties = [
     price: "950 EUR",
     priceNumber: 950,
     rating: 4.8,
+    floorNumber: 1,
     availableFrom: "2026-07-01",
     isNew: false,
     checked: true,
@@ -477,6 +576,7 @@ const properties = [
     price: "980 EUR",
     priceNumber: 980,
     rating: 4.7,
+    floorNumber: 2,
     availableFrom: "2026-07-10",
     isNew: true,
     checked: true,
@@ -500,6 +600,7 @@ const properties = [
     price: "870 EUR",
     priceNumber: 870,
     rating: 4.9,
+    floorNumber: 0,
     availableFrom: "2026-08-03",
     isNew: false,
     checked: true,
@@ -524,6 +625,12 @@ const properties = [
     price: "1.350 EUR",
     priceNumber: 1350,
     rating: 4.7,
+    floorNumber: 1,
+    bedrooms: 3,
+    bathrooms: 1,
+    utilitiesCapEur: 50,
+    selfCheckin: true,
+    minStayMonths: 1,
     availableFrom: "2026-07-01",
     isNew: true,
     checked: true,
@@ -541,4 +648,21 @@ const addressLocations = {
 
 function whatsappLink(text) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+// Spec line shared by the listing cards and the property page:
+// "3 habitaciones · 1 baño · 70 m² · Planta 1" (only fields that exist)
+function propertySpecs(property, translate, interpolateFn) {
+  const specs = [];
+  if (property.bedrooms != null) {
+    specs.push(property.bedrooms === 1 ? translate("spec.bedroom") : interpolateFn("spec.bedrooms", { count: property.bedrooms }));
+  }
+  if (property.bathrooms != null) {
+    specs.push(property.bathrooms === 1 ? translate("spec.bathroom") : interpolateFn("spec.bathrooms", { count: property.bathrooms }));
+  }
+  if (property.sizeM2 != null) specs.push(interpolateFn("spec.size", { size: property.sizeM2 }));
+  if (property.floorNumber != null) {
+    specs.push(property.floorNumber === 0 ? translate("spec.groundFloor") : interpolateFn("spec.floor", { floor: property.floorNumber }));
+  }
+  return specs;
 }

@@ -43,6 +43,7 @@ const EbrostayBackend = (() => {
     set("copy", row.copy_es, row.copy_en);
     set("details", row.details_es, row.details_en);
     if (row.price_note_es || row.price_note_en) set("priceNote", row.price_note_es, row.price_note_en);
+    if (row.beds_es || row.beds_en) set("beds", row.beds_es, row.beds_en);
 
     return {
       id: row.id,
@@ -66,6 +67,21 @@ const EbrostayBackend = (() => {
       depositProtected: row.deposit_protected,
       billsIncluded: row.bills_included,
       amenities: row.amenities || [],
+      bedrooms: row.bedrooms,
+      bathrooms: row.bathrooms,
+      sizeM2: row.size_m2,
+      floorNumber: row.floor_number,
+      minStayMonths: row.min_stay_months,
+      maxStayMonths: row.max_stay_months,
+      depositAmount: row.deposit_amount,
+      utilitiesCapEur: row.utilities_cap_eur,
+      petsAllowed: row.pets_allowed,
+      smokingAllowed: row.smoking_allowed,
+      couplesAllowed: row.couples_allowed,
+      selfCheckin: row.self_checkin,
+      energyRating: row.energy_rating,
+      videoUrl: row.video_url,
+      bedsKey: (row.beds_es || row.beds_en) ? `${key}.beds` : undefined,
       photos: (row.property_photos || [])
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1))

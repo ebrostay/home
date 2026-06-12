@@ -45,10 +45,13 @@ function renderDetail() {
     .join("");
 
   document.querySelector("#detailMeta").innerHTML = [
+    ...propertySpecs(property, t, interpolate),
     interpolate("listing.capacity", { guests: property.guests }),
     interpolate("listing.rating", { rating: property.rating }),
     interpolate("listing.from", { date: formatDate(dateValue(property.availableFrom)) })
   ].map((text) => `<span>${text}</span>`).join("");
+
+  renderConditions();
 
   document.querySelector("#detailAmenities").innerHTML = property.amenities
     .map((key) => `<span>${t(`amenity.${key}`)}</span>`)
@@ -74,6 +77,37 @@ function renderDetail() {
   document.querySelector("#detailWhatsappButton").href = whatsappLink(
     interpolate("whatsapp.message", { property: t(property.nameKey) })
   );
+}
+
+function renderConditions() {
+  const section = document.querySelector("#detailConditionsSection");
+  const list = document.querySelector("#detailConditions");
+  if (!section || !list) return;
+
+  const stay = (months) => (months === 1 ? t("cond.month") : interpolate("cond.months", { count: months }));
+  const yesNo = (value) => t(value ? "common.yes" : "common.no");
+  const rows = [];
+  if (property.minStayMonths != null) rows.push([t("cond.minStay"), stay(property.minStayMonths)]);
+  if (property.maxStayMonths != null) rows.push([t("cond.maxStay"), stay(property.maxStayMonths)]);
+  if (property.depositAmount != null) rows.push([t("cond.deposit"), interpolate("cond.eur", { amount: property.depositAmount })]);
+  if (property.utilitiesCapEur != null) rows.push([t("cond.utilities"), interpolate("cond.eurMonth", { amount: property.utilitiesCapEur })]);
+  if (property.energyRating) rows.push([t("cond.energy"), property.energyRating]);
+  if (property.bedsKey) rows.push([t("cond.beds"), t(property.bedsKey)]);
+  if (property.petsAllowed != null) rows.push([t("cond.pets"), yesNo(property.petsAllowed)]);
+  if (property.smokingAllowed != null) rows.push([t("cond.smoking"), yesNo(property.smokingAllowed)]);
+  if (property.couplesAllowed != null) rows.push([t("cond.couples"), yesNo(property.couplesAllowed)]);
+  if (property.selfCheckin) rows.push([t("cond.selfCheckin"), t("common.yes")]);
+
+  section.hidden = rows.length === 0;
+  list.innerHTML = rows
+    .map(([label, value]) => `<li><span>${label}</span><strong>${value}</strong></li>`)
+    .join("");
+
+  const videoButton = document.querySelector("#detailVideoButton");
+  if (videoButton) {
+    videoButton.hidden = !property.videoUrl;
+    if (property.videoUrl) videoButton.href = property.videoUrl;
+  }
 }
 
 function setBannerPhoto(url) {

@@ -1263,6 +1263,31 @@ a.property-media {
   border-style: dashed;
 }
 
+.detail-conditions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.detail-conditions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 13px;
+  background: #fff;
+}
+
+.detail-conditions span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .detail-gallery {
   display: flex;
   flex-wrap: wrap;

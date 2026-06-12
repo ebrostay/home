@@ -185,6 +185,29 @@ a {
   margin-top: 32px;
 }
 
+.hero-search {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 170px 120px auto;
+  gap: 10px;
+  align-items: end;
+  width: min(820px, 100%);
+  margin-top: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(10px);
+}
+
+.hero-search label {
+  color: #fff;
+}
+
+.hero-search input {
+  min-height: 48px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
 .button {
   display: inline-flex;
   min-height: 48px;
@@ -299,7 +322,7 @@ p {
 
 .availability-filter {
   display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(130px, 1fr)) auto;
   gap: 14px;
   align-items: end;
   border: 1px solid var(--line);
@@ -309,7 +332,8 @@ p {
   box-shadow: 0 12px 32px rgba(23, 33, 28, 0.08);
 }
 
-.availability-filter input {
+.availability-filter input,
+.availability-filter select {
   min-height: 48px;
 }
 
@@ -344,6 +368,65 @@ p {
   padding: 22px;
   background: #fff;
   box-shadow: 0 10px 28px rgba(23, 33, 28, 0.06);
+}
+
+.property-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.favorite-button,
+.details-button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.favorite-button {
+  width: 38px;
+  height: 38px;
+}
+
+.favorite-button.is-active {
+  color: #8b4b17;
+  background: rgba(215, 141, 72, 0.2);
+}
+
+.details-button {
+  justify-self: start;
+  padding: 8px 12px;
+}
+
+.property-badges,
+.amenity-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.property-badges span {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(215, 141, 72, 0.15);
+  color: #8b4b17;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.amenity-list span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.property-details {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 
 .property-card.is-unavailable {
@@ -449,6 +532,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -457,6 +541,10 @@ textarea {
   color: var(--ink);
   background: #fbfaf6;
   font: inherit;
+}
+
+select {
+  min-height: 48px;
 }
 
 textarea {
@@ -537,6 +625,7 @@ textarea {
   .intro,
   .feature-grid,
   .availability-heading,
+  .hero-search,
   .availability-filter,
   .property-grid,
   .split-section,

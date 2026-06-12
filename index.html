@@ -18,7 +18,7 @@
     <meta property="og:image" content="assets/ebrostay-zaragoza-hero.png">
     <link rel="canonical" href="https://ebrostay.com/">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=header-logo-108">
+    <link rel="stylesheet" href="styles.css?v=marketplace-1">
   </head>
   <body>
     <header class="site-header" aria-label="Main navigation">
@@ -55,6 +55,21 @@
             <a class="button primary" href="#contact" data-i18n="hero.primary">Quiero gestionar mi vivienda</a>
             <a class="button secondary" href="#availability" data-i18n="hero.secondary">Ver disponibilidad</a>
           </div>
+          <form class="hero-search" id="heroSearch">
+            <label>
+              <span data-i18n="search.city">Ciudad</span>
+              <input name="city" value="Zaragoza" data-i18n-attr="placeholder:search.cityPlaceholder" placeholder="Zaragoza">
+            </label>
+            <label>
+              <span data-i18n="search.moveIn">Entrada</span>
+              <input name="checkIn" type="date">
+            </label>
+            <label>
+              <span data-i18n="search.guests">Huéspedes</span>
+              <input name="guestCount" type="number" min="1" max="8" value="2">
+            </label>
+            <button class="button primary" type="submit" data-i18n="search.button">Buscar</button>
+          </form>
         </div>
       </section>
 
@@ -99,6 +114,10 @@
 
         <form class="availability-filter" id="availabilityFilter">
           <label>
+            <span data-i18n="availability.city">Ciudad</span>
+            <input id="cityFilter" name="city" value="Zaragoza" data-i18n-attr="placeholder:search.cityPlaceholder" placeholder="Zaragoza">
+          </label>
+          <label>
             <span data-i18n="availability.checkIn">Entrada</span>
             <input id="checkIn" name="checkIn" type="date" required>
           </label>
@@ -109,6 +128,27 @@
           <label>
             <span data-i18n="availability.guests">Huéspedes</span>
             <input id="guestCount" name="guestCount" type="number" min="1" max="8" value="2">
+          </label>
+          <label>
+            <span data-i18n="availability.type">Tipo</span>
+            <select id="propertyType" name="propertyType">
+              <option value="all" data-i18n="availability.typeAll">Todos</option>
+              <option value="apartment" data-i18n="availability.typeApartment">Apartamento</option>
+              <option value="room" data-i18n="availability.typeRoom">Habitación</option>
+              <option value="home" data-i18n="availability.typeHome">Casa</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="availability.maxBudget">Presupuesto máximo</span>
+            <input id="maxBudget" name="maxBudget" type="number" min="0" step="25" data-i18n-attr="placeholder:availability.anyBudget" placeholder="Sin límite">
+          </label>
+          <label>
+            <span data-i18n="availability.sort">Ordenar</span>
+            <select id="sortBy" name="sortBy">
+              <option value="best" data-i18n="availability.sortBest">Mejor opción</option>
+              <option value="price" data-i18n="availability.sortPrice">Precio</option>
+              <option value="new" data-i18n="availability.sortNew">Novedades</option>
+            </select>
           </label>
           <div class="filter-actions">
             <button class="button primary" type="submit" data-i18n="availability.filter">Filtrar</button>
@@ -193,6 +233,6 @@
       <a href="mailto:hello@ebrostay.com">hello@ebrostay.com</a>
     </footer>
 
-    <script src="site.js?v=9383ed5"></script>
+    <script src="site.js?v=marketplace-1"></script>
   </body>
 </html>

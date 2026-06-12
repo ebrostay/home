@@ -22,10 +22,10 @@ function confirmationEmailHtml(booking: Record<string, string>) {
           <tr><td style="padding:8px 0;color:#66716a;">Vivienda</td><td style="padding:8px 0;text-align:right;font-weight:bold;">${booking.property_name}</td></tr>
           <tr><td style="padding:8px 0;color:#66716a;border-top:1px solid #eee;">Entrada</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;">${booking.start_date}</td></tr>
           <tr><td style="padding:8px 0;color:#66716a;border-top:1px solid #eee;">Salida</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;">${booking.end_date}</td></tr>
-          <tr><td style="padding:8px 0;color:#66716a;border-top:1px solid #eee;">Pagado ahora (1er mes)</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;font-weight:bold;">${booking.amount} EUR</td></tr>
+          <tr><td style="padding:8px 0;color:#66716a;border-top:1px solid #eee;">Pagado ahora</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;font-weight:bold;">${booking.amount} EUR</td></tr>
         </table>
         ${booking.invoice_url ? `<p style="margin:22px 0 0;"><a href="${booking.invoice_url}" style="display:inline-block;background:#c8793a;color:#fff;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:6px;">Ver factura</a></p>` : ""}
-        <p style="margin:22px 0 0;color:#66716a;font-size:14px;">También puedes consultar tus reservas y facturas en <a href="https://ebrostay.com" style="color:#2f6b55;">ebrostay.com</a> en la sección "Mi cuenta". La fianza y los meses siguientes se gestionan directamente con Ebrostay.</p>
+        <p style="margin:22px 0 0;color:#66716a;font-size:14px;">También puedes consultar tus reservas y facturas en <a href="https://ebrostay.com/account.html" style="color:#2f6b55;">ebrostay.com</a> en la sección "Mi cuenta".</p>
       </div>
       <div style="padding:16px 28px;border-top:1px solid #eee;color:#66716a;font-size:13px;">
         Ebrostay &middot; Zaragoza &middot; <a href="mailto:info@ebrostay.com" style="color:#2f6b55;">info@ebrostay.com</a>

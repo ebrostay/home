@@ -34,6 +34,36 @@ let mapNeedsFit = true;
 let highlightTimer = null;
 
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
+const datePickers = {};
+
+function flatpickrLocale() {
+  return currentLanguage === "es" && typeof flatpickr !== "undefined" ? flatpickr.l10ns.es : "default";
+}
+
+function setupDatePickers() {
+  if (typeof flatpickr === "undefined") return;
+  const base = {
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: "j M Y",
+    minDate: "today",
+    locale: flatpickrLocale(),
+    disableMobile: true
+  };
+  const heroCheckIn = heroSearch?.querySelector('[name="checkIn"]');
+  if (heroCheckIn) datePickers.hero = flatpickr(heroCheckIn, { ...base });
+  const checkInElement = document.querySelector("#checkIn");
+  const checkOutElement = document.querySelector("#checkOut");
+  if (checkInElement && checkOutElement) {
+    datePickers.checkOut = flatpickr(checkOutElement, { ...base });
+    datePickers.checkIn = flatpickr(checkInElement, {
+      ...base,
+      onChange: (dates) => {
+        if (dates[0]) datePickers.checkOut.set("minDate", dates[0]);
+      }
+    });
+  }
+}
 let activeFilter = null;
 let statusOverride = null;
 let quickFilters = new Set();
@@ -321,6 +351,8 @@ function applyLanguage(language) {
     button.setAttribute("aria-pressed", String(button.dataset.lang === currentLanguage));
   });
 
+  Object.values(datePickers).forEach((picker) => picker.set("locale", flatpickrLocale()));
+
   document.querySelectorAll("[data-whatsapp]").forEach((link) => {
     link.href = whatsappLink(t("whatsapp.general"));
   });
@@ -353,7 +385,12 @@ if (heroSearch && availabilityFilter) {
     event.preventDefault();
     const data = new FormData(heroSearch);
     availabilityFilter.elements.city.value = data.get("city") || "Zaragoza";
-    availabilityFilter.elements.checkIn.value = data.get("checkIn") || "";
+    const heroDate = data.get("checkIn")?.toString() || "";
+    if (datePickers.checkIn) {
+      heroDate ? datePickers.checkIn.setDate(heroDate, true) : datePickers.checkIn.clear();
+    } else {
+      availabilityFilter.elements.checkIn.value = heroDate;
+    }
     availabilityFilter.elements.guestCount.value = data.get("guestCount") || "2";
     statusOverride = null;
     activeFilter = getFilterFromForm(availabilityFilter);
@@ -399,6 +436,9 @@ if (resetAvailability) {
       availabilityFilter.elements.city.value = "Zaragoza";
       availabilityFilter.elements.guestCount.value = "2";
     }
+    datePickers.checkIn?.clear();
+    datePickers.checkOut?.clear();
+    datePickers.checkOut?.set("minDate", "today");
     mapNeedsFit = true;
     renderProperties();
   });
@@ -544,6 +584,7 @@ if (logoutButton) {
 }
 
 initListingsMap();
+setupDatePickers();
 applyLanguage(currentLanguage);
 
 if (window.EbrostayBackend) {

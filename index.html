@@ -21,7 +21,8 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     >
-    <link rel="stylesheet" href="styles.css?v=admin-5">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="styles.css?v=admin-6">
   </head>
   <body>
     <header class="site-header">
@@ -66,7 +67,7 @@
             </label>
             <label>
               <span data-i18n="search.moveIn">Entrada</span>
-              <input name="checkIn" type="date">
+              <input name="checkIn" type="text">
             </label>
             <label>
               <span data-i18n="search.guests">Personas</span>
@@ -113,11 +114,11 @@
               <div class="date-pair">
                 <label>
                   <span data-i18n="filters.checkIn">Entrada</span>
-                  <input id="checkIn" name="checkIn" type="date">
+                  <input id="checkIn" name="checkIn" type="text">
                 </label>
                 <label>
                   <span data-i18n="filters.checkOut">Salida</span>
-                  <input id="checkOut" name="checkOut" type="date">
+                  <input id="checkOut" name="checkOut" type="text">
                 </label>
               </div>
               <label>
@@ -285,10 +286,12 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-5"></script>
-    <script src="data.js?v=admin-5"></script>
-    <script src="backend.js?v=admin-5"></script>
-    <script src="site.js?v=admin-5"></script>
+    <script src="supabase-config.js?v=admin-6"></script>
+    <script src="data.js?v=admin-6"></script>
+    <script src="backend.js?v=admin-6"></script>
+    <script src="site.js?v=admin-6"></script>
   </body>
 </html>

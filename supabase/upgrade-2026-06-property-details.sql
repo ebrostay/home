@@ -10,6 +10,7 @@ alter table public.properties
   add column if not exists min_stay_months integer,
   add column if not exists max_stay_months integer,
   add column if not exists deposit_amount integer,
+  add column if not exists upfront_rent_eur integer,
   add column if not exists utilities_cap_eur integer,
   add column if not exists pets_allowed boolean,
   add column if not exists smoking_allowed boolean,

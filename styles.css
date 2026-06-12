@@ -1263,6 +1263,84 @@ a.property-media {
   border-style: dashed;
 }
 
+.detail-calendar-input {
+  display: none;
+}
+
+.detail-calendar-wrap {
+  margin-top: 4px;
+}
+
+.detail-calendar-wrap .flatpickr-calendar.inline {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.flatpickr-day.is-booked,
+.flatpickr-day.is-booked.flatpickr-disabled {
+  color: var(--red);
+  background: rgba(155, 61, 48, 0.08);
+  text-decoration: line-through;
+  border-color: transparent;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(155, 61, 48, 0.35);
+}
+
+.movein-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fbfaf6;
+}
+
+.movein-box h4 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--green);
+}
+
+.movein-box ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.movein-box li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.movein-box li.is-total {
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
 .detail-conditions {
   margin: 0;
   padding: 0;

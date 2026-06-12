@@ -79,6 +79,44 @@ function renderDetail() {
   );
 }
 
+let availabilityCalendar = null;
+
+function isUnavailableDay(date) {
+  const availableFrom = dateValue(property.availableFrom);
+  if (availableFrom && date < availableFrom) return true;
+  return property.unavailable.some(([start, end]) => {
+    return date >= dateValue(start) && date <= dateValue(end);
+  });
+}
+
+function renderAvailabilityCalendar() {
+  const element = document.querySelector("#detailCalendar");
+  if (!element || typeof flatpickr === "undefined") return;
+  availabilityCalendar?.destroy();
+
+  const disabledRanges = property.unavailable.map(([from, to]) => ({ from, to }));
+  const availableFrom = dateValue(property.availableFrom);
+  if (availableFrom) {
+    const dayBefore = new Date(availableFrom);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    disabledRanges.push({ from: "1970-01-01", to: dayBefore });
+  }
+
+  availabilityCalendar = flatpickr(element, {
+    inline: true,
+    minDate: "today",
+    showMonths: window.matchMedia("(min-width: 720px)").matches ? 2 : 1,
+    locale: currentLanguage === "es" ? flatpickr.l10ns.es : "default",
+    disable: disabledRanges,
+    onChange: (dates, dateString, instance) => {
+      if (dates.length) instance.clear();
+    },
+    onDayCreate: (selectedDates, dateString, instance, dayElement) => {
+      if (isUnavailableDay(dayElement.dateObj)) dayElement.classList.add("is-booked");
+    }
+  });
+}
+
 function renderConditions() {
   const section = document.querySelector("#detailConditionsSection");
   const list = document.querySelector("#detailConditions");
@@ -90,6 +128,7 @@ function renderConditions() {
   if (property.minStayMonths != null) rows.push([t("cond.minStay"), stay(property.minStayMonths)]);
   if (property.maxStayMonths != null) rows.push([t("cond.maxStay"), stay(property.maxStayMonths)]);
   if (property.depositAmount != null) rows.push([t("cond.deposit"), interpolate("cond.eur", { amount: property.depositAmount })]);
+  if (property.upfrontRentEur != null) rows.push([t("cond.upfront"), interpolate("cond.eur", { amount: property.upfrontRentEur })]);
   if (property.utilitiesCapEur != null) rows.push([t("cond.utilities"), interpolate("cond.eurMonth", { amount: property.utilitiesCapEur })]);
   if (property.energyRating) rows.push([t("cond.energy"), property.energyRating]);
   if (property.bedsKey) rows.push([t("cond.beds"), t(property.bedsKey)]);
@@ -103,11 +142,31 @@ function renderConditions() {
     .map(([label, value]) => `<li><span>${label}</span><strong>${value}</strong></li>`)
     .join("");
 
+  renderMoveInCost();
+
   const videoButton = document.querySelector("#detailVideoButton");
   if (videoButton) {
     videoButton.hidden = !property.videoUrl;
     if (property.videoUrl) videoButton.href = property.videoUrl;
   }
+}
+
+function renderMoveInCost() {
+  const box = document.querySelector("#detailMoveIn");
+  const list = document.querySelector("#detailMoveInRows");
+  if (!box || !list) return;
+
+  const rows = [];
+  if (property.upfrontRentEur != null) rows.push(["movein.upfront", property.upfrontRentEur]);
+  if (property.depositAmount != null) rows.push(["movein.deposit", property.depositAmount]);
+  box.hidden = rows.length === 0;
+  if (!rows.length) return;
+
+  const total = rows.reduce((sum, [, amount]) => sum + amount, 0);
+  const line = (labelKey, amount, strong = false) =>
+    `<li${strong ? ' class="is-total"' : ""}><span>${t(labelKey)}</span><span>${interpolate("cond.eur", { amount })}</span></li>`;
+  list.innerHTML = rows.map(([key, amount]) => line(key, amount)).join("") +
+    (rows.length > 1 ? line("movein.total", total, true) : "");
 }
 
 function setBannerPhoto(url) {
@@ -182,6 +241,7 @@ function applyLanguage(language) {
   });
 
   renderDetail();
+  renderAvailabilityCalendar();
   updateDetailMarker();
 }
 

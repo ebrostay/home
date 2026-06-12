@@ -39,6 +39,7 @@ create table if not exists public.properties (
   min_stay_months integer,
   max_stay_months integer,
   deposit_amount integer,
+  upfront_rent_eur integer,
   utilities_cap_eur integer,
   pets_allowed boolean,
   smoking_allowed boolean,

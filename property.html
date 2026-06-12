@@ -13,7 +13,8 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     >
-    <link rel="stylesheet" href="styles.css?v=admin-5">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="styles.css?v=admin-6">
   </head>
   <body>
     <header class="site-header">
@@ -69,6 +70,10 @@
           <section class="detail-section">
             <h2 data-i18n="detail.blocked">Fechas ya reservadas</h2>
             <p data-i18n="detail.blockedCopy">Estas fechas no están disponibles ahora mismo. Para otras fechas, envía tu solicitud.</p>
+            <div class="detail-calendar-wrap">
+              <input class="detail-calendar-input" id="detailCalendar" type="text" aria-hidden="true" tabindex="-1">
+            </div>
+            <p class="calendar-legend"><span class="legend-dot"></span><span data-i18n="cal.legend">Los días tachados en rojo no están disponibles.</span></p>
             <ul class="blocked-dates" id="detailBlocked"></ul>
           </section>
 
@@ -86,6 +91,10 @@
               <span class="price-note" id="detailPriceNote" hidden></span>
             </div>
             <span class="detail-available" id="detailAvailable"></span>
+            <div class="movein-box" id="detailMoveIn" hidden>
+              <h4 data-i18n="movein.title">Coste de entrada</h4>
+              <ul id="detailMoveInRows"></ul>
+            </div>
             <h3 data-i18n="detail.requestTitle">¿Te interesa esta vivienda?</h3>
             <p data-i18n="detail.requestCopy">Escríbenos y confirmamos disponibilidad, condiciones y siguiente paso.</p>
             <a class="button primary" id="detailEmailButton" href="#"><span data-i18n="detail.emailButton">Solicitar por email</span></a>
@@ -110,10 +119,12 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-5"></script>
-    <script src="data.js?v=admin-5"></script>
-    <script src="backend.js?v=admin-5"></script>
-    <script src="property.js?v=admin-5"></script>
+    <script src="supabase-config.js?v=admin-6"></script>
+    <script src="data.js?v=admin-6"></script>
+    <script src="backend.js?v=admin-6"></script>
+    <script src="property.js?v=admin-6"></script>
   </body>
 </html>

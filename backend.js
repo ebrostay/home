@@ -74,6 +74,7 @@ const EbrostayBackend = (() => {
       minStayMonths: row.min_stay_months,
       maxStayMonths: row.max_stay_months,
       depositAmount: row.deposit_amount,
+      upfrontRentEur: row.upfront_rent_eur,
       utilitiesCapEur: row.utilities_cap_eur,
       petsAllowed: row.pets_allowed,
       smokingAllowed: row.smoking_allowed,

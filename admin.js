@@ -163,6 +163,7 @@ function renderEditForm(row) {
           ${text("admin.field.minStay", "min_stay_months", row.min_stay_months, "number")}
           ${text("admin.field.maxStay", "max_stay_months", row.max_stay_months, "number")}
           ${text("admin.field.deposit", "deposit_amount", row.deposit_amount, "number")}
+          ${text("admin.field.upfront", "upfront_rent_eur", row.upfront_rent_eur, "number")}
           ${text("admin.field.utilitiesCap", "utilities_cap_eur", row.utilities_cap_eur, "number")}
           <label>
             <span>${t("admin.field.energy")}</span>
@@ -467,6 +468,7 @@ function editPayloadFromForm(form) {
     min_stay_months: numberOrNull("min_stay_months"),
     max_stay_months: numberOrNull("max_stay_months"),
     deposit_amount: numberOrNull("deposit_amount"),
+    upfront_rent_eur: numberOrNull("upfront_rent_eur"),
     utilities_cap_eur: numberOrNull("utilities_cap_eur"),
     energy_rating: textOrNull("energy_rating"),
     video_url: textOrNull("video_url"),

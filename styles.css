@@ -61,11 +61,11 @@ a {
 .brand {
   display: inline-flex;
   align-items: center;
-  min-width: 72px;
+  min-width: 108px;
 }
 
 .brand-logo {
-  width: 72px;
+  width: 108px;
   height: auto;
   filter: drop-shadow(0 2px 9px rgba(0, 0, 0, 0.38));
 }
@@ -518,11 +518,11 @@ textarea {
   }
 
   .brand {
-    min-width: 56px;
+    min-width: 84px;
   }
 
   .brand-logo {
-    width: 56px;
+    width: 84px;
   }
 
   .hero h1 {

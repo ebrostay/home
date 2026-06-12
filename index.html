@@ -15,7 +15,7 @@
     <meta property="og:image" content="assets/ebrostay-zaragoza-hero.png">
     <link rel="canonical" href="https://ebrostay.com/">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=marketplace-2">
+    <link rel="stylesheet" href="styles.css?v=addresses-1">
   </head>
   <body>
     <header class="site-header">
@@ -144,17 +144,24 @@
             <div class="property-list" id="propertyGrid" aria-live="polite"></div>
           </section>
 
-          <aside class="map-panel" aria-label="Zaragoza map preview">
+          <aside class="map-panel" aria-label="Google Maps preview">
             <div class="map-card">
-              <div class="map-grid" aria-hidden="true">
-                <span class="pin pin-one">Pilar</span>
-                <span class="pin pin-two">Actur</span>
-                <span class="pin pin-three">Romareda</span>
-                <span class="river-line"></span>
+              <div class="google-map-wrap">
+                <iframe
+                  id="googleMap"
+                  title="Google Maps Zaragoza Ebrostay flats"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  src="https://www.google.com/maps?q=Pedro%20II%20El%20Catolico%203%2C%20Zaragoza%20Spain&output=embed"
+                ></iframe>
               </div>
               <div class="map-copy">
                 <strong data-i18n="map.title">Mapa de barrios</strong>
                 <span data-i18n="map.copy">Vista orientativa para comparar zonas antes de solicitar una vivienda.</span>
+              </div>
+              <div class="map-addresses" aria-label="Map address selector">
+                <button class="is-active" type="button" data-map-address="pedro" data-i18n="map.pedro">Pedro II el Catolico 3</button>
+                <button type="button" data-map-address="movera" data-i18n="map.movera">Movera 7</button>
               </div>
             </div>
           </aside>
@@ -212,7 +219,7 @@
           </label>
           <label>
             <span data-i18n="form.property">Propiedad o zona</span>
-            <input name="property" placeholder="Pilar, Actur, Romareda..." data-i18n-attr="placeholder:form.propertyPlaceholder">
+            <input name="property" placeholder="Pedro II el Catolico 3, Movera 7..." data-i18n-attr="placeholder:form.propertyPlaceholder">
           </label>
           <label>
             <span data-i18n="form.message">Mensaje</span>
@@ -232,6 +239,6 @@
       <a href="mailto:hello@ebrostay.com">hello@ebrostay.com</a>
     </footer>
 
-    <script src="site.js?v=marketplace-2"></script>
+    <script src="site.js?v=addresses-1"></script>
   </body>
 </html>

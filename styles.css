@@ -411,7 +411,7 @@ textarea {
 
 .property-card {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -421,32 +421,26 @@ textarea {
 
 .property-media {
   position: relative;
-  min-height: 240px;
+  min-height: 230px;
+  height: 100%;
   background:
     linear-gradient(135deg, rgba(47, 107, 85, 0.16), rgba(55, 111, 131, 0.12)),
     url("assets/ebrostay-hero.png") center / cover;
 }
 
-.property-actur {
+.property-pedro {
   background:
     linear-gradient(135deg, rgba(55, 111, 131, 0.16), rgba(200, 121, 58, 0.16)),
     url("assets/ebrostay-zaragoza-hero.png") center / cover;
 }
 
-.property-romareda {
+.property-movera {
   background:
     linear-gradient(135deg, rgba(24, 33, 29, 0.14), rgba(200, 121, 58, 0.14)),
     url("assets/ebrostay-hero.png") center / cover;
 }
 
-.property-university {
-  background:
-    linear-gradient(135deg, rgba(47, 107, 85, 0.2), rgba(255, 255, 255, 0.08)),
-    url("assets/ebrostay-zaragoza-hero.png") center / cover;
-}
-
-.availability-pill,
-.favorite-button {
+.availability-pill {
   position: absolute;
   top: 12px;
 }
@@ -462,8 +456,10 @@ textarea {
 }
 
 .favorite-button {
+  position: absolute;
   right: 12px;
-  min-width: 58px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
   border: 0;
   border-radius: 999px;
   padding: 7px 10px;
@@ -555,52 +551,19 @@ textarea {
   overflow: hidden;
 }
 
-.map-grid {
+.google-map-wrap {
   position: relative;
-  min-height: 320px;
-  background:
-    linear-gradient(90deg, rgba(24, 33, 29, 0.06) 1px, transparent 1px),
-    linear-gradient(rgba(24, 33, 29, 0.06) 1px, transparent 1px),
-    #e8eee8;
-  background-size: 42px 42px;
+  width: 100%;
+  min-height: 340px;
+  background: var(--mist);
 }
 
-.river-line {
+.google-map-wrap iframe {
   position: absolute;
-  left: -30px;
-  right: -20px;
-  top: 47%;
-  height: 20px;
-  transform: rotate(-13deg);
-  border-radius: 999px;
-  background: rgba(55, 111, 131, 0.45);
-}
-
-.pin {
-  position: absolute;
-  z-index: 2;
-  border-radius: 999px;
-  padding: 7px 10px;
-  color: #fff;
-  background: var(--green);
-  font-size: 0.78rem;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(24, 33, 29, 0.2);
-}
-
-.pin-one {
-  left: 42%;
-  top: 37%;
-}
-
-.pin-two {
-  left: 18%;
-  top: 24%;
-}
-
-.pin-three {
-  right: 12%;
-  bottom: 24%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .map-copy {
@@ -616,6 +579,29 @@ textarea {
 .map-copy span {
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.map-addresses {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.map-addresses button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-addresses button.is-active {
+  border-color: var(--green);
+  color: #fff;
+  background: var(--green);
 }
 
 .how-section,
@@ -717,7 +703,12 @@ textarea {
   }
 
   .map-panel {
-    display: none;
+    position: static;
+    grid-column: 1 / -1;
+  }
+
+  .google-map-wrap {
+    min-height: 360px;
   }
 }
 
@@ -776,6 +767,7 @@ textarea {
 
   .property-media {
     min-height: 220px;
+    aspect-ratio: 16 / 10;
   }
 
   .property-title-row {

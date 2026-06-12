@@ -61,18 +61,13 @@ a {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 800;
+  min-width: 148px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
+.brand-logo {
+  width: 168px;
+  height: auto;
+  filter: drop-shadow(0 2px 9px rgba(0, 0, 0, 0.38));
 }
 
 .nav-links {
@@ -508,6 +503,14 @@ textarea {
 
   .language-option {
     min-width: 38px;
+  }
+
+  .brand {
+    min-width: 118px;
+  }
+
+  .brand-logo {
+    width: 126px;
   }
 
   .hero {

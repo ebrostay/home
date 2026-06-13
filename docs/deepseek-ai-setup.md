@@ -13,9 +13,11 @@ The property editor (`admin-property.html`) can use AI to:
    you leave the field.
 
 It is powered by the `ai-property-assistant` Edge Function, which calls
-[DeepSeek](https://www.deepseek.com/)'s OpenAI-compatible API. DeepSeek is used
-because it is very cheap (≈ $0.14 / $0.28 per million input/output tokens on
-`deepseek-v4-flash`), and the listing-import and translation calls are tiny.
+[DeepSeek](https://www.deepseek.com/)'s OpenAI-compatible API. The default model
+is `deepseek-v4-pro` (higher quality for extraction and copywriting; ≈ $0.435 /
+$0.87 per million input/output tokens). The calls are small, so cost stays low.
+Set `DEEPSEEK_MODEL` to `deepseek-v4-flash` if you prefer the cheaper model
+(≈ $0.14 / $0.28 per million tokens).
 
 PDFs are read **in the browser** with [pdf.js](https://mozilla.github.io/pdf.js/)
 (loaded from a CDN in `admin-property.html`), so the function only ever receives

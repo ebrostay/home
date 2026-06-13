@@ -11,7 +11,7 @@
 //     uploaded file had no description text of its own.
 //
 // Set DEEPSEEK_API_KEY as an Edge Function secret. The model can be overridden
-// with DEEPSEEK_MODEL (defaults to the cheap deepseek-v4-flash).
+// with DEEPSEEK_MODEL (defaults to deepseek-v4-pro).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CORS = {
@@ -23,7 +23,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
-const MODEL = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-v4-flash";
+const MODEL = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-v4-pro";
 const MAX_INPUT = 24000;
 
 const TYPE_KEYS = ["apartment", "room", "home"];
@@ -167,22 +167,22 @@ Deno.serve(async (req: Request) => {
     if (action === "extract") {
       const text = String(body.text || "").slice(0, MAX_INPUT);
       if (!text.trim()) return json({ fields: {} });
-      const system = `You extract structured data for a furnished mid-term rental listing in Zaragoza, Spain, from the document the user pastes. Return ONLY a JSON object (no markdown fences) using any of these keys you can confidently infer; omit keys you cannot determine. Provide BOTH Spanish and English for every text field.
+      const system = `You extract structured data for a furnished mid-term rental listing in Zaragoza, Spain, from a document the user pastes (often a property-portal export such as Idealista or Fotocasa). Ignore portal boilerplate: navigation, "N photos", "Map", reference numbers, advertiser names, URLs, dates, cookie/error notices and chat prompts. Return ONLY a JSON object (no markdown fences) with any of these keys you can determine; omit keys you cannot. Provide BOTH Spanish and English for every text field.
 Keys:
-- name (string, a short listing title)
+- name (a clean, appealing short title WITHOUT words like "for rent", reference numbers or the full address, e.g. "Bright 2-bedroom apartment in San José")
 - type (one of: ${TYPE_KEYS.join(", ")})
-- guests, bedrooms, bathrooms, size_m2, floor_number (plain numbers; floor 0 = ground)
+- guests, bedrooms, bathrooms, size_m2, floor_number (plain numbers; floor 0 = ground; for size use the built area if both built and usable areas are given)
 - price_number, deposit_amount, upfront_rent_eur, utilities_cap_eur (plain numbers in EUR, no symbols)
 - min_stay_months, max_stay_months (plain numbers)
 - energy_rating (one of ${ENERGY_RATINGS.join(", ")})
-- area_es, area_en (short neighbourhood/area label)
-- copy_es, copy_en (one short sentence describing the home)
-- details_es, details_en (a full description paragraph)
-- beds_es, beds_en (bed configuration, e.g. "2 camas dobles y 1 individual")
-- price_note_es, price_note_en (short optional price note)
+- area_es, area_en (neighbourhood / district, e.g. "San José")
+- copy_es, copy_en (one short inviting sentence)
+- details_es, details_en (a full, appealing paragraph that COMBINES the listing's own description with EVERY other notable detail you found that has no dedicated field here — for example exterior/interior, orientation, condition, heating/AC type, lift or no lift, furnished, nearby transport and services, and views. Do not lose information.)
+- beds_es, beds_en (bed configuration if stated)
+- price_note_es, price_note_en (short optional price note, e.g. community fees)
 - city (string), address (street and number, only if clearly present)
-- amenities (array, only from this set: ${AMENITY_KEYS.join(", ")})
-Rules: stay truthful to the document — never invent amenities, prices or numbers. If a text value exists in only one language, translate it for the other.`;
+- amenities (array, ONLY those explicitly present, from this set: ${AMENITY_KEYS.join(", ")}; never include a feature that is negated, e.g. "no lift")
+Rules: stay truthful to the document — never invent amenities, prices or numbers. If a value exists in only one language, translate it for the other.`;
       const messages = [
         { role: "system", content: system },
         { role: "user", content: text }

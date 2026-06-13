@@ -2428,3 +2428,8 @@ a.property-media {
   border-color: var(--river);
   background: rgba(55, 111, 131, 0.06);
 }
+
+.share-button {
+  justify-self: start;
+  align-self: flex-start;
+}

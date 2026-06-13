@@ -19,7 +19,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-17">
+    <link rel="stylesheet" href="styles.css?v=admin-18">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -30,17 +30,16 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="index.html#search" data-i18n="nav.search">Buscar</a>
         <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="index.html#owners" data-i18n="nav.owners">Propietarios</a>
         <a href="index.html#contact" data-i18n="nav.contact">Contacto</a>
       </nav>
       <div class="header-actions">
-        <button class="nav-toggle" type="button" aria-label="Menú" aria-expanded="false">&#9776;</button>
+        <button class="nav-toggle" type="button" aria-label="Menú" data-i18n-attr="aria-label:nav.menu" aria-expanded="false">&#9776;</button>
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
         <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
-        <a class="nav-cta" href="index.html#contact" data-i18n="nav.cta">Publicar vivienda</a>
+        <a class="nav-cta" href="index.html#search" data-i18n="nav.cta">Buscar vivienda</a>
       </div>
     </header>
 
@@ -112,6 +111,7 @@
               <span class="price-note" id="detailPriceNote" hidden></span>
             </div>
             <span class="detail-available" id="detailAvailable"></span>
+            <button class="details-button share-button" id="shareButton" type="button">&#128279; <span data-i18n="share.button">Compartir</span></button>
             <div class="movein-box" id="detailMoveIn" hidden>
               <h4 data-i18n="movein.title">Coste de entrada</h4>
               <ul id="detailMoveInRows"></ul>
@@ -160,10 +160,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-17"></script>
-    <script src="data.js?v=admin-17"></script>
-    <script src="backend.js?v=admin-17"></script>
-    <script src="nav.js?v=admin-17"></script>
-    <script src="property.js?v=admin-17"></script>
+    <script src="supabase-config.js?v=admin-18"></script>
+    <script src="data.js?v=admin-18"></script>
+    <script src="backend.js?v=admin-18"></script>
+    <script src="nav.js?v=admin-18"></script>
+    <script src="property.js?v=admin-18"></script>
   </body>
 </html>

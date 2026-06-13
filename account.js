@@ -82,6 +82,12 @@ function applyLanguage(language) {
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
   });
+  document.querySelectorAll("[data-i18n-attr]").forEach((element) => {
+    element.dataset.i18nAttr.split(";").forEach((pair) => {
+      const [attribute, key] = pair.split(":");
+      if (attribute && key) element.setAttribute(attribute, t(key));
+    });
+  });
   languageButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.lang === currentLanguage);
   });

@@ -42,7 +42,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-17">
+    <link rel="stylesheet" href="styles.css?v=admin-18">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -53,12 +53,11 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#search" data-i18n="nav.search">Buscar</a>
         <a href="#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="#owners" data-i18n="nav.owners">Propietarios</a>
         <a href="#contact" data-i18n="nav.contact">Contacto</a>
         <a href="about.html" data-i18n="nav.about">Nosotros</a>
       </nav>
       <div class="header-actions">
-        <button class="nav-toggle" type="button" aria-label="Menú" aria-expanded="false">&#9776;</button>
+        <button class="nav-toggle" type="button" aria-label="Menú" data-i18n-attr="aria-label:nav.menu" aria-expanded="false">&#9776;</button>
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
@@ -70,7 +69,7 @@
           <span class="user-email" id="userEmail"></span>
           <button class="logout-button" id="logoutButton" type="button" data-i18n="auth.logout">Salir</button>
         </div>
-        <a class="nav-cta" href="#contact" data-i18n="nav.cta">Publicar vivienda</a>
+        <a class="nav-cta" href="#search" data-i18n="nav.cta">Buscar vivienda</a>
       </div>
     </header>
 
@@ -238,16 +237,6 @@
         </div>
       </section>
 
-      <section class="owner-band" id="owners">
-        <div>
-          <p class="section-kicker" data-i18n="owners.kicker">Para propietarios</p>
-          <h2 data-i18n="owners.title">Publica y opera tu vivienda con ayuda local.</h2>
-        </div>
-        <p data-i18n="owners.copy">
-          Ebrostay prepara anuncios, coordina entradas, limpiezas, incidencias y comunicación con huéspedes para que tu propiedad funcione mejor sin absorber tu día.
-        </p>
-      </section>
-
       <section class="contact-section" id="contact">
         <div class="contact-copy">
           <p class="section-kicker" data-i18n="contact.kicker">Contacto</p>
@@ -338,10 +327,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-17"></script>
-    <script src="data.js?v=admin-17"></script>
-    <script src="backend.js?v=admin-17"></script>
-    <script src="nav.js?v=admin-17"></script>
-    <script src="site.js?v=admin-17"></script>
+    <script src="supabase-config.js?v=admin-18"></script>
+    <script src="data.js?v=admin-18"></script>
+    <script src="backend.js?v=admin-18"></script>
+    <script src="nav.js?v=admin-18"></script>
+    <script src="site.js?v=admin-18"></script>
   </body>
 </html>

@@ -405,9 +405,9 @@ mapAddressButtons.forEach((button) => {
 });
 
 // Remember searched dates so the booking widget can preselect them
-function rememberSearchDates(checkIn, checkOut) {
+function rememberSearchDates(checkIn, checkOut, guests) {
   if (!checkIn) return;
-  localStorage.setItem("ebrostay-search-dates", JSON.stringify({ checkIn, checkOut: checkOut || "" }));
+  localStorage.setItem("ebrostay-search-dates", JSON.stringify({ checkIn, checkOut: checkOut || "", guests: guests || "" }));
 }
 
 // Umami funnel events; no personal data, only ids and dates
@@ -422,7 +422,7 @@ if (heroSearch && availabilityFilter) {
     availabilityFilter.elements.city.value = data.get("city") || "Zaragoza";
     const heroDate = data.get("checkIn")?.toString() || "";
     const heroOutDate = data.get("checkOut")?.toString() || "";
-    rememberSearchDates(heroDate, heroOutDate);
+    rememberSearchDates(heroDate, heroOutDate, data.get("guestCount")?.toString());
     trackEvent("search", { source: "hero", checkIn: heroDate, checkOut: heroOutDate });
     if (datePickers.checkIn) {
       heroDate ? datePickers.checkIn.setDate(heroDate, true) : datePickers.checkIn.clear();
@@ -449,7 +449,7 @@ if (availabilityFilter) {
     statusOverride = null;
     activeFilter = getFilterFromForm(availabilityFilter, true);
     const filterData = new FormData(availabilityFilter);
-    rememberSearchDates(filterData.get("checkIn")?.toString() || "", filterData.get("checkOut")?.toString() || "");
+    rememberSearchDates(filterData.get("checkIn")?.toString() || "", filterData.get("checkOut")?.toString() || "", filterData.get("guestCount")?.toString());
     trackEvent("search", { source: "filters", checkIn: filterData.get("checkIn")?.toString() || "", checkOut: filterData.get("checkOut")?.toString() || "" });
     mapNeedsFit = true;
     renderProperties();

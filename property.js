@@ -500,11 +500,16 @@ function initBookingWidget() {
 // as long as they are still bookable for this property.
 function preselectSearchDates(minStart, minEndFor) {
   if (document.querySelector("#bookingStart")?.value) return;
+  // shared links carry the dates in the URL; they win over the last search
   let stored = null;
-  try {
-    stored = JSON.parse(localStorage.getItem("ebrostay-search-dates") || "null");
-  } catch {
-    return;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(params.get("from") || "")) {
+    stored = { checkIn: params.get("from"), checkOut: params.get("to") || "" };
+  } else {
+    try {
+      stored = JSON.parse(localStorage.getItem("ebrostay-search-dates") || "null");
+    } catch {
+      return;
+    }
   }
   if (!stored?.checkIn || stored.checkIn < minStart) return;
   const start = stored.checkIn;
@@ -555,6 +560,44 @@ document.querySelector("#bookingButton")?.addEventListener("click", async () => 
   }
   button.disabled = false;
   bookingMessage(BOOKING_ERROR_KEYS[code] || "book.error");
+});
+
+
+// Share this listing with the chosen dates and search settings
+function pageToast(message) {
+  const toast = document.createElement("p");
+  toast.className = "admin-status is-toast";
+  toast.setAttribute("role", "status");
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+document.querySelector("#shareButton")?.addEventListener("click", async () => {
+  const url = new URL("property.html", window.location.href);
+  url.searchParams.set("id", property.id);
+  let search = null;
+  try { search = JSON.parse(localStorage.getItem("ebrostay-search-dates") || "null"); } catch { /* ignore */ }
+  const from = document.querySelector("#bookingStart")?.value || search?.checkIn;
+  const to = document.querySelector("#bookingEnd")?.value || search?.checkOut;
+  if (from) url.searchParams.set("from", from);
+  if (to) url.searchParams.set("to", to);
+  if (search?.guests) url.searchParams.set("guests", search.guests);
+  const link = url.toString();
+  window.umami?.track("share", { property: property.id });
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `${t(property.nameKey)} | Ebrostay`, text: t("share.text"), url: link });
+      return;
+    } catch { return; /* user dismissed the share sheet */ }
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    pageToast(t("share.copied"));
+  } catch {
+    window.prompt("URL", link);
+  }
 });
 
 function setBannerPhoto(url) {
@@ -621,6 +664,13 @@ function applyLanguage(language) {
 
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-attr]").forEach((element) => {
+    element.dataset.i18nAttr.split(";").forEach((pair) => {
+      const [attribute, key] = pair.split(":");
+      if (attribute && key) element.setAttribute(attribute, t(key));
+    });
   });
 
   languageButtons.forEach((button) => {

@@ -172,7 +172,8 @@ function haversineKm(aLat, aLng, bLat, bLng) {
 async function osrmDurations(server, profile, destinations) {
   const coords = [`${property.lng},${property.lat}`, ...destinations.map((l) => `${l.lng},${l.lat}`)].join(";");
   const response = await fetch(
-    `https://routing.openstreetmap.de/${server}/table/v1/${profile}/${coords}?sources=0&annotations=duration,distance`
+    `https://routing.openstreetmap.de/${server}/table/v1/${profile}/${coords}?sources=0&annotations=duration,distance`,
+    { signal: AbortSignal.timeout(6000) }
   );
   const data = await response.json();
   if (data.code !== "Ok") throw new Error(data.code);
@@ -230,15 +231,26 @@ let customDestination = null;
 let customLayer = null;
 
 async function geocodeDestination(query) {
-  const search = async (q) => {
+  // prefer results inside greater Zaragoza
+  const search = async (q, bounded) => {
+    const box = "&viewbox=-1.10,41.78,-0.70,41.52" + (bounded ? "&bounded=1" : "");
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=${encodeURIComponent(q)}`,
-      { headers: { Accept: "application/json" } }
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&addressdetails=1${box}&q=${encodeURIComponent(q)}`,
+      { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) }
     );
     const results = await response.json();
     return Array.isArray(results) && results.length ? results[0] : null;
   };
-  return (/zaragoza/i.test(query) ? await search(query) : await search(`${query}, Zaragoza`)) || await search(query);
+  const withCity = /zaragoza/i.test(query) ? query : `${query}, Zaragoza`;
+  return await search(withCity, true) || await search(withCity, false) || await search(query, false);
+}
+
+function destinationLabel(match) {
+  const a = match.address || {};
+  const street = [a.road || a.pedestrian || a.neighbourhood, a.house_number].filter(Boolean).join(" ");
+  const zone = a.suburb || a.village || a.town || a.city_district || "";
+  const named = [street || match.display_name.split(",")[0], zone].filter(Boolean).join(", ");
+  return named || match.display_name.split(",").slice(0, 2).join(",");
 }
 
 function drawCustomDestination() {
@@ -284,7 +296,7 @@ document.querySelector("#distanceForm")?.addEventListener("submit", async (event
   customDestination = {
     lat: Number(match.lat),
     lng: Number(match.lon),
-    label: match.display_name.split(",").slice(0, 2).join(",")
+    label: destinationLabel(match)
   };
   await renderCustomDistance();
 });

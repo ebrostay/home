@@ -99,7 +99,7 @@ function renderAiSection() {
       <div class="admin-ai-controls">
         <label class="admin-upload">
           <span class="button ghost">${t("admin.ai.file")}</span>
-          <input type="file" accept=".pdf,.txt,.md,.csv,.text,application/pdf,text/plain" hidden data-ai-file>
+          <input type="file" accept=".pdf,.txt,.md,.csv,.text,application/pdf,text/plain,image/*,.png,.jpg,.jpeg,.webp" hidden data-ai-file>
         </label>
         <span class="admin-ai-filename" data-ai-filename></span>
       </div>
@@ -487,29 +487,94 @@ async function uploadPhotos(files, isFloorplan) {
   await loadProperty();
 }
 
-// Pull plain text out of an uploaded file: PDFs via pdf.js (in the browser),
-// everything else as text. Returns "" when nothing readable is found.
-async function extractTextFromFile(file) {
+// Tesseract.js is only loaded the first time a scanned PDF or image needs OCR,
+// so it never weighs down the common digital-PDF / pasted-text path.
+let tesseractLoader = null;
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (!tesseractLoader) {
+    tesseractLoader = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  return tesseractLoader;
+}
+
+async function renderPageToCanvas(page, scale = 2) {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  return canvas;
+}
+
+// OCR (Spanish + English) for sources without a text layer: scanned PDFs
+// (rendered page by page) and image files. Slow, so pages are capped.
+async function ocrImages(sources, onProgress) {
+  await loadTesseract();
+  const worker = await Tesseract.createWorker("spa+eng");
+  let out = "";
+  try {
+    for (let i = 0; i < sources.length; i += 1) {
+      onProgress?.(i + 1, sources.length);
+      const { data } = await worker.recognize(sources[i]);
+      out += data.text + "\n";
+    }
+  } finally {
+    await worker.terminate();
+  }
+  return out.trim();
+}
+
+// Pull plain text out of an uploaded file. Digital PDFs use pdf.js; scanned
+// PDFs and images fall back to OCR; everything else is read as text. Returns
+// "" only when nothing readable is found. onProgress reports OCR page numbers.
+async function extractTextFromFile(file, onProgress) {
   if (!file) return "";
   const name = (file.name || "").toLowerCase();
   const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
-  if (isPdf) {
-    if (!window.pdfjsLib) return "";
+  const isImage = (file.type || "").startsWith("image/") || /\.(png|jpe?g|webp|gif|bmp|tiff?)$/.test(name);
+
+  if (isPdf && window.pdfjsLib) {
     try {
       const buffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const pages = Math.min(pdf.numPages, 30);
+      const textPages = Math.min(pdf.numPages, 30);
       let out = "";
-      for (let i = 1; i <= pages; i += 1) {
+      for (let i = 1; i <= textPages; i += 1) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         out += content.items.map((item) => item.str).join(" ") + "\n";
       }
-      return out.trim();
-    } catch {
+      // A real text layer gives plenty of characters; almost nothing means the
+      // PDF is scanned, so render its pages and OCR them instead.
+      if (out.replace(/\s/g, "").length >= 20) return out.trim();
+      const ocrPages = Math.min(pdf.numPages, 8);
+      const canvases = [];
+      for (let i = 1; i <= ocrPages; i += 1) {
+        canvases.push(await renderPageToCanvas(await pdf.getPage(i)));
+      }
+      return await ocrImages(canvases, onProgress);
+    } catch (error) {
+      console.warn("PDF read failed", error);
       return "";
     }
   }
+
+  if (isImage) {
+    try {
+      return await ocrImages([file], onProgress);
+    } catch (error) {
+      console.warn("image OCR failed", error);
+      return "";
+    }
+  }
+
   try {
     return (await file.text()).trim();
   } catch {
@@ -553,7 +618,15 @@ async function runAutofill() {
   let text = "";
   if (file) {
     showStatus("admin.ai.reading");
-    text = await extractTextFromFile(file);
+    // OCR can take a while; report progress per page in the status line.
+    const onProgress = (page, total) => {
+      clearTimeout(statusTimer);
+      adminStatus.hidden = false;
+      adminStatus.classList.add("is-toast");
+      adminStatus.classList.remove("is-error");
+      adminStatus.textContent = `${t("admin.ai.ocr")} ${page}/${total}`;
+    };
+    text = await extractTextFromFile(file, onProgress);
     if (!text && !pasted) {
       showStatus("admin.ai.noText");
       return;

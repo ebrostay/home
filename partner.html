@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Portal de propietarios</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-1">
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Ebrostay home">
+        <img class="brand-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+      </a>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="admin-link" href="owners.html" data-i18n="owners.aboutLink">Ventajas</a>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
+      </div>
+    </header>
+
+    <main class="detail-page admin-page">
+      <p class="section-kicker" data-i18n="partner.kicker">Portal de propietarios</p>
+      <h1 data-i18n="partner.title">Tu cartera, en tiempo real.</h1>
+
+      <p class="account-loading" id="partnerLoading" data-i18n="account.loading">Cargando…</p>
+
+      <!-- Signed out -->
+      <section id="partnerSignedOut" hidden>
+        <p data-i18n="partner.signinCopy">Inicia sesión con la cuenta de propietario que te facilitamos para ver tus viviendas, ingresos y datos de pago.</p>
+        <form class="auth-form admin-login" id="partnerLogin">
+          <label><span data-i18n="auth.email">Email</span><input name="email" type="email" autocomplete="email" required></label>
+          <label><span data-i18n="auth.password">Contraseña</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <p class="auth-message" id="partnerLoginMessage" role="status"></p>
+          <button class="button primary" type="submit" data-i18n="auth.signin">Iniciar sesión</button>
+        </form>
+      </section>
+
+      <!-- Signed in, not an owner yet -->
+      <section id="partnerNotOwner" hidden>
+        <div class="partner-empty">
+          <p data-i18n="partner.notOwner">Tu cuenta aún no está activada como propietario. Si quieres que gestionemos tu vivienda, envíanos una solicitud y la activamos.</p>
+          <p style="margin-top: 12px;"><a class="button primary" href="owners.html#owner-apply" data-i18n="owners.cta">Quiero unirme</a></p>
+        </div>
+      </section>
+
+      <!-- Owner dashboard -->
+      <section id="partnerDashboard" hidden>
+        <div class="admin-toolbar">
+          <span class="user-email" id="partnerEmail"></span>
+          <button class="logout-button" id="partnerLogout" type="button" data-i18n="auth.logout">Salir</button>
+        </div>
+
+        <div class="partner-grid">
+          <div class="partner-metric"><b id="metricProps">0</b><span data-i18n="partner.metricProps">Viviendas</span></div>
+          <div class="partner-metric"><b id="metricBookings">0</b><span data-i18n="partner.metricBookings">Reservas</span></div>
+          <div class="partner-metric"><b id="metricRevenue">0 €</b><span data-i18n="partner.metricRevenue">Ingresos de reservas (bruto)</span></div>
+          <div class="partner-metric"><b id="metricPayout">—</b><span data-i18n="partner.metricPayout">Datos de pago</span></div>
+        </div>
+
+        <section class="partner-section">
+          <h2 data-i18n="partner.propsTitle">Tus viviendas</h2>
+          <ul class="admin-prop-list" id="partnerProps"></ul>
+        </section>
+
+        <section class="partner-section">
+          <h2 data-i18n="partner.bookingsTitle">Reservas recientes</h2>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="partnerBookings"></table>
+          </div>
+        </section>
+
+        <section class="partner-section">
+          <h2 data-i18n="partner.payoutTitle">Datos de pago</h2>
+          <p class="admin-card-meta" data-i18n="partner.payoutCopy">Aquí ingresamos tus rentas. Tus datos están cifrados y solo los ve Ebrostay. Transferimos tras cada estancia confirmada.</p>
+          <form class="partner-payout-form" id="payoutForm">
+            <label><span data-i18n="partner.holder">Titular de la cuenta</span><input name="account_holder" autocomplete="name"></label>
+            <label><span data-i18n="partner.iban">IBAN</span><input name="iban" placeholder="ES.. .... .... .... .... ...."></label>
+            <label><span data-i18n="partner.bank">Banco</span><input name="bank_name"></label>
+            <label><span data-i18n="partner.taxId">NIF / NIE</span><input name="tax_id"></label>
+            <label><span data-i18n="partner.billing">Dirección de facturación</span><input name="billing_address"></label>
+            <label><span data-i18n="partner.notes">Notas (opcional)</span><textarea name="payout_notes" rows="2"></textarea></label>
+            <button class="button primary" type="submit" data-i18n="partner.savePayout">Guardar datos de pago</button>
+            <p class="form-note" id="payoutNote" role="status"></p>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-brand">
+        <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
+        <span>&copy; <span id="year"></span> Ebrostay</span>
+      </span>
+      <a href="owners.html" data-i18n="nav.owners">Propietarios</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=design-1"></script>
+    <script src="data.js?v=design-1"></script>
+    <script src="backend.js?v=design-1"></script>
+    <script src="partner.js?v=design-1"></script>
+  </body>
+</html>

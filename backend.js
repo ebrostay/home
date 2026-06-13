@@ -7,6 +7,7 @@ const EbrostayBackend = (() => {
   let client = null;
   let user = null;
   let isAdmin = false;
+  let isOwner = false;
   let callbacks = {};
 
   function isConfigured() {
@@ -129,13 +130,15 @@ const EbrostayBackend = (() => {
     const { data } = await sb.auth.getUser();
     user = data?.user || null;
     isAdmin = false;
+    isOwner = false;
     if (user) {
       const { data: profile } = await sb
         .from("profiles")
-        .select("is_admin")
+        .select("is_admin, is_owner")
         .eq("id", user.id)
         .maybeSingle();
       isAdmin = Boolean(profile?.is_admin);
+      isOwner = Boolean(profile?.is_owner);
     }
     callbacks.onAuthChanged?.(user, isAdmin);
   }
@@ -322,6 +325,72 @@ const EbrostayBackend = (() => {
     return { ok: !error };
   }
 
+  // Owner partnership application (public lead capture)
+  async function submitOwnerLead(fields) {
+    const sb = getClient();
+    if (!sb) return { ok: false };
+    const { error } = await sb.from("owner_leads").insert({
+      name: fields.name,
+      email: fields.email,
+      phone: fields.phone || null,
+      city: fields.city || null,
+      units: fields.units || null,
+      message: fields.message || null,
+      user_id: user?.id || null
+    });
+    if (error) console.warn("Owner lead insert failed:", error.message);
+    return { ok: !error };
+  }
+
+  // Owner dashboard: their properties, paid bookings on them, and payout details
+  async function loadOwnerDashboard() {
+    if (!user) return null;
+    const sb = getClient();
+    const [propsResult, payoutResult] = await Promise.all([
+      sb.from("properties")
+        .select("id, name, address, price_number, is_published, property_photos(storage_path, sort_order, is_floorplan)")
+        .eq("owner_id", user.id)
+        .order("name"),
+      sb.from("owner_payout_details").select("*").eq("owner_id", user.id).maybeSingle()
+    ]);
+    const properties = propsResult.data || [];
+    let bookings = [];
+    if (properties.length) {
+      const ids = properties.map((p) => p.id);
+      const { data } = await sb.from("bookings")
+        .select("property_id, property_name, start_date, end_date, months, amount_eur, status, created_at")
+        .in("property_id", ids)
+        .order("created_at", { ascending: false });
+      bookings = data || [];
+    }
+    return {
+      properties: properties.map((p) => ({ ...p, cover: coverUrl(p) })),
+      bookings,
+      payout: payoutResult.data || null
+    };
+  }
+
+  async function saveOwnerPayout(fields) {
+    if (!user) return { ok: false };
+    const sb = getClient();
+    const { error } = await sb.from("owner_payout_details").upsert({
+      owner_id: user.id,
+      account_holder: fields.account_holder || null,
+      iban: fields.iban || null,
+      bank_name: fields.bank_name || null,
+      tax_id: fields.tax_id || null,
+      billing_address: fields.billing_address || null,
+      payout_notes: fields.payout_notes || null,
+      updated_at: new Date().toISOString()
+    });
+    if (error) console.warn("Payout save failed:", error.message);
+    return { ok: !error };
+  }
+
+  function getIsOwner() {
+    return isOwner;
+  }
+
   return {
     isConfigured,
     getClient,
@@ -341,9 +410,13 @@ const EbrostayBackend = (() => {
     loadFavorites,
     saveFavorite,
     sendInquiry,
+    submitOwnerLead,
+    loadOwnerDashboard,
+    saveOwnerPayout,
     photoUrl,
     getUser: () => user,
-    getIsAdmin: () => isAdmin
+    getIsAdmin: () => isAdmin,
+    getIsOwner
   };
 })();
 

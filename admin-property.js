@@ -12,6 +12,7 @@ const propertyId = new URLSearchParams(window.location.search).get("id");
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
 let row = null;
 let guestInfo = null;
+let ownerEmail = "";
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -32,7 +33,7 @@ function showStatus(key) {
   adminStatus.dataset.statusKey = key;
   adminStatus.textContent = t(key);
   adminStatus.classList.toggle("is-toast", !PAGE_STATUS_KEYS.has(key));
-  const isError = key === "admin.error" || key === "admin.guestNotFound" || key === "admin.geocodeNone";
+  const isError = key === "admin.error" || key === "admin.guestNotFound" || key === "admin.geocodeNone" || key === "admin.ownerNotFound";
   adminStatus.classList.toggle("is-error", isError);
   if (key === "admin.saved") statusTimer = setTimeout(hideStatus, 2600);
   if (isError) statusTimer = setTimeout(hideStatus, 5000);
@@ -174,6 +175,14 @@ function renderEditForm() {
         ${text("admin.field.lat", "lat", row.lat, "number")}
         ${text("admin.field.lng", "lng", row.lng, "number")}
       </fieldset>
+      <fieldset class="admin-group">
+        <legend>${t("admin.section.owner")}</legend>
+        <label class="admin-wide">
+          <span>${t("admin.field.ownerEmail")}</span>
+          <input name="owner_email" type="email" value="${escapeValue(ownerEmail)}" placeholder="propietario@email.com">
+        </label>
+        <p class="admin-hint">${t("admin.ownerHint")}</p>
+      </fieldset>
       <fieldset class="admin-group admin-chips">
         <legend>${t("admin.field.amenities")}</legend>
         ${AMENITY_KEYS.map((key) => `
@@ -305,6 +314,11 @@ async function loadProperty() {
   }
   row = propResult.data;
   guestInfo = infoResult.data || null;
+  ownerEmail = "";
+  if (row.owner_id) {
+    const { data: owner } = await sb.from("profiles").select("email").eq("id", row.owner_id).maybeSingle();
+    ownerEmail = owner?.email || "";
+  }
   renderEditor();
 }
 
@@ -491,6 +505,23 @@ if (propertyEditor) {
         payload.lat = Number(event.target.querySelector('input[name="lat"]').value) || payload.lat;
         payload.lng = Number(event.target.querySelector('input[name="lng"]').value) || payload.lng;
       }
+
+      // resolve the owner by email: assign the property and flag the profile
+      const ownerInput = formData.get("owner_email")?.toString().trim().toLowerCase() || "";
+      if (ownerInput !== (ownerEmail || "").toLowerCase()) {
+        if (!ownerInput) {
+          payload.owner_id = null;
+        } else {
+          const { data: ownerProfile } = await sb.from("profiles").select("id").ilike("email", ownerInput).maybeSingle();
+          if (!ownerProfile) {
+            showStatus("admin.ownerNotFound");
+            return;
+          }
+          payload.owner_id = ownerProfile.id;
+          await sb.from("profiles").update({ is_owner: true }).eq("id", ownerProfile.id);
+        }
+      }
+
       const { error } = await sb.from("properties").update(payload).eq("id", propertyId);
       if (error) showStatus("admin.error");
       else {

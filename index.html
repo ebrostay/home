@@ -42,7 +42,10 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-18">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-1">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -53,7 +56,7 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#search" data-i18n="nav.search">Buscar</a>
         <a href="#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="#contact" data-i18n="nav.contact">Contacto</a>
+        <a href="owners.html" data-i18n="nav.owners">Propietarios</a>
         <a href="about.html" data-i18n="nav.about">Nosotros</a>
       </nav>
       <div class="header-actions">
@@ -78,10 +81,10 @@
         <img class="hero-image" src="assets/ebrostay-zaragoza-hero.webp" alt="Apartamento amueblado en Zaragoza" data-i18n-attr="alt:hero.imageAlt">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-          <p class="eyebrow" data-i18n="hero.kicker">Alquileres de media estancia en Zaragoza</p>
-          <h1 data-i18n="hero.title">Encuentra una vivienda lista para entrar.</h1>
+          <p class="eyebrow" data-i18n="hero.kicker">El alquiler de media estancia, 100% digital</p>
+          <h1 data-i18n="hero.title">Reserva tu hogar en Zaragoza en minutos.</h1>
           <p class="hero-copy" data-i18n="hero.copy">
-            Apartamentos, habitaciones y casas amuebladas con gestión local, disponibilidad clara y soporte antes de llegar.
+            Viviendas amuebladas y verificadas para estancias de 1 a 12 meses. Precio total transparente, reserva y pago online, soporte de principio a fin. Sin visitas a ciegas, sin sorpresas.
           </p>
           <form class="hero-search" id="heroSearch">
             <label>
@@ -104,8 +107,11 @@
           </form>
           <div class="trust-row" aria-label="Trust signals">
             <span data-i18n="hero.trust1">Viviendas verificadas</span>
-            <span data-i18n="hero.trust2">Gestión local</span>
-            <span data-i18n="hero.trust3">Reserva online</span>
+            <span data-i18n="hero.trust2">Precio total sin sorpresas</span>
+            <span data-i18n="hero.trust3">Reserva y pago online</span>
+          </div>
+          <div class="hero-cta-row">
+            <a class="button on-dark" href="owners.html"><span data-i18n="hero.ownerCta">¿Eres propietario? Gana sin mover un dedo →</span></a>
           </div>
         </div>
       </section>
@@ -213,6 +219,59 @@
         </div>
       </section>
 
+      <section class="value-band" id="why">
+        <p class="section-kicker" data-i18n="why.kicker">Por qué Ebrostay</p>
+        <h2 data-i18n="why.title">Lo que los neobancos hicieron con la banca, nosotros lo hacemos con el alquiler.</h2>
+        <p class="value-lead" data-i18n="why.lead">Todo digital, todo transparente, automatizado de punta a punta. Sin papeleo interminable, sin llamadas, sin comisiones ocultas. Reservar una vivienda debería ser tan fácil como abrir una cuenta en tu móvil.</p>
+        <div class="value-grid">
+          <div class="value-card">
+            <span class="value-icon">⚡</span>
+            <h3 data-i18n="why.c1.title">Reserva en minutos</h3>
+            <p data-i18n="why.c1.copy">Elige fechas, paga online y recibe tu confirmación y factura al instante. <strong>Cero esperas.</strong></p>
+          </div>
+          <div class="value-card">
+            <span class="value-icon">🔍</span>
+            <h3 data-i18n="why.c2.title">Transparencia total</h3>
+            <p data-i18n="why.c2.copy">El precio que ves es el que pagas: renta, fianza y condiciones <strong>claras desde el primer clic.</strong></p>
+          </div>
+          <div class="value-card">
+            <span class="value-icon">🤖</span>
+            <h3 data-i18n="why.c3.title">Automatizado de extremo a extremo</h3>
+            <p data-i18n="why.c3.copy">Contrato, cobro, fianza, check-in y soporte gestionados por software. <strong>Menos fricción, menos errores.</strong></p>
+          </div>
+          <div class="value-card">
+            <span class="value-icon">💬</span>
+            <h3 data-i18n="why.c4.title">Soporte humano, canales modernos</h3>
+            <p data-i18n="why.c4.copy">WhatsApp, email y tu panel personal, en español e inglés. <strong>Respuestas rápidas, de verdad.</strong></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="split-band" aria-label="Para quién">
+        <div class="split-card">
+          <span class="pill-tag" data-i18n="split.guestTag">Para inquilinos</span>
+          <h3 data-i18n="split.guestTitle">Múdate sin fricción</h3>
+          <p data-i18n="split.guestCopy">Encuentra, reserva y entra. Todo lo que necesitas para tu estancia, en un solo sitio.</p>
+          <ul>
+            <li data-i18n="split.g1">Viviendas verificadas con fotos, planos y distancias reales</li>
+            <li data-i18n="split.g2">Reserva y pago seguro online con fianza reembolsable</li>
+            <li data-i18n="split.g3">Wifi, llaves y contacto de emergencia en tu panel</li>
+          </ul>
+          <a class="button primary" href="#search" data-i18n="split.guestCta">Buscar vivienda</a>
+        </div>
+        <div class="split-card is-owner">
+          <span class="pill-tag" data-i18n="split.ownerTag">Para propietarios</span>
+          <h3 data-i18n="split.ownerTitle">Gana sin mover un dedo</h3>
+          <p data-i18n="split.ownerCopy">Gestión integral, sin involucración. Nosotros llenamos, cobramos y te transferimos. Tú recibes el dinero.</p>
+          <ul>
+            <li data-i18n="split.o1">Anuncios, fotos, precios y canales gestionados por nosotros</li>
+            <li data-i18n="split.o2">Verificación de inquilinos, contratos, cobros y fianza</li>
+            <li data-i18n="split.o3">Tu panel con ingresos en tiempo real y pagos a tu cuenta</li>
+          </ul>
+          <a class="button primary" href="owners.html" data-i18n="split.ownerCta">Descubre la gestión sin esfuerzo</a>
+        </div>
+      </section>
+
       <section class="how-section" id="how">
         <div>
           <p class="section-kicker" data-i18n="how.kicker">Cómo funciona</p>
@@ -274,6 +333,7 @@
         <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
+      <a href="owners.html" data-i18n="nav.owners">Propietarios</a>
       <a href="about.html" data-i18n="nav.about">Nosotros</a>
       <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
       <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
@@ -327,10 +387,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-18"></script>
-    <script src="data.js?v=admin-18"></script>
-    <script src="backend.js?v=admin-18"></script>
-    <script src="nav.js?v=admin-18"></script>
-    <script src="site.js?v=admin-18"></script>
+    <script src="supabase-config.js?v=design-1"></script>
+    <script src="data.js?v=design-1"></script>
+    <script src="backend.js?v=design-1"></script>
+    <script src="nav.js?v=design-1"></script>
+    <script src="site.js?v=design-1"></script>
   </body>
 </html>

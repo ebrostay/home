@@ -721,10 +721,8 @@ function initDetailMap() {
   const mapElement = document.querySelector("#detailMap");
   if (!mapElement || typeof L === "undefined") return;
 
-  detailMap = L.map(mapElement, {
-    scrollWheelZoom: false,
-    attributionControl: { prefix: false }
-  }).setView([property.lat, property.lng], 15);
+  detailMap = L.map(mapElement, { scrollWheelZoom: false }).setView([property.lat, property.lng], 15);
+  detailMap.attributionControl.setPrefix(false);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -90,12 +90,16 @@ Deno.serve(async (req: Request) => {
       return json({ error: "dates_unavailable" }, 409);
     }
 
+    // Availability: reject if the range overlaps a confirmed block or an
+    // active (unexpired) hold from another in-progress checkout.
+    const nowIso = new Date().toISOString();
     const { data: overlap } = await admin
       .from("availability_blocks")
       .select("id")
       .eq("property_id", property.id)
       .lte("start_date", bookingEnd)
       .gte("end_date", startDate)
+      .or(`hold_expires_at.is.null,hold_expires_at.gt.${nowIso}`)
       .limit(1);
     if (overlap && overlap.length > 0) return json({ error: "dates_unavailable" }, 409);
 
@@ -208,6 +212,26 @@ Deno.serve(async (req: Request) => {
       success_url: `${origin}/account.html?booking=success`,
       cancel_url: `${origin}/property.html?id=${property.id}&booking=cancelled`
     });
+
+    // Hold the dates for 30 minutes while the guest completes payment, so a
+    // second guest can't start a competing checkout for the same range.
+    // Holds (hold_expires_at set) are exempt from the overlap constraint.
+    try {
+      await admin.from("availability_blocks").delete()
+        .eq("property_id", property.id)
+        .not("hold_expires_at", "is", null)
+        .lt("hold_expires_at", nowIso);
+      await admin.from("availability_blocks").insert({
+        property_id: property.id,
+        start_date: startDate,
+        end_date: bookingEnd,
+        user_id: user.id,
+        note: `hold:${session.id}`,
+        hold_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+      });
+    } catch (holdError) {
+      console.error("hold insert failed", holdError);
+    }
 
     return json({ url: session.url });
   } catch (error) {

@@ -411,6 +411,19 @@ function monthsText(months) {
   return months === 1 ? t("cond.month") : interpolate("cond.months", { count: months });
 }
 
+// True if [startDate, endDate] overlaps any unavailable (booked/held) range.
+function rangeHasConflict(startDate, endDate) {
+  return property.unavailable.some(([from, to]) => startDate <= to && from <= endDate);
+}
+
+// The first blocked day on/after a start date — caps how far a stay can run.
+function nextBlockAfter(startDate) {
+  return property.unavailable
+    .map(([from]) => from)
+    .filter((from) => from >= startDate)
+    .sort()[0] || null;
+}
+
 const MAX_STAY_MONTHS = 11;
 const COMMISSION_PCT = 0.15;
 const money = (amount) => interpolate("cond.eur", { amount: Math.round(amount * 100) / 100 });
@@ -430,6 +443,15 @@ function updateBookingSummary() {
     if (vatTip) vatTip.textContent = "";
     return;
   }
+  // Pre-vet: the chosen range must not cross any booked/held dates.
+  if (rangeHasConflict(startDate, endDate)) {
+    summary.innerHTML = "";
+    if (vatTip) vatTip.textContent = "";
+    if (split) { split.hidden = false; split.textContent = t("book.rangeUnavailable"); }
+    if (button) button.disabled = true;
+    return;
+  }
+
   const months = billedMonths(startDate, endDate);
 
   // Stays longer than 11 months need two separate contracts.
@@ -495,9 +517,16 @@ function initBookingWidget() {
   };
   const minEndFor = (startDate) =>
     bookingEndDate(startDate, Math.max(1, property.minStayMonths || 1));
-  // the cap is 11 months; a single contract can't run longer
-  const maxEndFor = (startDate) =>
-    bookingEndDate(startDate, Math.min(MAX_STAY_MONTHS, property.maxStayMonths || MAX_STAY_MONTHS));
+  // end can't run past the 11-month cap, nor across the next booked period
+  const maxEndFor = (startDate) => {
+    const byStay = bookingEndDate(startDate, Math.min(MAX_STAY_MONTHS, property.maxStayMonths || MAX_STAY_MONTHS));
+    const block = nextBlockAfter(startDate);
+    if (!block) return byStay;
+    const dayBefore = new Date(`${block}T00:00:00Z`);
+    dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+    const beforeBlock = dayBefore.toISOString().slice(0, 10);
+    return beforeBlock < byStay ? beforeBlock : byStay;
+  };
 
   bookingPicker?.destroy();
   bookingEndPicker?.destroy();
@@ -562,7 +591,9 @@ function preselectSearchDates(minStart, minEndFor) {
 }
 
 const BOOKING_ERROR_KEYS = {
-  dates_unavailable: "book.unavailable",
+  // after client pre-vetting, a server unavailability means someone booked
+  // (or is mid-checkout) in the meantime
+  dates_unavailable: "book.justTaken",
   stripe_not_configured: "book.notConfigured",
   unauthorized: "book.loginFirst",
   max_stay: "book.splitNote",
@@ -604,6 +635,17 @@ document.querySelector("#bookingButton")?.addEventListener("click", async () => 
   }
   button.disabled = false;
   bookingMessage(BOOKING_ERROR_KEYS[code] || "book.error");
+  // if it was taken in the meantime, refresh availability so the calendar
+  // and pickers reflect the dates that are now unavailable
+  if (code === "dates_unavailable") {
+    await EbrostayBackend.reloadProperties?.();
+    const refreshed = properties.find((item) => item.id === propertyId);
+    if (refreshed) {
+      property = refreshed;
+      renderAvailabilityCalendar();
+      initBookingWidget();
+    }
+  }
 });
 
 

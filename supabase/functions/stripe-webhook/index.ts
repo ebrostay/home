@@ -107,12 +107,29 @@ Deno.serve(async (req: Request) => {
   }
 
   if (inserted) {
-    await db.from("availability_blocks").insert({
+    // Drop this checkout's temporary hold, then confirm the block. The
+    // exclusion constraint guarantees no overlap with another confirmed
+    // booking; if it fires, another guest paid for these dates first — refund
+    // and flag this booking rather than double-book.
+    await db.from("availability_blocks").delete().eq("note", `hold:${session.id}`);
+    const { error: blockError } = await db.from("availability_blocks").insert({
       property_id: md.property_id,
       start_date: md.start_date,
       end_date: md.end_date,
       note: `stripe:${session.id}`
     });
+    if (blockError) {
+      console.error("availability conflict; refunding", blockError);
+      await db.from("bookings").update({ status: "conflict" }).eq("stripe_session_id", session.id);
+      try {
+        if (session.payment_intent) {
+          await stripe.refunds.create({ payment_intent: String(session.payment_intent) });
+        }
+      } catch (refundError) {
+        console.error("refund failed", refundError);
+      }
+      return new Response(JSON.stringify({ received: true, conflict: true }), { status: 200 });
+    }
 
     // Route the rent to the owner's connected account (Stripe Connect), if the
     // property's owner has finished onboarding. Deposit and the platform fee

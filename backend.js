@@ -94,6 +94,8 @@ const EbrostayBackend = (() => {
         .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1))
         .map((photo) => photoUrl(photo.storage_path)),
       unavailable: (row.availability_blocks || [])
+        // confirmed blocks (no hold) and still-active holds count as taken
+        .filter((block) => !block.hold_expires_at || new Date(block.hold_expires_at) > new Date())
         .map((block) => [block.start_date, block.end_date])
         .sort((a, b) => (a[0] < b[0] ? -1 : 1))
     };
@@ -104,14 +106,14 @@ const EbrostayBackend = (() => {
     if (!sb) return false;
     let { data, error } = await sb
       .from("properties")
-      .select("*, availability_blocks(start_date, end_date), property_photos(storage_path, sort_order, is_floorplan)")
+      .select("*, availability_blocks(start_date, end_date, hold_expires_at), property_photos(storage_path, sort_order, is_floorplan)")
       .eq("is_published", true)
       .order("price_number", { ascending: true });
     if (error) {
       // The photos table may not exist yet (upgrade SQL not run); retry without it.
       ({ data, error } = await sb
         .from("properties")
-        .select("*, availability_blocks(start_date, end_date)")
+        .select("*, availability_blocks(start_date, end_date, hold_expires_at)")
         .eq("is_published", true)
         .order("price_number", { ascending: true }));
     }
@@ -420,6 +422,7 @@ const EbrostayBackend = (() => {
     updatePassword,
     getEnabledProviders,
     signInWithProvider,
+    reloadProperties: loadProperties,
     loadMyBookings,
     loadBookingDetail,
     createBookingCheckout,

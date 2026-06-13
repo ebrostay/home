@@ -43,3 +43,7 @@ create policy "Guests read own stay info"
       where ab.user_id = auth.uid() and ab.property_id = property_guest_info.property_id
     )
   );
+
+-- Floor plans: photos flagged as layout drawings, shown in their own
+-- section on the property detail page and excluded from the gallery.
+alter table public.property_photos add column if not exists is_floorplan boolean not null default false;

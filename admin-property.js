@@ -61,9 +61,10 @@ function renderPhotos() {
     ? photos.map((photo, index) => `
         <figure class="admin-photo">
           <img src="${EbrostayBackend.photoUrl(photo.storage_path)}" alt="" loading="lazy">
-          ${index === 0 ? `<span class="admin-photo-cover">${t("admin.cover")}</span>` : ""}
+          ${photo.is_floorplan ? `<span class="admin-photo-cover">${t("admin.floorplan")}</span>` : index === 0 ? `<span class="admin-photo-cover">${t("admin.cover")}</span>` : ""}
           <div class="admin-photo-actions">
-            ${index === 0 ? "" : `<button class="details-button" type="button" data-cover-photo="${photo.id}">${t("admin.makeCover")}</button>`}
+            ${index === 0 || photo.is_floorplan ? "" : `<button class="details-button" type="button" data-cover-photo="${photo.id}">${t("admin.makeCover")}</button>`}
+            <button class="details-button" type="button" data-floorplan-photo="${photo.id}" data-current="${photo.is_floorplan ? "yes" : "no"}">${t(photo.is_floorplan ? "admin.unmakeFloorplan" : "admin.makeFloorplan")}</button>
             <button class="details-button danger" type="button" data-delete-photo="${photo.id}" data-path="${escapeValue(photo.storage_path)}">${t("admin.delete")}</button>
           </div>
         </figure>
@@ -438,6 +439,16 @@ if (propertyEditor) {
     }
 
     const sb = EbrostayBackend.getClient();
+    const floorplanToggle = event.target.closest("[data-floorplan-photo]");
+    if (floorplanToggle) {
+      const { error } = await sb
+        .from("property_photos")
+        .update({ is_floorplan: floorplanToggle.dataset.current !== "yes" })
+        .eq("id", floorplanToggle.dataset.floorplanPhoto);
+      if (error) showStatus("admin.error");
+      else await loadProperty();
+      return;
+    }
     const blockId = event.target.closest("[data-delete-block]")?.dataset.deleteBlock;
     const deletePhoto = event.target.closest("[data-delete-photo]");
     const coverPhoto = event.target.closest("[data-cover-photo]");

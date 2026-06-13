@@ -2346,3 +2346,66 @@ a.property-media {
     font-size: 1.05rem;
   }
 }
+
+/* Floor plan section */
+.floorplan-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.floorplan-link {
+  display: block;
+  max-width: 420px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.floorplan-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 10px;
+}
+
+/* Distances to city reference points */
+.distance-list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.distance-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  padding: 10px 14px;
+}
+
+.distance-name {
+  display: grid;
+  font-weight: 850;
+}
+
+.distance-name small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.distance-modes {
+  display: flex;
+  gap: 14px;
+  font-weight: 750;
+  color: var(--ink);
+  white-space: nowrap;
+}

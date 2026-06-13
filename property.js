@@ -138,6 +138,85 @@ function updateSeoTags() {
   document.head.appendChild(script);
 }
 
+
+function renderFloorplan() {
+  const section = document.querySelector("#floorplanSection");
+  const grid = document.querySelector("#floorplanImages");
+  if (!section || !grid) return;
+  const plans = property.floorplans || [];
+  section.hidden = plans.length === 0;
+  grid.innerHTML = plans.map((url) => `
+    <a class="floorplan-link" href="${url}" target="_blank" rel="noopener">
+      <img class="floorplan-img" src="${url}" alt="${t("detail.floorplan")}" loading="lazy">
+    </a>
+  `).join("");
+}
+
+// Travel times to the city reference points. Walking and driving come from
+// OSRM (real routes); public transport is an estimate, and everything falls
+// back to distance-based estimates if the routing service is unreachable.
+const LANDMARKS = [
+  { key: "landmark.pilar", lat: 41.6563, lng: -0.8786 },
+  { key: "landmark.delicias", lat: 41.6591, lng: -0.9117 },
+  { key: "landmark.universidad", lat: 41.642, lng: -0.8973 }
+];
+
+function haversineKm(aLat, aLng, bLat, bLng) {
+  const rad = Math.PI / 180;
+  const dLat = (bLat - aLat) * rad;
+  const dLng = (bLng - aLng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * rad) * Math.cos(bLat * rad) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+async function osrmDurations(server, profile) {
+  const coords = [`${property.lng},${property.lat}`, ...LANDMARKS.map((l) => `${l.lng},${l.lat}`)].join(";");
+  const response = await fetch(
+    `https://routing.openstreetmap.de/${server}/table/v1/${profile}/${coords}?sources=0&annotations=duration,distance`
+  );
+  const data = await response.json();
+  if (data.code !== "Ok") throw new Error(data.code);
+  return {
+    minutes: data.durations[0].slice(1).map((s) => Math.max(1, Math.round(s / 60))),
+    km: (data.distances?.[0] || []).slice(1).map((m) => m / 1000)
+  };
+}
+
+async function renderDistances() {
+  const list = document.querySelector("#distanceList");
+  if (!list || !property.lat) return;
+
+  // distance-based estimates as the baseline
+  const straightKm = LANDMARKS.map((l) => haversineKm(property.lat, property.lng, l.lat, l.lng));
+  let walk = straightKm.map((km) => Math.max(1, Math.round((km * 1.3) / 4.7 * 60)));
+  let car = straightKm.map((km) => Math.max(2, Math.round(2 + (km * 1.3) / 28 * 60)));
+  let routeKm = straightKm.map((km) => km * 1.3);
+
+  try {
+    const [foot, driving] = await Promise.all([
+      osrmDurations("routed-foot", "foot"),
+      osrmDurations("routed-car", "driving")
+    ]);
+    walk = foot.minutes;
+    car = driving.minutes;
+    if (foot.km.length) routeKm = foot.km;
+  } catch { /* keep estimates */ }
+
+  // urban bus estimate: short wait plus ~15 km/h door to door, never worse than walking
+  const transit = routeKm.map((km, index) => Math.min(walk[index], Math.max(4, Math.round(6 + (km / 15) * 60))));
+
+  list.innerHTML = LANDMARKS.map((landmark, index) => `
+    <li>
+      <span class="distance-name">${t(landmark.key)}<small>${routeKm[index].toFixed(1)} km</small></span>
+      <span class="distance-modes">
+        <span title="${t("dist.walk")}">&#128694; ${walk[index]} min</span>
+        <span title="${t("dist.transit")}">&#128652; ${transit[index]} min</span>
+        <span title="${t("dist.car")}">&#128663; ${car[index]} min</span>
+      </span>
+    </li>
+  `).join("");
+}
+
 let availabilityCalendar = null;
 
 function isBookedDay(date) {
@@ -466,6 +545,8 @@ function applyLanguage(language) {
   });
 
   renderDetail();
+  renderFloorplan();
+  renderDistances();
   renderAvailabilityCalendar();
   initBookingWidget();
   updateDetailMarker();

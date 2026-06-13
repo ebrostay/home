@@ -19,7 +19,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-14">
+    <link rel="stylesheet" href="styles.css?v=admin-15">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -65,6 +65,12 @@
             <p id="detailDetails"></p>
           </section>
 
+          <section class="detail-section" id="floorplanSection" hidden>
+            <h2 data-i18n="detail.floorplan">Plano de la vivienda</h2>
+            <p data-i18n="detail.floorplanCopy">Distribución orientativa de la vivienda.</p>
+            <div class="floorplan-grid" id="floorplanImages"></div>
+          </section>
+
           <section class="detail-section">
             <h2 data-i18n="detail.amenities">Comodidades</h2>
             <div class="amenity-list amenity-grid" id="detailAmenities"></div>
@@ -87,6 +93,8 @@
           <section class="detail-section">
             <h2 data-i18n="detail.location">Ubicación</h2>
             <p class="detail-address" id="detailAddress" hidden></p>
+            <ul class="distance-list" id="distanceList"></ul>
+            <p class="calendar-legend" data-i18n="detail.distancesNote">Tiempos de trayecto aproximados desde la vivienda.</p>
             <p data-i18n="detail.locationCopy">Ubicación aproximada de la vivienda en Zaragoza.</p>
             <div class="detail-map" id="detailMap"></div>
           </section>
@@ -147,10 +155,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-14"></script>
-    <script src="data.js?v=admin-14"></script>
-    <script src="backend.js?v=admin-14"></script>
-    <script src="nav.js?v=admin-14"></script>
-    <script src="property.js?v=admin-14"></script>
+    <script src="supabase-config.js?v=admin-15"></script>
+    <script src="data.js?v=admin-15"></script>
+    <script src="backend.js?v=admin-15"></script>
+    <script src="nav.js?v=admin-15"></script>
+    <script src="property.js?v=admin-15"></script>
   </body>
 </html>

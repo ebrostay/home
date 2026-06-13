@@ -85,7 +85,11 @@ const EbrostayBackend = (() => {
       videoUrl: row.video_url,
       bedsKey: (row.beds_es || row.beds_en) ? `${key}.beds` : undefined,
       photos: (row.property_photos || [])
-        .slice()
+        .filter((photo) => !photo.is_floorplan)
+        .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1))
+        .map((photo) => photoUrl(photo.storage_path)),
+      floorplans: (row.property_photos || [])
+        .filter((photo) => photo.is_floorplan)
         .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1))
         .map((photo) => photoUrl(photo.storage_path)),
       unavailable: (row.availability_blocks || [])
@@ -99,7 +103,7 @@ const EbrostayBackend = (() => {
     if (!sb) return false;
     let { data, error } = await sb
       .from("properties")
-      .select("*, availability_blocks(start_date, end_date), property_photos(storage_path, sort_order)")
+      .select("*, availability_blocks(start_date, end_date), property_photos(storage_path, sort_order, is_floorplan)")
       .eq("is_published", true)
       .order("price_number", { ascending: true });
     if (error) {
@@ -202,7 +206,7 @@ const EbrostayBackend = (() => {
 
   function coverUrl(property) {
     const photos = (property?.property_photos || [])
-      .slice()
+      .filter((photo) => !photo.is_floorplan)
       .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1));
     return photos.length ? photoUrl(photos[0].storage_path) : "";
   }
@@ -212,11 +216,11 @@ const EbrostayBackend = (() => {
     const sb = getClient();
     const [paidResult, assignedResult] = await Promise.all([
       sb.from("bookings")
-        .select("id, property_id, property_name, start_date, end_date, months, amount_eur, status, invoice_url, invoice_pdf, receipt_url, properties(address, property_photos(storage_path, sort_order))")
+        .select("id, property_id, property_name, start_date, end_date, months, amount_eur, status, invoice_url, invoice_pdf, receipt_url, properties(address, property_photos(storage_path, sort_order, is_floorplan))")
         .eq("user_id", user.id)
         .order("start_date"),
       sb.from("availability_blocks")
-        .select("start_date, end_date, properties(id, name, address, property_photos(storage_path, sort_order))")
+        .select("start_date, end_date, properties(id, name, address, property_photos(storage_path, sort_order, is_floorplan))")
         .eq("user_id", user.id)
         .order("start_date")
     ]);
@@ -245,7 +249,7 @@ const EbrostayBackend = (() => {
     const sb = getClient();
     const { data, error } = await sb
       .from("bookings")
-      .select("*, properties(id, name, address, lat, lng, property_photos(storage_path, sort_order))")
+      .select("*, properties(id, name, address, lat, lng, property_photos(storage_path, sort_order, is_floorplan))")
       .eq("id", bookingId)
       .maybeSingle();
     if (error || !data) return null;

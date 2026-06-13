@@ -9,6 +9,10 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://ebrostay.com/privacy.html</loc>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://ebrostay.com/property.html?id=pedro1</loc>
     <priority>0.8</priority>
   </url>

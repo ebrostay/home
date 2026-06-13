@@ -88,7 +88,7 @@ function renderPropList() {
           </span>
           <span class="admin-prop-side">
             <span class="admin-chip ${row.is_published ? "is-live" : "is-off"}">${t(row.is_published ? "admin.published" : "admin.unpublished")}</span>
-            <span>${escapeValue(row.price_label || "")}</span>
+            <span>${row.price_number} EUR/mes</span>
             <span class="details-button">${t("admin.editProperty")}</span>
           </span>
         </a>
@@ -146,6 +146,37 @@ function renderUsers() {
   }).join("");
 }
 
+function slugify(name) {
+  return name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "vivienda";
+}
+
+async function addProperty() {
+  const name = window.prompt(t("admin.addPropertyName"))?.trim();
+  if (!name) return;
+  const id = `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`;
+  const sb = EbrostayBackend.getClient();
+  const { error } = await sb.from("properties").insert({
+    id,
+    name,
+    type: "apartment",
+    city: "zaragoza",
+    address_key: "pedro",
+    guests: 2,
+    price_label: "0 EUR",
+    price_number: 0,
+    lat: 41.6516,
+    lng: -0.8809,
+    is_published: false,
+    amenities: []
+  });
+  if (error) {
+    showStatus("admin.error");
+    return;
+  }
+  window.location.href = `admin-property.html?id=${id}`;
+}
+
 function renderAll() {
   renderPropList();
   renderBookingsTable();
@@ -155,7 +186,7 @@ function renderAll() {
 async function loadAdminData() {
   const sb = EbrostayBackend.getClient();
   const [propsResult, bookingsResult, assignedResult, usersResult] = await Promise.all([
-    sb.from("properties").select("id, name, address, area_es, area_en, copy_es, copy_en, price_label, is_published, property_photos(storage_path, sort_order)").order("id"),
+    sb.from("properties").select("id, name, address, area_es, area_en, copy_es, copy_en, price_number, is_published, property_photos(storage_path, sort_order)").order("id"),
     sb.from("bookings").select("*").order("created_at", { ascending: false }),
     sb.from("availability_blocks").select("property_id, start_date, end_date, properties(name), profiles(email)").not("user_id", "is", null).order("start_date"),
     sb.from("profiles").select("id, email, is_admin, deactivated_at, created_at, bookings(count)").order("created_at")
@@ -251,6 +282,8 @@ if (adminLogin) {
 if (adminLogout) {
   adminLogout.addEventListener("click", () => EbrostayBackend.signOut());
 }
+
+document.querySelector("#adminAddProperty")?.addEventListener("click", addProperty);
 
 if (adminUserList) {
   adminUserList.addEventListener("click", async (event) => {

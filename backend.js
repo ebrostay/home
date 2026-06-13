@@ -59,7 +59,7 @@ const EbrostayBackend = (() => {
       lat: row.lat,
       lng: row.lng,
       guests: row.guests,
-      price: row.price_label,
+      price: `${row.price_number} EUR`,
       priceNumber: row.price_number,
       rating: row.rating === null ? null : Number(row.rating),
       availableFrom: row.available_from,

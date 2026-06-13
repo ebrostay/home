@@ -42,7 +42,7 @@
       crossorigin=""
     >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="styles.css?v=admin-13">
+    <link rel="stylesheet" href="styles.css?v=admin-14">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -58,6 +58,7 @@
         <a href="about.html" data-i18n="nav.about">Nosotros</a>
       </nav>
       <div class="header-actions">
+        <button class="nav-toggle" type="button" aria-label="Menú" aria-expanded="false">&#9776;</button>
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
@@ -105,7 +106,7 @@
           <div class="trust-row" aria-label="Trust signals">
             <span data-i18n="hero.trust1">Viviendas verificadas</span>
             <span data-i18n="hero.trust2">Gestión local</span>
-            <span data-i18n="hero.trust3">Solicitud online</span>
+            <span data-i18n="hero.trust3">Reserva online</span>
           </div>
         </div>
       </section>
@@ -183,7 +184,7 @@
             <div class="quick-filters" aria-label="Quick filters">
               <button type="button" data-quick="checked" data-i18n="quick.verified">Verificadas</button>
               <button type="button" data-quick="bills" data-i18n="quick.bills">Gastos incluidos</button>
-              <button type="button" data-quick="deposit" data-i18n="quick.deposit">Depósito protegido</button>
+              <button type="button" data-quick="deposit" data-i18n="quick.deposit">Fianza reembolsable</button>
             </div>
             <div class="property-list" id="propertyGrid" aria-live="polite"></div>
           </section>
@@ -216,7 +217,7 @@
       <section class="how-section" id="how">
         <div>
           <p class="section-kicker" data-i18n="how.kicker">Cómo funciona</p>
-          <h2 data-i18n="how.title">Busca, solicita y llega con todo claro.</h2>
+          <h2 data-i18n="how.title">Busca, reserva y llega con todo claro.</h2>
         </div>
         <div class="steps">
           <article>
@@ -231,8 +232,8 @@
           </article>
           <article>
             <span>03</span>
-            <h3 data-i18n="how.step3.title">Solicita</h3>
-            <p data-i18n="how.step3.copy">Envía una solicitud y Ebrostay confirma disponibilidad, condiciones y siguiente paso.</p>
+            <h3 data-i18n="how.step3.title">Reserva</h3>
+            <p data-i18n="how.step3.copy">Reserva y paga online de forma segura: la estancia completa más la fianza reembolsable. Confirmación y factura al momento.</p>
           </article>
         </div>
       </section>
@@ -251,7 +252,7 @@
         <div class="contact-copy">
           <p class="section-kicker" data-i18n="contact.kicker">Contacto</p>
           <h2 data-i18n="contact.title">Cuéntanos qué necesitas.</h2>
-          <p data-i18n="contact.copy">El formulario prepara un correo directo con la vivienda o consulta seleccionada.</p>
+          <p data-i18n="contact.copy">Cuéntanos fechas, personas y presupuesto, o pide la gestión de tu vivienda. Te respondemos lo antes posible.</p>
           <a class="button whatsapp-button" data-whatsapp href="https://wa.me/34678715418" target="_blank" rel="noopener">
             <span data-i18n="contact.whatsapp">Escríbenos por WhatsApp</span>
           </a>
@@ -273,8 +274,8 @@
             <span data-i18n="form.message">Mensaje</span>
             <textarea name="message" rows="5" placeholder="Fechas, personas, presupuesto o gestión de propiedad..." data-i18n-attr="placeholder:form.messagePlaceholder"></textarea>
           </label>
-          <button class="button primary form-button" type="submit" data-i18n="form.button">Preparar correo</button>
-          <p class="form-note" data-i18n="form.note">Se abrirá tu app de correo con el mensaje listo para enviar.</p>
+          <button class="button primary form-button" type="submit" data-i18n="form.button">Enviar mensaje</button>
+          <p class="form-note" data-i18n="form.note">Tu mensaje nos llega directamente; te respondemos por email.</p>
         </form>
       </section>
     </main>
@@ -285,6 +286,7 @@
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
       <a href="about.html" data-i18n="nav.about">Nosotros</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
       <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
@@ -336,9 +338,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=admin-13"></script>
-    <script src="data.js?v=admin-13"></script>
-    <script src="backend.js?v=admin-13"></script>
-    <script src="site.js?v=admin-13"></script>
+    <script src="supabase-config.js?v=admin-14"></script>
+    <script src="data.js?v=admin-14"></script>
+    <script src="backend.js?v=admin-14"></script>
+    <script src="nav.js?v=admin-14"></script>
+    <script src="site.js?v=admin-14"></script>
   </body>
 </html>

@@ -333,7 +333,7 @@ function renderProperties() {
           <div class="property-meta">
             ${propertySpecs(property, t, interpolate).map((spec) => `<span>${spec}</span>`).join("")}
             <span>${interpolate("listing.capacity", { guests: property.guests })}</span>
-            <span>${interpolate("listing.rating", { rating: property.rating })}</span>
+            ${property.rating ? `<span>${interpolate("listing.rating", { rating: property.rating })}</span>` : ""}
             <span>${interpolate("listing.from", { date: formatDate(dateValue(property.availableFrom)) })}</span>
           </div>
           <div class="amenity-list">${amenities}</div>
@@ -756,6 +756,17 @@ if (window.EbrostayBackend) {
     },
     onAuthChanged: (user) => {
       updateAuthUI(user);
+      // a booking attempt while signed out stores where to return after login
+      if (user) {
+        try {
+          const back = JSON.parse(localStorage.getItem("ebrostay-return-to") || "null");
+          localStorage.removeItem("ebrostay-return-to");
+          if (back?.url && Date.now() - back.ts < 30 * 60 * 1000) {
+            window.location.href = back.url;
+            return;
+          }
+        } catch { /* corrupted entry */ }
+      }
       if (user) {
         syncFavorites();
       } else {

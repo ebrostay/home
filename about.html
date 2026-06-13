@@ -7,7 +7,7 @@
     <meta name="description" content="Ebrostay: gestión local de viviendas amuebladas de media estancia en Zaragoza.">
     <link rel="canonical" href="https://ebrostay.com/about.html">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=admin-13">
+    <link rel="stylesheet" href="styles.css?v=admin-14">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -21,6 +21,7 @@
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
         <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
+        <a class="nav-cta" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
       </div>
     </header>
 
@@ -29,7 +30,7 @@
       <h1 data-i18n="about.title">Gestión local de estancias en Zaragoza.</h1>
       <p data-i18n="about.copy1">Ebrostay es un equipo local de Zaragoza que prepara y gestiona viviendas amuebladas para estancias de media duración: profesionales desplazados, estudiantes y familias en transición.</p>
       <p data-i18n="about.copy2">Nos ocupamos de todo el ciclo: anuncios verificados, entrada con soporte, limpieza, incidencias y comunicación cercana durante toda la estancia.</p>
-      <p data-i18n="about.copy3">Esta página es provisional: pronto añadiremos el equipo, nuestra historia y fotos. ¿Hablamos? Escríbenos a info@ebrostay.com.</p>
+      <p data-i18n="about.copy3">¿Quieres ver una vivienda o tienes dudas? Escríbenos a info@ebrostay.com o por WhatsApp y te respondemos en el día.</p>
       <a class="button primary" href="index.html#contact" data-i18n="nav.contact">Contacto</a>
     </main>
 
@@ -38,10 +39,11 @@
         <img class="footer-logo" src="assets/ebrostay-logo.webp" alt="Ebrostay">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
       <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
-    <script src="data.js?v=admin-13"></script>
+    <script src="data.js?v=admin-14"></script>
     <script>
       const languageButtons = document.querySelectorAll("[data-lang]");
       let currentLanguage = localStorage.getItem("ebrostay-language") || "es";

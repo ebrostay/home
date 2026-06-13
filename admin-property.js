@@ -121,7 +121,6 @@ function renderEditForm() {
       </fieldset>
       <fieldset class="admin-group">
         <legend>${t("admin.section.price")}</legend>
-        ${text("admin.field.priceLabel", "price_label", row.price_label)}
         ${text("admin.field.priceNumber", "price_number", row.price_number, "number")}
         ${text("admin.field.priceNoteEs", "price_note_es", row.price_note_es)}
         ${text("admin.field.priceNoteEn", "price_note_en", row.price_note_en)}
@@ -248,7 +247,7 @@ function renderEditor() {
       <header class="admin-card-head">
         <div>
           <h2>${escapeValue(row.name)}</h2>
-          <p class="admin-card-meta">${escapeValue(row.price_label || "")} &middot; ${row.guests} ${t("admin.guestsUnit")}${row.address ? ` &middot; ${escapeValue(row.address)}` : ""}</p>
+          <p class="admin-card-meta">${row.price_number} EUR/mes &middot; ${row.guests} ${t("admin.guestsUnit")}${row.address ? ` &middot; ${escapeValue(row.address)}` : ""}</p>
         </div>
         <span class="admin-chip ${row.is_published ? "is-live" : "is-off"}">${t(row.is_published ? "admin.published" : "admin.unpublished")}</span>
       </header>
@@ -358,7 +357,7 @@ function editPayloadFromForm(form) {
   };
   return {
     name: formData.get("name")?.toString().trim() || "",
-    price_label: formData.get("price_label")?.toString().trim() || "",
+    price_label: `${Number(formData.get("price_number")) || 0} EUR`,
     price_number: Number(formData.get("price_number")) || 0,
     guests: Number(formData.get("guests")) || 1,
     address: textOrNull("address"),

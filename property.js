@@ -47,7 +47,7 @@ function renderDetail() {
   document.querySelector("#detailMeta").innerHTML = [
     ...propertySpecs(property, t, interpolate),
     interpolate("listing.capacity", { guests: property.guests }),
-    interpolate("listing.rating", { rating: property.rating }),
+    ...(property.rating ? [interpolate("listing.rating", { rating: property.rating })] : []),
     interpolate("listing.from", { date: formatDate(dateValue(property.availableFrom)) })
   ].map((text) => `<span>${text}</span>`).join("");
 
@@ -140,9 +140,7 @@ function updateSeoTags() {
 
 let availabilityCalendar = null;
 
-function isUnavailableDay(date) {
-  const availableFrom = dateValue(property.availableFrom);
-  if (availableFrom && date < availableFrom) return true;
+function isBookedDay(date) {
   return property.unavailable.some(([start, end]) => {
     return date >= dateValue(start) && date <= dateValue(end);
   });
@@ -154,16 +152,12 @@ function renderAvailabilityCalendar() {
   availabilityCalendar?.destroy();
 
   const disabledRanges = property.unavailable.map(([from, to]) => ({ from, to }));
-  const availableFrom = dateValue(property.availableFrom);
-  if (availableFrom) {
-    const dayBefore = new Date(availableFrom);
-    dayBefore.setDate(dayBefore.getDate() - 1);
-    disabledRanges.push({ from: "1970-01-01", to: dayBefore });
-  }
+  const today = new Date().toISOString().slice(0, 10);
+  const firstBookable = property.availableFrom && property.availableFrom > today ? property.availableFrom : today;
 
   availabilityCalendar = flatpickr(element, {
     inline: true,
-    minDate: "today",
+    minDate: firstBookable,
     showMonths: window.matchMedia("(min-width: 720px)").matches ? 2 : 1,
     locale: currentLanguage === "es" ? flatpickr.l10ns.es : "default",
     disable: disabledRanges,
@@ -171,7 +165,7 @@ function renderAvailabilityCalendar() {
       if (dates.length) instance.clear();
     },
     onDayCreate: (selectedDates, dateString, instance, dayElement) => {
-      if (isUnavailableDay(dayElement.dateObj)) dayElement.classList.add("is-booked");
+      if (isBookedDay(dayElement.dateObj)) dayElement.classList.add("is-booked");
     }
   });
 }
@@ -324,6 +318,13 @@ function initBookingWidget() {
       updateBookingSummary();
     }
   });
+  const minStayNote = document.querySelector("#bookingMinStay");
+  if (minStayNote) {
+    const minStay = property.minStayMonths || 0;
+    minStayNote.hidden = minStay <= 1;
+    if (minStay > 1) minStayNote.textContent = interpolate("book.minStay", { count: minStay });
+  }
+
   preselectSearchDates(minStart, minEndFor);
   updateBookingSummary();
 
@@ -369,7 +370,15 @@ document.querySelector("#bookingButton")?.addEventListener("click", async () => 
     return;
   }
   if (!EbrostayBackend.getUser()) {
-    bookingMessage("book.loginFirst");
+    localStorage.setItem("ebrostay-return-to", JSON.stringify({
+      url: window.location.pathname + window.location.search + "#book",
+      ts: Date.now()
+    }));
+    const message = document.querySelector("#bookingMessage");
+    if (message) {
+      message.className = "auth-message";
+      message.innerHTML = `<a href="index.html#login">${t("book.loginCta")}</a>`;
+    }
     return;
   }
   const button = document.querySelector("#bookingButton");

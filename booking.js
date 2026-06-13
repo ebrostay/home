@@ -46,8 +46,7 @@ function renderBooking() {
     fact("book.start", formatBookingDate(booking.start_date)),
     fact("book.end", formatBookingDate(booking.end_date)),
     fact("book.months", booking.months ? monthsLabel(booking.months) : ""),
-    fact("booking.paidAmount", interpolate("cond.eur", { amount: booking.amount_eur })),
-    fact("booking.status", `<span class="booking-paid">${t("bookings.paidLabel")}</span>`),
+    fact("booking.paidAmount", `<span class="booking-paid">${interpolate("cond.eur", { amount: booking.amount_eur })}</span>`),
     fact("booking.reference", booking.id.slice(0, 8).toUpperCase())
   ].join("");
 

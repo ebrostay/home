@@ -130,18 +130,22 @@ Deno.serve(async (req: Request) => {
       }
     }];
 
-    if (commission > 0) {
+    // Commission billed as its own line at the net (capped) amount. Stripe
+    // Checkout can't show a negative discount line alongside invoice creation,
+    // so the full breakdown (15% gross, long-stay cap, final) is itemized in
+    // the line description for transparency on the invoice.
+    const commissionNetCents = Math.round(commission * 100);
+    if (commissionNetCents > 0) {
       lineItems.push({
         quantity: 1,
         price_data: {
           currency: "eur",
-          unit_amount: Math.round(commission * 100),
+          unit_amount: commissionNetCents,
           product_data: {
-            name: `Comisión y gestión Ebrostay (IVA 21% incl.)`,
-            description: `Comisión del 15% sobre la renta, con un tope de 1 mes de renta (${price} EUR).` +
-              (commissionCapped
-                ? ` Tope alcanzado: descuento por estancia larga aplicado (15% habría sido ${commissionRaw.toFixed(2)} EUR).`
-                : "")
+            name: `Comisión y gestión Ebrostay (15%, IVA 21% incl.)`,
+            description: commissionCapped
+              ? `15% sobre la renta = ${commissionRaw.toFixed(2)} EUR; tope de 1 mes de renta aplicado (descuento por estancia larga −${(commissionRaw - price).toFixed(2)} EUR); comisión final ${price.toFixed(2)} EUR. IVA 21% incluido.`
+              : `15% sobre la renta de la vivienda "${property.name}" (${addressLabel}). IVA 21% incluido. Tope: 1 mes de renta (${price} EUR).`
           }
         }
       });
@@ -172,9 +176,12 @@ Deno.serve(async (req: Request) => {
         enabled: true,
         invoice_data: {
           description: `Reserva Ebrostay - ${property.name} (${addressLabel}). Estancia del ${startDate} al ${bookingEnd} (${monthsLabel}). ` +
-            `Comisión y gestión 15% (IVA 21% incl.), tope 1 mes.` +
+            `Comisión y gestión 15% (IVA 21% incl.), tope 1 mes de renta.` +
+            (commissionCapped ? ` Tope alcanzado: descuento por estancia larga aplicado.` : "") +
             (depositEur > 0 ? ` Incluye fianza reembolsable de ${depositEur} EUR.` : "") +
-            (tenantsListed ? ` Inquilinos: ${names.replace(/\s+/g, " ").slice(0, 300)}.` : " Reserva sin inquilinos nombrados."),
+            (tenantsListed
+              ? ` Inquilinos identificados (renta exenta de IVA): ${names.replace(/\s+/g, " ").slice(0, 280)}.`
+              : " Reserva sin inquilinos nombrados: si es a nombre de empresa, se aplica un 21% de IVA sobre la renta que la empresa autoliquida; Ebrostay no lo cobra."),
           custom_fields: [
             { name: "Vivienda", value: property.name.slice(0, 140) },
             { name: "Estancia", value: `${stayLabel} (${monthsLabel})` },

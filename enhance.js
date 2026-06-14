@@ -14,9 +14,9 @@
       favoritesEmpty: "Todavía no has guardado viviendas.",
       favoritesShowing: "Mostrando viviendas guardadas.",
       switchLabel: "Elige tu perfil",
-      tenant: "Empresas",
+      tenant: "Buscar alojamiento",
       tenantSub: "Alojo a mi equipo",
-      owner: "Propietario",
+      owner: "Publicar mi vivienda",
       ownerSub: "Quiero publicar",
       tenantStatus: "Versión empresas activa",
       ownerStatus: "Versión propietario activa",
@@ -101,9 +101,9 @@
       favoritesEmpty: "You have not saved any homes yet.",
       favoritesShowing: "Showing saved homes.",
       switchLabel: "Choose your profile",
-      tenant: "Companies",
+      tenant: "Find a stay",
       tenantSub: "Housing for my team",
-      owner: "Owner",
+      owner: "List my property",
       ownerSub: "I want to list",
       tenantStatus: "Company version active",
       ownerStatus: "Owner version active",
@@ -214,6 +214,28 @@
     return `<i data-lucide="${name}" aria-hidden="true"></i>`;
   }
 
+  // Translate static [data-i18n] content + sync the language buttons. Runs on
+  // every page (idempotent); the safety net for pages without a page-specific
+  // script (e.g. about, privacy) so the English/Spanish versions both work.
+  function applyKeyedTranslations(language) {
+    if (typeof translations === "undefined") return;
+    var lng = translations[language] ? language : "es";
+    document.documentElement.lang = lng;
+    try { localStorage.setItem("ebrostay-language", lng); } catch (e) { /* ignore */ }
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      el.textContent = siteText(el.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+      el.dataset.i18nAttr.split(";").forEach(function (pair) {
+        var p = pair.split(":");
+        if (p[0] && p[1]) el.setAttribute(p[0].trim(), siteText(p[1].trim()));
+      });
+    });
+    document.querySelectorAll("[data-lang]").forEach(function (b) {
+      b.classList.toggle("is-active", b.dataset.lang === lng);
+    });
+  }
+
   function refreshIcons() {
     window.lucide?.createIcons?.();
   }
@@ -270,7 +292,7 @@
       .audience-switch--compact .audience-toggle { min-height: 36px; padding: 3px; gap: 2px; background: transparent; border: 1px solid var(--line); box-shadow: none; }
       .audience-switch--compact .audience-toggle-indicator { top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); background: var(--surface-brand-soft); box-shadow: none; }
       .audience-switch--compact[data-audience="owner"] .audience-toggle-indicator { transform: translateX(100%); background: var(--surface-accent-soft); box-shadow: none; }
-      .audience-switch--compact .audience-toggle button { padding: 4px 12px; font-size: 0.82rem; color: var(--muted); }
+      .audience-switch--compact .audience-toggle button { padding: 4px 14px; font-size: 0.82rem; white-space: nowrap; color: var(--muted); }
       .audience-switch--compact .audience-toggle button.is-active { color: var(--text-brand); }
       .audience-switch--compact[data-audience="owner"] .audience-toggle button[data-audience-option="owner"].is-active { color: var(--accent); }
       @media (max-width: 600px) { .audience-switch--compact { display: none; } }
@@ -344,8 +366,10 @@
       .detail-highlights, .trust-detail-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0; }
       .detail-highlight, .trust-detail-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fff; font-weight: 600; color: var(--ink); }
       .detail-highlight svg, .trust-detail-card svg { width: 18px; height: 18px; color: var(--green); margin-bottom: 6px; }
-      .share-social-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .share-social-row a { display: inline-flex; justify-content: center; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-decoration: none; color: var(--green-700); background: #fff; font-weight: 600; font-size: .86rem; }
+      .share-social-row { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 10px; }
+      .share-social-row a { display: inline-flex; justify-content: center; align-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: var(--radius-sm); text-decoration: none; color: var(--text-muted); background: var(--surface); transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out); }
+      .share-social-row a:hover { color: var(--text-brand); border-color: var(--line-strong); }
+      .share-social-row svg { width: 18px; height: 18px; }
       .booking-widget { gap: 10px; }
       .booking-widget h4, .movein-box h4 { margin-bottom: 2px; color: var(--green-700); font-size: .92rem; letter-spacing: .045em; }
       .booking-widget label { font-size: .82rem; gap: 5px; }
@@ -484,7 +508,6 @@
     var trustItems = hero.querySelectorAll(".trust-row span");
     var cta = hero.querySelector(".hero-cta-row a");
     var ctaText = hero.querySelector(".hero-cta-row a span");
-    var navCta = document.querySelector(".nav-cta");
     if (mode === "owner") {
       setText(hero.querySelector(".eyebrow"), text("ownerKicker"));
       setText(hero.querySelector("h1"), text("ownerTitle"));
@@ -494,7 +517,6 @@
       if (trustItems[2]) trustItems[2].innerHTML = `${icon("banknote")}<span>${text("ownerTrust3")}</span>`;
       if (cta) cta.href = "owners.html";
       if (ctaText) ctaText.textContent = text("ownerCta");
-      if (navCta) { navCta.href = "owners.html#owner-apply"; navCta.textContent = text("ownerNavCta"); }
     } else {
       setText(hero.querySelector(".eyebrow"), siteText("hero.kicker"));
       setText(hero.querySelector("h1"), siteText("hero.title"));
@@ -504,7 +526,6 @@
       if (trustItems[2]) trustItems[2].innerHTML = `${icon("calendar-check")}<span>${siteText("hero.trust3")}</span>`;
       if (cta) cta.href = "owners.html";
       if (ctaText) ctaText.textContent = siteText("hero.ownerCta");
-      if (navCta) { navCta.href = "#search"; navCta.textContent = text("tenantNavCta"); }
     }
     refreshIcons();
   }
@@ -932,9 +953,9 @@
     var row = document.createElement("div");
     row.className = "share-social-row";
     row.innerHTML = `
-      <a href="https://www.linkedin.com/sharing/share-offsite/?url=${url}" target="_blank" rel="noopener">${text("shareLinkedin")}</a>
-      <a href="${whatsappLink(window.location.href)}" target="_blank" rel="noopener">${text("shareWhatsapp")}</a>
-      <a href="mailto:?subject=${title}&body=${url}">${text("shareEmail")}</a>
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url=${url}" target="_blank" rel="noopener" aria-label="${text("shareLinkedin")}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.44-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+      <a href="${whatsappLink(window.location.href)}" target="_blank" rel="noopener" aria-label="${text("shareWhatsapp")}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.86 9.86 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.91-7.02zM12.05 20.15a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.24-8.23a8.2 8.2 0 0 1 5.82 2.41 8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.39.11-.51.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z"/></svg></a>
+      <a href="mailto:?subject=${title}&body=${url}" aria-label="${text("shareEmail")}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 4h18a1 1 0 0 1 1 1v.4l-10 6.1L2 5.4V5a1 1 0 0 1 1-1zm-1 3.66V19a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V7.66l-9.48 5.78a1 1 0 0 1-1.04 0L2 7.66z"/></svg></a>
     `;
     share.insertAdjacentElement("afterend", row);
   }
@@ -987,16 +1008,25 @@
     if (!document.querySelector(".owner-hero")) return;
     document.body.classList.add("owner-page");
     var featureSection = document.querySelector(".owner-features");
-    if (featureSection && !featureSection.querySelector("[data-owner-extra]")) {
-      [
-        ["sofa", text("ownerExtraFurnish"), text("ownerExtraFurnishCopy")],
-        ["clipboard-check", text("ownerExtraMove"), text("ownerExtraMoveCopy")],
-        ["bar-chart-3", text("ownerExtraStats"), text("ownerExtraStatsCopy")]
-      ].forEach(function (item) {
+    if (!featureSection) return;
+    var items = [
+      ["sofa", "ownerExtraFurnish", "ownerExtraFurnishCopy"],
+      ["clipboard-check", "ownerExtraMove", "ownerExtraMoveCopy"],
+      ["bar-chart-3", "ownerExtraStats", "ownerExtraStatsCopy"]
+    ];
+    var existing = featureSection.querySelectorAll("[data-owner-extra]");
+    if (existing.length === items.length) {
+      // Re-sync text on language change (cards already injected).
+      existing.forEach(function (card, i) {
+        setText(card.querySelector("h3"), text(items[i][1]));
+        setText(card.querySelector("p"), text(items[i][2]));
+      });
+    } else if (!existing.length) {
+      items.forEach(function (item) {
         var card = document.createElement("div");
         card.className = "feature-card";
         card.setAttribute("data-owner-extra", "");
-        card.innerHTML = `<span class="feature-icon">${icon(item[0])}</span><h3>${item[1]}</h3><p>${item[2]}</p>`;
+        card.innerHTML = `<span class="feature-icon">${icon(item[0])}</span><h3>${text(item[1])}</h3><p>${text(item[2])}</p>`;
         featureSection.appendChild(card);
       });
     }
@@ -1060,6 +1090,7 @@
   }
 
   function refreshLanguageSensitiveEnhancements() {
+    applyKeyedTranslations(lang());
     improveNavigation();
     updateEnhancedFilterText();
     simplifyValueAndHow();
@@ -1067,6 +1098,7 @@
     addFooterLegal();
     updateSupportText();
     updateDetailMediaTabs();
+    addOwnerExtras();
     if (document.querySelector(".detail-page")) {
       document.querySelector("#detailMedia")?.setAttribute("data-gallery-hint", text("galleryHint"));
     }
@@ -1133,6 +1165,7 @@
 
   function boot() {
     addGlobalStyles();
+    applyKeyedTranslations(lang());
     improveNavigation();
     initAudience();
     initThemeToggle();
@@ -1149,7 +1182,10 @@
     refreshIcons();
 
     document.querySelectorAll("[data-lang]").forEach(function (button) {
-      button.addEventListener("click", function () { window.setTimeout(refreshLanguageSensitiveEnhancements, 20); });
+      button.addEventListener("click", function () {
+        applyKeyedTranslations(button.dataset.lang);
+        window.setTimeout(refreshLanguageSensitiveEnhancements, 20);
+      });
     });
     [120, 450, 1000, 1800].forEach(function (delay) {
       window.setTimeout(function () {

@@ -1050,12 +1050,18 @@ a.property-media {
   gap: 10px;
 }
 
-.amenity-grid span {
+.amenity-grid > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   background: var(--surface);
+  color: var(--text-body);
 }
+.amenity-grid > span svg { width: 16px; height: 16px; color: var(--brand); flex: 0 0 auto; }
+.amenity-grid > span span { color: inherit; }
 
 .blocked-dates {
   margin: 12px 0 0;

@@ -107,17 +107,33 @@ function customerEmailHtml(r: Record<string, string>) {
   </div>`;
 }
 
-async function sendEmail(payload: Record<string, unknown>) {
+// Sends one email via Resend and reports the outcome. Resend returning a
+// non-2xx (e.g. a bad API key or unverified domain) does NOT throw, so we
+// must inspect the response — otherwise a misconfigured key fails silently.
+async function sendEmail(label: string, payload: Record<string, unknown>) {
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendKey) return;
+  if (!resendKey) {
+    console.error(`email skipped (${label}): RESEND_API_KEY not set`);
+    return { ok: false, error: "no_api_key" };
+  }
   try {
-    await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+    const text = await res.text();
+    if (!res.ok) {
+      console.error(`email failed (${label}): ${res.status} ${text.slice(0, 300)}`);
+      return { ok: false, error: `http_${res.status}` };
+    }
+    let id: string | undefined;
+    try { id = JSON.parse(text)?.id; } catch { /* non-JSON success body */ }
+    console.log(`email sent (${label}): ${id || "ok"}`);
+    return { ok: true, id };
   } catch (mailError) {
-    console.error("request email failed", mailError);
+    console.error(`email error (${label})`, mailError);
+    return { ok: false, error: "network" };
   }
 }
 
@@ -228,7 +244,7 @@ Deno.serve(async (req: Request) => {
     const from = Deno.env.get("EMAIL_FROM") || "Ebrostay <reservas@ebrostay.com>";
     const teamTo = Deno.env.get("EMAIL_TO") || "info@ebrostay.com";
 
-    await sendEmail({
+    const teamResult = await sendEmail("team", {
       from,
       to: [teamTo],
       reply_to: customerEmail || undefined,
@@ -237,7 +253,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (customerEmail) {
-      await sendEmail({
+      await sendEmail("customer", {
         from,
         to: [customerEmail],
         subject: `Hemos recibido tu solicitud: ${property.name}`,
@@ -245,7 +261,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return json({ ok: true });
+    // emailed reflects the notification to Ebrostay; the saved row is the
+    // reliable record either way, so a failed email never fails the request.
+    // emailError (when present) surfaces the Resend failure code for debugging.
+    return json({ ok: true, emailed: teamResult.ok, ...(teamResult.ok ? {} : { emailError: teamResult.error }) });
   } catch (error) {
     console.error("request-booking error", error);
     return json({ error: "server_error" }, 500);

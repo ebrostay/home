@@ -811,6 +811,8 @@
   function addFooterLegal() {
     var footer = document.querySelector(".site-footer");
     if (!footer) return;
+    var yearEl = footer.querySelector("#year");
+    if (yearEl && !yearEl.textContent) yearEl.textContent = new Date().getFullYear();
     var note = footer.querySelector(".footer-legal-note");
     if (!note) {
       note = document.createElement("p");

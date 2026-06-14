@@ -3268,3 +3268,20 @@ input:focus, select:focus, textarea:focus {
 }
 .theme-toggle:active { transform: scale(0.92); }
 .theme-toggle svg { width: 18px; height: 18px; }
+
+/* ---- Footer navigation (primary nav lives here now) ---- */
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 26px);
+}
+.footer-nav a,
+.footer-email {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+.footer-nav a:hover,
+.footer-email:hover { color: var(--text-brand); }

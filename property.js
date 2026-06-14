@@ -205,14 +205,19 @@ async function travelTimes(destinations) {
   return { walk, car, transit, routeKm };
 }
 
+// Render Lucide glyphs added after the initial page-load icon pass
+function refreshIcons() {
+  window.lucide?.createIcons();
+}
+
 function distanceRow(name, times, index, extraClass = "") {
   return `
     <li${extraClass ? ` class="${extraClass}"` : ""}>
       <span class="distance-name">${name}<small>${times.routeKm[index].toFixed(1)} km</small></span>
       <span class="distance-modes">
-        <span title="${t("dist.walk")}">&#128694; ${times.walk[index]} min</span>
-        <span title="${t("dist.transit")}">&#128652; ${times.transit[index]} min</span>
-        <span title="${t("dist.car")}">&#128663; ${times.car[index]} min</span>
+        <span class="distance-mode" title="${t("dist.walk")}"><i data-lucide="footprints" aria-hidden="true"></i>${times.walk[index]} min</span>
+        <span class="distance-mode" title="${t("dist.transit")}"><i data-lucide="bus" aria-hidden="true"></i>${times.transit[index]} min</span>
+        <span class="distance-mode" title="${t("dist.car")}"><i data-lucide="car-front" aria-hidden="true"></i>${times.car[index]} min</span>
       </span>
     </li>
   `;
@@ -223,6 +228,7 @@ async function renderDistances() {
   if (!list || !property.lat) return;
   const times = await travelTimes(LANDMARKS);
   list.innerHTML = LANDMARKS.map((landmark, index) => distanceRow(t(landmark.key), times, index)).join("");
+  refreshIcons();
   if (customDestination) renderCustomDistance();
 }
 
@@ -260,7 +266,7 @@ function drawCustomDestination() {
     L.marker([customDestination.lat, customDestination.lng], { title: customDestination.label }),
     L.polyline(
       [[property.lat, property.lng], [customDestination.lat, customDestination.lng]],
-      { color: "#376f83", weight: 3, dashArray: "7 7" }
+      { color: "#2f74cc", weight: 3, dashArray: "7 7" }
     )
   ]).addTo(detailMap);
   detailMap.fitBounds(
@@ -275,7 +281,8 @@ async function renderCustomDistance() {
   const times = await travelTimes([customDestination]);
   document.querySelector("#customDistanceRow")?.remove();
   list.insertAdjacentHTML("beforeend",
-    distanceRow(`&#128205; ${customDestination.label}`, times, 0, "is-custom").replace("<li", '<li id="customDistanceRow"'));
+    distanceRow(`<i data-lucide="map-pin" aria-hidden="true"></i>${customDestination.label}`, times, 0, "is-custom").replace("<li", '<li id="customDistanceRow"'));
+  refreshIcons();
   drawCustomDestination();
 }
 

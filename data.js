@@ -658,7 +658,7 @@ const translations = {
     "nav.how": "How it works",
     "nav.owners": "Owners",
     "nav.contact": "Contact",
-    "nav.cta": "List a home",
+    "nav.cta": "Find a stay",
     "hero.imageAlt": "Furnished apartment in Zaragoza",
     "hero.kicker": "Mid-term corporate housing, 100% digital",
     "hero.title": "Your stay in Zaragoza, ready to move in.",

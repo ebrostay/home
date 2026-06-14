@@ -277,6 +277,7 @@
       .audience-owner-panel { display: none; width: min(760px, 100%); margin-top: 16px; border: 1px solid rgba(250, 249, 246, 0.35); border-radius: var(--radius-lg); padding: clamp(16px, 2.4vw, 22px); background: var(--ebro-glass); color: var(--ink); box-shadow: 0 16px 40px rgba(10, 20, 17, 0.22); backdrop-filter: blur(14px); }
       html[data-audience="owner"] .audience-owner-panel { display: grid; gap: 16px; animation: audiencePanelIn 300ms var(--ease-out); }
       html[data-audience="owner"] .hero-search { display: none; }
+      html[data-audience="owner"] .marketplace { display: none; }
       .audience-owner-panel span { color: var(--clay-600); font-size: 0.76rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
       .audience-owner-panel strong { display: block; margin-top: 4px; color: var(--green-900); font-size: clamp(1.12rem, 2.2vw, 1.55rem); line-height: 1.05; }
       .audience-owner-panel p { margin: 8px 0 0; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
@@ -296,7 +297,7 @@
       .quick-filters [data-quick="deposit"] { display: none !important; }
       .quick-filters .saved-quick-filter { border-color: var(--green); color: var(--green-700); }
       .quick-filters .saved-quick-filter.is-active { color: #fff; background: var(--green); }
-      .marketplace-layout { grid-template-columns: 270px minmax(360px, .92fr) minmax(460px, 1.08fr); }
+      .marketplace-layout { grid-template-columns: 260px minmax(0, 1.3fr) minmax(330px, 0.9fr); }
       .google-map-wrap { min-height: 560px; background: var(--green-900); }
       .listings-map .leaflet-tile { filter: saturate(.72) hue-rotate(32deg) contrast(.96) brightness(1.02); }
       .listings-map::after, .detail-map::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, rgba(31,138,87,.12), rgba(217,99,42,.05)); z-index: 410; mix-blend-mode: multiply; }
@@ -333,7 +334,7 @@
       .support-panel h3, .support-panel p { margin: 0; }
       .support-panel textarea { min-height: 92px; }
       .support-panel-actions { display: flex; gap: 8px; }
-      .detail-media { background-size: contain !important; background-repeat: no-repeat !important; background-position: center !important; background-color: var(--sunken); cursor: zoom-in; }
+      .detail-media { background-size: cover !important; background-repeat: no-repeat !important; background-position: center !important; background-color: var(--sunken); cursor: zoom-in; }
       .detail-media::after { content: attr(data-gallery-hint); position: absolute; right: 12px; bottom: 12px; border-radius: var(--radius-pill); padding: 7px 10px; color: #fff; background: rgba(10,51,36,.78); font-size: .82rem; font-weight: 600; }
       .detail-gallery { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 0; }
       .gallery-thumb { flex: 0 0 92px; height: 66px; background-size: cover; }

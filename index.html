@@ -48,7 +48,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-nav">
+    <link rel="stylesheet" href="styles.css?v=ds-layout">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
       <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
@@ -57,18 +57,12 @@
       <a class="brand" href="#top" aria-label="Ebrostay home">
         <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
       </a>
-<div class="header-actions">
-<div class="language-switch" aria-label="Language selector">
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
-        <button class="auth-button" id="authButton" type="button" hidden data-i18n="auth.login">Entrar</button>
-        <div class="user-chip" id="userChip" hidden>
-          <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
-          <a class="admin-link" id="adminLink" href="admin.html" hidden data-i18n="auth.admin">Administración</a>
-          <span class="user-email" id="userEmail"></span>
-          <button class="logout-button" id="logoutButton" type="button" data-i18n="auth.logout">Salir</button>
-        </div>
+        <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
         <a class="nav-cta" href="#search" data-i18n="nav.cta">Buscar vivienda</a>
       </div>
     </header>
@@ -387,11 +381,11 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-nav"></script>
+    <script src="data.js?v=ds-layout"></script>
     <script src="backend.js?v=design-6"></script>
     <script src="nav.js?v=design-6"></script>
     <script src="site.js?v=design-6"></script>
       <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-nav"></script>
+    <script src="enhance.js?v=ds-layout"></script>
   </body>
 </html>

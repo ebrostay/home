@@ -196,6 +196,20 @@ textarea {
   text-transform: uppercase;
 }
 
+.hero-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+}
+
+.hero-logo {
+  flex-shrink: 0;
+  width: clamp(3.5rem, 7vw, 5.5rem);
+  height: auto;
+  margin-top: 0.1em;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+}
+
 .hero h1 {
   width: min(780px, 100%);
   margin: 0;
@@ -3031,7 +3045,7 @@ input:focus, select:focus, textarea:focus {
   animation: heroRise 0.85s var(--ease-out) both;
 }
 .hero-content > .eyebrow { animation-delay: 0.05s; }
-.hero-content > h1 { animation-delay: 0.12s; }
+.hero-content > .hero-title-row { animation-delay: 0.12s; }
 .hero-content > .hero-copy { animation-delay: 0.22s; }
 .hero-content > .hero-search { animation-delay: 0.32s; }
 .hero-content > .trust-row { animation-delay: 0.42s; }

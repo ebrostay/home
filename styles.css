@@ -2756,6 +2756,21 @@ input:focus, select:focus, textarea:focus {
 .value-card h3 { color: #fff; font-size: 1.12rem; }
 .value-card p { color: rgba(255, 255, 255, 0.74); margin: 6px 0 0; font-size: 0.95rem; }
 .value-card strong { color: var(--lime); }
+.value-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  background: rgba(239, 158, 110, 0.18);
+  border: 1px solid rgba(239, 158, 110, 0.34);
+  color: var(--lime);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 
 /* ---- Dual-audience split band ---- */
 .split-band {

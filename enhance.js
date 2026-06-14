@@ -234,6 +234,11 @@
     document.querySelectorAll("[data-lang]").forEach(function (b) {
       b.classList.toggle("is-active", b.dataset.lang === lng);
     });
+    // Show the matching language block for rich content that can't be
+    // translated via textContent (e.g. the privacy/legal page).
+    document.querySelectorAll("[data-lang-content]").forEach(function (block) {
+      block.hidden = block.dataset.langContent !== lng;
+    });
   }
 
   function refreshIcons() {

@@ -41,6 +41,7 @@
   --surface-sunken: var(--stone-100);
   --surface-inverse: var(--green-900);
   --surface-brand-soft: var(--green-50);
+  --surface-accent-soft: var(--clay-50);
 
   /* Glass — translucent/blur chrome over imagery */
   --glass-strong: rgba(255, 255, 255, 0.88);
@@ -177,6 +178,7 @@
   --surface-sunken: #1a1813;
   --surface-inverse: #f5f3ee;
   --surface-brand-soft: rgba(67, 160, 111, 0.16);
+  --surface-accent-soft: rgba(232, 127, 69, 0.16);
 
   --glass-strong: rgba(31, 29, 23, 0.82);
   --glass-light: rgba(31, 29, 23, 0.60);

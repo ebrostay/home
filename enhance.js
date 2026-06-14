@@ -265,6 +265,15 @@
       .audience-toggle button:hover { transform: translateY(-1px); }
       .audience-toggle button.is-active { color: #fff; }
       .audience-toggle small { font-size: 0.68rem; font-weight: 600; opacity: .88; }
+      /* Compact, subtle variant docked in the top bar next to the logo */
+      .audience-switch--compact { width: auto; margin: 0 0 0 4px; padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; display: inline-flex; align-items: center; flex: 0 0 auto; }
+      .audience-switch--compact .audience-toggle { min-height: 36px; padding: 3px; gap: 2px; background: transparent; border: 1px solid var(--line); box-shadow: none; }
+      .audience-switch--compact .audience-toggle-indicator { top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); background: var(--surface-brand-soft); box-shadow: none; }
+      .audience-switch--compact[data-audience="owner"] .audience-toggle-indicator { transform: translateX(100%); background: var(--surface-accent-soft); box-shadow: none; }
+      .audience-switch--compact .audience-toggle button { padding: 4px 12px; font-size: 0.82rem; color: var(--muted); }
+      .audience-switch--compact .audience-toggle button.is-active { color: var(--text-brand); }
+      .audience-switch--compact[data-audience="owner"] .audience-toggle button[data-audience-option="owner"].is-active { color: var(--accent); }
+      @media (max-width: 600px) { .audience-switch--compact { display: none; } }
       .audience-owner-panel { display: none; width: min(760px, 100%); margin-top: 16px; border: 1px solid rgba(250, 249, 246, 0.35); border-radius: var(--radius-lg); padding: clamp(16px, 2.4vw, 22px); background: var(--ebro-glass); color: var(--ink); box-shadow: 0 16px 40px rgba(10, 20, 17, 0.22); backdrop-filter: blur(14px); }
       html[data-audience="owner"] .audience-owner-panel { display: grid; gap: 16px; animation: audiencePanelIn 300ms var(--ease-out); }
       html[data-audience="owner"] .hero-search { display: none; }
@@ -380,23 +389,23 @@
   function createAudienceSwitch() {
     var existing = document.querySelector("[data-audience-switch]");
     if (existing) return existing;
-    var heroContent = document.querySelector(".hero-content");
-    var heroSearch = document.querySelector(".hero-search");
-    if (!heroContent || !heroSearch) return null;
-    var node = document.createElement("section");
-    node.className = "audience-switch";
+    // Homepage-only (the mode drives the hero); rendered subtly in the top bar.
+    var hero = document.querySelector(".hero");
+    var header = document.querySelector(".site-header");
+    var brand = header && header.querySelector(".brand");
+    if (!hero || !header || !brand) return null;
+    var node = document.createElement("div");
+    node.className = "audience-switch audience-switch--compact";
     node.setAttribute("data-audience-switch", "");
     node.setAttribute("aria-label", "Website audience selector");
     node.innerHTML = `
-      <div class="audience-switch-copy"><span data-audience-label></span><strong data-audience-status></strong></div>
-      <div class="audience-toggle" role="radiogroup" aria-label="Choose tenant or owner version">
+      <div class="audience-toggle" role="radiogroup" aria-label="Choose company or owner version">
         <span class="audience-toggle-indicator" aria-hidden="true"></span>
-        <button type="button" role="radio" data-audience-option="tenant"><span data-audience-tenant></span><small data-audience-tenant-sub></small></button>
-        <button type="button" role="radio" data-audience-option="owner"><span data-audience-owner></span><small data-audience-owner-sub></small></button>
+        <button type="button" role="radio" data-audience-option="tenant"><span data-audience-tenant></span></button>
+        <button type="button" role="radio" data-audience-option="owner"><span data-audience-owner></span></button>
       </div>
-      <p class="audience-switch-note" data-audience-hint></p>
     `;
-    heroSearch.insertAdjacentElement("beforebegin", node);
+    brand.insertAdjacentElement("afterend", node);
     node.addEventListener("click", function (event) {
       var button = event.target.closest("[data-audience-option]");
       if (!button) return;

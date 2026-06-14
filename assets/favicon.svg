@@ -1,20 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Ebrostay">
-  <defs>
-    <linearGradient id="ebg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#13b878"/>
-      <stop offset="1" stop-color="#0a7a54"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#ebg)"/>
-  <g fill="#ffffff">
-    <!-- bridge deck -->
-    <rect x="8" y="25.5" width="48" height="4.6" rx="2.3"/>
-    <!-- bridge body with three arches (knockouts reveal the gradient) -->
-    <path fill-rule="evenodd" d="M9.5 30 L54.5 30 L54.5 44 L9.5 44 Z
-      M12.8 44 L12.8 38.5 A5.6 5.6 0 0 1 24 38.5 L24 44 Z
-      M26.4 44 L26.4 38.5 A5.6 5.6 0 0 1 37.6 38.5 L37.6 44 Z
-      M40 44 L40 38.5 A5.6 5.6 0 0 1 51.2 38.5 L51.2 44 Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Ebrostay">
+  <rect width="48" height="48" rx="11" fill="#ecf6ef"></rect>
+  <g transform="translate(24,24) scale(0.82) translate(-24,-24)">
+    <g transform="translate(0,7)">
+      <path fill="#1f8a57" d="M7 30 L7 21 A17 17 0 0 1 41 21 L41 30 L35 30 L35 22 A11 11 0 0 0 13 22 L13 30 Z"></path>
+      <path fill="#9cc4f0" d="M13 30 L13 26.5 C16.5 25.1 19.5 27.4 24 26.3 C28.5 25.2 31.5 27.4 35 26.3 L35 30 Z"></path>
+    </g>
   </g>
-  <!-- Ebro river -->
-  <rect x="12" y="48" width="40" height="3.4" rx="1.7" fill="#c8f169"/>
 </svg>

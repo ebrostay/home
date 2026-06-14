@@ -9,17 +9,17 @@
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
     <link rel="manifest" href="site.webmanifest">
-    <meta name="theme-color" content="#0e9f6e">
+    <meta name="theme-color" content="#1f8a57">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=design-6">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-12">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Ebrostay home">
-        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
+        <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
       </a>
       <div class="header-actions">
         <div class="language-switch" aria-label="Language selector">
@@ -43,12 +43,12 @@
         <h2 data-i18n="about.mvTitle">A dónde vamos y qué hacemos cada día.</h2>
         <div class="value-grid">
           <div class="value-card">
-            <span class="value-icon">🌍</span>
+            <span class="value-icon"><i data-lucide="globe"></i></span>
             <h3 data-i18n="about.visionLabel">Nuestra visión</h3>
             <p data-i18n="about.visionCopy">Convertirnos en la empresa de gestión de propiedades número uno de Europa en alquiler corporativo de media estancia.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon">🌉</span>
+            <span class="value-icon"><i data-lucide="arrow-left-right"></i></span>
             <h3 data-i18n="about.missionLabel">Nuestra misión</h3>
             <p data-i18n="about.missionCopy">Ser el puente entre empresas y propietarios, con un servicio de primer nivel para ambos lados.</p>
           </div>
@@ -93,22 +93,22 @@
         <p class="value-lead" data-i18n="about.fpLead">La gestión tradicional funciona con llamadas, papeleo, visitas a ciegas y comisiones ocultas. Descompusimos cada sub-área hasta sus primeros principios y la reconstruimos como algo digital, transparente y rápido.</p>
         <div class="value-grid">
           <div class="value-card">
-            <span class="value-icon">💸</span>
+            <span class="value-icon"><i data-lucide="badge-euro"></i></span>
             <h3 data-i18n="about.fp1t">Precio y transparencia</h3>
             <p data-i18n="about.fp1c">Un precio mensual claro. Sin comisiones ocultas ni sorpresas al firmar.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon">📄</span>
+            <span class="value-icon"><i data-lucide="file-text"></i></span>
             <h3 data-i18n="about.fp2t">Contratos y cumplimiento</h3>
             <p data-i18n="about.fp2c">Contrato de temporada correcto, fianza y registro: lo gestionamos nosotros.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon">🔐</span>
+            <span class="value-icon"><i data-lucide="lock"></i></span>
             <h3 data-i18n="about.fp3t">Cobros y fianza</h3>
             <p data-i18n="about.fp3c">Pago online seguro, facturación automática y fianza gestionada.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon">💬</span>
+            <span class="value-icon"><i data-lucide="headset"></i></span>
             <h3 data-i18n="about.fp4t">Soporte y check-in</h3>
             <p data-i18n="about.fp4c">Autoentrada con lockbox y soporte 24/7 en español e inglés.</p>
           </div>
@@ -129,7 +129,7 @@
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
+        <img class="footer-logo" src="assets/ebrostay-mark.svg" alt="Ebrostay" width="40" height="40">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
       <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
@@ -160,5 +160,7 @@
       document.querySelector("#year").textContent = new Date().getFullYear();
       applyLanguage(currentLanguage);
     </script>
+      <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+    <script src="enhance.js?v=design-10"></script>
   </body>
 </html>

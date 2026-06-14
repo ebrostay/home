@@ -9,17 +9,17 @@
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
     <link rel="manifest" href="site.webmanifest">
-    <meta name="theme-color" content="#0e9f6e">
+    <meta name="theme-color" content="#1f8a57">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=design-6">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-12">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Ebrostay home">
-        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
+        <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
       </a>
       <div class="header-actions">
         <a class="nav-cta" href="index.html">Volver al sitio</a>
@@ -68,12 +68,14 @@
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
+        <img class="footer-logo" src="assets/ebrostay-mark.svg" alt="Ebrostay" width="40" height="40">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
       <a href="about.html">Nosotros</a>
       <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
     <script>document.querySelector("#year").textContent = new Date().getFullYear();</script>
+      <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+    <script src="enhance.js?v=design-12"></script>
   </body>
 </html>

@@ -8,6 +8,24 @@
 
 ---
 
+## Status — all findings addressed in this PR
+
+The findings below were the audit. They have since been **fixed** in the same change set:
+
+- **#1 Type weights** — every ad-hoc heavy weight (650–950) collapsed to the light **600** heading weight across `styles.css`, `enhance.js`, `404.html`. Body stays 400. Histogram is now `600 ×95` (was 850 ×30 / 900 ×14 / …).
+- **#2 Eyebrows** — `.eyebrow`/`.section-kicker` now use `--tracking-caps` (0.08em) and `--weight-emphasis`.
+- **#3 Tokenization** — `:root` now mirrors the DS token set (raw scales + semantic aliases + `--space-*`, `--text-*`, `--weight-*`, radii, shadows, motion); the legacy names (`--ink`, `--paper`, `--line`, …) are aliased to those tokens.
+- **#4 Radii** — added `--radius-sm/md/lg/xl/2xl`; all off-scale hardcoded radii (3/6/8/10/13/16/24/28/999px) snapped to tokens.
+- **#5 Shadows** — shadow tokens dialled down to the flat-system DS alphas.
+- **#6 Dark mode** — full `[data-theme="dark"]` block; light-first no-flash `<head>` script on all 11 pages; a header toggle injected via `enhance.js`. Solid white surfaces converted to surface tokens so they flip cleanly.
+- **#7 Off-token colors** — `#fbfaf6` → `--paper`; the admin "live" dot `#54b884` → `--green-400`. (The WhatsApp button keeps its third-party brand green by design.)
+- **#8 Hero display** — capped at `--text-6xl`, line-height ≥ `--leading-tight` (1.08), tracking `--tracking-tight`.
+- **#9 Minor** — focus ring via `--ring-focus` (0.40 alpha); glass blur standardized to `--glass-blur` (16px); font `<link>` unified across all pages (every page now loads JetBrains Mono); motion-duration tokens defined.
+
+The original audit follows for reference.
+
+---
+
 ## Verdict at a glance
 
 The website is **visually in the right family** — correct fonts, the Ebro-green/terracotta/stone palette, glass search bar, mono numerals, scroll-reveal, reduced-motion support. But it **does not consume the design-system tokens** (it re-declares its own ad-hoc variable set), and it **systematically breaks the type-weight rule**, which is the brand's defining "calm, light" lever.

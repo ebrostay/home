@@ -132,53 +132,9 @@ document.querySelector("#payoutForm")?.addEventListener("submit", async (event) 
   }
 });
 
-// Stripe Connect: reflect status and drive onboarding
-const CONNECT_LABELS = {
-  active: "partner.connectActive",
-  pending: "partner.connectPending",
-  incomplete: "partner.connectIncomplete",
-  none: "partner.connectNone"
-};
-
-async function refreshConnect() {
-  const line = document.querySelector("#connectStatusLine");
-  const button = document.querySelector("#connectButton");
-  if (!line || !button) return;
-  const result = await EbrostayBackend.ownerConnect("status");
-  if (result.code === "connect_not_enabled" || result.code === "stripe_not_configured") {
-    line.textContent = t("partner.connectUnavailable");
-    button.hidden = true;
-    return;
-  }
-  const status = result.status || "none";
-  line.textContent = t(CONNECT_LABELS[status] || "partner.connectNone");
-  button.hidden = status === "active";
-  button.textContent = t(status === "none" ? "partner.connectStart" : "partner.connectContinue");
-  button.dataset.ready = "yes";
-}
-
-document.querySelector("#connectButton")?.addEventListener("click", async () => {
-  const button = document.querySelector("#connectButton");
-  const note = document.querySelector("#connectNote");
-  button.disabled = true;
-  note.textContent = t("partner.connectRedirect");
-  const result = await EbrostayBackend.ownerConnect("onboard");
-  if (result.url) {
-    window.location.href = result.url;
-    return;
-  }
-  button.disabled = false;
-  note.textContent = t(result.code === "connect_not_enabled" ? "partner.connectUnavailable" : "form.errorSend");
-});
-
 document.querySelector("#year").textContent = new Date().getFullYear();
 applyLanguage(currentLanguage);
 showState("loading");
-
-// returning from Stripe onboarding → re-check status
-if (/connect=(done|refresh)/.test(window.location.search)) {
-  history.replaceState(null, "", window.location.pathname);
-}
 
 if (window.EbrostayBackend?.isConfigured()) {
   let lastUser = undefined;
@@ -198,7 +154,6 @@ if (window.EbrostayBackend?.isConfigured()) {
       dashboard = await EbrostayBackend.loadOwnerDashboard();
       renderDashboard();
       showState("dashboard");
-      refreshConnect();
     }
   });
 } else {

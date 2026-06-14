@@ -1,8 +1,8 @@
 # Ebrostay
 
-> Ebrostay is the bridge between companies and property owners for mid-term corporate rentals (1–12 months) in Zaragoza, Spain. We rebuild property management from first principles to deliver best-in-class service to both sides: furnished, move-in-ready homes for relocating teams and professionals, and full hands-off management for owners. Verified listings, transparent monthly pricing in EUR, online booking with secure Stripe payment (full stay plus a refundable deposit), availability calendars, and support throughout the stay. Our vision is to become Europe's number one property management company for mid-term corporate rentals — rooted in Zaragoza, built for Europe.
+> Ebrostay is the bridge between companies and property owners for mid-term corporate rentals (1–12 months) in Zaragoza, Spain. We rebuild property management from first principles to deliver best-in-class service to both sides: furnished, move-in-ready homes for relocating teams and professionals, and full hands-off management for owners. Verified listings, transparent monthly pricing in EUR, booking requests confirmed by email (full stay plus a refundable deposit), availability calendars, and support throughout the stay. Our vision is to become Europe's number one property management company for mid-term corporate rentals — rooted in Zaragoza, built for Europe.
 
-Ebrostay es el puente entre empresas y propietarios para el alquiler corporativo de media estancia (1–12 meses) en Zaragoza, España. Reconstruimos la gestión de propiedades desde primeros principios para ofrecer un servicio de primer nivel a ambos lados: viviendas amuebladas y listas para entrar para equipos y profesionales desplazados, y gestión integral sin esfuerzo para propietarios. Anuncios verificados, precios mensuales transparentes en EUR, reserva online con pago seguro mediante Stripe (estancia completa más fianza reembolsable), calendarios de disponibilidad y soporte durante toda la estancia. Nuestra visión es convertirnos en la empresa de gestión de propiedades número uno de Europa en alquiler corporativo de media estancia: con raíces en Zaragoza, pensada para Europa.
+Ebrostay es el puente entre empresas y propietarios para el alquiler corporativo de media estancia (1–12 meses) en Zaragoza, España. Reconstruimos la gestión de propiedades desde primeros principios para ofrecer un servicio de primer nivel a ambos lados: viviendas amuebladas y listas para entrar para equipos y profesionales desplazados, y gestión integral sin esfuerzo para propietarios. Anuncios verificados, precios mensuales transparentes en EUR, solicitudes de reserva que confirmamos por email (estancia completa más fianza reembolsable), calendarios de disponibilidad y soporte durante toda la estancia. Nuestra visión es convertirnos en la empresa de gestión de propiedades número uno de Europa en alquiler corporativo de media estancia: con raíces en Zaragoza, pensada para Europa.
 
 ## Properties
 
@@ -16,8 +16,8 @@ Listings, prices and availability are kept up to date on the website; each prope
 ## How booking works
 
 1. Search by dates on [ebrostay.com](https://ebrostay.com/) and open a property.
-2. Pick check-in and check-out dates and pay online (Stripe). The payment covers the whole stay (billed in whole months) plus a refundable deposit.
-3. The booking confirmation, invoice, and arrival details (wifi, key pickup, emergency contact) are available in the tenant's account.
+2. Pick check-in and check-out dates and send a booking request. You see an estimated total (the whole stay, billed in whole months, plus a refundable deposit); nothing is charged online.
+3. Ebrostay reviews the request and gets back to you by email to confirm the booking and the next step. Once confirmed, arrival details (wifi, key pickup, emergency contact) are available in the tenant's account.
 
 ## Contact
 

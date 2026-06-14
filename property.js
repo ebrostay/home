@@ -478,7 +478,7 @@ function updateBookingSummary() {
     <li><span>${t("book.commission")}</span><span>${money(commissionRaw)}</span></li>
     ${capped ? `<li class="booking-discount"><span>${t("book.commissionDiscount")}</span><span>&minus;${money(discount)}</span></li>` : ""}
     ${deposit ? `<li><span>${t("cond.deposit")}</span><span>${money(deposit)}</span></li>` : ""}
-    <li class="is-total"><span>${t("book.payNow")}</span><span>${money(total)}</span></li>
+    <li class="is-total"><span>${t("book.estimateTotal")}</span><span>${money(total)}</span></li>
   `;
 
   if (vatTip) {
@@ -560,10 +560,6 @@ function initBookingWidget() {
 
   preselectSearchDates(minStart, minEndFor);
   updateBookingSummary();
-
-  if (new URLSearchParams(window.location.search).get("booking") === "cancelled") {
-    bookingMessage("book.cancelled");
-  }
 }
 
 // Carry the dates from the visitor's last search into the booking widget,
@@ -591,10 +587,9 @@ function preselectSearchDates(minStart, minEndFor) {
 }
 
 const BOOKING_ERROR_KEYS = {
-  // after client pre-vetting, a server unavailability means someone booked
-  // (or is mid-checkout) in the meantime
+  // after client pre-vetting, a server unavailability means the home was
+  // marked taken in the meantime
   dates_unavailable: "book.justTaken",
-  stripe_not_configured: "book.notConfigured",
   unauthorized: "book.loginFirst",
   max_stay: "book.splitNote",
   min_stay: "book.minStayError"
@@ -625,12 +620,16 @@ document.querySelector("#bookingButton")?.addEventListener("click", async () => 
   }
   const button = document.querySelector("#bookingButton");
   button.disabled = true;
-  window.umami?.track("booking-start", { property: property.id, checkIn: startDate, checkOut: endDate });
-  bookingMessage("book.redirecting", false);
+  window.umami?.track("booking-request", { property: property.id, checkIn: startDate, checkOut: endDate });
+  bookingMessage("book.sending", false);
   const tenantNames = document.querySelector("#bookingTenants")?.value.trim() || "";
-  const { url, code } = await EbrostayBackend.createBookingCheckout(property.id, startDate, endDate, tenantNames);
-  if (url) {
-    window.location.href = url;
+  const { ok, code } = await EbrostayBackend.requestBooking(property.id, startDate, endDate, tenantNames);
+  if (ok) {
+    // Request received — confirm inline and lock the form so it isn't resent.
+    bookingMessage("book.requestSent", false);
+    document.querySelector("#bookingSummary").innerHTML = "";
+    const vatTip = document.querySelector("#bookingVatTip");
+    if (vatTip) vatTip.textContent = "";
     return;
   }
   button.disabled = false;

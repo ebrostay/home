@@ -57,6 +57,7 @@
       <div id="adminPanel" hidden>
         <nav class="admin-tabs admin-main-tabs" aria-label="Admin sections" id="adminMainTabs">
           <button class="admin-tab is-active" type="button" data-main-tab="properties" data-i18n="admin.tabProperties">Propiedades</button>
+          <button class="admin-tab" type="button" data-main-tab="requests" data-i18n="admin.tabRequests">Solicitudes</button>
           <button class="admin-tab" type="button" data-main-tab="bookings" data-i18n="admin.tabBookings">Reservas</button>
           <button class="admin-tab" type="button" data-main-tab="users" data-i18n="admin.users">Usuarios</button>
         </nav>
@@ -69,9 +70,17 @@
           </p>
         </section>
 
+        <section data-main-panel="requests" hidden>
+          <h2 data-i18n="admin.requestsTitle">Solicitudes de reserva</h2>
+          <p class="admin-card-meta" data-i18n="admin.requestsCopy">Solicitudes enviadas por los clientes. Contacta al cliente y, si aceptas, marca la vivienda como ocupada en el editor de la propiedad.</p>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="adminRequestsTable"></table>
+          </div>
+        </section>
+
         <section data-main-panel="bookings" hidden>
           <h2 data-i18n="admin.confirmedBookings">Reservas confirmadas</h2>
-          <p class="admin-card-meta" data-i18n="admin.confirmedCopy">Reservas pagadas a través de Stripe, con fecha de confirmación, datos del huésped y factura.</p>
+          <p class="admin-card-meta" data-i18n="admin.confirmedCopy">Reservas confirmadas con fecha, datos del huésped y factura (de pagos anteriores).</p>
           <div class="admin-table-wrap">
             <table class="admin-table" id="adminBookingsTable"></table>
           </div>

@@ -1581,13 +1581,17 @@ a.property-media {
   font-variant-numeric: tabular-nums;
 }
 
-/* The stay row's date range is long text, not a figure — let it wrap
-   instead of forcing the summary wider than the card. */
+/* The stay row's date range is long text, not a figure. Keep the "Stay"
+   label at its natural width (so it can't collapse and overlap the dates)
+   and let the date range wrap on the right instead of overflowing. */
+.movein-rows li.is-range > span:first-child {
+  flex: 0 0 auto;
+}
+
 .movein-rows li.is-range > span:last-child {
-  flex-shrink: 1;
+  flex: 1 1 auto;
   min-width: 0;
   white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 .movein-rows li.is-total {

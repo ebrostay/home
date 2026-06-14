@@ -14,14 +14,14 @@
       favoritesEmpty: "Todavía no has guardado viviendas.",
       favoritesShowing: "Mostrando viviendas guardadas.",
       switchLabel: "Elige tu perfil",
-      tenant: "Inquilino",
-      tenantSub: "Busco vivienda",
+      tenant: "Empresas",
+      tenantSub: "Alojo a mi equipo",
       owner: "Propietario",
       ownerSub: "Quiero publicar",
-      tenantStatus: "Versión inquilino activa",
+      tenantStatus: "Versión empresas activa",
       ownerStatus: "Versión propietario activa",
-      tenantHint: "Por defecto ves la experiencia para inquilinos: buscar, comparar y solicitar viviendas.",
-      ownerHint: "Ahora ves la ruta para propietarios: publicar tu vivienda y delegar la gestión.",
+      tenantHint: "Estancias de media duración para empleados y equipos desplazados.",
+      ownerHint: "Publica tu vivienda y delega toda la gestión.",
       ownerKicker: "Gestión para propietarios, 100% digital",
       ownerTitle: "Tu vivienda, gestionada de principio a fin.",
       ownerCopy: "Publicamos tu vivienda, encontramos inquilinos, verificamos perfiles, gestionamos contratos, cobros, fianza, soporte y pagos a tu cuenta. Tú ves llegar los ingresos; nosotros hacemos el trabajo.",
@@ -101,14 +101,14 @@
       favoritesEmpty: "You have not saved any homes yet.",
       favoritesShowing: "Showing saved homes.",
       switchLabel: "Choose your profile",
-      tenant: "Tenant",
-      tenantSub: "I need housing",
+      tenant: "Companies",
+      tenantSub: "Housing for my team",
       owner: "Owner",
       ownerSub: "I want to list",
-      tenantStatus: "Tenant version active",
+      tenantStatus: "Company version active",
       ownerStatus: "Owner version active",
-      tenantHint: "By default you see the tenant experience: search, compare and request homes.",
-      ownerHint: "You are now viewing the owner path: list your property and delegate management.",
+      tenantHint: "Mid-stay homes for relocating employees and teams.",
+      ownerHint: "List your property and delegate the management.",
       ownerKicker: "Property management, 100% digital",
       ownerTitle: "Your property, managed end to end.",
       ownerCopy: "We list your home, find tenants, verify profiles, handle contracts, payments, deposits, support and payouts to your account. You see the income; we do the work.",
@@ -517,7 +517,7 @@
 
   function initAudience() {
     createAudienceSwitch();
-    createHeroBenefits();
+    // Hero benefit chips intentionally omitted — they duplicated the trust row below the search.
     createOwnerPanel();
     if (isFirstAudienceVisit()) {
       try { localStorage.setItem(AUDIENCE_KEY, "tenant"); } catch { /* ignore */ }

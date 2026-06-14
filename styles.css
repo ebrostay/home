@@ -968,6 +968,11 @@ a.property-media {
   width: 100%;
 }
 
+/* Keep every block inside the card from forcing it wider than its column. */
+.detail-request-card > * {
+  min-width: 0;
+}
+
 .detail-form-link {
   color: var(--muted);
   font-size: 0.92rem;
@@ -1531,6 +1536,7 @@ a.property-media {
 .booking-widget {
   display: grid;
   gap: 10px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
@@ -1558,6 +1564,7 @@ a.property-media {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
   color: var(--muted);
   font-weight: 700;
 }
@@ -1572,6 +1579,15 @@ a.property-media {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+/* The stay row's date range is long text, not a figure — let it wrap
+   instead of forcing the summary wider than the card. */
+.movein-rows li.is-range > span:last-child {
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .movein-rows li.is-total {

@@ -330,7 +330,7 @@ function updateBookingSummary() {
   }
 
   summary.innerHTML = `
-    <li><span>${t("book.stay")}</span><span>${formatDate(dateValue(startDate))} &ndash; ${formatDate(dateValue(endDate))}</span></li>
+    <li class="is-range"><span>${t("book.stay")}</span><span>${formatDate(dateValue(startDate))} &ndash; ${formatDate(dateValue(endDate))}</span></li>
     <li><span>${t("book.rent")} (${monthsText(est.months)})</span><span>${money(est.rent)}</span></li>
     <li><span>${t("book.commission")}</span><span>${money(est.commissionRaw)}</span></li>
     ${est.capped ? `<li class="booking-discount"><span>${t("book.commissionDiscount")}</span><span>&minus;${money(est.discount)}</span></li>` : ""}

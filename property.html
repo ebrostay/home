@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=design-13">
+    <link rel="stylesheet" href="styles.css?v=design-14">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
   </head>
   <body>
@@ -97,7 +97,10 @@
 
           <section class="detail-section">
             <h2 data-i18n="detail.location">Ubicación</h2>
-            <p class="detail-address" id="detailAddress" hidden></p>
+            <p class="detail-address" id="detailAddress" hidden>
+              <span class="detail-address-label"><i data-lucide="map-pin" aria-hidden="true"></i><span data-i18n="detail.addressLabel">Dirección de la vivienda</span></span>
+              <span class="detail-address-value" id="detailAddressValue"></span>
+            </p>
             <p data-i18n="detail.locationCopy">Ubicación aproximada de la vivienda en Zaragoza.</p>
             <div class="detail-map" id="detailMap"></div>
           </section>
@@ -161,10 +164,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=design-6"></script>
+    <script src="data.js?v=design-7"></script>
     <script src="backend.js?v=design-6"></script>
     <script src="nav.js?v=design-6"></script>
-    <script src="property.js?v=design-7"></script>
+    <script src="property.js?v=design-8"></script>
       <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
     <script src="enhance.js?v=design-12"></script>
   </body>

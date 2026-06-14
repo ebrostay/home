@@ -2396,9 +2396,37 @@ a.property-media {
 }
 
 .detail-address {
-  margin: 0 0 6px;
+  display: inline-grid;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--green);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.detail-address-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.detail-address-label svg {
+  width: 15px;
+  height: 15px;
+  color: var(--green);
+}
+
+.detail-address-value {
   color: var(--ink);
   font-weight: 850;
+  font-size: 1.05rem;
 }
 
 /* Inline availability calendar: size to its own content so the global

@@ -68,9 +68,10 @@ function renderDetail() {
   });
 
   const addressElement = document.querySelector("#detailAddress");
-  if (addressElement) {
+  const addressValue = document.querySelector("#detailAddressValue");
+  if (addressElement && addressValue) {
     addressElement.hidden = !property.address;
-    addressElement.textContent = property.address ? `${property.address}, Zaragoza` : "";
+    addressValue.textContent = property.address ? `${property.address}, Zaragoza` : "";
   }
 
   updateRequestLinks();

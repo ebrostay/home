@@ -37,7 +37,6 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | `booking.html` | Booking detail: stay facts and arrival info for a confirmed stay |
 | `account.html` | Tenant account: stays, saved homes, arrival details |
 | `partner.html` | Owner portal: properties, stays, and payout (IBAN) details |
-| `owners.html` | Owners marketing landing page |
 | `admin.html` | Admin: manage availability and "available from" dates |
 | `admin-property.html` | Admin: full property editor (details, photos, geocoding) |
 | `about.html` | Mission, vision, and the bridge story |
@@ -55,7 +54,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | `booking.js` | Booking detail page logic |
 | `account.js` | Tenant account dashboard |
 | `admin.js` / `admin-property.js` | Admin panel and property editor |
-| `partner.js` / `owners.js` | Owner portal and owners landing logic |
+| `partner.js` | Owner portal logic |
 | `nav.js` | Shared navigation behavior |
 
 ### Backend (`supabase/`)

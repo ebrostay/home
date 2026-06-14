@@ -16,7 +16,7 @@
       switchLabel: "Elige tu perfil",
       tenant: "Buscar alojamiento",
       tenantSub: "Alojo a mi equipo",
-      owner: "Publicar mi vivienda",
+      owner: "Gestiona mi piso",
       ownerSub: "Quiero publicar",
       tenantStatus: "Versión empresas activa",
       ownerStatus: "Versión propietario activa",
@@ -103,7 +103,7 @@
       switchLabel: "Choose your profile",
       tenant: "Find a stay",
       tenantSub: "Housing for my team",
-      owner: "List my property",
+      owner: "Manage my flat",
       ownerSub: "I want to list",
       tenantStatus: "Company version active",
       ownerStatus: "Owner version active",
@@ -474,7 +474,7 @@
     panel.setAttribute("data-owner-hero-panel", "");
     panel.innerHTML = `
       <div><span data-owner-panel-kicker></span><strong data-owner-panel-title></strong><p data-owner-panel-copy></p></div>
-      <div class="audience-owner-actions"><a class="button primary" href="owners.html" data-owner-panel-primary></a><a class="button ghost" href="owners.html#owner-compare" data-owner-panel-secondary></a></div>
+      <div class="audience-owner-actions"><a class="button primary" href="index.html#owner" data-owner-panel-primary></a><a class="button ghost" href="index.html#owner" data-owner-panel-secondary></a></div>
     `;
     heroSearch.insertAdjacentElement("afterend", panel);
   }
@@ -520,7 +520,7 @@
       if (trustItems[0]) trustItems[0].innerHTML = `${icon("handshake")}<span>${text("ownerTrust1")}</span>`;
       if (trustItems[1]) trustItems[1].innerHTML = `${icon("building-2")}<span>${text("ownerTrust2")}</span>`;
       if (trustItems[2]) trustItems[2].innerHTML = `${icon("banknote")}<span>${text("ownerTrust3")}</span>`;
-      if (cta) cta.href = "owners.html";
+      if (cta) cta.href = "index.html#owner";
       if (ctaText) ctaText.textContent = text("ownerCta");
     } else {
       setText(hero.querySelector(".eyebrow"), siteText("hero.kicker"));
@@ -529,7 +529,7 @@
       if (trustItems[0]) trustItems[0].innerHTML = `${icon("badge-check")}<span>${siteText("hero.trust1")}</span>`;
       if (trustItems[1]) trustItems[1].innerHTML = `${icon("receipt-text")}<span>${siteText("hero.trust2")}</span>`;
       if (trustItems[2]) trustItems[2].innerHTML = `${icon("calendar-check")}<span>${siteText("hero.trust3")}</span>`;
-      if (cta) cta.href = "owners.html";
+      if (cta) cta.href = "index.html#owner";
       if (ctaText) ctaText.textContent = siteText("hero.ownerCta");
     }
     refreshIcons();
@@ -1169,12 +1169,52 @@
     actions.insertBefore(button, actions.firstChild);
   }
 
+  // Owner lead form (lives in the in-page owner view on the homepage).
+  function initOwnerForm() {
+    var form = document.querySelector("#ownerForm");
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = "1";
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var note = document.querySelector("#ownerFormNote");
+      var data = new FormData(form);
+      var backend = window.EbrostayBackend;
+      if (!backend || !backend.isConfigured || !backend.isConfigured()) {
+        if (note) note.textContent = siteText("owners.sentFallback");
+        return;
+      }
+      Promise.resolve(backend.submitOwnerLead({
+        name: (data.get("name") || "").toString().trim(),
+        email: (data.get("email") || "").toString().trim(),
+        phone: (data.get("phone") || "").toString().trim(),
+        units: (data.get("units") || "").toString().trim(),
+        city: (data.get("city") || "").toString().trim(),
+        message: (data.get("message") || "").toString().trim()
+      })).then(function (res) {
+        var ok = res && res.ok;
+        if (note) {
+          note.textContent = ok ? siteText("owners.sent") : siteText("form.errorSend");
+          note.classList.toggle("is-success", !!ok);
+          note.classList.toggle("is-error", !ok);
+        }
+        if (ok) { if (window.umami) window.umami.track("owner-lead"); form.reset(); }
+      });
+    });
+  }
+
+  // Deep-link / cross-page entry into owner mode via #owner.
+  function checkOwnerHash() {
+    if (location.hash === "#owner") applyAudience("owner", true);
+  }
+
   function boot() {
     addGlobalStyles();
     applyKeyedTranslations(lang());
     improveNavigation();
     initAudience();
     initThemeToggle();
+    initOwnerForm();
+    checkOwnerHash();
     enhanceSearchFilters();
     observeListings();
     decoratePropertyCards();
@@ -1186,6 +1226,7 @@
     addOwnerExtras();
     initObservers();
     refreshIcons();
+    window.addEventListener("hashchange", checkOwnerHash);
 
     document.querySelectorAll("[data-lang]").forEach(function (button) {
       button.addEventListener("click", function () {

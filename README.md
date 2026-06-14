@@ -10,7 +10,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 
 - **Bilingual (ES/EN)** UI driven by an in-page translation dictionary.
 - **Listings & search** with date/guest/type/budget filters, sorting, and favorites.
-- **Property pages** with photo galleries, availability calendars, rental conditions, floor plans, and live travel times to city landmarks.
+- **Property pages** with photo galleries, availability calendars, rental conditions, floor plans, and an interactive location map.
 - **Interactive maps** via Leaflet + OpenStreetMap tiles.
 - **Booking requests**: pick dates, see an estimated total (full stay billed in whole months + commission + refundable deposit, computed server-side), and send a request. Ebrostay is emailed and confirms manually — no online charge.
 - **Tenant accounts**: stays, saved homes, and arrival details.
@@ -33,7 +33,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | File | Purpose |
 | --- | --- |
 | `index.html` | Home: hero search, listings grid, map, inquiry form, sign-in dialog |
-| `property.html` | Property detail: gallery, availability calendar, conditions, floor plans, travel times, booking-request CTA |
+| `property.html` | Property detail: gallery, availability calendar, conditions, floor plans, location map, booking-request CTA |
 | `booking.html` | Booking detail: stay facts and arrival info for a confirmed stay |
 | `account.html` | Tenant account: stays, saved homes, arrival details |
 | `partner.html` | Owner portal: properties, stays, and payout (IBAN) details |
@@ -51,7 +51,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | `backend.js` | Supabase bridge — auth, listings, availability, favorites, inquiries, booking requests; falls back to sample data when unconfigured |
 | `supabase-config.js` | Supabase URL + anon key (public-safe) |
 | `site.js` | Home page logic: search, filtering, listings map, inquiry form, auth |
-| `property.js` | Property detail logic: gallery, calendar, travel times, map, booking requests |
+| `property.js` | Property detail logic: gallery, calendar, map, booking requests |
 | `booking.js` | Booking detail page logic |
 | `account.js` | Tenant account dashboard |
 | `admin.js` / `admin-property.js` | Admin panel and property editor |

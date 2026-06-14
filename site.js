@@ -718,21 +718,6 @@ if (logoutButton) {
   logoutButton.addEventListener("click", () => EbrostayBackend.signOut());
 }
 
-function showPageToast(key, isError = false) {
-  const toast = document.createElement("p");
-  toast.className = `admin-status is-toast${isError ? " is-error" : ""}`;
-  toast.setAttribute("role", "status");
-  toast.textContent = t(key);
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 7000);
-}
-
-const pageParams = new URLSearchParams(window.location.search);
-if (pageParams.get("booking") === "success") {
-  showPageToast("book.confirmed");
-  history.replaceState(null, "", window.location.pathname + window.location.hash);
-}
-
 initListingsMap();
 setupDatePickers();
 applyLanguage(currentLanguage);

@@ -73,12 +73,7 @@ function renderDetail() {
     addressElement.textContent = property.address ? `${property.address}, Zaragoza` : "";
   }
 
-  const subject = encodeURIComponent(`${t("email.subject")} - ${t(property.nameKey)}`);
-  const body = encodeURIComponent(`${t("email.defaultMessage")}\n\n${t(property.nameKey)}: ${t(property.copyKey)}`);
-  document.querySelector("#detailEmailButton").href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-  document.querySelector("#detailWhatsappButton").href = whatsappLink(
-    interpolate("whatsapp.message", { property: t(property.nameKey) })
-  );
+  updateRequestLinks();
 
   updateSeoTags();
 }
@@ -279,40 +274,15 @@ const MAX_STAY_MONTHS = 11;
 const COMMISSION_PCT = 0.15;
 const money = (amount) => interpolate("cond.eur", { amount: Math.round(amount * 100) / 100 });
 
-function updateBookingSummary() {
-  const summary = document.querySelector("#bookingSummary");
-  const startDate = document.querySelector("#bookingStart")?.value;
-  const endDate = document.querySelector("#bookingEnd")?.value;
-  const split = document.querySelector("#bookingSplit");
-  const vatTip = document.querySelector("#bookingVatTip");
-  const button = document.querySelector("#bookingButton");
-  if (!summary) return;
-  if (split) split.hidden = true;
-  if (button) button.disabled = false;
-  if (!startDate || !endDate || endDate <= startDate) {
-    summary.innerHTML = "";
-    if (vatTip) vatTip.textContent = "";
-    return;
-  }
-  // Pre-vet: the chosen range must not cross any booked/held dates.
-  if (rangeHasConflict(startDate, endDate)) {
-    summary.innerHTML = "";
-    if (vatTip) vatTip.textContent = "";
-    if (split) { split.hidden = false; split.textContent = t("book.rangeUnavailable"); }
-    if (button) button.disabled = true;
-    return;
-  }
-
+// Price a stay from the chosen dates, mirroring the server-side computation.
+// Returns a status so the UI can explain why an estimate isn't shown.
+function computeEstimate(startDate, endDate) {
+  if (!startDate || !endDate || endDate <= startDate) return { status: "empty" };
+  // The chosen range must not cross any booked/held dates.
+  if (rangeHasConflict(startDate, endDate)) return { status: "conflict" };
   const months = billedMonths(startDate, endDate);
-
   // Stays longer than 11 months need two separate contracts.
-  if (months > MAX_STAY_MONTHS) {
-    summary.innerHTML = "";
-    if (vatTip) vatTip.textContent = "";
-    if (split) { split.hidden = false; split.textContent = t("book.splitNote"); }
-    if (button) button.disabled = true;
-    return;
-  }
+  if (months > MAX_STAY_MONTHS) return { status: "toolong" };
 
   const price = property.priceNumber;
   const rent = months * price;
@@ -322,14 +292,35 @@ function updateBookingSummary() {
   const discount = capped ? commissionRaw - commission : 0;
   const deposit = property.depositAmount || 0;
   const total = rent + commission + deposit;
+  return { status: "ok", months, rent, commissionRaw, commission, capped, discount, deposit, total };
+}
+
+function updateBookingSummary() {
+  const summary = document.querySelector("#bookingSummary");
+  const startDate = document.querySelector("#bookingStart")?.value;
+  const endDate = document.querySelector("#bookingEnd")?.value;
+  const split = document.querySelector("#bookingSplit");
+  const vatTip = document.querySelector("#bookingVatTip");
+  if (!summary) return;
+  if (split) split.hidden = true;
+
+  const est = computeEstimate(startDate, endDate);
+  if (est.status !== "ok") {
+    summary.innerHTML = "";
+    if (vatTip) vatTip.textContent = "";
+    if (split && est.status === "conflict") { split.hidden = false; split.textContent = t("book.rangeUnavailable"); }
+    if (split && est.status === "toolong") { split.hidden = false; split.textContent = t("book.splitNote"); }
+    updateRequestLinks();
+    return;
+  }
 
   summary.innerHTML = `
     <li><span>${t("book.stay")}</span><span>${formatDate(dateValue(startDate))} &ndash; ${formatDate(dateValue(endDate))}</span></li>
-    <li><span>${t("book.rent")} (${monthsText(months)})</span><span>${money(rent)}</span></li>
-    <li><span>${t("book.commission")}</span><span>${money(commissionRaw)}</span></li>
-    ${capped ? `<li class="booking-discount"><span>${t("book.commissionDiscount")}</span><span>&minus;${money(discount)}</span></li>` : ""}
-    ${deposit ? `<li><span>${t("cond.deposit")}</span><span>${money(deposit)}</span></li>` : ""}
-    <li class="is-total"><span>${t("book.estimateTotal")}</span><span>${money(total)}</span></li>
+    <li><span>${t("book.rent")} (${monthsText(est.months)})</span><span>${money(est.rent)}</span></li>
+    <li><span>${t("book.commission")}</span><span>${money(est.commissionRaw)}</span></li>
+    ${est.capped ? `<li class="booking-discount"><span>${t("book.commissionDiscount")}</span><span>&minus;${money(est.discount)}</span></li>` : ""}
+    ${est.deposit ? `<li><span>${t("cond.deposit")}</span><span>${money(est.deposit)}</span></li>` : ""}
+    <li class="is-total"><span>${t("book.estimateTotal")}</span><span>${money(est.total)}</span></li>
   `;
 
   if (vatTip) {
@@ -337,19 +328,76 @@ function updateBookingSummary() {
     vatTip.textContent = names ? t("book.vatExempt") : t("book.vatCompany");
     vatTip.className = `booking-note${names ? " booking-vat-ok" : ""}`;
   }
+  updateRequestLinks();
 }
 
-function bookingMessage(key, isError = true) {
-  const element = document.querySelector("#bookingMessage");
-  if (!element) return;
-  element.textContent = key ? t(key) : "";
-  element.className = `auth-message${key && isError ? " is-error" : ""}`;
+// Build a branded, plain-text recap of the request that we drop into the
+// prefilled email body / WhatsApp message. `channel` "whatsapp" gets *bold*
+// markdown on the header and total so the recap reads cleanly in the app.
+function buildRequestSummary(channel) {
+  const bold = (text) => (channel === "whatsapp" ? `*${text}*` : text);
+  const startDate = document.querySelector("#bookingStart")?.value;
+  const endDate = document.querySelector("#bookingEnd")?.value;
+  const tenants = document.querySelector("#bookingTenants")?.value.trim();
+  const est = computeEstimate(startDate, endDate);
+
+  const lines = [
+    bold(t("request.summaryHeader")),
+    "",
+    `${t("request.propertyLabel")}: ${t(property.nameKey)}`,
+    `${t("request.areaLabel")}: ${t(property.areaKey)}`,
+    `${t("request.priceLabel")}: ${interpolate("listing.price", { price: property.price })}`
+  ];
+
+  if (est.status === "ok") {
+    lines.push(
+      "",
+      `${t("book.start")}: ${formatDate(dateValue(startDate))}`,
+      `${t("book.end")}: ${formatDate(dateValue(endDate))}`,
+      `${t("book.months")}: ${monthsText(est.months)}`,
+      "",
+      `${t("request.estimateLabel")}:`,
+      `- ${t("book.rent")} (${monthsText(est.months)}): ${money(est.rent)}`,
+      `- ${t("book.commission")}: ${money(est.commissionRaw)}`
+    );
+    if (est.deposit) lines.push(`- ${t("cond.deposit")}: ${money(est.deposit)}`);
+    lines.push(`- ${t("book.estimateTotal")}: ${bold(money(est.total))}`);
+  }
+
+  if (tenants) {
+    const names = tenants.split("\n").map((name) => name.trim()).filter(Boolean);
+    if (names.length) {
+      lines.push("", `${t("request.tenantsLabel")}:`, ...names.map((name) => `- ${name}`));
+    }
+  }
+
+  lines.push("", t("request.summaryFooter"));
+  return lines.join("\n");
+}
+
+// Keep the two request buttons pointing at a prefilled, branded message that
+// reflects whatever the visitor has selected so far.
+function updateRequestLinks() {
+  const emailButton = document.querySelector("#bookingEmailButton");
+  const whatsappButton = document.querySelector("#bookingWhatsappButton");
+  if (!property || (!emailButton && !whatsappButton)) return;
+
+  if (emailButton) {
+    const subject = `${t("request.emailSubject")} – ${t(property.nameKey)}`;
+    const body = buildRequestSummary("email");
+    emailButton.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+  if (whatsappButton) {
+    whatsappButton.href = whatsappLink(buildRequestSummary("whatsapp"));
+  }
 }
 
 function initBookingWidget() {
   const widget = document.querySelector("#bookingWidget");
   if (!widget) return;
-  if (!window.EbrostayBackend?.isConfigured() || typeof flatpickr === "undefined") {
+  // The request buttons live outside the widget and always work; the date
+  // pickers are an enhancement that needs flatpickr loaded.
+  if (typeof flatpickr === "undefined") {
     widget.hidden = true;
     return;
   }
@@ -437,65 +485,13 @@ function preselectSearchDates(minStart, minEndFor) {
   bookingEndPicker?.setDate(end, false);
 }
 
-const BOOKING_ERROR_KEYS = {
-  // after client pre-vetting, a server unavailability means the home was
-  // marked taken in the meantime
-  dates_unavailable: "book.justTaken",
-  unauthorized: "book.loginFirst",
-  max_stay: "book.splitNote",
-  min_stay: "book.minStayError"
-};
-
-document.querySelector("#bookingButton")?.addEventListener("click", async () => {
-  const startDate = document.querySelector("#bookingStart")?.value;
-  const endDate = document.querySelector("#bookingEnd")?.value;
-  if (!startDate) {
-    bookingPicker?.open();
-    return;
-  }
-  if (!endDate || endDate <= startDate) {
-    bookingEndPicker?.open();
-    return;
-  }
-  if (!EbrostayBackend.getUser()) {
-    localStorage.setItem("ebrostay-return-to", JSON.stringify({
-      url: window.location.pathname + window.location.search + "#book",
-      ts: Date.now()
-    }));
-    const message = document.querySelector("#bookingMessage");
-    if (message) {
-      message.className = "auth-message";
-      message.innerHTML = `<a href="index.html#login">${t("book.loginCta")}</a>`;
-    }
-    return;
-  }
-  const button = document.querySelector("#bookingButton");
-  button.disabled = true;
-  window.umami?.track("booking-request", { property: property.id, checkIn: startDate, checkOut: endDate });
-  bookingMessage("book.sending", false);
-  const tenantNames = document.querySelector("#bookingTenants")?.value.trim() || "";
-  const { ok, code } = await EbrostayBackend.requestBooking(property.id, startDate, endDate, tenantNames);
-  if (ok) {
-    // Request received — confirm inline and lock the form so it isn't resent.
-    bookingMessage("book.requestSent", false);
-    document.querySelector("#bookingSummary").innerHTML = "";
-    const vatTip = document.querySelector("#bookingVatTip");
-    if (vatTip) vatTip.textContent = "";
-    return;
-  }
-  button.disabled = false;
-  bookingMessage(BOOKING_ERROR_KEYS[code] || "book.error");
-  // if it was taken in the meantime, refresh availability so the calendar
-  // and pickers reflect the dates that are now unavailable
-  if (code === "dates_unavailable") {
-    await EbrostayBackend.reloadProperties?.();
-    const refreshed = properties.find((item) => item.id === propertyId);
-    if (refreshed) {
-      property = refreshed;
-      renderAvailabilityCalendar();
-      initBookingWidget();
-    }
-  }
+// Send a booking request straight to Ebrostay by email or WhatsApp, with the
+// chosen dates and estimate prefilled — track it the same way for analytics.
+document.querySelector("#bookingEmailButton")?.addEventListener("click", () => {
+  window.umami?.track("booking-request", { property: property?.id, channel: "email" });
+});
+document.querySelector("#bookingWhatsappButton")?.addEventListener("click", () => {
+  window.umami?.track("booking-request", { property: property?.id, channel: "whatsapp" });
 });
 
 

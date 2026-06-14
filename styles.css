@@ -747,7 +747,7 @@ a.property-media {
 .property-meta span {
   border-radius: var(--radius-pill);
   padding: 6px 10px;
-  color: var(--green);
+  color: var(--text-brand);
   background: var(--mist);
   font-size: 0.82rem;
   font-weight: 600;

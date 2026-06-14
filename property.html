@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-ux">
+    <link rel="stylesheet" href="styles.css?v=ds-fix1">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
       <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
@@ -108,7 +108,7 @@
               <span class="price-note" id="detailPriceNote" hidden></span>
             </div>
             <span class="detail-available" id="detailAvailable"></span>
-            <button class="details-button share-button" id="shareButton" type="button">&#128279; <span data-i18n="share.button">Compartir</span></button>
+            <button class="details-button share-button" id="shareButton" type="button" aria-label="Compartir" data-i18n-attr="aria-label:share.button"><i data-lucide="share-2" aria-hidden="true"></i></button>
             <div class="movein-box" id="detailMoveIn" hidden>
               <h4 data-i18n="movein.title">Coste de entrada</h4>
               <ul id="detailMoveInRows"></ul>
@@ -165,11 +165,11 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-ux"></script>
+    <script src="data.js?v=ds-fix1"></script>
     <script src="backend.js?v=design-6"></script>
     <script src="nav.js?v=design-6"></script>
     <script src="property.js?v=design-10"></script>
       <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-ux"></script>
+    <script src="enhance.js?v=ds-fix1"></script>
   </body>
 </html>

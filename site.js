@@ -52,8 +52,17 @@ function flatpickrLocale() {
   return currentLanguage === "es" && typeof flatpickr !== "undefined" ? flatpickr.l10ns.es : "default";
 }
 
+function defaultStayRange() {
+  const checkIn = new Date();
+  checkIn.setHours(0, 0, 0, 0);
+  const checkOut = new Date(checkIn);
+  checkOut.setMonth(checkOut.getMonth() + 1);
+  return { checkIn, checkOut };
+}
+
 function setupDatePickers() {
   if (typeof flatpickr === "undefined") return;
+  const { checkIn: defaultCheckIn, checkOut: defaultCheckOut } = defaultStayRange();
   const base = {
     dateFormat: "Y-m-d",
     altInput: true,
@@ -64,10 +73,11 @@ function setupDatePickers() {
   };
   const heroCheckIn = heroSearch?.querySelector('[name="checkIn"]');
   const heroCheckOut = heroSearch?.querySelector('[name="checkOut"]');
-  if (heroCheckOut) datePickers.heroOut = flatpickr(heroCheckOut, { ...base });
+  if (heroCheckOut) datePickers.heroOut = flatpickr(heroCheckOut, { ...base, minDate: defaultCheckIn, defaultDate: defaultCheckOut });
   if (heroCheckIn) {
     datePickers.hero = flatpickr(heroCheckIn, {
       ...base,
+      defaultDate: defaultCheckIn,
       onChange: (dates) => {
         if (dates[0]) datePickers.heroOut?.set("minDate", dates[0]);
       }
@@ -76,9 +86,10 @@ function setupDatePickers() {
   const checkInElement = document.querySelector("#checkIn");
   const checkOutElement = document.querySelector("#checkOut");
   if (checkInElement && checkOutElement) {
-    datePickers.checkOut = flatpickr(checkOutElement, { ...base });
+    datePickers.checkOut = flatpickr(checkOutElement, { ...base, minDate: defaultCheckIn, defaultDate: defaultCheckOut });
     datePickers.checkIn = flatpickr(checkInElement, {
       ...base,
+      defaultDate: defaultCheckIn,
       onChange: (dates) => {
         if (dates[0]) datePickers.checkOut.set("minDate", dates[0]);
       }

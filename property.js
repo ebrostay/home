@@ -12,6 +12,11 @@ function interpolate(key, values) {
   return Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, value), t(key));
 }
 
+// Prices are always shown with two decimals, e.g. 950.00 EUR.
+const formatEur = (amount) => interpolate("cond.eur", { amount: Number(amount).toFixed(2) });
+const formatEurMonth = (amount) => interpolate("cond.eurMonth", { amount: Number(amount).toFixed(2) });
+const monthlyPriceLabel = () => interpolate("listing.price", { price: formatEur(property.priceNumber) });
+
 function dateValue(value) {
   return value ? new Date(`${value}T00:00:00`) : null;
 }
@@ -57,7 +62,7 @@ function renderDetail() {
     .map((key) => `<span>${t(`amenity.${key}`)}</span>`)
     .join("");
 
-  document.querySelector("#detailPrice").textContent = interpolate("listing.price", { price: property.price });
+  document.querySelector("#detailPrice").textContent = monthlyPriceLabel();
   const priceNote = document.querySelector("#detailPriceNote");
   if (property.priceNoteKey) {
     priceNote.hidden = false;
@@ -83,7 +88,7 @@ function renderDetail() {
 // so rendered crawls index each listing with its real content.
 function updateSeoTags() {
   const url = `https://ebrostay.com/property.html?id=${property.id}`;
-  const description = `${t(property.copyKey)} ${property.address ? `${property.address}, ` : ""}Zaragoza. ${interpolate("listing.price", { price: property.price })}.`;
+  const description = `${t(property.copyKey)} ${property.address ? `${property.address}, ` : ""}Zaragoza. ${monthlyPriceLabel()}.`;
 
   document.querySelector('meta[name="description"]')?.setAttribute("content", description);
   document.querySelector('meta[property="og:title"]')?.setAttribute("content", `${t(property.nameKey)} | Ebrostay`);
@@ -142,11 +147,20 @@ function renderFloorplan() {
   const plans = property.floorplans || [];
   section.hidden = plans.length === 0;
   grid.innerHTML = plans.map((url) => `
-    <a class="floorplan-link" href="${url}" target="_blank" rel="noopener">
+    <button class="floorplan-link" type="button" aria-pressed="false" aria-label="${t("detail.floorplanZoom")}">
       <img class="floorplan-img" src="${url}" alt="${t("detail.floorplan")}" loading="lazy">
-    </a>
+    </button>
   `).join("");
 }
+
+// Clicking a floor plan zooms it in place — expanding to the full content
+// width (up to the booking card) and back — instead of opening a new tab.
+document.querySelector("#floorplanImages")?.addEventListener("click", (event) => {
+  const plan = event.target.closest(".floorplan-link");
+  if (!plan) return;
+  const zoomed = plan.classList.toggle("is-zoomed");
+  plan.setAttribute("aria-pressed", String(zoomed));
+});
 
 let availabilityCalendar = null;
 
@@ -190,9 +204,9 @@ function renderConditions() {
   const rows = [];
   if (property.minStayMonths != null) rows.push([t("cond.minStay"), stay(property.minStayMonths)]);
   if (property.maxStayMonths != null) rows.push([t("cond.maxStay"), stay(property.maxStayMonths)]);
-  if (property.depositAmount != null) rows.push([t("cond.deposit"), interpolate("cond.eur", { amount: property.depositAmount })]);
-  if (property.upfrontRentEur != null) rows.push([t("cond.upfront"), interpolate("cond.eur", { amount: property.upfrontRentEur })]);
-  if (property.utilitiesCapEur != null) rows.push([t("cond.utilities"), interpolate("cond.eurMonth", { amount: property.utilitiesCapEur })]);
+  if (property.depositAmount != null) rows.push([t("cond.deposit"), formatEur(property.depositAmount)]);
+  if (property.upfrontRentEur != null) rows.push([t("cond.upfront"), formatEur(property.upfrontRentEur)]);
+  if (property.utilitiesCapEur != null) rows.push([t("cond.utilities"), formatEurMonth(property.utilitiesCapEur)]);
   if (property.energyRating) rows.push([t("cond.energy"), property.energyRating]);
   if (property.bedsKey) rows.push([t("cond.beds"), t(property.bedsKey)]);
   if (property.petsAllowed != null) rows.push([t("cond.pets"), yesNo(property.petsAllowed)]);
@@ -227,7 +241,7 @@ function renderMoveInCost() {
 
   const total = rows.reduce((sum, [, amount]) => sum + amount, 0);
   const line = (labelKey, amount, strong = false) =>
-    `<li${strong ? ' class="is-total"' : ""}><span>${t(labelKey)}</span><span>${interpolate("cond.eur", { amount })}</span></li>`;
+    `<li${strong ? ' class="is-total"' : ""}><span>${t(labelKey)}</span><span>${formatEur(amount)}</span></li>`;
   list.innerHTML = rows.map(([key, amount]) => line(key, amount)).join("") +
     (rows.length > 1 ? line("movein.total", total, true) : "");
 }
@@ -273,7 +287,7 @@ function nextBlockAfter(startDate) {
 
 const MAX_STAY_MONTHS = 11;
 const COMMISSION_PCT = 0.15;
-const money = (amount) => interpolate("cond.eur", { amount: Math.round(amount * 100) / 100 });
+const money = formatEur;
 
 // Price a stay from the chosen dates, mirroring the server-side computation.
 // Returns a status so the UI can explain why an estimate isn't shown.
@@ -325,9 +339,11 @@ function updateBookingSummary() {
   `;
 
   if (vatTip) {
-    const names = document.querySelector("#bookingTenants")?.value.trim();
-    vatTip.textContent = names ? t("book.vatExempt") : t("book.vatCompany");
-    vatTip.className = `booking-note${names ? " booking-vat-ok" : ""}`;
+    const exempt = Boolean(document.querySelector("#bookingTenants")?.value.trim());
+    const icon = exempt ? "badge-check" : "lightbulb";
+    vatTip.className = `booking-note booking-tip${exempt ? " booking-vat-ok" : ""}`;
+    vatTip.innerHTML = `<i data-lucide="${icon}" aria-hidden="true"></i><span>${exempt ? t("book.vatExempt") : t("book.vatCompany")}</span>`;
+    window.lucide?.createIcons();
   }
   updateRequestLinks();
 }
@@ -347,7 +363,7 @@ function buildRequestSummary(channel) {
     "",
     `${t("request.propertyLabel")}: ${t(property.nameKey)}`,
     `${t("request.areaLabel")}: ${t(property.areaKey)}`,
-    `${t("request.priceLabel")}: ${interpolate("listing.price", { price: property.price })}`
+    `${t("request.priceLabel")}: ${monthlyPriceLabel()}`
   ];
 
   if (est.status === "ok") {

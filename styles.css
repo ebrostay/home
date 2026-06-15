@@ -3311,4 +3311,11 @@ html[data-audience="owner"] #contact { display: none; }
   .nav-cta { padding: 9px 13px; font-size: 0.85rem; }
   .theme-toggle { width: 36px; height: 36px; }
   .brand-mark { width: 28px; height: 28px; }
+
+  /* Comparison table: stack each row vertically (3 columns are too tight) */
+  .compare-row { grid-template-columns: 1fr; }
+  .compare-row.head { display: none; }
+  .compare-row > div { padding: 8px 16px; font-size: 0.95rem; }
+  .compare-feature { padding-top: 14px; font-size: 1rem; }
+  .compare-row .col-ebro { border-radius: 0; }
 }

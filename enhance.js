@@ -300,7 +300,11 @@
       .audience-switch--compact .audience-toggle button { padding: 4px 14px; font-size: 0.82rem; white-space: nowrap; color: var(--muted); }
       .audience-switch--compact .audience-toggle button.is-active { color: var(--text-brand); }
       .audience-switch--compact[data-audience="owner"] .audience-toggle button[data-audience-option="owner"].is-active { color: var(--accent); }
-      @media (max-width: 600px) { .audience-switch--compact { display: none; } }
+      @media (max-width: 600px) {
+        .site-header { flex-wrap: wrap; row-gap: 0; }
+        .audience-switch--compact { display: inline-flex; order: 9; flex-basis: 100%; margin: 8px 0 2px; }
+        .audience-switch--compact .audience-toggle { width: 100%; }
+      }
       .audience-owner-panel { display: none; width: min(760px, 100%); margin-top: 16px; border: 1px solid rgba(250, 249, 246, 0.35); border-radius: var(--radius-lg); padding: clamp(16px, 2.4vw, 22px); background: var(--ebro-glass); color: var(--ink); box-shadow: 0 16px 40px rgba(10, 20, 17, 0.22); backdrop-filter: blur(14px); }
       html[data-audience="owner"] .audience-owner-panel { display: grid; gap: 16px; animation: audiencePanelIn 300ms var(--ease-out); }
       html[data-audience="owner"] .hero-search { display: none; }

@@ -695,9 +695,10 @@ a.property-media {
 
 .property-title-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
 }
+.property-title-row > div { min-width: 0; }
 
 .property-title-row strong {
   color: var(--ink);
@@ -2191,7 +2192,7 @@ a.property-media {
   .owner-band,
   .contact-section,
   .detail-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .marketplace-toolbar {
@@ -2242,7 +2243,9 @@ a.property-media {
   }
 
   .property-media {
-    min-height: 220px;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
     aspect-ratio: 16 / 10;
   }
 

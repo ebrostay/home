@@ -3301,3 +3301,14 @@ html[data-audience="owner"] #why,
 html[data-audience="owner"] .split-band,
 html[data-audience="owner"] #how,
 html[data-audience="owner"] #contact { display: none; }
+
+/* ---- Mobile header: keep it to one tidy row (no nav menu here) ---- */
+@media (max-width: 560px) {
+  .site-header { gap: 8px; padding: 8px clamp(12px, 4vw, 16px); }
+  .header-actions { gap: 6px; }
+  .saved-flats-link { display: none !important; }
+  .header-actions .admin-link { display: none !important; }
+  .nav-cta { padding: 9px 13px; font-size: 0.85rem; }
+  .theme-toggle { width: 36px; height: 36px; }
+  .brand-mark { width: 28px; height: 28px; }
+}

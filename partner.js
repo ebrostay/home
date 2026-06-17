@@ -3,6 +3,7 @@
 const languageButtons = document.querySelectorAll("[data-lang]");
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
 let dashboard = null;
+let partnerAuthMode = "signin";
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 function interpolate(key, values) {
@@ -51,7 +52,17 @@ function renderDashboard() {
             </span>
           </div>
         </li>`).join("")
-    : `<li class="partner-empty">${t("partner.noProps")}</li>`;
+    : `<li class="partner-empty">
+        <a class="owner-flat-draft-card is-compact" href="owner-listing.html">
+          <span class="owner-flat-draft-grid" aria-hidden="true">
+            <span><b>+</b><small>${t("partner.slotLiving")}</small></span>
+            <span><b>+</b><small>${t("partner.slotBedroom")}</small></span>
+            <span><b>+</b><small>${t("partner.slotKitchen")}</small></span>
+          </span>
+          <strong>${t("partner.postFirstProperty")}</strong>
+          <em>${t("partner.noProps")}</em>
+        </a>
+      </li>`;
 
   const th = (key) => `<th>${t(key)}</th>`;
   const head = `<tr>${["admin.th.property", "admin.th.checkin", "admin.th.checkout", "admin.th.months", "admin.th.amount", "partner.thStatus"].map(th).join("")}</tr>`;
@@ -86,10 +97,33 @@ function applyLanguage(language) {
     button.classList.toggle("is-active", button.dataset.lang === currentLanguage);
   });
   renderDashboard();
+  setPartnerAuthMode(partnerAuthMode);
+}
+
+function setPartnerAuthMode(mode) {
+  partnerAuthMode = mode === "signup" ? "signup" : "signin";
+  const tabs = document.querySelector("#partnerAuthTabs");
+  const submit = document.querySelector("#partnerAuthSubmit");
+  const message = document.querySelector("#partnerLoginMessage");
+  tabs?.querySelectorAll("[data-partner-auth-mode]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.partnerAuthMode === partnerAuthMode);
+  });
+  if (submit) {
+    submit.textContent = t(partnerAuthMode === "signup" ? "partner.createAccount" : "auth.signin");
+  }
+  if (message) {
+    message.textContent = t(partnerAuthMode === "signup" ? "partner.signupCopy" : "partner.signinCopy");
+    message.className = "auth-message";
+  }
 }
 
 languageButtons.forEach((button) => {
   button.addEventListener("click", () => applyLanguage(button.dataset.lang));
+});
+
+document.querySelector("#partnerAuthTabs")?.addEventListener("click", (event) => {
+  const mode = event.target.closest("[data-partner-auth-mode]")?.dataset.partnerAuthMode;
+  if (mode) setPartnerAuthMode(mode);
 });
 
 document.querySelector("#partnerLogin")?.addEventListener("submit", async (event) => {
@@ -97,7 +131,26 @@ document.querySelector("#partnerLogin")?.addEventListener("submit", async (event
   const data = new FormData(event.target);
   const message = document.querySelector("#partnerLoginMessage");
   message.className = "auth-message";
-  const error = await EbrostayBackend.signIn(data.get("email")?.toString().trim() || "", data.get("password")?.toString() || "");
+  if (!window.EbrostayBackend?.isConfigured()) {
+    message.textContent = t("partner.authUnavailable");
+    message.classList.add("is-error");
+    return;
+  }
+  const email = data.get("email")?.toString().trim() || "";
+  const password = data.get("password")?.toString() || "";
+  if (partnerAuthMode === "signup") {
+    const result = await EbrostayBackend.signUp(email, password);
+    if (result.error) {
+      message.textContent = t("auth.signupError");
+      message.classList.add("is-error");
+    } else {
+      message.textContent = result.needsConfirmation ? t("auth.successEmailTitle") : t("partner.signinCopy");
+      message.classList.add("is-success");
+      event.target.reset();
+    }
+    return;
+  }
+  const error = await EbrostayBackend.signIn(email, password);
   if (error) {
     message.textContent = t("auth.error");
     message.classList.add("is-error");
@@ -132,9 +185,54 @@ document.querySelector("#payoutForm")?.addEventListener("submit", async (event) 
   }
 });
 
+// Stripe Connect: reflect status and drive onboarding
+const CONNECT_LABELS = {
+  active: "partner.connectActive",
+  pending: "partner.connectPending",
+  incomplete: "partner.connectIncomplete",
+  none: "partner.connectNone"
+};
+
+async function refreshConnect() {
+  const line = document.querySelector("#connectStatusLine");
+  const button = document.querySelector("#connectButton");
+  if (!line || !button) return;
+  const result = await EbrostayBackend.ownerConnect("status");
+  if (result.code === "connect_not_enabled" || result.code === "stripe_not_configured") {
+    line.textContent = t("partner.connectUnavailable");
+    button.hidden = true;
+    return;
+  }
+  const status = result.status || "none";
+  line.textContent = t(CONNECT_LABELS[status] || "partner.connectNone");
+  button.hidden = status === "active";
+  button.textContent = t(status === "none" ? "partner.connectStart" : "partner.connectContinue");
+  button.dataset.ready = "yes";
+}
+
+document.querySelector("#connectButton")?.addEventListener("click", async () => {
+  const button = document.querySelector("#connectButton");
+  const note = document.querySelector("#connectNote");
+  button.disabled = true;
+  note.textContent = t("partner.connectRedirect");
+  const result = await EbrostayBackend.ownerConnect("onboard");
+  if (result.url) {
+    window.location.href = result.url;
+    return;
+  }
+  button.disabled = false;
+  note.textContent = t(result.code === "connect_not_enabled" ? "partner.connectUnavailable" : "form.errorSend");
+});
+
 document.querySelector("#year").textContent = new Date().getFullYear();
 applyLanguage(currentLanguage);
+setPartnerAuthMode("signin");
 showState("loading");
+
+// returning from Stripe onboarding → re-check status
+if (/connect=(done|refresh)/.test(window.location.search)) {
+  history.replaceState(null, "", window.location.pathname);
+}
 
 if (window.EbrostayBackend?.isConfigured()) {
   let lastUser = undefined;
@@ -154,6 +252,7 @@ if (window.EbrostayBackend?.isConfigured()) {
       dashboard = await EbrostayBackend.loadOwnerDashboard();
       renderDashboard();
       showState("dashboard");
+      refreshConnect();
     }
   });
 } else {

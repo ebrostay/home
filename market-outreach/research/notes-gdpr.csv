@@ -1,0 +1,40 @@
+PLAZA Logística (Zaragoza) — B2B prospect list for short-term / corporate-rental apartment outreach
+Sources of company list:,Two entry points — see the 'Source / Entry point' column on each row.
+  1) PLAZA Logística,"https://www.plazalogistica.com/empresas/?lang=en (official PLAZA park directory, 34 companies). Detail page: /empresainstalada/<slug>/"
+  2) Páginas Amarillas + registries,"paginasamarillas.es (Zaragoza, relevant sectors) + public registries/directories (eInforma, elEconomista/Empresite, Axesor, Cámara Zaragoza, Aliaragón). 24 added Zaragoza companies."
+Relevance filter for added rows,"Prioritised medium/large employers in industrial, manufacturing, logistics/transport, engineering, IT/tech, energy, automotive, food & healthcare. Tiny retail/hospitality skipped."
+'list-only' added rows,Name sourced from Páginas Amarillas; website/contact not yet verified — flagged for a 2nd-pass enrichment on request.
+Status legend:
+  enriched,Has a named HR/leadership contact OR confirmed general email + LinkedIn + size
+  partial,Has general email/website/LinkedIn but no named HR contact yet
+  list-only,Directory baseline only — needs a second enrichment pass
+Email confidence:
+  Confirmed,Email published on the company's own site or the PLAZA directory
+  INFERRED,Built from the company's visible email pattern (e.g. name.surname@company.com) — NOT verified; verify before sending
+Email columns:
+  HR mailbox (confirmed),The verified recruitment route. Note: NONE of these companies publish a dedicated rrhh@/seleccion@/empleo@ mailbox — they recruit via web forms / InfoJobs / portals. Cell shows the route + any general inbox. Only Berdiel publishes a usable address (owner's).
+  HR email — inferred,"Best-guess personal email for the named HR/leadership contact, built from the company's email pattern (pattern source noted, usually RocketReach/published address). UNVERIFIED. 'Low-confidence guess' = pattern could not be established. Always verify before sending."
+LinkedIn note:,Names/titles taken from LinkedIn are view-only and unverified. LinkedIn does not publish emails.
+GDPR note:,"This is a B2B prospect list. Outreach to named individuals should rely on the legitimate-interest legal basis (GDPR Art.6(1)(f) / Spanish LOPDGDD & LSSI for e-marketing), be relevant to the person's professional role, and include a clear opt-out in every message. Honour opt-outs and keep a record of the legitimate-interest assessment."
+Batch 2 (added 2026-06-13):,"19 Zaragoza city/province companies added from the elEconomista company ranking (ranking-empresas.eleconomista.es) cross-checked against eInforma/Axesor/Empresite, company websites and LinkedIn."
+  Source / Entry point,elEconomista ranking (ranking-empresas.eleconomista.es) + web — see the Source/Entry point column on each batch-2 row.
+  Focus,"Large/medium Zaragoza employers missing from batch 1: automotive (Valeo Térmico, Fujikura, Adient), industrial mfg (Schindler, CAF, Lecitrailer, HMY Yudigar, Megasider, Novapet), logistics/distribution (Carreras, Adidas España, Alliance Healthcare, Proclinic, Novaltia), top employers (Stellantis Figueruelas, Ibercaja, Inditex/Plataforma Europa) and food (ICT Ibérica/Lucart, Tereos)."
+  Note on big employers,"Stellantis, Ibercaja, Inditex, Adidas etc. centralise HR/recruitment via portals (no public HR mailbox). Most batch-2 rows are status=partial: full firmographics + confirmed recruitment route, but no named HR contact. Inferred emails follow each group email convention and are UNVERIFIED — verify before sending."
+  Skipped,Aludium (no Aragón/Zaragoza site); Cuarte/Saica Pack/Trans Sesé etc. omitted as duplicates of existing parent entries.
+Email-enrichment pass (added 2026-06-13):,Two columns appended to the PLAZA Companies sheet.
+  All emails found (verbatim),"Every published/verbatim email located for the company (general, department, DPO and any named-person addresses), each with its source. ""None found verbatim"" = only web form/phone, or domain behind an anti-bot wall. 63 of 77 companies have >=1 verbatim address."
+  Inferred emails (pattern + basis),"Best-guess address(es) for the named HR/leadership contact, built from the company email pattern (e.g. first.last@ / finitial+last@) with the basis noted (usually RocketReach/LeadIQ/ContactOut format data or a verbatim sample). ALL flagged (UNVERIFIED) — verify before sending. ""Pattern undetermined"" = no pattern could be established or no named contact."
+  Domain corrections found,Zeleron = zeleron.es (not .com); IMESA = imesazaragoza.es; Grupo Agora staff mail = agoragp.com; Totalsport = grupototalsport.com; Laftur now trades as TSB Zaragoza (tsbzaragoza.com); SAMCA staff = gruposamca.com (generic = samca.com); Adidas corporate = adidas.com; BSH = bshg.com.
+  Caveat,IT Now S.A. (row 51) is the CaixaBank/IBM JV (HQ Barcelona) — confirm it is the intended Zaragoza target before outreach.
+Batch 3 directory harvest (added 2026-06-13):,213 additional Aragon companies (total now 290; 286 with a usable email).
+  Sources,"Paginas Amarillas (search snippets), Empresite/elEconomista, eInforma, Axesor, QDQ, cluster/poligono directories (Tecnara, Centrovia, Los Leones, Cogullada) and company websites."
+  Scope decision,"User opted to BROADEN the relevance filter to reach volume (~1,000 target), so batch 3 includes SMEs and lighter-fit sectors. Status is mostly list-only/partial."
+  Email quality,"EMAIL in the verbatim column = published address found. Many batch-3 rows have only a generic inferred info@domain (real domain, address NOT confirmed) in the Inferred column. The user opted to send to confirmed + inferred; expect higher bounce rates on the inferred/generic ones - a verification tool (Hunter/ZeroBounce/NeverBounce) before sending is strongly advised."
+  Not deliverability-verified,"No SMTP/verification API was available; ""verbatim"" means published, not proven deliverable."
+Batch 4 directory harvest (added 2026-06-13):,"237 more Zaragoza-metro/commutable companies (total now 527; 523 with a usable email - 305 verbatim, 258 inferred)."
+  Areas/sectors,"Metro towns (La Puebla de Alfinden, Villanueva/San Mateo de Gallego, Alfajarin, Pastriz), inner poligonos (Empresarium, Cartuja, Mercazaragoza, Ciudad del Transporte, El Portazgo), construction & installations, food/beverage/pharma/chemical/plastics producers, wholesalers/logistics, and staffing/facility-services firms (ETTs, cleaning, security, catering)."
+  Relevance note,Kept to Zaragoza city + commutable province so prospects can actually house staff in Zaragoza. Huesca/Teruel deliberately excluded as non-commutable.
+  Email caveat,"Many batch-4 rows carry only a generic inferred info@domain (real domain, address NOT confirmed). Verify (Hunter/ZeroBounce/NeverBounce) before sending; send to confirmed addresses first to protect domain reputation."
+Batch 5 directory harvest (added 2026-06-13):,"158 more high-fit Zaragoza-commutable companies (total now 685; 680 with a usable email - 426 verbatim, 294 inferred)."
+  Focus sectors,"Renewable-energy EPC/O&M (solar/wind/H2), data-center & ICT infrastructure contractors, automotive tier-2/3 (machining, stamping, moulds, surface treatment), footwear/metal cluster (Brea/Illueca), eastern-province agri-food & energy (Pina/Quinto/Caspe/Maella/Escatron), and printing/packaging/furniture/textile mfg. These sectors relocate project/commissioning/engineering staff - strong medium-stay fit."
+  Realistic ceiling,"Within Zaragoza city + commutable province, the pool of companies with findable emails is ~700-800 before it is only micro-businesses. Reaching exactly 1,000 would require Huesca/Teruel (non-commutable - cannot house staff in Zaragoza) or near-junk micro-firms."

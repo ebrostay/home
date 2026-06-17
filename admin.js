@@ -12,14 +12,12 @@ const adminMainTabs = document.querySelector("#adminMainTabs");
 const adminPropList = document.querySelector("#adminPropList");
 const adminBookingsTable = document.querySelector("#adminBookingsTable");
 const adminAssignedTable = document.querySelector("#adminAssignedTable");
-const adminRequestsTable = document.querySelector("#adminRequestsTable");
 const adminUserList = document.querySelector("#adminUserList");
 
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
 let propertyRows = [];
 let bookingRows = [];
 let assignedRows = [];
-let requestRows = [];
 let userRows = [];
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
@@ -129,42 +127,6 @@ function renderBookingsTable() {
   adminAssignedTable.innerHTML = assignedHead + (assignedBody || `<tr><td colspan="4">${t("admin.noBookings")}</td></tr>`);
 }
 
-const REQUEST_STATUS_CHIP = { new: "is-live", contacted: "is-live", confirmed: "is-live", declined: "is-off" };
-
-// Action buttons depend on where the request is in its lifecycle; confirmed
-// and declined are terminal.
-function requestActions(row) {
-  const btn = (status, key) =>
-    `<button class="details-button" type="button" data-request-id="${row.id}" data-request-status="${status}">${t(key)}</button>`;
-  if (row.status === "new") {
-    return btn("contacted", "admin.reqMarkContacted") + btn("confirmed", "admin.reqMarkConfirmed") + btn("declined", "admin.reqMarkDeclined");
-  }
-  if (row.status === "contacted") {
-    return btn("confirmed", "admin.reqMarkConfirmed") + btn("declined", "admin.reqMarkDeclined");
-  }
-  return "";
-}
-
-function renderRequestsTable() {
-  if (!adminRequestsTable) return;
-  const th = (key) => `<th>${t(key)}</th>`;
-  const head = `<tr>${["admin.th.requested", "admin.th.property", "admin.th.checkin", "admin.th.checkout", "admin.th.tenants", "admin.th.total", "admin.th.email", "admin.th.status", "admin.th.actions"].map(th).join("")}</tr>`;
-  const rows = requestRows.map((row) => `
-    <tr>
-      <td>${formatTimestamp(row.created_at)}</td>
-      <td>${escapeValue(row.property_name)}</td>
-      <td>${formatDate(row.start_date)}</td>
-      <td>${formatDate(row.end_date)}</td>
-      <td>${escapeValue(row.tenant_names || "—")}</td>
-      <td>${row.total_eur != null ? `${row.total_eur} EUR` : ""}</td>
-      <td>${escapeValue(row.customer_email || "")}</td>
-      <td><span class="admin-chip ${REQUEST_STATUS_CHIP[row.status] || "is-off"}">${t(`admin.reqStatus.${row.status}`)}</span></td>
-      <td>${requestActions(row)}</td>
-    </tr>
-  `).join("");
-  adminRequestsTable.innerHTML = head + (rows || `<tr><td colspan="9">${t("admin.noRequests")}</td></tr>`);
-}
-
 function renderUsers() {
   adminUserList.innerHTML = userRows.map((row) => {
     const bookingsCount = row.bookings?.[0]?.count || 0;
@@ -217,16 +179,14 @@ async function addProperty() {
 
 function renderAll() {
   renderPropList();
-  renderRequestsTable();
   renderBookingsTable();
   renderUsers();
 }
 
 async function loadAdminData() {
   const sb = EbrostayBackend.getClient();
-  const [propsResult, requestsResult, bookingsResult, assignedResult, usersResult] = await Promise.all([
+  const [propsResult, bookingsResult, assignedResult, usersResult] = await Promise.all([
     sb.from("properties").select("id, name, address, area_es, area_en, copy_es, copy_en, price_number, is_published, property_photos(storage_path, sort_order, is_floorplan)").order("id"),
-    EbrostayBackend.loadBookingRequests(),
     sb.from("bookings").select("*").order("created_at", { ascending: false }),
     sb.from("availability_blocks").select("property_id, start_date, end_date, properties(name), profiles(email)").not("user_id", "is", null).order("start_date"),
     sb.from("profiles").select("id, email, is_admin, deactivated_at, created_at, bookings(count)").order("created_at")
@@ -236,7 +196,6 @@ async function loadAdminData() {
     return;
   }
   propertyRows = propsResult.data || [];
-  requestRows = requestsResult || [];
   bookingRows = bookingsResult.data || [];
   assignedRows = assignedResult.data || [];
   userRows = usersResult.data || [];
@@ -254,7 +213,7 @@ function applyLanguage(language) {
     button.classList.toggle("is-active", button.dataset.lang === currentLanguage);
   });
   if (adminStatus.dataset.statusKey) adminStatus.textContent = t(adminStatus.dataset.statusKey);
-  if (propertyRows.length || bookingRows.length || requestRows.length || userRows.length) renderAll();
+  if (propertyRows.length || bookingRows.length || userRows.length) renderAll();
 }
 
 async function routeUI(user, isAdmin) {
@@ -325,24 +284,6 @@ if (adminLogout) {
 }
 
 document.querySelector("#adminAddProperty")?.addEventListener("click", addProperty);
-
-if (adminRequestsTable) {
-  adminRequestsTable.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-request-id]");
-    if (!button) return;
-    button.disabled = true;
-    const { ok } = await EbrostayBackend.updateBookingRequestStatus(button.dataset.requestId, button.dataset.requestStatus);
-    if (!ok) {
-      button.disabled = false;
-      showStatus("admin.error");
-      return;
-    }
-    const updated = requestRows.find((row) => row.id === button.dataset.requestId);
-    if (updated) updated.status = button.dataset.requestStatus;
-    renderRequestsTable();
-    showStatus("admin.saved");
-  });
-}
 
 if (adminUserList) {
   adminUserList.addEventListener("click", async (event) => {

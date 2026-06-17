@@ -9,26 +9,25 @@
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
     <link rel="manifest" href="site.webmanifest">
-    <meta name="theme-color" content="#1f8a57">
+    <meta name="theme-color" content="#0e9f6e">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-tile">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-6">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
-      <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Ebrostay home">
-        <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
+        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
       </a>
       <div class="header-actions">
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
-        <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
-        <a class="nav-cta" href="index.html#search" data-i18n="nav.cta">Buscar vivienda</a>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
+        <a class="nav-cta" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
       </div>
     </header>
 
@@ -44,12 +43,12 @@
         <h2 data-i18n="about.mvTitle">A dónde vamos y qué hacemos cada día.</h2>
         <div class="value-grid">
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="globe"></i></span>
+            <span class="value-icon">🌍</span>
             <h3 data-i18n="about.visionLabel">Nuestra visión</h3>
             <p data-i18n="about.visionCopy">Convertirnos en la empresa de gestión de propiedades número uno de Europa en alquiler corporativo de media estancia.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="arrow-left-right"></i></span>
+            <span class="value-icon">🌉</span>
             <h3 data-i18n="about.missionLabel">Nuestra misión</h3>
             <p data-i18n="about.missionCopy">Ser el puente entre empresas y propietarios, con un servicio de primer nivel para ambos lados.</p>
           </div>
@@ -84,7 +83,7 @@
             <li data-i18n="about.owner2">Verificación de inquilinos, contratos, cobros y fianza gestionados</li>
             <li data-i18n="about.owner3">Panel en tiempo real y pagos directos a tu cuenta</li>
           </ul>
-          <a class="button primary" href="index.html#owner" data-i18n="about.ownerCta">Publicar mi vivienda</a>
+          <a class="button primary" href="owner-listing.html" data-i18n="about.ownerCta">Publicar mi vivienda</a>
         </div>
       </section>
 
@@ -94,22 +93,22 @@
         <p class="value-lead" data-i18n="about.fpLead">La gestión tradicional funciona con llamadas, papeleo, visitas a ciegas y comisiones ocultas. Descompusimos cada sub-área hasta sus primeros principios y la reconstruimos como algo digital, transparente y rápido.</p>
         <div class="value-grid">
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="badge-euro"></i></span>
+            <span class="value-icon">💸</span>
             <h3 data-i18n="about.fp1t">Precio y transparencia</h3>
             <p data-i18n="about.fp1c">Un precio mensual claro. Sin comisiones ocultas ni sorpresas al firmar.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="file-text"></i></span>
+            <span class="value-icon">📄</span>
             <h3 data-i18n="about.fp2t">Contratos y cumplimiento</h3>
             <p data-i18n="about.fp2c">Contrato de temporada correcto, fianza y registro: lo gestionamos nosotros.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="lock"></i></span>
+            <span class="value-icon">🔐</span>
             <h3 data-i18n="about.fp3t">Cobros y fianza</h3>
             <p data-i18n="about.fp3c">Pago online seguro, facturación automática y fianza gestionada.</p>
           </div>
           <div class="value-card">
-            <span class="value-icon"><i data-lucide="headset"></i></span>
+            <span class="value-icon">💬</span>
             <h3 data-i18n="about.fp4t">Soporte y check-in</h3>
             <p data-i18n="about.fp4c">Autoentrada con lockbox y soporte 24/7 en español e inglés.</p>
           </div>
@@ -122,7 +121,7 @@
         <p class="about-lead" data-i18n="about.ctaCopy">Empezamos donde conocemos cada calle y cada trayecto, y luego llevamos el mismo método a la siguiente ciudad. Tanto si alojas a un equipo como si publicas tu vivienda, hablas con el mismo puente.</p>
         <div class="about-ctas">
           <a class="button primary" href="index.html#search" data-i18n="about.ctaFind">Buscar vivienda</a>
-          <a class="button ghost" href="index.html#owner" data-i18n="about.ctaList">Publicar mi vivienda</a>
+          <a class="button ghost" href="owner-listing.html" data-i18n="about.ctaList">Publicar mi vivienda</a>
           <a class="button ghost" href="index.html#contact" data-i18n="nav.contact">Contacto</a>
         </div>
       </section>
@@ -130,20 +129,14 @@
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-mark.svg" alt="Ebrostay" width="40" height="40">
+        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
-      <nav class="footer-nav" aria-label="Footer navigation">
-        <a href="index.html" data-i18n="nav.home">Inicio</a>
-        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="index.html#owner" data-i18n="nav.owners">Propietarios</a>
-        <a href="about.html" data-i18n="nav.about">Nosotros</a>
-        <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
-      </nav>
-      <a class="footer-email" href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
-    <script src="data.js?v=ds-tile"></script>
+    <script src="data.js?v=design-6"></script>
     <script>
       const languageButtons = document.querySelectorAll("[data-lang]");
       let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
@@ -167,7 +160,5 @@
       document.querySelector("#year").textContent = new Date().getFullYear();
       applyLanguage(currentLanguage);
     </script>
-      <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-tile"></script>
   </body>
 </html>

@@ -145,6 +145,20 @@ deleteAccountButton?.addEventListener("click", async () => {
 document.querySelector("#year").textContent = new Date().getFullYear();
 applyLanguage(currentLanguage);
 
+// Stripe success_url lands here after a paid checkout
+if (new URLSearchParams(window.location.search).get("booking") === "success") {
+  window.addEventListener("load", () => {
+    window.umami?.track("booking-paid");
+  });
+  const toast = document.createElement("p");
+  toast.className = "admin-status is-toast";
+  toast.setAttribute("role", "status");
+  toast.textContent = t("book.confirmed");
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 7000);
+  history.replaceState(null, "", window.location.pathname);
+}
+
 if (window.EbrostayBackend?.isConfigured()) {
   let firstAuth = true;
   EbrostayBackend.init({

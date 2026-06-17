@@ -4,11 +4,11 @@
   "description": "Furnished mid-stay rentals in Zaragoza — book online, fully digital.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf9f6",
-  "theme_color": "#1f8a57",
+  "background_color": "#0c1a14",
+  "theme_color": "#0e9f6e",
   "icons": [
     { "src": "/assets/ebrostay-icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/assets/ebrostay-icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "/assets/ebrostay-icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

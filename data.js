@@ -37,6 +37,12 @@ const translations = {
     "filters.typeHome": "Casa",
     "filters.budget": "Presupuesto mensual máximo",
     "filters.anyBudget": "Sin límite",
+    "filters.more": "Más filtros",
+    "filters.any": "Cualquiera",
+    "filters.bedrooms": "Dormitorios",
+    "filters.bathrooms": "Baños",
+    "filters.address": "Zona o dirección",
+    "filters.addressPlaceholder": "Movera, Universidad, Pedro II...",
     "filters.mustHave": "Imprescindible",
     "filters.sort": "Ordenar",
     "filters.sortBest": "Mejor opción",
@@ -48,11 +54,20 @@ const translations = {
     "quick.verified": "Verificadas",
     "quick.bills": "Gastos incluidos",
     "quick.deposit": "Fianza reembolsable",
+    "mapFilters.title": "Filtros del mapa",
+    "mapFilters.postcodes": "Códigos postales",
+    "mapFilters.neighborhoods": "Barrios",
+    "mapFilters.clear": "Limpiar zona",
+    "mapFilters.hint": "Puedes combinar código postal, barrio y dibujo en el mapa.",
+    "mapFilters.limit": "Puedes seleccionar hasta 3 zonas a la vez.",
     "status.all": "Mostrando {count} viviendas gestionadas.",
     "status.matches": "{count} viviendas encontradas.",
     "status.one": "1 vivienda encontrada.",
     "status.none": "No hay viviendas para esos filtros.",
     "status.invalid": "La fecha de salida debe ser posterior a la entrada.",
+    "status.mapMatches": "{count} viviendas dentro del area del mapa.",
+    "status.mapNone": "No hay viviendas dentro de esta zona del mapa.",
+    "status.locationMatches": "{count} viviendas con esos filtros de zona.",
     "listing.available": "Disponible",
     "listing.unavailable": "No disponible",
     "listing.capacity": "Hasta {guests} personas",
@@ -63,6 +78,8 @@ const translations = {
     "listing.map": "Mapa",
     "listing.favorite": "Guardar",
     "listing.saved": "Guardado",
+    "listing.prevPhoto": "Foto anterior",
+    "listing.nextPhoto": "Foto siguiente",
     "listing.request": "Solicitar",
     "listing.book": "Reservar",
     "badge.checked": "Verificada",
@@ -94,6 +111,8 @@ const translations = {
     "spec.groundFloor": "Planta baja",
     "detail.conditions": "Condiciones",
     "detail.video": "Ver vídeo de la vivienda",
+    "detail.openGallery": "Haz clic en la foto para abrir la galería",
+    "detail.galleryLabel": "Galería de fotos",
     "cond.minStay": "Estancia mínima",
     "cond.maxStay": "Estancia máxima",
     "cond.month": "1 mes",
@@ -326,6 +345,53 @@ const translations = {
     "owners.sent": "¡Recibido! Te contactamos en menos de 24 h.",
     "owners.sentFallback": "Escríbenos a info@ebrostay.com y te respondemos enseguida.",
     "owners.aboutLink": "Ventajas",
+    "ownerPost.kicker": "Gestiona mi piso",
+    "ownerPost.title": "Tu cartera, en tiempo real.",
+    "ownerPost.introKicker": "Gestiona mi piso",
+    "ownerPost.cardTitle": "Publica un piso desde fotos, sin llamadas.",
+    "ownerPost.cardCopy": "Empieza subiendo fotos en los espacios de cada estancia. Guardamos el borrador, generamos la primera descripcion y te pedimos iniciar sesion aqui mismo sin perder nada.",
+    "ownerPost.photoCta": "Crear anuncio con fotos",
+    "ownerPost.signIn": "Iniciar sesion para publicar",
+    "ownerPost.roomLiving": "Salon",
+    "ownerPost.roomBedroom": "Dormitorio",
+    "ownerPost.roomKitchen": "Cocina",
+    "ownerPost.roomBathroom": "Bano",
+    "ownerPost.roomEntrance": "Entrada",
+    "ownerPost.roomFloorplan": "Plano",
+    "ownerPost.roomExtra": "Fotos adicionales",
+    "ownerPost.readyTitle": "Nuevo piso listo para publicar",
+    "ownerPost.readyCopy": "Haz clic para completar fotos, servicios, precio y borrador automatico.",
+    "ownerPost.readyWithPhotos": "{count} fotos anadidas en: {rooms}. El borrador inferior se actualiza automaticamente.",
+    "ownerPost.photoGuidance": "Recomendamos estas seis fotos para mejorar visibilidad y confianza, pero no bloquean la publicacion. Puedes subir varias fotos por estancia y anadir mas categorias.",
+    "ownerPost.addPhotos": "Anadir otra categoria",
+    "ownerPost.formKicker": "Borrador automatico",
+    "ownerPost.formTitle": "Campos necesarios para publicar",
+    "ownerPost.formCopy": "Estos datos completan el primer borrador del anuncio. Al anadir fotos o editar los campos, la descripcion se actualiza debajo.",
+    "ownerPost.fieldTitle": "Titulo del anuncio",
+    "ownerPost.fieldTitlePlaceholder": "Piso amueblado en Zaragoza",
+    "ownerPost.fieldAddress": "Direccion o zona",
+    "ownerPost.fieldAddressPlaceholder": "Pedro II, Movera, Centro...",
+    "ownerPost.fieldPrice": "Precio mensual",
+    "ownerPost.fieldAvailable": "Disponible desde",
+    "ownerPost.fieldBedrooms": "Dormitorios",
+    "ownerPost.fieldBathrooms": "Banos",
+    "ownerPost.fieldCapacity": "Capacidad",
+    "ownerPost.fieldType": "Tipo",
+    "ownerPost.services": "Servicios y condiciones",
+    "ownerPost.fieldDescription": "Descripcion generada",
+    "ownerPost.draftHint": "Borrador guardado en este dispositivo hasta que inicies sesion.",
+    "ownerPost.regenerate": "Regenerar descripcion",
+    "ownerPost.post": "Publicar nueva propiedad",
+    "ownerPost.saved": "Borrador guardado. Inicia sesion aqui mismo para publicar sin perder los datos.",
+    "ownerPost.aiWorking": "Generando una nueva descripcion con los datos y fotos disponibles...",
+    "ownerPost.aiDone": "Descripcion regenerada.",
+    "ownerPost.aiFallback": "Descripcion regenerada con los datos disponibles.",
+    "ownerPost.loginRequired": "Tu borrador esta guardado. Inicia sesion en esta ventana y continuaremos con la publicacion.",
+    "ownerPost.published": "Propiedad publicada y visible en los resultados de busqueda.",
+    "ownerPost.publishedLocal": "Propiedad publicada en este navegador y visible en los resultados. La copia online necesita permisos de propietario en la base de datos.",
+    "ownerPost.publishError": "No se pudo guardar en la base de datos, pero el borrador sigue guardado aqui.",
+    "ownerPost.docs": "Descargar los documentos EbroStay aqui",
+    "ownerPost.docsHint": "Al publicar generamos un resumen descargable con la informacion que vera el cliente final.",
     "partner.kicker": "Portal de propietarios",
     "partner.title": "Tu cartera, en tiempo real.",
     "partner.signinCopy": "Inicia sesión con la cuenta de propietario que te facilitamos para ver tus viviendas, ingresos y datos de pago.",
@@ -459,6 +525,14 @@ const translations = {
     "properties.movera1.priceNote": "o 450 EUR/habitación",
     "map.title": "Mapa de viviendas",
     "map.copy": "Cada pin muestra el precio mensual de una vivienda. Toca un pin para resaltar la vivienda o usa los botones para ir a cada dirección.",
+    "map.draw": "Dibujar zona",
+    "map.drawHint": "Haz clic para rodear calles concretas. Cierra la forma o pulsa terminar.",
+    "map.finish": "Terminar forma",
+    "map.cancelDraw": "Cancelar dibujo",
+    "map.clear": "Ver toda la ciudad",
+    "map.areaCity": "Mostrando Zaragoza completa.",
+    "map.areaViewport": "Filtrando por el area visible del mapa.",
+    "map.areaDrawn": "Filtrando por la zona dibujada.",
     "map.pedro": "Pedro II el Católico 3",
     "map.movera": "Movera 7",
     "how.kicker": "Cómo funciona",
@@ -685,6 +759,12 @@ const translations = {
     "filters.typeHome": "House",
     "filters.budget": "Maximum monthly budget",
     "filters.anyBudget": "No limit",
+    "filters.more": "More filters",
+    "filters.any": "Any",
+    "filters.bedrooms": "Bedrooms",
+    "filters.bathrooms": "Bathrooms",
+    "filters.address": "Area or address",
+    "filters.addressPlaceholder": "Movera, University, Pedro II...",
     "filters.mustHave": "Must-have",
     "filters.sort": "Sort",
     "filters.sortBest": "Best match",
@@ -696,11 +776,20 @@ const translations = {
     "quick.verified": "Verified",
     "quick.bills": "Bills included",
     "quick.deposit": "Refundable deposit",
+    "mapFilters.title": "Map filters",
+    "mapFilters.postcodes": "Postcodes",
+    "mapFilters.neighborhoods": "Neighborhoods",
+    "mapFilters.clear": "Clear area",
+    "mapFilters.hint": "You can combine postcode, neighborhood and drawn map area.",
+    "mapFilters.limit": "You can select up to 3 areas at a time.",
     "status.all": "Showing {count} managed homes.",
     "status.matches": "{count} homes found.",
     "status.one": "1 home found.",
     "status.none": "No homes match those filters.",
     "status.invalid": "Move-out must be after move-in.",
+    "status.mapMatches": "{count} homes inside the map area.",
+    "status.mapNone": "No homes inside this map area.",
+    "status.locationMatches": "{count} homes with those location filters.",
     "listing.available": "Available",
     "listing.unavailable": "Unavailable",
     "listing.capacity": "Up to {guests} people",
@@ -711,6 +800,8 @@ const translations = {
     "listing.map": "Map",
     "listing.favorite": "Save",
     "listing.saved": "Saved",
+    "listing.prevPhoto": "Previous photo",
+    "listing.nextPhoto": "Next photo",
     "listing.request": "Request",
     "listing.book": "Book",
     "badge.checked": "Verified",
@@ -742,6 +833,8 @@ const translations = {
     "spec.groundFloor": "Ground floor",
     "detail.conditions": "Conditions",
     "detail.video": "Watch the video tour",
+    "detail.openGallery": "Click the photo to open the gallery",
+    "detail.galleryLabel": "Photo gallery",
     "cond.minStay": "Minimum stay",
     "cond.maxStay": "Maximum stay",
     "cond.month": "1 month",
@@ -974,6 +1067,53 @@ const translations = {
     "owners.sent": "Got it! We'll contact you within 24h.",
     "owners.sentFallback": "Write to info@ebrostay.com and we'll reply right away.",
     "owners.aboutLink": "Benefits",
+    "ownerPost.kicker": "Manage my flat",
+    "ownerPost.title": "Your portfolio, in real time.",
+    "ownerPost.introKicker": "Manage my flat",
+    "ownerPost.cardTitle": "Post a flat from photos, without calls.",
+    "ownerPost.cardCopy": "Start by uploading photos into the listing placeholders. We save the draft, generate the initial description, and ask you to sign in here without losing anything.",
+    "ownerPost.photoCta": "Create listing with photos",
+    "ownerPost.signIn": "Sign in to publish",
+    "ownerPost.roomLiving": "Living room",
+    "ownerPost.roomBedroom": "Bedroom",
+    "ownerPost.roomKitchen": "Kitchen",
+    "ownerPost.roomBathroom": "Bathroom",
+    "ownerPost.roomEntrance": "Entrance",
+    "ownerPost.roomFloorplan": "Floor plan",
+    "ownerPost.roomExtra": "Additional photos",
+    "ownerPost.readyTitle": "New flat ready to publish",
+    "ownerPost.readyCopy": "Click to complete photos, services, price and AI draft.",
+    "ownerPost.readyWithPhotos": "{count} photos added in: {rooms}. The draft below is updating automatically.",
+    "ownerPost.photoGuidance": "We strongly recommend these six photos because they improve visibility, consistency and trust, but they do not block publishing. You can upload several photos per room and add more categories.",
+    "ownerPost.addPhotos": "Add another category",
+    "ownerPost.formKicker": "Automatic draft",
+    "ownerPost.formTitle": "Fields needed to publish",
+    "ownerPost.formCopy": "These details complete the first listing draft. When you add photos or edit fields, the description updates below.",
+    "ownerPost.fieldTitle": "Listing title",
+    "ownerPost.fieldTitlePlaceholder": "Furnished flat in Zaragoza",
+    "ownerPost.fieldAddress": "Address or area",
+    "ownerPost.fieldAddressPlaceholder": "Pedro II, Movera, Centro...",
+    "ownerPost.fieldPrice": "Monthly price",
+    "ownerPost.fieldAvailable": "Available from",
+    "ownerPost.fieldBedrooms": "Bedrooms",
+    "ownerPost.fieldBathrooms": "Bathrooms",
+    "ownerPost.fieldCapacity": "Capacity",
+    "ownerPost.fieldType": "Type",
+    "ownerPost.services": "Services and conditions",
+    "ownerPost.fieldDescription": "Generated description",
+    "ownerPost.draftHint": "Draft saved on this device until you sign in.",
+    "ownerPost.regenerate": "Regenerate description",
+    "ownerPost.post": "Post new property",
+    "ownerPost.saved": "Draft saved. Sign in here to publish without losing the details.",
+    "ownerPost.aiWorking": "Generating a new description from the available details and photos...",
+    "ownerPost.aiDone": "Description regenerated.",
+    "ownerPost.aiFallback": "Description regenerated from the available details.",
+    "ownerPost.loginRequired": "Your draft is saved. Sign in in this window and we will continue publishing.",
+    "ownerPost.published": "Property published and visible in search results.",
+    "ownerPost.publishedLocal": "Property published in this browser and visible in search. The online copy needs owner database permissions.",
+    "ownerPost.publishError": "The database save did not finish, but the draft is still saved here.",
+    "ownerPost.docs": "Download the EbroStay docs here",
+    "ownerPost.docsHint": "After publishing we generate a downloadable summary with the information final customers will see.",
     "partner.kicker": "Owner portal",
     "partner.title": "Your portfolio, in real time.",
     "partner.signinCopy": "Sign in with the owner account we set up for you to see your homes, income and payout details.",
@@ -1095,18 +1235,26 @@ const translations = {
     "properties.pedro2.area": "University - Pedro II el Católico",
     "properties.pedro2.copy": "Second-floor left flat in the same building, practical for professionals, students, or temporary relocations.",
     "properties.pedro2.details": "Furnished home with functional layout, wifi, heating, and local support for arrival and stay.",
-    "properties.movera0.name": "Movera 7 - Segunda Planta",
+    "properties.movera0.name": "Movera 7 - 2nd floor",
     "properties.movera0.area": "Movera",
     "properties.movera0.copy": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays.",
     "properties.movera0.details": "Three private bedrooms with shared living, dining, and equipped kitchen, plus a full bathroom. Expenses included with utilities capped at 50 EUR per room, self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
     "properties.movera0.priceNote": "or 450 EUR/room",
-    "properties.movera1.name": "Movera 7 - Primera Planta",
+    "properties.movera1.name": "Movera 7 - 1st floor",
     "properties.movera1.area": "Movera",
     "properties.movera1.copy": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays.",
     "properties.movera1.details": "Three private bedrooms with shared living, dining, and equipped kitchen, full bathroom, and terrace. Expenses included with utilities capped at 50 EUR per room, self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
     "properties.movera1.priceNote": "or 450 EUR/room",
     "map.title": "Homes map",
     "map.copy": "Each pin shows a home's monthly price. Tap a pin to highlight the home or use the buttons to jump to each address.",
+    "map.draw": "Draw area",
+    "map.drawHint": "Click around specific streets. Close the shape or press finish.",
+    "map.finish": "Finish shape",
+    "map.cancelDraw": "Cancel drawing",
+    "map.clear": "Show whole city",
+    "map.areaCity": "Showing all Zaragoza.",
+    "map.areaViewport": "Filtering by the visible map area.",
+    "map.areaDrawn": "Filtering by the drawn area.",
     "map.pedro": "Pedro II el Católico 3",
     "map.movera": "Movera 7",
     "how.kicker": "How it works",
@@ -1312,6 +1460,8 @@ const properties = [
     detailsKey: "properties.pedro1.details",
     lat: 41.65393,
     lng: -0.90783,
+    postcode: "50009",
+    neighborhood: "Universidad",
     guests: 4,
     price: "950 EUR",
     priceNumber: 950,
@@ -1336,6 +1486,8 @@ const properties = [
     detailsKey: "properties.pedro2.details",
     lat: 41.65416,
     lng: -0.90756,
+    postcode: "50009",
+    neighborhood: "Universidad",
     guests: 4,
     price: "980 EUR",
     priceNumber: 980,
@@ -1361,6 +1513,8 @@ const properties = [
     priceNoteKey: "properties.movera0.priceNote",
     lat: 41.64929,
     lng: -0.82209,
+    postcode: "50194",
+    neighborhood: "Movera",
     guests: 3,
     price: "1.350 EUR",
     priceNumber: 1350,
@@ -1399,6 +1553,8 @@ const properties = [
     priceNoteKey: "properties.movera1.priceNote",
     lat: 41.64952,
     lng: -0.82182,
+    postcode: "50194",
+    neighborhood: "Movera",
     guests: 3,
     price: "1.350 EUR",
     priceNumber: 1350,
@@ -1425,6 +1581,115 @@ const properties = [
     unavailable: [["2026-06-22", "2026-06-29"], ["2026-08-01", "2026-08-16"]]
   }
 ];
+
+const OWNER_PUBLISHED_PROPERTIES_KEY = "ebrostay-owner-published-properties";
+
+function uniquePhotoList(photos) {
+  return [...new Set((photos || []).filter(Boolean))];
+}
+
+function ownerRecordToProperty(record) {
+  const key = `owner.${record.id}`;
+  const name = record.title || record.name || "Ebrostay owner listing";
+  const area = record.area || record.neighborhood || record.address || "Zaragoza";
+  const copy = record.copy || record.description || "";
+  const details = record.details || record.description || copy;
+
+  translations.es[`${key}.name`] = localizeListingTitle(name, "es");
+  translations.en[`${key}.name`] = localizeListingTitle(name, "en");
+  translations.es[`${key}.area`] = area;
+  translations.en[`${key}.area`] = area;
+  translations.es[`${key}.copy`] = copy;
+  translations.en[`${key}.copy`] = copy;
+  translations.es[`${key}.details`] = details;
+  translations.en[`${key}.details`] = details;
+
+  return {
+    id: record.id,
+    city: record.city || "zaragoza",
+    type: record.type || "apartment",
+    address: record.address || "",
+    addressKey: "owner",
+    nameKey: `${key}.name`,
+    areaKey: `${key}.area`,
+    copyKey: `${key}.copy`,
+    detailsKey: `${key}.details`,
+    lat: Number(record.lat) || 41.6516,
+    lng: Number(record.lng) || -0.8809,
+    postcode: record.postcode || "",
+    neighborhood: record.neighborhood || area,
+    guests: Number(record.guests) || 1,
+    price: `${Number(record.priceNumber) || 0} EUR`,
+    priceNumber: Number(record.priceNumber) || 0,
+    rating: null,
+    bedrooms: Number(record.bedrooms) || null,
+    bathrooms: Number(record.bathrooms) || null,
+    floorNumber: Number(record.floorNumber) || null,
+    availableFrom: record.availableFrom || new Date().toISOString().slice(0, 10),
+    isNew: true,
+    checked: true,
+    depositProtected: Boolean(record.depositProtected),
+    billsIncluded: Boolean(record.billsIncluded),
+    amenities: record.amenities || [],
+    photos: uniquePhotoList(record.photos),
+    floorplans: uniquePhotoList(record.floorplans),
+    unavailable: []
+  };
+}
+
+function ordinalFloorLabel(floor) {
+  const value = Number(floor);
+  if (!Number.isFinite(value)) return `${floor}th`;
+  const abs = Math.abs(value);
+  const suffix = abs % 100 >= 11 && abs % 100 <= 13
+    ? "th"
+    : ({ 1: "st", 2: "nd", 3: "rd" }[abs % 10] || "th");
+  return `${value}${suffix}`;
+}
+
+function localizeListingTitle(title, language) {
+  if (language !== "en" || typeof title !== "string") return title;
+  return title
+    .replace(/\bplanta baja\b/gi, "ground floor")
+    .replace(/\bprimera planta\b/gi, "1st floor")
+    .replace(/\bsegunda planta\b/gi, "2nd floor")
+    .replace(/\btercera planta\b/gi, "3rd floor")
+    .replace(/\b(\d+)\s*planta\b/gi, (_, floor) => `${ordinalFloorLabel(floor)} floor`);
+}
+
+function upsertOwnerPublishedRecord(record) {
+  if (!record?.id) return null;
+  const property = ownerRecordToProperty(record);
+  const existingIndex = properties.findIndex((item) => item.id === property.id);
+  if (existingIndex >= 0) properties.splice(existingIndex, 1, property);
+  else properties.push(property);
+  return property;
+}
+
+function loadOwnerPublishedRecords() {
+  try {
+    const records = JSON.parse(localStorage.getItem(OWNER_PUBLISHED_PROPERTIES_KEY) || "[]");
+    return Array.isArray(records) ? records : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveOwnerPublishedRecord(record) {
+  if (!record?.id) return null;
+  const records = loadOwnerPublishedRecords().filter((item) => item.id !== record.id);
+  records.unshift(record);
+  try {
+    localStorage.setItem(OWNER_PUBLISHED_PROPERTIES_KEY, JSON.stringify(records.slice(0, 20)));
+  } catch {
+    /* Large uploaded images can exceed local storage; search still updates in-memory. */
+  }
+  return upsertOwnerPublishedRecord(record);
+}
+
+function hydrateOwnerPublishedProperties() {
+  loadOwnerPublishedRecords().forEach(upsertOwnerPublishedRecord);
+}
 
 const addressLocations = {
   pedro: { lat: 41.65393, lng: -0.90783 },

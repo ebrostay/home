@@ -9,26 +9,30 @@
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
     <link rel="manifest" href="site.webmanifest">
-    <meta name="theme-color" content="#1f8a57">
+    <meta name="theme-color" content="#0e9f6e">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-tile">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=design-6">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
-      <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Ebrostay home">
-        <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
+        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
       </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="index.html#search" data-i18n="nav.search">Buscar</a>
+        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
+        <a href="index.html#contact" data-i18n="nav.contact">Contacto</a>
+      </nav>
       <div class="header-actions">
+        <button class="nav-toggle" type="button" aria-label="Menú" data-i18n-attr="aria-label:nav.menu" aria-expanded="false">&#9776;</button>
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
-        <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
-        <a class="nav-cta" href="index.html#search" data-i18n="nav.cta">Buscar vivienda</a>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
       </div>
     </header>
 
@@ -67,26 +71,18 @@
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-mark.svg" alt="Ebrostay" width="40" height="40">
+        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
-      <nav class="footer-nav" aria-label="Footer navigation">
-        <a href="index.html" data-i18n="nav.home">Inicio</a>
-        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="index.html#owner" data-i18n="nav.owners">Propietarios</a>
-        <a href="about.html" data-i18n="nav.about">Nosotros</a>
-        <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
-      </nav>
-      <a class="footer-email" href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-tile"></script>
+    <script src="data.js?v=design-6"></script>
     <script src="backend.js?v=design-6"></script>
     <script src="nav.js?v=design-6"></script>
     <script src="account.js?v=design-6"></script>
-      <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-tile"></script>
   </body>
 </html>

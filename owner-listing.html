@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ebrostay | Publica tu vivienda</title>
+    <meta name="description" content="Sube fotos, genera una descripción inicial y guarda tu borrador de vivienda antes de crear tu cuenta de propietario.">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#0e9f6e">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=owners-section-fix-20260615">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Ebrostay home">
+        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
+      </a>
+      <div class="header-actions">
+        <div class="language-switch" aria-label="Language selector">
+          <button class="language-option is-active" type="button" data-lang="es">ES</button>
+          <button class="language-option" type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-cta" href="owners.html" data-owner-i18n="navOwners">Propietarios</a>
+        <a class="admin-link owner-login-link" href="partner.html" data-owner-i18n="portal">Entrar / ver mis viviendas</a>
+      </div>
+    </header>
+
+    <main class="owner-listing-page">
+      <section class="owner-listing-hero">
+        <p class="section-kicker" data-owner-i18n="kicker">Publica sin llamadas</p>
+        <h1 data-owner-i18n="title">Sube fotos y deja que Ebrostay prepare el primer borrador.</h1>
+        <p data-owner-i18n="lead">Añade tus fotos, marca servicios como wifi o gastos incluidos y guarda el borrador. Si creas cuenta después, no se pierde nada.</p>
+      </section>
+
+      <form class="owner-listing-form" id="ownerListingForm">
+        <section class="owner-intake-panel">
+          <div class="owner-panel-head">
+            <div>
+              <p class="section-kicker" data-owner-i18n="photosKicker">Fotos primero</p>
+              <h2 data-owner-i18n="photosTitle">Enséñanos la vivienda</h2>
+            </div>
+            <label class="button primary owner-upload-button">
+              <span data-owner-i18n="choosePhotos">Subir fotos</span>
+              <input id="ownerPhotos" type="file" accept="image/*" multiple hidden>
+            </label>
+          </div>
+          <div class="owner-photo-preview" id="ownerPhotoPreview"></div>
+          <p class="admin-hint" data-owner-i18n="photoHint">Las fotos se guardan en este navegador hasta que termines el alta.</p>
+        </section>
+
+        <section class="owner-intake-panel owner-facts-grid">
+          <label><span data-owner-i18n="name">Nombre</span><input name="name" autocomplete="name" required></label>
+          <label><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+          <label><span data-owner-i18n="phone">Teléfono</span><input name="phone" type="tel" autocomplete="tel"></label>
+          <label><span data-owner-i18n="address">Dirección o zona</span><input name="address" placeholder="Movera, Delicias, centro..."></label>
+          <label><span data-owner-i18n="homeType">Tipo</span><select name="type"><option value="apartment">Piso</option><option value="room">Habitación</option><option value="home">Casa</option></select></label>
+          <label><span data-owner-i18n="bedrooms">Habitaciones</span><input name="bedrooms" type="number" min="0" step="1"></label>
+          <label><span data-owner-i18n="bathrooms">Baños</span><input name="bathrooms" type="number" min="0" step="1"></label>
+          <label><span data-owner-i18n="price">Renta deseada</span><input name="price" type="number" min="0" step="1" placeholder="1350"></label>
+        </section>
+
+        <section class="owner-intake-panel">
+          <div class="owner-panel-head">
+            <div>
+              <p class="section-kicker" data-owner-i18n="togglesKicker">Servicios</p>
+              <h2 data-owner-i18n="togglesTitle">Marca lo que ya incluye</h2>
+            </div>
+          </div>
+          <div class="owner-toggle-grid" id="ownerToggles"></div>
+        </section>
+
+        <section class="owner-intake-panel">
+          <div class="owner-panel-head">
+            <div>
+              <p class="section-kicker" data-owner-i18n="draftKicker">Borrador con IA</p>
+              <h2 data-owner-i18n="draftTitle">Descripción inicial</h2>
+            </div>
+            <button class="button ghost" id="generateOwnerDescription" type="button" data-owner-i18n="generate">Generar descripción</button>
+          </div>
+          <textarea name="description" rows="7" data-owner-i18n-attr="placeholder:descriptionPlaceholder" placeholder="La descripción aparecerá aquí..."></textarea>
+          <p class="admin-hint" id="ownerAiNote" data-owner-i18n="aiHint">Si la IA remota no está disponible, generamos un borrador local con tus datos y fotos.</p>
+        </section>
+
+        <section class="owner-intake-panel owner-save-panel">
+          <button class="button primary" type="submit" data-owner-i18n="save">Guardar borrador y continuar</button>
+          <p class="form-note" id="ownerListingStatus" role="status" data-owner-i18n="saveNote">No te preocupes: guardamos lo que has escrito antes de pedirte iniciar sesión o crear cuenta.</p>
+          <div class="owner-auth-actions" id="ownerAuthActions" hidden>
+            <a class="button primary" href="partner.html" data-owner-i18n="login">Iniciar sesión o crear cuenta</a>
+            <a class="button ghost" href="mailto:info@ebrostay.com" data-owner-i18n="emailUs">Enviar por email</a>
+          </div>
+        </section>
+      </form>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-brand">
+        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
+        <span>&copy; <span id="year"></span> Ebrostay</span>
+      </span>
+      <a href="privacy.html">Privacidad</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=design-6"></script>
+    <script src="data.js?v=owners-section-fix-20260615"></script>
+    <script src="backend.js?v=design-6"></script>
+    <script src="owner-listing.js?v=owners-section-fix-20260615"></script>
+  </body>
+</html>

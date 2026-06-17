@@ -35,11 +35,14 @@ const EbrostayBackend = (() => {
 
   function mapRowToProperty(row) {
     const key = `db.${row.id}`;
+    const locationFallback = row.address_key === "movera"
+      ? { postcode: "50194", neighborhood: "Movera" }
+      : { postcode: "50009", neighborhood: "Universidad" };
     const set = (suffix, es, en) => {
       translations.es[`${key}.${suffix}`] = es ?? en ?? "";
       translations.en[`${key}.${suffix}`] = en ?? es ?? "";
     };
-    set("name", row.name, row.name);
+    set("name", row.name, typeof localizeListingTitle === "function" ? localizeListingTitle(row.name, "en") : row.name);
     set("area", row.area_es, row.area_en);
     set("copy", row.copy_es, row.copy_en);
     set("details", row.details_es, row.details_en);
@@ -52,6 +55,8 @@ const EbrostayBackend = (() => {
       type: row.type,
       address: row.address || null,
       addressKey: row.address_key,
+      postcode: row.postcode || locationFallback.postcode,
+      neighborhood: row.neighborhood || locationFallback.neighborhood || row.area_es || row.area_en || "",
       nameKey: `${key}.name`,
       areaKey: `${key}.area`,
       copyKey: `${key}.copy`,
@@ -207,6 +212,54 @@ const EbrostayBackend = (() => {
       options: { redirectTo: window.location.origin + window.location.pathname }
     });
     return error;
+  }
+
+  async function publishOwnerProperty(property) {
+    const sb = getClient();
+    if (!sb) return { ok: false, code: "not_configured" };
+    if (!user) return { ok: false, code: "not_signed_in" };
+    const priceNumber = Number(property?.priceNumber) || 0;
+    const row = {
+      id: property.id,
+      city: property.city || "zaragoza",
+      type: property.type || "apartment",
+      address_key: property.addressKey || "owner",
+      lat: Number(property.lat) || 41.6516,
+      lng: Number(property.lng) || -0.8809,
+      guests: Number(property.guests) || 1,
+      price_label: property.price || `${priceNumber} EUR`,
+      price_number: priceNumber,
+      rating: property.rating || null,
+      available_from: property.availableFrom || null,
+      is_new: Boolean(property.isNew),
+      checked: Boolean(property.checked),
+      deposit_protected: Boolean(property.depositProtected),
+      bills_included: Boolean(property.billsIncluded),
+      amenities: property.amenities || [],
+      name: property.name || "Owner listing",
+      area_es: property.areaEs || property.area || "",
+      area_en: property.areaEn || property.area || "",
+      copy_es: property.copyEs || property.copy || "",
+      copy_en: property.copyEn || property.copy || "",
+      details_es: property.detailsEs || property.details || "",
+      details_en: property.detailsEn || property.details || "",
+      bedrooms: property.bedrooms || null,
+      bathrooms: property.bathrooms || null,
+      floor_number: property.floorNumber || null,
+      min_stay_months: property.minStayMonths || 1,
+      is_published: true,
+      owner_id: user.id
+    };
+    let { error } = await sb.from("properties").upsert({
+      ...row,
+      postcode: property.postcode || null,
+      neighborhood: property.neighborhood || property.area || null
+    });
+    if (error && /postcode|neighborhood|column/i.test(error.message || "")) {
+      ({ error } = await sb.from("properties").upsert(row));
+    }
+    if (error) console.warn("Owner property publish failed:", error.message);
+    return { ok: !error, code: error ? "server_error" : "saved", error };
   }
 
   function coverUrl(property) {
@@ -490,6 +543,7 @@ const EbrostayBackend = (() => {
     updatePassword,
     getEnabledProviders,
     signInWithProvider,
+    publishOwnerProperty,
     reloadProperties: loadProperties,
     loadMyBookings,
     loadBookingDetail,

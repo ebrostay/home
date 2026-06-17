@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-tile">
+    <link rel="stylesheet" href="styles.css?v=airbnb-map-9">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
       <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
@@ -49,8 +49,19 @@
 
       <div class="detail-media" id="detailMedia">
         <span class="availability-pill" data-i18n="listing.available">Disponible</span>
+        <button class="detail-media-open" id="detailMediaOpen" type="button" data-i18n="detail.openGallery">Haz clic en la foto para abrir la galería</button>
       </div>
       <div class="detail-gallery" id="detailGallery" hidden></div>
+      <dialog class="detail-lightbox" id="detailLightbox" aria-label="Galería de fotos" data-i18n-attr="aria-label:detail.galleryLabel">
+        <div class="detail-lightbox-inner">
+          <button class="detail-lightbox-close" type="button" data-gallery-close aria-label="Cerrar" data-i18n-attr="aria-label:auth.close">&times;</button>
+          <button class="detail-lightbox-nav is-prev" type="button" data-gallery-step="-1" data-i18n-attr="aria-label:listing.prevPhoto">&lsaquo;</button>
+          <img id="detailLightboxImage" alt="">
+          <button class="detail-lightbox-nav is-next" type="button" data-gallery-step="1" data-i18n-attr="aria-label:listing.nextPhoto">&rsaquo;</button>
+          <div class="detail-lightbox-caption" id="detailLightboxCaption"></div>
+          <div class="detail-lightbox-thumbs" id="detailLightboxThumbs"></div>
+        </div>
+      </dialog>
 
       <div class="detail-layout">
         <article class="detail-content">
@@ -165,11 +176,11 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-tile"></script>
-    <script src="backend.js?v=design-6"></script>
+    <script src="data.js?v=airbnb-map-9"></script>
+    <script src="backend.js?v=airbnb-map-9"></script>
     <script src="nav.js?v=design-6"></script>
-    <script src="property.js?v=design-10"></script>
+    <script src="property.js?v=airbnb-map-9"></script>
       <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-tile"></script>
+    <script src="enhance.js?v=airbnb-map-9"></script>
   </body>
 </html>

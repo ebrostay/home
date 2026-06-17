@@ -6,8 +6,8 @@ Ebrostay es el puente entre empresas y propietarios para el alquiler corporativo
 
 ## Properties
 
-- [Movera - 2 Planta](https://ebrostay.com/property.html?id=movera0): second-floor home with 3 private bedrooms at Camino de Movera 7, Zaragoza. From 1350 EUR/month (450 EUR/room).
-- [Movera - 1 Planta](https://ebrostay.com/property.html?id=movera1): first-floor home with 3 private bedrooms at Camino de Movera 7, Zaragoza. From 1350 EUR/month (450 EUR/room).
+- [Movera 7 - 2nd floor](https://ebrostay.com/property.html?id=movera0): second-floor home with 3 private bedrooms at Camino de Movera 7, Zaragoza. From 1350 EUR/month (450 EUR/room).
+- [Movera 7 - 1st floor](https://ebrostay.com/property.html?id=movera1): first-floor home with 3 private bedrooms at Camino de Movera 7, Zaragoza. From 1350 EUR/month (450 EUR/room).
 - [Pedro II el Católico - 1 planta](https://ebrostay.com/property.html?id=pedro1): apartment at Pedro II el Católico 3, Zaragoza city centre. From 950 EUR/month.
 - [Pedro II el Católico - 2 planta](https://ebrostay.com/property.html?id=pedro2): apartment at Pedro II el Católico 3, Zaragoza city centre. From 980 EUR/month.
 

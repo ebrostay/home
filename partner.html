@@ -8,26 +8,26 @@
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
     <link rel="manifest" href="site.webmanifest">
-    <meta name="theme-color" content="#1f8a57">
+    <meta name="theme-color" content="#0e9f6e">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-tile">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=owners-section-fix-20260615">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
-      <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html" aria-label="Ebrostay home">
-        <img class="brand-mark" src="assets/ebrostay-mark.svg" alt="" width="32" height="32"><span class="brand-wordmark">Ebro<span class="stay">stay</span></span>
+        <img class="brand-mark" src="assets/ebrostay-icon.svg" alt="" width="36" height="36"><span class="brand-wordmark">Ebrostay</span>
       </a>
       <div class="header-actions">
         <div class="language-switch" aria-label="Language selector">
           <button class="language-option is-active" type="button" data-lang="es">ES</button>
           <button class="language-option" type="button" data-lang="en">EN</button>
         </div>
-        <a class="admin-link" href="account.html" data-i18n="bookings.button">Mi cuenta</a>
-        <a class="nav-cta" href="index.html#search" data-i18n="nav.cta">Buscar vivienda</a>
+        <a class="admin-link" href="owners.html" data-i18n="owners.aboutLink">Ventajas</a>
+        <a class="admin-link" href="owner-listing.html" data-i18n="partner.postProperty">Publicar nueva vivienda</a>
+        <a class="nav-cta" href="index.html" data-i18n="admin.back">Volver al sitio</a>
       </div>
     </header>
 
@@ -35,16 +35,44 @@
       <p class="section-kicker" data-i18n="partner.kicker">Portal de propietarios</p>
       <h1 data-i18n="partner.title">Tu cartera, en tiempo real.</h1>
 
+      <section class="owner-publish-board" aria-labelledby="ownerPublishTitle">
+        <div class="owner-publish-copy">
+          <p class="section-kicker" data-i18n="partner.manageKicker">Manage my flat</p>
+          <h2 id="ownerPublishTitle" data-i18n="partner.manageTitle">Publica una vivienda desde fotos, sin llamadas.</h2>
+          <p data-i18n="partner.manageCopy">Empieza subiendo fotos en los huecos del anuncio. Guardamos el borrador, generamos la descripción inicial y te llevamos a iniciar sesión sin perder nada.</p>
+          <a class="button primary" href="owner-listing.html" data-i18n="partner.openDraft">Crear anuncio con fotos</a>
+        </div>
+        <a class="owner-flat-draft-card" href="owner-listing.html" aria-label="Publicar nueva vivienda">
+          <span class="owner-flat-draft-grid" aria-hidden="true">
+            <span><b>+</b><small data-i18n="partner.slotLiving">Salón</small></span>
+            <span><b>+</b><small data-i18n="partner.slotBedroom">Dormitorio</small></span>
+            <span><b>+</b><small data-i18n="partner.slotKitchen">Cocina</small></span>
+            <span><b>+</b><small data-i18n="partner.slotBath">Baño</small></span>
+            <span><b>+</b><small data-i18n="partner.slotExterior">Entrada</small></span>
+            <span><b>+</b><small data-i18n="partner.slotPlan">Plano</small></span>
+          </span>
+          <strong data-i18n="partner.placeholderTitle">Nuevo piso listo para publicar</strong>
+          <em data-i18n="partner.placeholderCopy">Haz clic para completar fotos, servicios, precio y borrador IA.</em>
+        </a>
+      </section>
+
       <p class="account-loading" id="partnerLoading" data-i18n="account.loading">Cargando…</p>
 
       <!-- Signed out -->
       <section id="partnerSignedOut" hidden>
-        <p data-i18n="partner.signinCopy">Inicia sesión con la cuenta de propietario que te facilitamos para ver tus viviendas, ingresos y datos de pago.</p>
+        <div class="owner-portal-intro">
+          <p data-i18n="partner.signinCopy">Inicia sesión o crea una cuenta para ver tus viviendas, publicar nuevas propiedades y recuperar borradores guardados.</p>
+          <a class="button primary" href="owner-listing.html" data-i18n="partner.postProperty">Publicar nueva vivienda</a>
+        </div>
         <form class="auth-form admin-login" id="partnerLogin">
+          <div class="auth-tabs" id="partnerAuthTabs">
+            <button type="button" class="is-active" data-partner-auth-mode="signin" data-i18n="auth.signin">Iniciar sesión</button>
+            <button type="button" data-partner-auth-mode="signup" data-i18n="partner.createAccount">Crear cuenta</button>
+          </div>
           <label><span data-i18n="auth.email">Email</span><input name="email" type="email" autocomplete="email" required></label>
           <label><span data-i18n="auth.password">Contraseña</span><input name="password" type="password" autocomplete="current-password" required></label>
           <p class="auth-message" id="partnerLoginMessage" role="status"></p>
-          <button class="button primary" type="submit" data-i18n="auth.signin">Iniciar sesión</button>
+          <button class="button primary" id="partnerAuthSubmit" type="submit" data-i18n="auth.signin">Iniciar sesión</button>
         </form>
       </section>
 
@@ -52,7 +80,7 @@
       <section id="partnerNotOwner" hidden>
         <div class="partner-empty">
           <p data-i18n="partner.notOwner">Tu cuenta aún no está activada como propietario. Si quieres que gestionemos tu vivienda, envíanos una solicitud y la activamos.</p>
-          <p style="margin-top: 12px;"><a class="button primary" href="index.html#owner" data-i18n="owners.cta">Quiero unirme</a></p>
+          <p style="margin-top: 12px;"><a class="button primary" href="owner-listing.html" data-i18n="partner.postFirstProperty">Publica tu primera vivienda</a></p>
         </div>
       </section>
 
@@ -60,6 +88,7 @@
       <section id="partnerDashboard" hidden>
         <div class="admin-toolbar">
           <span class="user-email" id="partnerEmail"></span>
+          <a class="button primary" href="owner-listing.html" data-i18n="partner.postProperty">Publicar nueva vivienda</a>
           <button class="logout-button" id="partnerLogout" type="button" data-i18n="auth.logout">Salir</button>
         </div>
 
@@ -83,8 +112,18 @@
         </section>
 
         <section class="partner-section">
-          <h2 data-i18n="partner.payoutTitle">Datos de pago</h2>
-          <p class="admin-card-meta" data-i18n="partner.payoutCopy">Deja aquí tu IBAN para que te transfiramos las rentas. Tus datos están cifrados y solo los ve Ebrostay. Transferimos tras cada estancia confirmada.</p>
+          <h2 data-i18n="partner.connectTitle">Pagos automáticos</h2>
+          <p class="admin-card-meta" data-i18n="partner.connectCopy">Conecta tu cuenta con Stripe para recibir tus rentas automáticamente tras cada reserva, sin esperas ni transferencias manuales.</p>
+          <div class="guest-info-card" id="connectCard" style="max-width: 620px;">
+            <p id="connectStatusLine" data-i18n="partner.connectChecking">Comprobando estado…</p>
+            <button class="button primary" id="connectButton" type="button" hidden></button>
+            <p class="form-note" id="connectNote" role="status"></p>
+          </div>
+        </section>
+
+        <section class="partner-section">
+          <h2 data-i18n="partner.payoutTitle">Datos de pago (alternativa manual)</h2>
+          <p class="admin-card-meta" data-i18n="partner.payoutCopy">Si prefieres transferencia manual, deja aquí tu IBAN. Tus datos están cifrados y solo los ve Ebrostay. Transferimos tras cada estancia confirmada.</p>
           <form class="partner-payout-form" id="payoutForm">
             <label><span data-i18n="partner.holder">Titular de la cuenta</span><input name="account_holder" autocomplete="name"></label>
             <label><span data-i18n="partner.iban">IBAN</span><input name="iban" placeholder="ES.. .... .... .... .... ...."></label>
@@ -101,25 +140,18 @@
 
     <footer class="site-footer">
       <span class="footer-brand">
-        <img class="footer-logo" src="assets/ebrostay-mark.svg" alt="Ebrostay" width="40" height="40">
+        <img class="footer-logo" src="assets/ebrostay-icon.svg" alt="Ebrostay" width="44" height="44">
         <span>&copy; <span id="year"></span> Ebrostay</span>
       </span>
-      <nav class="footer-nav" aria-label="Footer navigation">
-        <a href="index.html" data-i18n="nav.home">Inicio</a>
-        <a href="index.html#how" data-i18n="nav.how">Cómo funciona</a>
-        <a href="index.html#owner" data-i18n="nav.owners">Propietarios</a>
-        <a href="about.html" data-i18n="nav.about">Nosotros</a>
-        <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
-      </nav>
-      <a class="footer-email" href="mailto:info@ebrostay.com">info@ebrostay.com</a>
+      <a href="owners.html" data-i18n="nav.owners">Propietarios</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacidad</a>
+      <a href="mailto:info@ebrostay.com">info@ebrostay.com</a>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-tile"></script>
+    <script src="data.js?v=owners-section-fix-20260615"></script>
     <script src="backend.js?v=design-6"></script>
-    <script src="partner.js?v=design-6"></script>
-      <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-tile"></script>
+    <script src="partner.js?v=owners-section-fix-20260615"></script>
   </body>
 </html>

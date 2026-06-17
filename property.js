@@ -5,6 +5,7 @@ let property = null;
 const languageButtons = document.querySelectorAll("[data-lang]");
 let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
 let detailMap = null;
+let detailGalleryIndex = 0;
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -557,27 +558,113 @@ function setBannerPhoto(url) {
   }
 }
 
+function detailPhotos() {
+  if (property.photos?.length) return [...new Set(property.photos.filter(Boolean))];
+  const fallbackSets = {
+    pedro1: ["assets/ebrostay-zaragoza-hero.webp", "assets/ebrostay-hero.webp", "assets/ebrostay-og.jpg"],
+    pedro2: ["assets/ebrostay-zaragoza-hero.webp", "assets/ebrostay-og.jpg", "assets/ebrostay-hero.webp"],
+    movera0: ["assets/movera-second-hero.jpg", "assets/movera-second-bedroom-1.jpg", "assets/movera-second-bathroom.jpg"],
+    movera1: ["assets/movera-first-hero.jpg", "assets/movera-first-bedroom-1.jpg", "assets/movera-first-bathroom.jpg"]
+  };
+  return fallbackSets[property.id] || ["assets/ebrostay-hero.webp", "assets/ebrostay-zaragoza-hero.webp", "assets/ebrostay-og.jpg"];
+}
+
+function updateGalleryActiveState() {
+  const photos = detailPhotos();
+  const image = document.querySelector("#detailLightboxImage");
+  const caption = document.querySelector("#detailLightboxCaption");
+  if (photos.length === 0) return;
+  detailGalleryIndex = (detailGalleryIndex + photos.length) % photos.length;
+  setBannerPhoto(photos[detailGalleryIndex]);
+  if (image) {
+    image.src = photos[detailGalleryIndex];
+    image.alt = `${t(property.nameKey)} - ${detailGalleryIndex + 1}`;
+  }
+  if (caption) caption.textContent = `${detailGalleryIndex + 1} / ${photos.length}`;
+  document.querySelectorAll("[data-photo-index], [data-lightbox-photo-index]").forEach((button) => {
+    const index = Number(button.dataset.photoIndex ?? button.dataset.lightboxPhotoIndex);
+    button.classList.toggle("is-active", index === detailGalleryIndex);
+  });
+}
+
+function openGallery(index = 0) {
+  const photos = detailPhotos();
+  const lightbox = document.querySelector("#detailLightbox");
+  if (!lightbox || photos.length === 0) return;
+  detailGalleryIndex = index;
+  updateGalleryActiveState();
+  if (typeof lightbox.showModal === "function") lightbox.showModal();
+  else lightbox.setAttribute("open", "");
+}
+
+function closeGallery() {
+  const lightbox = document.querySelector("#detailLightbox");
+  if (!lightbox) return;
+  if (typeof lightbox.close === "function") lightbox.close();
+  else lightbox.removeAttribute("open");
+}
+
+function stepGallery(delta) {
+  detailGalleryIndex += delta;
+  updateGalleryActiveState();
+}
+
 function renderGallery() {
   const gallery = document.querySelector("#detailGallery");
-  const photos = property.photos || [];
+  const lightboxThumbs = document.querySelector("#detailLightboxThumbs");
+  const mediaOpen = document.querySelector("#detailMediaOpen");
+  const photos = detailPhotos();
   if (!gallery || photos.length === 0) return;
 
   setBannerPhoto(photos[0]);
+  detailGalleryIndex = 0;
   gallery.hidden = photos.length < 2;
   gallery.innerHTML = photos.map((url, index) => `
     <button class="gallery-thumb${index === 0 ? " is-active" : ""}" type="button"
       data-photo-index="${index}" style="background-image: url('${url}')"
       aria-label="Foto ${index + 1}"></button>
   `).join("");
+  if (lightboxThumbs) {
+    lightboxThumbs.innerHTML = photos.map((url, index) => `
+      <button class="gallery-thumb${index === 0 ? " is-active" : ""}" type="button"
+        data-lightbox-photo-index="${index}" style="background-image: url('${url}')"
+        aria-label="Foto ${index + 1}"></button>
+    `).join("");
+  }
 
   gallery.addEventListener("click", (event) => {
     const thumb = event.target.closest("[data-photo-index]");
     if (!thumb) return;
-    setBannerPhoto(photos[Number(thumb.dataset.photoIndex)]);
-    gallery.querySelectorAll(".gallery-thumb").forEach((button) => {
-      button.classList.toggle("is-active", button === thumb);
-    });
+    detailGalleryIndex = Number(thumb.dataset.photoIndex);
+    updateGalleryActiveState();
   });
+
+  mediaOpen?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openGallery(detailGalleryIndex);
+  });
+  document.querySelector("#detailMedia")?.addEventListener("click", (event) => {
+    if (event.target.closest("#detailMediaOpen")) return;
+    if (event.target.closest(".availability-pill")) return;
+    openGallery(detailGalleryIndex);
+  });
+  document.querySelector("#detailLightbox")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget || event.target.closest("[data-gallery-close]")) closeGallery();
+    const step = event.target.closest("[data-gallery-step]");
+    if (step) stepGallery(Number(step.dataset.galleryStep));
+    const lightboxThumb = event.target.closest("[data-lightbox-photo-index]");
+    if (lightboxThumb) {
+      detailGalleryIndex = Number(lightboxThumb.dataset.lightboxPhotoIndex);
+      updateGalleryActiveState();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    const lightbox = document.querySelector("#detailLightbox");
+    if (!lightbox?.open) return;
+    if (event.key === "ArrowLeft") stepGallery(-1);
+    if (event.key === "ArrowRight") stepGallery(1);
+  });
+  updateGalleryActiveState();
 }
 
 function initDetailMap() {
@@ -640,6 +727,10 @@ async function boot() {
     await EbrostayBackend.init({});
   }
 
+  if (typeof hydrateOwnerPublishedProperties === "function") {
+    hydrateOwnerPublishedProperties();
+  }
+
   property = properties.find((item) => item.id === propertyId);
   if (!property) {
     window.location.replace("index.html#search");
@@ -649,7 +740,7 @@ async function boot() {
   const year = document.querySelector("#year");
   if (year) year.textContent = new Date().getFullYear();
 
-  document.querySelector("#detailMedia")?.classList.add("property-media", `property-${property.addressKey}`);
+  document.querySelector("#detailMedia")?.classList.add(`property-${property.addressKey}`);
   renderGallery();
 
   languageButtons.forEach((button) => {

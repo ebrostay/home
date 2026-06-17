@@ -48,7 +48,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=ds-tile">
+    <link rel="stylesheet" href="styles.css?v=airbnb-map-9">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bbc35688-d574-4fed-af9b-a03f37ed9429"></script>
       <script>(function(){try{if(localStorage.getItem("ebrostay-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();</script>
   </head>
@@ -123,16 +123,14 @@
           </div>
         </div>
 
-        <button class="button ghost filter-toggle" id="filterToggle" type="button" aria-controls="availabilityFilter" data-i18n="filters.show">Filtros</button>
-
         <div class="marketplace-layout">
           <aside class="filter-panel" aria-label="Search filters">
             <form class="availability-filter" id="availabilityFilter">
-              <label>
+              <label class="filter-field city-filter-field">
                 <span data-i18n="filters.city">Ciudad</span>
                 <input id="cityFilter" name="city" value="Zaragoza" placeholder="Zaragoza" data-i18n-attr="placeholder:search.cityPlaceholder">
               </label>
-              <div class="date-pair">
+              <div class="date-pair filter-field">
                 <label>
                   <span data-i18n="filters.checkIn">Entrada</span>
                   <input id="checkIn" name="checkIn" type="text">
@@ -142,11 +140,11 @@
                   <input id="checkOut" name="checkOut" type="text">
                 </label>
               </div>
-              <label>
+              <label class="filter-field">
                 <span data-i18n="filters.guests">Personas</span>
                 <input id="guestCount" name="guestCount" type="number" min="1" max="8" value="2">
               </label>
-              <label>
+              <label class="filter-field">
                 <span data-i18n="filters.type">Tipo de vivienda</span>
                 <select id="propertyType" name="propertyType">
                   <option value="all" data-i18n="filters.typeAll">Todos</option>
@@ -155,10 +153,44 @@
                   <option value="home" data-i18n="filters.typeHome">Casa</option>
                 </select>
               </label>
-              <label>
+              <label class="filter-field compact-filter-field">
+                <span data-i18n="filters.bedrooms">Dormitorios</span>
+                <select id="minBedrooms" name="minBedrooms">
+                  <option value="0" data-i18n="filters.any">Cualquiera</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+              </label>
+              <label class="filter-field">
                 <span data-i18n="filters.budget">Presupuesto mensual máximo</span>
                 <input id="maxBudget" name="maxBudget" type="number" min="0" step="1" placeholder="Sin límite" data-i18n-attr="placeholder:filters.anyBudget">
               </label>
+              <details class="area-filter-dropdown">
+                <summary><span data-i18n="mapFilters.postcodes">Códigos postales</span><b data-postcode-count></b></summary>
+                <div class="map-filter-options" id="postcodeFilters"></div>
+              </details>
+              <details class="area-filter-dropdown">
+                <summary><span data-i18n="mapFilters.neighborhoods">Barrios</span><b data-neighborhood-count></b></summary>
+                <div class="map-filter-options" id="neighborhoodFilters"></div>
+              </details>
+              <details class="more-filter-dropdown">
+                <summary data-i18n="filters.more">Más filtros</summary>
+                <div class="more-filter-content">
+                  <label>
+                    <span data-i18n="filters.address">Zona o dirección</span>
+                    <input id="addressQuery" name="addressQuery" type="search" placeholder="Movera, Universidad, Pedro II..." data-i18n-attr="placeholder:filters.addressPlaceholder">
+                  </label>
+                  <label>
+                    <span data-i18n="filters.bathrooms">Baños</span>
+                    <select id="minBathrooms" name="minBathrooms">
+                      <option value="0" data-i18n="filters.any">Cualquiera</option>
+                      <option value="1">1+</option>
+                      <option value="2">2+</option>
+                      <option value="3">3+</option>
+                    </select>
+                  </label>
               <fieldset class="checkbox-group">
                 <legend data-i18n="filters.mustHave">Imprescindible</legend>
                 <label><input type="checkbox" name="amenities" value="wifi"> <span data-i18n="amenity.wifi">wifi</span></label>
@@ -168,8 +200,12 @@
                 <label><input type="checkbox" name="amenities" value="washer"> <span data-i18n="amenity.washer">lavadora</span></label>
                 <label><input type="checkbox" name="amenities" value="parking"> <span data-i18n="amenity.parking">parking</span></label>
               </fieldset>
-              <button class="button primary" type="submit" data-i18n="filters.apply">Aplicar filtros</button>
-              <button class="button ghost" id="resetAvailability" type="button" data-i18n="filters.reset">Reiniciar</button>
+                </div>
+              </details>
+              <div class="filter-actions">
+                <button class="button primary" type="submit" data-i18n="filters.apply">Aplicar filtros</button>
+                <button class="button ghost" id="resetAvailability" type="button" data-i18n="filters.reset">Reiniciar</button>
+              </div>
             </form>
           </aside>
 
@@ -330,6 +366,135 @@
             <div class="stat"><b data-i18n="owners.stat2n">1–12</b><span data-i18n="owners.stat2l">meses por estancia</span></div>
             <div class="stat"><b data-i18n="owners.stat3n">100%</b><span data-i18n="owners.stat3l">digital y transparente</span></div>
           </div>
+        </section>
+
+        <section class="owner-listing-section section-pad" id="owner-listing">
+          <div class="owner-listing-head">
+            <p class="section-kicker" data-i18n="ownerPost.kicker">Gestiona mi piso</p>
+            <h2 data-i18n="ownerPost.title">Tu cartera, en tiempo real.</h2>
+          </div>
+          <div class="owner-listing-grid">
+            <article class="owner-post-intro">
+              <p class="section-kicker" data-i18n="ownerPost.introKicker">Publica sin llamadas</p>
+              <h3 data-i18n="ownerPost.cardTitle">Publica un piso desde fotos, sin llamadas.</h3>
+              <p data-i18n="ownerPost.cardCopy">Empieza subiendo fotos en los espacios de cada estancia. Guardamos el borrador, generamos la primera descripcion y te pedimos iniciar sesion sin perder nada.</p>
+              <div class="owner-post-actions">
+                <button class="button primary" type="button" data-owner-start data-i18n="ownerPost.photoCta">Crear anuncio con fotos</button>
+                <button class="button ghost" type="button" data-owner-login data-i18n="ownerPost.signIn">Iniciar sesion para publicar</button>
+              </div>
+            </article>
+            <article class="owner-photo-card" aria-label="Owner listing photo placeholders">
+              <div class="owner-photo-grid">
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="living" data-room-label="ownerPost.roomLiving">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomLiving">Salon</span>
+                </label>
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="bedroom" data-room-label="ownerPost.roomBedroom">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomBedroom">Dormitorio</span>
+                </label>
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="kitchen" data-room-label="ownerPost.roomKitchen">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomKitchen">Cocina</span>
+                </label>
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="bathroom" data-room-label="ownerPost.roomBathroom">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomBathroom">Bano</span>
+                </label>
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="entrance" data-room-label="ownerPost.roomEntrance">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomEntrance">Entrada</span>
+                </label>
+                <label class="owner-photo-slot">
+                  <input type="file" accept="image/*" multiple data-owner-photo="floorplan" data-room-label="ownerPost.roomFloorplan">
+                  <span class="owner-photo-plus" aria-hidden="true">+</span>
+                  <span data-i18n="ownerPost.roomFloorplan">Plano</span>
+                </label>
+              </div>
+              <p class="owner-photo-guidance" data-i18n="ownerPost.photoGuidance">Recomendamos estas seis fotos para mejorar visibilidad y confianza, pero no bloquean la publicacion. Puedes subir varias fotos por estancia y anadir mas categorias.</p>
+              <button class="details-button owner-add-photo-slot" type="button" data-owner-add-photo data-i18n="ownerPost.addPhotos">Anadir otra categoria</button>
+              <div class="owner-ready">
+                <h3 data-i18n="ownerPost.readyTitle">Nuevo piso listo para publicar</h3>
+                <p data-owner-photo-summary data-i18n="ownerPost.readyCopy">Haz clic para completar fotos, servicios, precio y borrador automatico.</p>
+              </div>
+            </article>
+          </div>
+          <form class="owner-composer" id="ownerListingForm">
+            <div class="owner-composer-title">
+              <p class="section-kicker" data-i18n="ownerPost.formKicker">Borrador automatico</p>
+              <h3 data-i18n="ownerPost.formTitle">Campos necesarios para publicar</h3>
+              <p data-i18n="ownerPost.formCopy">Estos datos completan el anuncio inicial. Al anadir fotos o editar los campos, la descripcion se actualiza debajo.</p>
+            </div>
+            <div class="owner-form-grid">
+              <label>
+                <span data-i18n="ownerPost.fieldTitle">Titulo del anuncio</span>
+                <input name="title" data-owner-draft-field placeholder="Piso amueblado en Zaragoza" data-i18n-attr="placeholder:ownerPost.fieldTitlePlaceholder">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldAddress">Direccion o zona</span>
+                <input name="address" data-owner-draft-field placeholder="Pedro II, Movera, Centro..." data-i18n-attr="placeholder:ownerPost.fieldAddressPlaceholder">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldPrice">Precio mensual</span>
+                <input name="price" type="number" min="0" step="10" data-owner-draft-field placeholder="980">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldAvailable">Disponible desde</span>
+                <input name="available" type="date" data-owner-draft-field>
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldBedrooms">Dormitorios</span>
+                <input name="bedrooms" type="number" min="0" max="10" data-owner-draft-field placeholder="2">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldBathrooms">Banos</span>
+                <input name="bathrooms" type="number" min="0" max="10" data-owner-draft-field placeholder="1">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldCapacity">Capacidad</span>
+                <input name="capacity" type="number" min="1" max="12" data-owner-draft-field placeholder="4">
+              </label>
+              <label>
+                <span data-i18n="ownerPost.fieldType">Tipo</span>
+                <select name="type" data-owner-draft-field>
+                  <option value="apartment" data-i18n="type.apartment">Apartamento</option>
+                  <option value="room" data-i18n="type.room">Habitacion</option>
+                  <option value="home" data-i18n="type.home">Casa</option>
+                </select>
+              </label>
+            </div>
+            <fieldset class="owner-service-fieldset">
+              <legend data-i18n="ownerPost.services">Servicios y condiciones</legend>
+              <label><input type="checkbox" name="services" value="wifi" data-owner-draft-field> <span data-i18n="amenity.wifi">wifi</span></label>
+              <label><input type="checkbox" name="services" value="desk" data-owner-draft-field> <span data-i18n="amenity.desk">mesa de trabajo</span></label>
+              <label><input type="checkbox" name="services" value="lift" data-owner-draft-field> <span data-i18n="amenity.lift">ascensor</span></label>
+              <label><input type="checkbox" name="services" value="ac" data-owner-draft-field> <span data-i18n="amenity.ac">aire acondicionado</span></label>
+              <label><input type="checkbox" name="services" value="heating" data-owner-draft-field> <span data-i18n="amenity.heating">calefaccion</span></label>
+              <label><input type="checkbox" name="services" value="kitchen" data-owner-draft-field> <span data-i18n="amenity.kitchen">cocina equipada</span></label>
+              <label><input type="checkbox" name="services" value="bills" data-owner-draft-field> <span data-i18n="badge.bills">Gastos incluidos</span></label>
+              <label><input type="checkbox" name="services" value="deposit" data-owner-draft-field> <span data-i18n="badge.deposit">Fianza reembolsable</span></label>
+            </fieldset>
+            <label class="owner-description-field">
+              <span data-i18n="ownerPost.fieldDescription">Descripcion generada</span>
+              <textarea name="description" rows="5" data-owner-draft-field data-owner-description></textarea>
+            </label>
+            <div class="owner-submit-row">
+              <p class="form-note" data-owner-draft-status data-i18n="ownerPost.draftHint">Borrador guardado en este dispositivo hasta que inicies sesion.</p>
+              <div class="owner-submit-actions">
+                <button class="button ghost" type="button" data-owner-regenerate data-i18n="ownerPost.regenerate">Regenerar descripcion</button>
+                <button class="button primary" type="submit" data-i18n="ownerPost.post">Publicar nueva propiedad</button>
+              </div>
+            </div>
+            <div class="owner-docs-callout">
+              <button class="details-button" type="button" data-owner-docs data-i18n="ownerPost.docs">Descargar los documentos EbroStay aqui</button>
+              <span data-i18n="ownerPost.docsHint">Al publicar generamos un resumen descargable con la informacion que vera el cliente final.</span>
+            </div>
+          </form>
         </section>
 
         <section class="section-pad" id="owner-compare">
@@ -505,11 +670,12 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js?v=design-6"></script>
-    <script src="data.js?v=ds-tile"></script>
-    <script src="backend.js?v=design-6"></script>
+    <script src="data.js?v=airbnb-map-9"></script>
+    <script src="backend.js?v=airbnb-map-9"></script>
     <script src="nav.js?v=design-6"></script>
-    <script src="site.js?v=design-6"></script>
+    <script src="site.js?v=airbnb-map-9"></script>
       <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
-    <script src="enhance.js?v=ds-tile"></script>
+    <script src="owner-composer.js?v=airbnb-map-9"></script>
+    <script src="enhance.js?v=airbnb-map-9"></script>
   </body>
 </html>

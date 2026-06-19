@@ -1255,3 +1255,11 @@
     boot();
   }
 })();
+
+(function () {
+  if (typeof SUPABASE_URL === "undefined" || !SUPABASE_URL.includes("iwxearkwuxzrlikmblxl")) return;
+  var banner = document.createElement("div");
+  banner.className = "staging-banner";
+  banner.textContent = "STAGING";
+  document.body.appendChild(banner);
+})();

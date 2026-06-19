@@ -49,7 +49,7 @@
         <div class="ebro-cf-track" data-cf-track>
           ${photos.map((url, i) => `
             <figure class="ebro-cf-slide" data-cf-slide="${i}" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${photos.length}">
-              <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false" loading="${i === 0 ? "eager" : "lazy"}">
+              <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false" loading="${i < 3 ? "eager" : "lazy"}">
             </figure>`).join("")}
         </div>
         ${many ? `<button class="ebro-cf-arrow ebro-cf-prev" type="button" data-cf-prev aria-label="${esc(t("gallery.prev"))}">${ICON_PREV}</button>` : ""}
@@ -62,6 +62,19 @@
     const root = media.querySelector("[data-cf]");
     const track = media.querySelector("[data-cf-track]");
     const slides = [...media.querySelectorAll(".ebro-cf-slide")];
+
+    // Give each slide its photo's real aspect ratio so the image is shown whole
+    // (never cropped). CSS can't read intrinsic image size, so do it on load.
+    slides.forEach((figure) => {
+      const img = figure.querySelector("img");
+      const applyRatio = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          figure.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        }
+      };
+      if (img.complete) applyRatio();
+      img.addEventListener("load", applyRatio, { once: true });
+    });
     const prevBtn = media.querySelector("[data-cf-prev]");
     const nextBtn = media.querySelector("[data-cf-next]");
     const cta = media.querySelector("[data-cf-cta]");

@@ -1939,14 +1939,20 @@ a.property-media {
   position: absolute;
   left: 50%;
   top: 50%;
+  /* hug the photo: a fixed height drives the size and the width follows the
+     image's native ratio (never cropped). gallery.js sets the real per-photo
+     aspect-ratio on load; the 3:2 here is just a pre-load placeholder. */
   height: 78%;
   aspect-ratio: 3 / 2;
-  max-width: 62%;
+  max-width: 86%;
   margin: 0;
+  line-height: 0;
   overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  background: var(--mist);
+  /* match the stage so any letterbox area (wide photo on a narrow screen)
+     and the pre-load placeholder blend in instead of showing a panel. */
+  background: var(--sunken);
   box-shadow: var(--shadow-md);
   transform: translate(-50%, -50%);
   transition: transform var(--dur-slow, 360ms) var(--ease-out),
@@ -1962,10 +1968,12 @@ a.property-media {
 }
 
 .ebro-cf-slide img {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
+  /* the slide already matches the photo's ratio, so this fills it exactly;
+     contain only letterboxes (never crops) if max-width caps a wide photo. */
+  object-fit: contain;
   user-select: none;
 }
 
@@ -2112,7 +2120,7 @@ a.property-media {
 @media (max-width: 640px) {
   .ebro-cf-slide {
     height: 72%;
-    max-width: 80%;
+    max-width: 90%;
   }
 
   .ebro-cf-cta {

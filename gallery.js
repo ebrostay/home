@@ -1,11 +1,22 @@
-// Property photo gallery: a horizontal strip of full (uncropped) photos shown
-// side by side and scrolled left-to-right. Hovering a photo zooms it slightly;
-// clicking one opens it enlarged in a lightbox. Build with
+// Property photo gallery: a coverflow carousel — one large centred photo with
+// its neighbours peeking (scaled down + faded) on either side, prev/next arrows,
+// a thumbnail strip that doubles as navigation, and a button on the centre slide
+// that opens the full (uncropped) photo in a zoomable lightbox. Build with
 // EbrostayGallery.create({...}); it wires its own pointer/keyboard handlers.
 // CSS classes are "ebro-" prefixed to stay clear of the legacy ".gallery-*"
 // styles injected by enhance.js.
 (function (global) {
   const ZOOM = 2;
+
+  // Per-tier placement, indexed by distance from the active slide: how far the
+  // neighbour sits from centre (% of its own width), how much it shrinks, and how
+  // much it fades. Anything further out uses HIDDEN (fully transparent).
+  const TIERS = [
+    { x: 0,   scale: 1,    opacity: 1 },
+    { x: 60,  scale: 0.8,  opacity: 0.72 },
+    { x: 106, scale: 0.62, opacity: 0.36 }
+  ];
+  const HIDDEN = { x: 150, scale: 0.5, opacity: 0 };
 
   function clampIndex(index, count) {
     if (!count || count < 1) return 0;
@@ -13,6 +24,12 @@
   }
 
   const esc = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+
+  // Inline SVGs (Lucide chevron-left / chevron-right / maximize-2) so the carousel
+  // never depends on lucide.js being loaded before it runs.
+  const ICON_PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  const ICON_NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>';
 
   function create(options) {
     const media = options.media;
@@ -28,54 +45,132 @@
 
     media.classList.add("ebro-gallery");
     media.innerHTML = `
-      <div class="ebro-strip" data-strip>
-        ${photos.map((url, i) => `
-          <figure class="ebro-photo" data-photo="${i}" tabindex="0" role="button" aria-label="${esc(t("gallery.open"))} ${i + 1}">
-            <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false">
-          </figure>`).join("")}
+      <div class="ebro-cf" data-cf role="group" aria-roledescription="carousel" aria-label="${esc(t("gallery.carousel"))}">
+        <div class="ebro-cf-track" data-cf-track>
+          ${photos.map((url, i) => `
+            <figure class="ebro-cf-slide" data-cf-slide="${i}" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${photos.length}">
+              <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false" loading="${i === 0 ? "eager" : "lazy"}">
+            </figure>`).join("")}
+        </div>
+        ${many ? `<button class="ebro-cf-arrow ebro-cf-prev" type="button" data-cf-prev aria-label="${esc(t("gallery.prev"))}">${ICON_PREV}</button>` : ""}
+        ${many ? `<button class="ebro-cf-arrow ebro-cf-next" type="button" data-cf-next aria-label="${esc(t("gallery.next"))}">${ICON_NEXT}</button>` : ""}
+        <button class="ebro-cf-cta" type="button" data-cf-cta>${ICON_EXPAND}<span>${esc(t("gallery.open"))}</span></button>
       </div>
     `;
     keep.forEach((node) => media.appendChild(node));
-    // The strip itself shows every photo, so the separate thumbnail row is no
-    // longer needed.
-    if (thumbs) { thumbs.hidden = true; thumbs.innerHTML = ""; }
 
-    const strip = media.querySelector("[data-strip]");
+    const root = media.querySelector("[data-cf]");
+    const track = media.querySelector("[data-cf-track]");
+    const slides = [...media.querySelectorAll(".ebro-cf-slide")];
+    const prevBtn = media.querySelector("[data-cf-prev]");
+    const nextBtn = media.querySelector("[data-cf-next]");
+    const cta = media.querySelector("[data-cf-cta]");
 
-    // Mouse drag-to-scroll (touch/trackpad use native horizontal scroll). A drag
-    // suppresses the click that follows so it doesn't also open the lightbox.
+    // The thumbnail strip below the stage doubles as carousel navigation.
+    let thumbEls = [];
+    if (thumbs) {
+      thumbs.hidden = !many;
+      thumbs.classList.add("ebro-cf-thumbs");
+      thumbs.innerHTML = many ? photos.map((url, i) => `
+        <button class="ebro-cf-thumb" type="button" data-cf-thumb="${i}" aria-label="${esc(t("gallery.goTo"))} ${i + 1}">
+          <img src="${esc(url)}" alt="" draggable="false" loading="lazy">
+        </button>`).join("") : "";
+      thumbEls = [...thumbs.querySelectorAll("[data-cf-thumb]")];
+    }
+
+    let active = 0;
+
+    // Place every slide relative to the active one and sync arrows + thumbs.
+    function render() {
+      slides.forEach((el, i) => {
+        const off = i - active;
+        const abs = Math.abs(off);
+        const tier = abs < TIERS.length ? TIERS[abs] : HIDDEN;
+        const dir = Math.sign(off);
+        el.style.transform = `translate(-50%, -50%) translateX(${dir * tier.x}%) scale(${tier.scale})`;
+        el.style.opacity = String(tier.opacity);
+        el.style.zIndex = String(20 - abs);
+        el.style.pointerEvents = tier.opacity > 0 ? "auto" : "none";
+        el.classList.toggle("is-active", abs === 0);
+        el.setAttribute("aria-hidden", abs === 0 ? "false" : "true");
+      });
+      if (prevBtn) prevBtn.disabled = active === 0;
+      if (nextBtn) nextBtn.disabled = active === photos.length - 1;
+      thumbEls.forEach((el, i) => {
+        const on = i === active;
+        el.classList.toggle("is-active", on);
+        if (on) {
+          el.setAttribute("aria-current", "true");
+          el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        } else {
+          el.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    function goTo(target) {
+      active = clampIndex(target, photos.length);
+      render();
+    }
+
+    render();
+
+    // --- navigation wiring ---
+    prevBtn?.addEventListener("click", () => goTo(active - 1));
+    nextBtn?.addEventListener("click", () => goTo(active + 1));
+    cta?.addEventListener("click", () => openLightbox(active));
+    thumbEls.forEach((el) => el.addEventListener("click", () => goTo(Number(el.dataset.cfThumb))));
+
+    // Clicking a side photo brings it to the centre; clicking the centre opens
+    // the lightbox. A drag/swipe steps through slides and suppresses the click
+    // that follows so it doesn't also open the lightbox.
     let down = null;
     let suppressClick = false;
-    strip.addEventListener("pointerdown", (event) => {
-      if (event.pointerType !== "mouse" || event.button !== 0) return;
-      down = { x: event.clientX, scroll: strip.scrollLeft, moved: false };
-      try { strip.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
+    track.addEventListener("pointerdown", (event) => {
+      if (event.button != null && event.button !== 0) return;
+      down = { x: event.clientX, moved: false };
+      try { track.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
     });
-    strip.addEventListener("pointermove", (event) => {
+    track.addEventListener("pointermove", (event) => {
       if (!down) return;
+      if (Math.abs(event.clientX - down.x) > 6) down.moved = true;
+    });
+    track.addEventListener("pointerup", (event) => {
+      if (!down) return;
+      const { moved } = down;
       const dx = event.clientX - down.x;
-      if (Math.abs(dx) > 5) down.moved = true;
-      strip.scrollLeft = down.scroll - dx;
-    });
-    strip.addEventListener("pointerup", () => {
-      if (!down) return;
-      if (down.moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); }
       down = null;
+      if (moved) {
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 0);
+        if (dx <= -40) goTo(active + 1);
+        else if (dx >= 40) goTo(active - 1);
+      }
     });
-    strip.addEventListener("pointercancel", () => { down = null; });
+    track.addEventListener("pointercancel", () => { down = null; });
 
-    strip.addEventListener("click", (event) => {
+    track.addEventListener("click", (event) => {
       if (suppressClick) return;
-      const figure = event.target.closest(".ebro-photo");
-      if (figure) openLightbox(Number(figure.dataset.photo));
-    });
-    strip.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      const figure = event.target.closest(".ebro-photo");
-      if (figure) { event.preventDefault(); openLightbox(Number(figure.dataset.photo)); }
+      const slide = event.target.closest(".ebro-cf-slide");
+      if (!slide) return;
+      const i = Number(slide.dataset.cfSlide);
+      if (i === active) openLightbox(active);
+      else goTo(i);
     });
 
-    // --- lightbox (the enlarged view shown on click) ---
+    // Keyboard: when the stage is focused, arrows move the carousel and
+    // Enter/Space opens the active photo.
+    root.tabIndex = 0;
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") { event.preventDefault(); goTo(active + 1); }
+      else if (event.key === "ArrowLeft") { event.preventDefault(); goTo(active - 1); }
+      else if ((event.key === "Enter" || event.key === " ") && event.target === root) {
+        event.preventDefault();
+        openLightbox(active);
+      }
+    });
+
+    // --- lightbox (the enlarged, uncropped view shown on click) ---
     let lightbox = null;
     function openLightbox(start) {
       if (lightbox) return;
@@ -132,6 +227,8 @@
         image.src = photos[view];
         image.alt = `${altBase} ${view + 1}`;
         if (lcounter) lcounter.textContent = `${view + 1} / ${photos.length}`;
+        // Keep the carousel in sync with the lightbox.
+        goTo(view);
         image.animate?.(
           [{ opacity: 0, transform: `translateX(${(dir || 0) * 28}px)` }, { opacity: 1, transform: "none" }],
           { duration: 170, easing: "ease-out" }
@@ -193,7 +290,7 @@
       lightbox = { close, show: (i) => show(i, 0) };
     }
 
-    return { openLightbox };
+    return { openLightbox, goTo };
   }
 
   const api = { clampIndex, create };

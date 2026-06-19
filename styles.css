@@ -1878,55 +1878,258 @@ a.property-media {
   border-color: var(--green);
 }
 
-/* Property photo strip (ebro- prefixed to avoid the legacy enhance.js gallery) */
+/* Coverflow carousel (ebro- prefixed to avoid the legacy enhance.js gallery):
+   a large centred photo with neighbours peeking, scaled down and faded. */
 .detail-media.ebro-gallery {
-  min-height: 0;
+  min-height: clamp(320px, 44vw, 540px);
   cursor: default;
   background: var(--sunken);
 }
 
-.ebro-strip {
-  display: flex;
-  gap: 10px;
-  height: clamp(220px, 32vw, 380px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+.ebro-cf {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ebro-cf:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+
+/* Keep the availability pill above the carousel chrome. */
+.detail-media.ebro-gallery .availability-pill {
+  z-index: 31;
+}
+
+/* Soft fades so the far slides melt into the frame edges. */
+.ebro-cf::before,
+.ebro-cf::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12%;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.ebro-cf::before {
+  left: 0;
+  background: linear-gradient(to right, var(--sunken), transparent);
+}
+
+.ebro-cf::after {
+  right: 0;
+  background: linear-gradient(to left, var(--sunken), transparent);
+}
+
+.ebro-cf-track {
+  position: absolute;
+  inset: 0;
+  touch-action: pan-y;
   cursor: grab;
 }
 
-.ebro-strip:active {
+.ebro-cf-track:active {
   cursor: grabbing;
 }
 
-.ebro-photo {
-  flex: 0 0 auto;
-  height: 100%;
+.ebro-cf-slide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 78%;
+  aspect-ratio: 3 / 2;
+  max-width: 62%;
   margin: 0;
   overflow: hidden;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--mist);
+  box-shadow: var(--shadow-md);
+  transform: translate(-50%, -50%);
+  transition: transform var(--dur-slow, 360ms) var(--ease-out),
+              opacity var(--dur-slow, 360ms) var(--ease-out),
+              box-shadow var(--dur-base, 200ms) var(--ease-out);
+  cursor: pointer;
+  will-change: transform, opacity;
+}
+
+.ebro-cf-slide.is-active {
+  box-shadow: var(--shadow-xl);
   cursor: zoom-in;
 }
 
-.ebro-photo img {
+.ebro-cf-slide img {
+  width: 100%;
   height: 100%;
-  width: auto;
-  max-width: none;
+  object-fit: cover;
   display: block;
   user-select: none;
-  transition: transform 0.35s var(--ease-out, ease);
 }
 
-.ebro-photo:hover img,
-.ebro-photo:focus-visible img {
-  transform: scale(1.06);
+/* Glass arrow + CTA chrome over the imagery */
+.ebro-cf-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-strong);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: background var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out),
+              opacity var(--dur-fast) var(--ease-out);
 }
 
-.ebro-photo:focus-visible {
+.ebro-cf-arrow svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ebro-cf-arrow:hover {
+  transform: translateY(-50%) scale(1.06);
+}
+
+.ebro-cf-arrow:focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 2px;
+}
+
+.ebro-cf-arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ebro-cf-prev {
+  left: clamp(8px, 2vw, 20px);
+}
+
+.ebro-cf-next {
+  right: clamp(8px, 2vw, 20px);
+}
+
+.ebro-cf-cta {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 9px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+
+.ebro-cf-cta svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ebro-cf-cta:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.ebro-cf-cta:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* Thumbnail strip — doubles as carousel navigation */
+.detail-gallery.ebro-cf-thumbs {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-1) var(--space-1) var(--space-2);
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.ebro-cf-thumb {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 60px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--mist);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.ebro-cf-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ebro-cf-thumb:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.ebro-cf-thumb.is-active {
+  opacity: 1;
+  border-color: var(--green);
+}
+
+.ebro-cf-thumb:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .ebro-cf-slide {
+    height: 72%;
+    max-width: 80%;
+  }
+
+  .ebro-cf-cta {
+    bottom: 7%;
+    padding: 8px 13px;
+    font-size: 0.84rem;
+  }
+
+  .ebro-cf-arrow {
+    width: 38px;
+    height: 38px;
+  }
+
+  .ebro-cf-thumb {
+    width: 64px;
+    height: 46px;
+  }
 }
 
 .ebro-nav {
@@ -2071,7 +2274,10 @@ body.gallery-lock {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ebro-photo img,
+  .ebro-cf-slide,
+  .ebro-cf-arrow,
+  .ebro-cf-cta,
+  .ebro-cf-thumb,
   .ebro-lightbox,
   .ebro-lightbox-stage,
   .ebro-lightbox-img {

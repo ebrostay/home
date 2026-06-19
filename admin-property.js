@@ -19,6 +19,14 @@ let aiAutoTranslate = localStorage.getItem("ebrostay-ai-autotranslate") !== "off
 let extractedImages = [];
 // The photo currently being dragged to reorder, while a drag is in progress.
 let photoDrag = null;
+// Leaflet map + marker for the address confirmation; recreated on each render
+// because renderEditor() replaces the editor's DOM (and the map container).
+let adminMap = null;
+let adminMarker = null;
+// Geocode candidates for the current search, plus the address text those
+// coordinates were resolved for (so we only re-geocode when it actually changes).
+let geoCandidates = [];
+let geoResolvedFor = null;
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -289,17 +297,29 @@ function renderEditForm() {
       <fieldset class="admin-group">
         <legend>${t("admin.section.location")}</legend>
         <div class="admin-wide">
-          <label>
-            <span>${t("admin.field.addressFull")}</span>
-            <input name="address" type="text" value="${escapeValue(row.address)}" placeholder="${t("admin.geocodePlaceholder")}">
-          </label>
-          <p class="admin-hint" data-geocode-status="${row.id}">${t("admin.addressHint")}</p>
-          <button class="details-button" type="button" data-geocode="${row.id}">${t("admin.geocodeFind")}</button>
+          <span class="admin-label">${t("admin.field.addressFull")}</span>
+          <div class="admin-geocode-row">
+            <input name="address" type="text" value="${escapeValue(row.address)}" placeholder="${t("admin.geocodePlaceholder")}" autocomplete="off">
+            <button class="details-button" type="button" data-geocode="${row.id}">${t("admin.geocodeFind")}</button>
+          </div>
+          <p class="admin-hint" data-geocode-status>${t("admin.addressHint")}</p>
+          <div class="address-result" data-geocode-panel hidden>
+            <label class="address-choices" data-geocode-choices hidden>
+              <span>${t("admin.geocodeChoose")}</span>
+              <select data-geocode-select></select>
+            </label>
+            <div class="address-proposed" data-geocode-proposed hidden>
+              <p class="address-proposed-q">${t("admin.geocodeConfirmQ")}</p>
+              <p class="address-proposed-street" data-geo-street></p>
+              <p class="address-proposed-locality" data-geo-locality></p>
+              <div class="address-map" data-geocode-map></div>
+            </div>
+          </div>
         </div>
         ${text("admin.field.city", "city", row.city)}
         ${text("admin.field.addressKey", "address_key", row.address_key)}
-        ${text("admin.field.lat", "lat", row.lat, "number")}
-        ${text("admin.field.lng", "lng", row.lng, "number")}
+        <input type="hidden" name="lat" value="${escapeValue(row.lat ?? "")}">
+        <input type="hidden" name="lng" value="${escapeValue(row.lng ?? "")}">
       </fieldset>
       <fieldset class="admin-group">
         <legend>${t("admin.section.owner")}</legend>
@@ -369,6 +389,12 @@ function renderGuestInfoForm() {
 
 function renderEditor() {
   if (!row) return;
+  // The map container is rebuilt below, so drop the old Leaflet instance. The
+  // saved coordinates already match the saved address, so don't re-geocode it.
+  adminMap = null;
+  adminMarker = null;
+  geoCandidates = [];
+  geoResolvedFor = row.address || null;
   const blocks = (row.availability_blocks || [])
     .slice()
     .sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
@@ -449,48 +475,140 @@ async function loadProperty() {
   renderEditor();
 }
 
-async function geocode(query) {
+// Ebrostay operates in Spain, so Spanish results are surfaced first.
+const spainRank = (result) => (result.address?.country_code === "es" ? 0 : 1);
+
+// Turn a Nominatim result into a human-readable address (a street line and a
+// "postcode city" line) plus its coordinates. The admin never sees raw numbers.
+function describeGeoResult(result) {
+  const a = result.address || {};
+  const fromName = (result.display_name || "").split(",").map((part) => part.trim());
+  const street = [a.road || a.pedestrian || a.footway || a.neighbourhood || a.suburb, a.house_number]
+    .filter(Boolean).join(" ").trim();
+  const city = a.city || a.town || a.village || a.municipality || a.county || "";
+  const locality = [a.postcode, city].filter(Boolean).join(" ").trim();
+  const streetLine = street || fromName[0] || "";
+  const localityLine = locality || fromName.slice(1, 3).join(", ");
+  return {
+    street: streetLine,
+    locality: localityLine,
+    city,
+    label: [streetLine, localityLine].filter(Boolean).join(" · ") || result.display_name,
+    lat: Number(result.lat),
+    lng: Number(result.lon)
+  };
+}
+
+// Query Nominatim, loosening the search until something matches, then return
+// de-duplicated candidates with Spanish addresses listed first.
+async function fetchGeocodeCandidates(query) {
+  const lang = currentLanguage === "es" ? "es" : "en";
   const search = async (q) => {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&accept-language=${lang}&q=${encodeURIComponent(q)}`,
       { headers: { Accept: "application/json" } }
     );
     const results = await response.json();
-    return Array.isArray(results) && results.length ? results[0] : null;
+    return Array.isArray(results) ? results : [];
   };
-  // OpenStreetMap often lacks the house number or expects the official
-  // street name, so fall back to progressively looser queries
+  // OpenStreetMap often lacks the house number or expects the official street
+  // name, so fall back to progressively looser queries.
   const cleanup = (value) => value.replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").replace(/^[\s,]+|[\s,]+$/g, "");
-  const withCity = /zaragoza/i.test(query) ? query : `${query}, Zaragoza`;
-  const noNumber = cleanup(withCity.replace(/\d+/g, " "));
+  const located = /,|zaragoza|españa|espana|spain/i.test(query);
+  const withPlace = located ? query : `${query}, Zaragoza, España`;
+  const noNumber = cleanup(withPlace.replace(/\d+/g, " "));
   const noStreetType = cleanup(noNumber.replace(/\b(calle|c\/|avenida|avda\.?|av\.?|paseo|plaza|pza\.?|camino|ronda)\s+(de\s+|del\s+|la\s+)?/gi, ""));
-  const candidates = [...new Set([withCity, noNumber, noStreetType].filter(Boolean))];
+  const candidates = [...new Set([withPlace, noNumber, noStreetType].filter(Boolean))];
+  let results = [];
   for (const candidate of candidates) {
-    const match = await search(candidate);
-    if (match) return match;
+    results = await search(candidate);
+    if (results.length) break;
   }
-  return null;
+  const seen = new Set();
+  const unique = results.filter((r) => !seen.has(r.place_id) && seen.add(r.place_id));
+  // Stable sort keeps Nominatim's relevance order within each country group.
+  unique.sort((a, b) => spainRank(a) - spainRank(b));
+  return unique;
 }
 
+// Draw / move the confirmation map pin for the chosen coordinates.
+function showAdminMapPin(lat, lng) {
+  const el = propertyEditor.querySelector("[data-geocode-map]");
+  if (!el || typeof L === "undefined") return;
+  if (!adminMap) {
+    adminMap = L.map(el, { scrollWheelZoom: false }).setView([lat, lng], 16);
+    adminMap.attributionControl.setPrefix(false);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(adminMap);
+  } else {
+    adminMap.setView([lat, lng], 16);
+  }
+  if (adminMarker) adminMarker.setLatLng([lat, lng]);
+  else adminMarker = L.marker([lat, lng]).addTo(adminMap);
+  // The container starts hidden, so Leaflet needs a nudge once it is shown.
+  setTimeout(() => adminMap && adminMap.invalidateSize(), 0);
+}
+
+// Apply a candidate to the form: fill the hidden coordinates (+ city if empty),
+// show the proposed address, drop the map pin, and remember the resolved text.
+function applyGeoCandidate(index) {
+  const form = propertyEditor.querySelector("[data-edit-form]");
+  const candidate = geoCandidates[index];
+  if (!form || !candidate) return;
+  const info = describeGeoResult(candidate);
+  form.querySelector('input[name="lat"]').value = info.lat.toFixed(6);
+  form.querySelector('input[name="lng"]').value = info.lng.toFixed(6);
+  const cityInput = form.querySelector('input[name="city"]');
+  if (cityInput && !cityInput.value.trim() && info.city) cityInput.value = info.city;
+
+  const proposed = propertyEditor.querySelector("[data-geocode-proposed]");
+  proposed.hidden = false;
+  proposed.querySelector("[data-geo-street]").textContent = info.street || "—";
+  proposed.querySelector("[data-geo-locality]").textContent = info.locality || "";
+  showAdminMapPin(info.lat, info.lng);
+
+  geoResolvedFor = form.querySelector('input[name="address"]').value.trim();
+}
+
+// "Find address" button: geocode what the admin typed and present the match(es)
+// — a dropdown when several are possible, Spanish ones first.
 async function geocodeIntoForm() {
   const form = propertyEditor.querySelector("[data-edit-form]");
   const status = propertyEditor.querySelector("[data-geocode-status]");
+  const panel = propertyEditor.querySelector("[data-geocode-panel]");
+  const choices = propertyEditor.querySelector("[data-geocode-choices]");
+  const select = propertyEditor.querySelector("[data-geocode-select]");
   const query = form?.querySelector('input[name="address"]')?.value.trim();
-  if (!form || !query) return null;
+  if (!form || !query) return;
   status.textContent = t("admin.geocodeSearching");
+  status.classList.remove("is-error");
   try {
-    const match = await geocode(query);
-    if (!match) {
+    geoCandidates = await fetchGeocodeCandidates(query);
+    if (!geoCandidates.length) {
+      panel.hidden = true;
       status.textContent = t("admin.geocodeNone");
-      return null;
+      status.classList.add("is-error");
+      return;
     }
-    form.querySelector('input[name="lat"]').value = Number(match.lat).toFixed(5);
-    form.querySelector('input[name="lng"]').value = Number(match.lon).toFixed(5);
-    status.textContent = `${t("admin.geocodeFound")} ${match.display_name}`;
-    return match;
+    panel.hidden = false;
+    status.textContent = geoCandidates.length > 1 ? t("admin.geocodeFoundMany") : t("admin.geocodeFound");
+    // A dropdown only makes sense when there is a real choice to make.
+    if (geoCandidates.length > 1) {
+      select.innerHTML = geoCandidates
+        .map((r, i) => `<option value="${i}">${escapeValue(describeGeoResult(r).label)}</option>`)
+        .join("");
+      select.value = "0";
+      choices.hidden = false;
+    } else {
+      choices.hidden = true;
+    }
+    applyGeoCandidate(0);
   } catch {
+    panel.hidden = true;
     status.textContent = t("admin.geocodeError");
-    return null;
+    status.classList.add("is-error");
   }
 }
 
@@ -1109,6 +1227,12 @@ if (propertyEditor) {
   });
 
   propertyEditor.addEventListener("change", async (event) => {
+    const geoSelect = event.target.closest("[data-geocode-select]");
+    if (geoSelect) {
+      applyGeoCandidate(Number(geoSelect.value));
+      return;
+    }
+
     const photoInput = event.target.closest("[data-photo-input]");
     if (photoInput) {
       if (event.target.files?.length) await uploadPhotos([...event.target.files], photoInput.dataset.floorplan === "yes");
@@ -1151,11 +1275,17 @@ if (propertyEditor) {
 
     if (event.target.dataset.editForm) {
       const payload = editPayloadFromForm(event.target);
-      // when the address changed, derive fresh coordinates from it
-      if (payload.address && payload.address !== (row.address || null)) {
-        await geocodeIntoForm();
-        payload.lat = Number(event.target.querySelector('input[name="lat"]').value) || payload.lat;
-        payload.lng = Number(event.target.querySelector('input[name="lng"]').value) || payload.lng;
+      // If the saved address hasn't been resolved to coordinates in the UI
+      // (admin typed an address but never pressed "Find"), do it silently now
+      // so the listing always ends up with a valid map pin. An address the
+      // admin already confirmed via the dropdown is left untouched.
+      if (payload.address && payload.address !== geoResolvedFor) {
+        const best = (await fetchGeocodeCandidates(payload.address))[0];
+        if (best) {
+          payload.lat = Number(best.lat);
+          payload.lng = Number(best.lon);
+          geoResolvedFor = payload.address;
+        }
       }
 
       // resolve the owner by email: assign the property and flag the profile

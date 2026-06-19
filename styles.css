@@ -2313,6 +2313,72 @@ body.gallery-lock {
   font-weight: 600;
 }
 
+.admin-hint.is-error {
+  color: var(--danger, #c0392b);
+}
+
+/* Address geocoding: proposed-address confirmation card + map pin */
+.address-result {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.address-choices {
+  display: grid;
+  gap: 6px;
+}
+
+.address-choices > span {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.address-proposed {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.address-proposed-q {
+  margin: 0 0 4px;
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.address-proposed-street {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.address-proposed-locality {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.address-map {
+  height: 220px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.address-map:empty {
+  display: none;
+}
+
 .admin-flag {
   display: inline-flex;
   align-items: center;

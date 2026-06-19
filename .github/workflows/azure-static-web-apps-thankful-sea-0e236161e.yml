@@ -43,6 +43,16 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Inject Supabase config
+        env:
+          SUPABASE_URL: ${{ github.event_name == 'push' && secrets.SUPABASE_URL_PROD || secrets.SUPABASE_URL_STAGING }}
+          SUPABASE_ANON_KEY: ${{ github.event_name == 'push' && secrets.SUPABASE_ANON_KEY_PROD || secrets.SUPABASE_ANON_KEY_STAGING }}
+        run: node scripts/inject-config.js
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token

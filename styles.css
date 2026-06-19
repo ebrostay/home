@@ -3608,3 +3608,21 @@ html[data-audience="owner"] #contact { display: none; }
   .compare-feature { padding-top: 14px; font-size: 1rem; }
   .compare-row .col-ebro { border-radius: 0; }
 }
+
+/* Staging environment banner */
+.staging-banner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 9999;
+  background: var(--amber-500);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.9;
+}

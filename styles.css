@@ -2541,6 +2541,14 @@ a.property-media {
   padding-right: 16px;
 }
 
+.admin-prop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 16px 12px;
+}
+
 .admin-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);

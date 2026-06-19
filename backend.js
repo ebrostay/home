@@ -478,6 +478,34 @@ const EbrostayBackend = (() => {
     return { ok: !error };
   }
 
+  // Admin: list/unlist a property (toggle is_published). Unlisted homes stay
+  // in the database and admin panel but disappear from the public site.
+  // RLS ("Admins manage properties") only lets admins update.
+  async function setPropertyPublished(propertyId, published) {
+    const sb = getClient();
+    if (!sb || !propertyId) return { ok: false };
+    const { error } = await sb.from("properties").update({ is_published: published }).eq("id", propertyId);
+    if (error) console.warn("Property publish toggle failed:", error.message);
+    return { ok: !error };
+  }
+
+  // Admin: permanently delete a property. Availability, photos, favorites and
+  // guest info rows cascade away with it, but the photo files in storage do
+  // not, so remove those first (best-effort). RLS limits this to admins.
+  async function deleteProperty(propertyId) {
+    const sb = getClient();
+    if (!sb || !propertyId) return { ok: false };
+    const { data: photos } = await sb
+      .from("property_photos")
+      .select("storage_path")
+      .eq("property_id", propertyId);
+    const paths = (photos || []).map((photo) => photo.storage_path).filter(Boolean);
+    if (paths.length) await sb.storage.from("property-photos").remove(paths);
+    const { error } = await sb.from("properties").delete().eq("id", propertyId);
+    if (error) console.warn("Property delete failed:", error.message);
+    return { ok: !error };
+  }
+
   return {
     isConfigured,
     getClient,
@@ -496,6 +524,8 @@ const EbrostayBackend = (() => {
     requestBooking,
     loadBookingRequests,
     updateBookingRequestStatus,
+    setPropertyPublished,
+    deleteProperty,
     deactivateAccount,
     loadFavorites,
     saveFavorite,

@@ -94,6 +94,10 @@ function renderPropList() {
             <span class="details-button">${t("admin.editProperty")}</span>
           </span>
         </a>
+        <div class="admin-prop-actions">
+          <button class="details-button" type="button" data-toggle-publish="${row.id}">${t(row.is_published ? "admin.unlist" : "admin.publish")}</button>
+          <button class="details-button danger" type="button" data-delete-prop="${row.id}">${t("admin.deleteProperty")}</button>
+        </div>
       </li>
     `;
   }).join("") || `<li class="admin-empty">${t("admin.noBlocks")}</li>`;
@@ -340,6 +344,50 @@ if (adminRequestsTable) {
     const updated = requestRows.find((row) => row.id === button.dataset.requestId);
     if (updated) updated.status = button.dataset.requestStatus;
     renderRequestsTable();
+    showStatus("admin.saved");
+  });
+}
+
+if (adminPropList) {
+  adminPropList.addEventListener("click", async (event) => {
+    const toggleButton = event.target.closest("[data-toggle-publish]");
+    const deleteButton = event.target.closest("[data-delete-prop]");
+    if (!toggleButton && !deleteButton) return;
+    // The buttons sit outside the card link, but guard against navigation anyway.
+    event.preventDefault();
+
+    if (toggleButton) {
+      const row = propertyRows.find((property) => property.id === toggleButton.dataset.togglePublish);
+      if (!row) return;
+      toggleButton.disabled = true;
+      const next = !row.is_published;
+      const { ok } = await EbrostayBackend.setPropertyPublished(row.id, next);
+      toggleButton.disabled = false;
+      if (!ok) {
+        showStatus("admin.error");
+        return;
+      }
+      row.is_published = next;
+      renderPropList();
+      showStatus("admin.saved");
+      return;
+    }
+
+    // Delete needs two clicks: first arms the button, second deletes.
+    if (deleteButton.dataset.armed !== "yes") {
+      deleteButton.dataset.armed = "yes";
+      deleteButton.textContent = t("admin.deletePropertyConfirm");
+      return;
+    }
+    deleteButton.disabled = true;
+    const { ok } = await EbrostayBackend.deleteProperty(deleteButton.dataset.deleteProp);
+    if (!ok) {
+      deleteButton.disabled = false;
+      showStatus("admin.error");
+      return;
+    }
+    propertyRows = propertyRows.filter((property) => property.id !== deleteButton.dataset.deleteProp);
+    renderPropList();
     showStatus("admin.saved");
   });
 }

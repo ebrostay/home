@@ -1884,6 +1884,19 @@ a.property-media {
   gap: 12px;
 }
 
+.admin-photo[draggable="true"] {
+  cursor: grab;
+}
+
+.admin-photo.is-dragging {
+  opacity: 0.45;
+}
+
+.admin-photo.is-drop-target {
+  outline: 2px dashed var(--green);
+  outline-offset: 2px;
+}
+
 .admin-photo {
   position: relative;
   margin: 0;
@@ -1921,6 +1934,15 @@ a.property-media {
 .admin-photo-actions .details-button {
   flex: 1 1 auto;
   justify-content: center;
+}
+
+.admin-photo-actions [data-move-photo] {
+  flex: 0 0 auto;
+}
+
+.admin-photo-actions [data-move-photo]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .details-button.danger {

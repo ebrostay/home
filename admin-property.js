@@ -17,6 +17,8 @@ let aiAutoTranslate = localStorage.getItem("ebrostay-ai-autotranslate") !== "off
 // Images pulled out of an uploaded file, awaiting the admin's photo/floorplan/skip
 // classification before they are uploaded to the listing.
 let extractedImages = [];
+// The photo currently being dragged to reorder, while a drag is in progress.
+let photoDrag = null;
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -64,21 +66,37 @@ function sortedPhotos(isFloorplan) {
     .sort((a, b) => a.sort_order - b.sort_order || (a.storage_path < b.storage_path ? -1 : 1));
 }
 
-function renderPhotoSection(isFloorplan) {
+// Photo tiles for one group (photos or floor plans). Each tile is drag-and-drop
+// reorderable and also carries ◀/▶ buttons (keyboard/touch friendly). The first
+// photo is the listing cover, so there is no separate "make cover" action.
+function photoGridItems(isFloorplan) {
   const photos = sortedPhotos(isFloorplan);
-  const items = photos.length
-    ? photos.map((photo, index) => `
-        <figure class="admin-photo">
-          <img src="${EbrostayBackend.photoUrl(photo.storage_path)}" alt="" loading="lazy">
+  if (!photos.length) {
+    return `<p class="admin-empty-note">${t(isFloorplan ? "admin.noFloorplans" : "admin.noPhotos")}</p>`;
+  }
+  const flag = isFloorplan ? "yes" : "no";
+  return photos.map((photo, index) => `
+        <figure class="admin-photo" draggable="true" data-photo-id="${photo.id}" data-floorplan="${flag}">
+          <img src="${EbrostayBackend.photoUrl(photo.storage_path)}" alt="" loading="lazy" draggable="false">
           ${!isFloorplan && index === 0 ? `<span class="admin-photo-cover">${t("admin.cover")}</span>` : ""}
           <div class="admin-photo-actions">
-            ${isFloorplan || index === 0 ? "" : `<button class="details-button" type="button" data-cover-photo="${photo.id}">${t("admin.makeCover")}</button>`}
+            <button class="details-button" type="button" data-move-photo="${photo.id}" data-move-dir="-1" data-floorplan="${flag}" title="${t("admin.moveLeft")}" aria-label="${t("admin.moveLeft")}"${index === 0 ? " disabled" : ""}>&#9664;</button>
+            <button class="details-button" type="button" data-move-photo="${photo.id}" data-move-dir="1" data-floorplan="${flag}" title="${t("admin.moveRight")}" aria-label="${t("admin.moveRight")}"${index === photos.length - 1 ? " disabled" : ""}>&#9654;</button>
             <button class="details-button danger" type="button" data-delete-photo="${photo.id}" data-path="${escapeValue(photo.storage_path)}">${t("admin.delete")}</button>
           </div>
         </figure>
-      `).join("")
-    : `<p class="admin-empty-note">${t(isFloorplan ? "admin.noFloorplans" : "admin.noPhotos")}</p>`;
+      `).join("");
+}
 
+// Re-render just one photo grid in place (after a reorder) so the surrounding
+// edit form keeps any unsaved input.
+function renderPhotoGrid(isFloorplan) {
+  const grid = propertyEditor.querySelector(`[data-photo-grid="${isFloorplan ? "floorplans" : "photos"}"]`);
+  if (grid) grid.innerHTML = photoGridItems(isFloorplan);
+}
+
+function renderPhotoSection(isFloorplan) {
+  const hint = isFloorplan ? t("admin.floorplansCopy") : t("admin.reorderHint");
   return `
     <section class="admin-section">
       <div class="admin-section-head">
@@ -88,10 +106,41 @@ function renderPhotoSection(isFloorplan) {
           <input type="file" accept="image/*" multiple hidden data-photo-input="${row.id}" data-floorplan="${isFloorplan ? "yes" : "no"}">
         </label>
       </div>
-      ${isFloorplan ? `<p class="admin-hint">${t("admin.floorplansCopy")}</p>` : ""}
-      <div class="admin-photo-grid">${items}</div>
+      <p class="admin-hint">${hint}</p>
+      <div class="admin-photo-grid" data-photo-grid="${isFloorplan ? "floorplans" : "photos"}">${photoGridItems(isFloorplan)}</div>
     </section>
   `;
+}
+
+// Persist a new order for one photo group: renumber to a clean 10,20,30…
+// sequence and save only the rows that moved. Local state updates first so the
+// grid re-renders instantly; a save error reloads from the server to resync.
+async function applyPhotoOrder(orderedPhotos, isFloorplan) {
+  const changes = PhotoOrder.renumber(orderedPhotos);
+  changes.forEach(({ id, sort_order }) => {
+    const photo = (row.property_photos || []).find((item) => item.id === id);
+    if (photo) photo.sort_order = sort_order;
+  });
+  renderPhotoGrid(isFloorplan);
+  if (!changes.length) return;
+  const sb = EbrostayBackend.getClient();
+  for (const change of changes) {
+    const { error } = await sb.from("property_photos").update({ sort_order: change.sort_order }).eq("id", change.id);
+    if (error) {
+      showStatus("admin.error");
+      await loadProperty();
+      return;
+    }
+  }
+  showStatus("admin.saved");
+}
+
+// Move one photo a step earlier (dir -1) or later (dir +1) within its group.
+async function movePhotoStep(photoId, dir, isFloorplan) {
+  const photos = sortedPhotos(isFloorplan);
+  const index = photos.findIndex((photo) => photo.id === photoId);
+  if (index < 0) return;
+  await applyPhotoOrder(PhotoOrder.moveItem(photos, index, index + dir), isFloorplan);
 }
 
 function renderAiSection() {
@@ -991,10 +1040,15 @@ if (propertyEditor) {
       return;
     }
 
+    const moveBtn = event.target.closest("[data-move-photo]");
+    if (moveBtn) {
+      await movePhotoStep(moveBtn.dataset.movePhoto, Number(moveBtn.dataset.moveDir), moveBtn.dataset.floorplan === "yes");
+      return;
+    }
+
     const sb = EbrostayBackend.getClient();
     const blockId = event.target.closest("[data-delete-block]")?.dataset.deleteBlock;
     const deletePhoto = event.target.closest("[data-delete-photo]");
-    const coverPhoto = event.target.closest("[data-cover-photo]");
 
     if (blockId) {
       const { error } = await sb.from("availability_blocks").delete().eq("id", blockId);
@@ -1005,16 +1059,6 @@ if (propertyEditor) {
     if (deletePhoto) {
       await sb.storage.from("property-photos").remove([deletePhoto.dataset.path]);
       const { error } = await sb.from("property_photos").delete().eq("id", deletePhoto.dataset.deletePhoto);
-      if (error) showStatus("admin.error");
-      else await loadProperty();
-    }
-
-    if (coverPhoto) {
-      const minOrder = Math.min(0, ...(row?.property_photos || []).map((photo) => photo.sort_order));
-      const { error } = await sb
-        .from("property_photos")
-        .update({ sort_order: minOrder - 10 })
-        .eq("id", coverPhoto.dataset.coverPhoto);
       if (error) showStatus("admin.error");
       else await loadProperty();
     }
@@ -1159,6 +1203,56 @@ if (propertyEditor) {
       if (error) showStatus("admin.error");
       else showStatus("admin.saved");
     }
+  });
+
+  // Drag-and-drop reordering for the photo and floor-plan grids.
+  propertyEditor.addEventListener("dragstart", (event) => {
+    const figure = event.target.closest(".admin-photo[draggable='true']");
+    if (!figure) return;
+    photoDrag = { id: figure.dataset.photoId, floorplan: figure.dataset.floorplan === "yes" };
+    figure.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+    try { event.dataTransfer.setData("text/plain", figure.dataset.photoId); } catch { /* not all browsers allow this */ }
+  });
+
+  propertyEditor.addEventListener("dragend", (event) => {
+    event.target.closest(".admin-photo")?.classList.remove("is-dragging");
+    propertyEditor.querySelectorAll(".admin-photo.is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+    photoDrag = null;
+  });
+
+  propertyEditor.addEventListener("dragover", (event) => {
+    if (!photoDrag) return;
+    const grid = event.target.closest("[data-photo-grid]");
+    // only allow dropping within the same group (photos vs floor plans)
+    if (!grid || (grid.dataset.photoGrid === "floorplans") !== photoDrag.floorplan) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    propertyEditor.querySelectorAll(".admin-photo.is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+    const over = event.target.closest(".admin-photo");
+    if (over && over.dataset.photoId !== photoDrag.id) over.classList.add("is-drop-target");
+  });
+
+  propertyEditor.addEventListener("drop", async (event) => {
+    if (!photoDrag) return;
+    const grid = event.target.closest("[data-photo-grid]");
+    if (!grid || (grid.dataset.photoGrid === "floorplans") !== photoDrag.floorplan) return;
+    event.preventDefault();
+    const isFloorplan = photoDrag.floorplan;
+    const draggedId = photoDrag.id;
+    const targetId = event.target.closest(".admin-photo")?.dataset.photoId;
+    propertyEditor.querySelectorAll(".admin-photo.is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+    photoDrag = null;
+
+    const photos = sortedPhotos(isFloorplan);
+    const fromIndex = photos.findIndex((photo) => photo.id === draggedId);
+    if (fromIndex < 0) return;
+    // Dropped on a tile → take that tile's slot; dropped on empty space → go last.
+    let toIndex = targetId && targetId !== draggedId
+      ? photos.findIndex((photo) => photo.id === targetId)
+      : photos.length - 1;
+    if (toIndex < 0) toIndex = photos.length - 1;
+    await applyPhotoOrder(PhotoOrder.moveItem(photos, fromIndex, toIndex), isFloorplan);
   });
 }
 

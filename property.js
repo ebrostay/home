@@ -42,8 +42,8 @@ function renderDetail() {
 
   document.querySelector("#detailKicker").textContent = `${t(`type.${property.type}`)} - ${t(property.areaKey)}`;
   document.querySelector("#detailName").textContent = t(property.nameKey);
-  document.querySelector("#detailCopy").textContent = t(property.copyKey);
-  document.querySelector("#detailDetails").textContent = t(property.detailsKey);
+  document.querySelector("#detailCopy").innerHTML = RichText.renderRichText(t(property.copyKey));
+  document.querySelector("#detailDetails").innerHTML = RichText.renderRichText(t(property.detailsKey));
 
   document.querySelector("#detailBadges").innerHTML = badgeList()
     .map((key) => `<span>${t(key)}</span>`)
@@ -88,7 +88,7 @@ function renderDetail() {
 // so rendered crawls index each listing with its real content.
 function updateSeoTags() {
   const url = `https://ebrostay.com/property.html?id=${property.id}`;
-  const description = `${t(property.copyKey)} ${property.address ? `${property.address}, ` : ""}Zaragoza. ${monthlyPriceLabel()}.`;
+  const description = `${RichText.stripRichText(t(property.copyKey))} ${property.address ? `${property.address}, ` : ""}Zaragoza. ${monthlyPriceLabel()}.`;
 
   document.querySelector('meta[name="description"]')?.setAttribute("content", description);
   document.querySelector('meta[property="og:title"]')?.setAttribute("content", `${t(property.nameKey)} | Ebrostay`);
@@ -107,7 +107,7 @@ function updateSeoTags() {
     "@context": "https://schema.org",
     "@type": SCHEMA_TYPES[property.type] || "Accommodation",
     name: t(property.nameKey),
-    description: t(property.copyKey),
+    description: RichText.stripRichText(t(property.copyKey)),
     url,
     image: (property.photos || []).slice(0, 6),
     address: {
@@ -549,35 +549,25 @@ document.querySelector("#shareButton")?.addEventListener("click", async () => {
   }
 });
 
-function setBannerPhoto(url) {
-  const media = document.querySelector("#detailMedia");
-  if (media) {
-    media.style.backgroundImage =
-      `linear-gradient(135deg, rgba(24, 33, 29, 0.18), rgba(24, 33, 29, 0.02)), url('${url}')`;
-  }
-}
+let galleryInstance = null;
 
+// Build the swipeable carousel + click-to-zoom lightbox once, from the
+// property's photos. The thumbnail strip doubles as carousel navigation.
 function renderGallery() {
-  const gallery = document.querySelector("#detailGallery");
+  const media = document.querySelector("#detailMedia");
+  const thumbs = document.querySelector("#detailGallery");
   const photos = property.photos || [];
-  if (!gallery || photos.length === 0) return;
+  if (!media || photos.length === 0) return;
 
-  setBannerPhoto(photos[0]);
-  gallery.hidden = photos.length < 2;
-  gallery.innerHTML = photos.map((url, index) => `
-    <button class="gallery-thumb${index === 0 ? " is-active" : ""}" type="button"
-      data-photo-index="${index}" style="background-image: url('${url}')"
-      aria-label="Foto ${index + 1}"></button>
-  `).join("");
-
-  gallery.addEventListener("click", (event) => {
-    const thumb = event.target.closest("[data-photo-index]");
-    if (!thumb) return;
-    setBannerPhoto(photos[Number(thumb.dataset.photoIndex)]);
-    gallery.querySelectorAll(".gallery-thumb").forEach((button) => {
-      button.classList.toggle("is-active", button === thumb);
-    });
+  galleryInstance = EbrostayGallery.create({
+    media,
+    thumbs,
+    photos,
+    alt: t(property.nameKey),
+    t
   });
+  // Let enhance.js's "Photos" media tab open this lightbox.
+  window.__ebroGallery = galleryInstance;
 }
 
 function initDetailMap() {

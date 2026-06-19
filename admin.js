@@ -77,7 +77,8 @@ function coverUrl(row) {
 function renderPropList() {
   adminPropList.innerHTML = propertyRows.map((row) => {
     const cover = coverUrl(row);
-    const copy = currentLanguage === "es" ? (row.copy_es || row.copy_en) : (row.copy_en || row.copy_es);
+    const copyRaw = currentLanguage === "es" ? (row.copy_es || row.copy_en) : (row.copy_en || row.copy_es);
+    const copy = copyRaw ? RichText.stripRichText(copyRaw) : copyRaw;
     const location = [row.address, currentLanguage === "es" ? row.area_es : row.area_en].filter(Boolean).join(" · ");
     return `
       <li>

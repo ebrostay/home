@@ -192,7 +192,7 @@ function requestProperty(propertyId) {
   const property = properties.find((item) => item.id === propertyId);
   if (!property) return;
   document.querySelector("[name='property']").value = `${t(property.nameKey)} - ${t(property.areaKey)}`;
-  document.querySelector("[name='message']").value = `${t("email.defaultMessage")}\n\n${t(property.nameKey)}: ${t(property.copyKey)}`;
+  document.querySelector("[name='message']").value = `${t("email.defaultMessage")}\n\n${t(property.nameKey)}: ${RichText.stripRichText(t(property.copyKey))}`;
   document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
 }
 
@@ -340,7 +340,7 @@ function renderProperties() {
               ${property.priceNoteKey ? `<span class="price-note">${t(property.priceNoteKey)}</span>` : ""}
             </div>
           </div>
-          <p>${t(property.copyKey)}</p>
+          <p>${RichText.escapeHtml(RichText.stripRichText(t(property.copyKey)))}</p>
           <div class="property-badges">${badges}</div>
           <div class="property-meta">
             ${propertySpecs(property, t, interpolate).map((spec) => `<span>${spec}</span>`).join("")}

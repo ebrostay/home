@@ -365,8 +365,7 @@
       .support-panel h3, .support-panel p { margin: 0; }
       .support-panel textarea { min-height: 92px; }
       .support-panel-actions { display: flex; gap: 8px; }
-      .detail-media { background-size: cover !important; background-repeat: no-repeat !important; background-position: center !important; background-color: var(--sunken); cursor: zoom-in; }
-      .detail-media::after { content: attr(data-gallery-hint); position: absolute; right: 12px; bottom: 12px; border-radius: var(--radius-pill); padding: 7px 10px; color: #fff; background: rgba(10,51,36,.78); font-size: .82rem; font-weight: 600; }
+      .detail-media { background-size: cover !important; background-repeat: no-repeat !important; background-position: center !important; background-color: var(--sunken); }
       .detail-gallery { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 0; }
       .gallery-thumb { flex: 0 0 92px; height: 66px; background-size: cover; }
       .detail-media-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -855,13 +854,12 @@
 
   function enhanceDetailPage() {
     if (!document.querySelector(".detail-page")) return;
-    var media = document.querySelector("#detailMedia");
-    if (media) media.setAttribute("data-gallery-hint", text("galleryHint"));
+    // The photo carousel + lightbox are owned by gallery.js now; enhance.js only
+    // adds the surrounding extras (media tabs, highlights, trust strip, share).
     addDetailMediaTabs();
     addDetailHighlights();
     addTrustStrip();
     addSocialShareButtons();
-    initGalleryLightbox();
   }
 
   function extractBackgroundUrl(value) {
@@ -995,10 +993,13 @@
   }
 
   function openGallery(index) {
+    // The detail carousel owns the lightbox; the media "Photos" tab just opens it.
+    if (window.__ebroGallery) { window.__ebroGallery.openLightbox(index || 0); return; }
     var photos = collectDetailPhotos();
     if (!photos.length) return;
     lightboxIndex = Math.max(0, Math.min(index || 0, photos.length - 1));
     var box = document.querySelector(".gallery-lightbox");
+    if (!box) return;
     box.querySelector("img").src = photos[lightboxIndex];
     box.classList.add("is-open");
   }
@@ -1109,9 +1110,6 @@
     updateSupportText();
     updateDetailMediaTabs();
     addOwnerExtras();
-    if (document.querySelector(".detail-page")) {
-      document.querySelector("#detailMedia")?.setAttribute("data-gallery-hint", text("galleryHint"));
-    }
     applyAudience(preferredAudience(), false);
   }
 

@@ -143,6 +143,33 @@ async function movePhotoStep(photoId, dir, isFloorplan) {
   await applyPhotoOrder(PhotoOrder.moveItem(photos, index, index + dir), isFloorplan);
 }
 
+// Apply a Markdown formatting command from the description toolbar to the
+// textarea's current selection (or insert a placeholder when nothing is selected).
+function applyRichCommand(textarea, command) {
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+  const value = textarea.value;
+  const selected = value.slice(start, end);
+  let insert;
+  let selStart;
+  let selEnd;
+  if (command === "bullet") {
+    const block = selected || t("admin.rtBullet");
+    insert = block.split("\n").map((line) => (line.trim() ? `- ${line.replace(/^- /, "")}` : line)).join("\n");
+    selStart = start;
+    selEnd = start + insert.length;
+  } else {
+    const marker = command === "bold" ? "**" : "*";
+    const inner = selected || t(command === "bold" ? "admin.rtBold" : "admin.rtItalic");
+    insert = `${marker}${inner}${marker}`;
+    selStart = start + marker.length;
+    selEnd = selStart + inner.length;
+  }
+  textarea.value = value.slice(0, start) + insert + value.slice(end);
+  textarea.focus();
+  textarea.setSelectionRange(selStart, selEnd);
+}
+
 function renderAiSection() {
   return `
     <section class="admin-section admin-ai">
@@ -188,10 +215,20 @@ function renderEditForm() {
       <input name="${name}" type="text" value="${escapeValue(value)}" data-translate-group="${group}" data-translate-lang="${lang}">
     </label>
   `;
+  const richToolbar = (name) => `
+    <div class="rt-toolbar">
+      <button type="button" class="rt-btn" data-rt-cmd="bold" data-rt-target="${name}" title="${t("admin.rtBold")}" aria-label="${t("admin.rtBold")}"><strong>B</strong></button>
+      <button type="button" class="rt-btn" data-rt-cmd="italic" data-rt-target="${name}" title="${t("admin.rtItalic")}" aria-label="${t("admin.rtItalic")}"><em>I</em></button>
+      <button type="button" class="rt-btn" data-rt-cmd="bullet" data-rt-target="${name}" title="${t("admin.rtBullet")}" aria-label="${t("admin.rtBullet")}">&#8226;</button>
+    </div>`;
+  // Description fields accept a small Markdown subset; the toolbar inserts the
+  // markers and the property page renders them via rich-text.js.
   const pairArea = (labelKey, name, value, group, lang) => `
     <label class="admin-wide">
       <span>${t(labelKey)} ${transBtn(group, lang)}</span>
-      <textarea name="${name}" rows="3" data-translate-group="${group}" data-translate-lang="${lang}">${escapeValue(value)}</textarea>
+      ${richToolbar(name)}
+      <textarea name="${name}" rows="4" data-translate-group="${group}" data-translate-lang="${lang}">${escapeValue(value)}</textarea>
+      <small class="rt-hint">${t("admin.rtHint")}</small>
     </label>
   `;
 
@@ -1014,6 +1051,13 @@ async function translateFromField(sourceEl) {
 
 if (propertyEditor) {
   propertyEditor.addEventListener("click", async (event) => {
+    const rtBtn = event.target.closest("[data-rt-cmd]");
+    if (rtBtn) {
+      const textarea = propertyEditor.querySelector(`textarea[name="${rtBtn.dataset.rtTarget}"]`);
+      if (textarea) applyRichCommand(textarea, rtBtn.dataset.rtCmd);
+      return;
+    }
+
     if (event.target.closest("[data-ai-autofill]")) {
       await runAutofill();
       return;

@@ -1,24 +1,15 @@
-// Swipeable photo carousel with a click-to-zoom lightbox, used on the property
-// detail page. Self-contained: build it with EbrostayGallery.create({...}) and
-// it wires its own pointer/keyboard handlers. The pure index helpers are split
-// out so the swipe math can be unit-tested. CSS classes are "ebro-" prefixed to
-// stay clear of the legacy ".gallery-*" styles injected by enhance.js.
+// Property photo gallery: a horizontal strip of full (uncropped) photos shown
+// side by side and scrolled left-to-right. Hovering a photo zooms it slightly;
+// clicking one opens it enlarged in a lightbox. Build with
+// EbrostayGallery.create({...}); it wires its own pointer/keyboard handlers.
+// CSS classes are "ebro-" prefixed to stay clear of the legacy ".gallery-*"
+// styles injected by enhance.js.
 (function (global) {
   const ZOOM = 2;
 
   function clampIndex(index, count) {
     if (!count || count < 1) return 0;
     return Math.max(0, Math.min(index, count - 1));
-  }
-
-  // Which slide to settle on after a horizontal drag of dx pixels: past ~20% of
-  // the viewport (min 40px) moves one slide, otherwise it snaps back.
-  function settleIndex(index, dx, width, count) {
-    const threshold = Math.max(40, (width || 0) * 0.2);
-    let next = index;
-    if (dx <= -threshold) next = index + 1;
-    else if (dx >= threshold) next = index - 1;
-    return clampIndex(next, count);
   }
 
   const esc = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
@@ -37,89 +28,54 @@
 
     media.classList.add("ebro-gallery");
     media.innerHTML = `
-      <div class="ebro-viewport" data-viewport>
-        <div class="ebro-track" data-track>
-          ${photos.map((url, i) => `
-            <figure class="ebro-slide">
-              <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false" loading="${i < 2 ? "eager" : "lazy"}">
-            </figure>`).join("")}
-        </div>
+      <div class="ebro-strip" data-strip>
+        ${photos.map((url, i) => `
+          <figure class="ebro-photo" data-photo="${i}" tabindex="0" role="button" aria-label="${esc(t("gallery.open"))} ${i + 1}">
+            <img src="${esc(url)}" alt="${esc(altBase)} ${i + 1}" draggable="false">
+          </figure>`).join("")}
       </div>
-      ${many ? `
-        <button class="ebro-nav ebro-prev" type="button" data-prev aria-label="${esc(t("gallery.prev"))}">&#8249;</button>
-        <button class="ebro-nav ebro-next" type="button" data-next aria-label="${esc(t("gallery.next"))}">&#8250;</button>
-        <span class="ebro-counter" data-counter aria-hidden="true"></span>` : ""}
     `;
     keep.forEach((node) => media.appendChild(node));
+    // The strip itself shows every photo, so the separate thumbnail row is no
+    // longer needed.
+    if (thumbs) { thumbs.hidden = true; thumbs.innerHTML = ""; }
 
-    const viewport = media.querySelector("[data-viewport]");
-    const track = media.querySelector("[data-track]");
-    const counter = media.querySelector("[data-counter]");
-    const prevBtn = media.querySelector("[data-prev]");
-    const nextBtn = media.querySelector("[data-next]");
+    const strip = media.querySelector("[data-strip]");
 
-    if (thumbs) {
-      thumbs.hidden = !many;
-      thumbs.innerHTML = photos.map((url, i) => `
-        <button class="gallery-thumb${i === 0 ? " is-active" : ""}" type="button"
-          data-thumb="${i}" style="background-image: url('${esc(url)}')"
-          aria-label="${esc(altBase)} ${i + 1}"></button>`).join("");
-    }
-
-    let index = 0;
-
-    function update() {
-      track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
-      if (counter) counter.textContent = `${index + 1} / ${photos.length}`;
-      if (prevBtn) prevBtn.disabled = index === 0;
-      if (nextBtn) nextBtn.disabled = index === photos.length - 1;
-      if (thumbs) {
-        thumbs.querySelectorAll("[data-thumb]").forEach((button) => {
-          const active = Number(button.dataset.thumb) === index;
-          button.classList.toggle("is-active", active);
-          if (active) button.scrollIntoView({ block: "nearest", inline: "nearest" });
-        });
-      }
-    }
-
-    function go(target) {
-      index = clampIndex(target, photos.length);
-      track.style.transition = "";
-      update();
-    }
-
-    // --- swipe / drag (tap with no movement opens the lightbox) ---
-    let drag = null;
-    viewport.addEventListener("pointerdown", (event) => {
-      if (event.button != null && event.button !== 0) return;
-      drag = { x: event.clientX, width: viewport.clientWidth, dx: 0, moved: false };
-      track.style.transition = "none";
-      try { viewport.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
+    // Mouse drag-to-scroll (touch/trackpad use native horizontal scroll). A drag
+    // suppresses the click that follows so it doesn't also open the lightbox.
+    let down = null;
+    let suppressClick = false;
+    strip.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      down = { x: event.clientX, scroll: strip.scrollLeft, moved: false };
+      try { strip.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
     });
-    viewport.addEventListener("pointermove", (event) => {
-      if (!drag) return;
-      drag.dx = event.clientX - drag.x;
-      if (Math.abs(drag.dx) > 8) drag.moved = true;
-      track.style.transform = `translate3d(calc(${-index * 100}% + ${drag.dx}px), 0, 0)`;
+    strip.addEventListener("pointermove", (event) => {
+      if (!down) return;
+      const dx = event.clientX - down.x;
+      if (Math.abs(dx) > 5) down.moved = true;
+      strip.scrollLeft = down.scroll - dx;
     });
-    viewport.addEventListener("pointerup", () => {
-      if (!drag) return;
-      const finished = drag;
-      drag = null;
-      track.style.transition = "";
-      if (finished.moved) go(settleIndex(index, finished.dx, finished.width, photos.length));
-      else { update(); openLightbox(index); }
+    strip.addEventListener("pointerup", () => {
+      if (!down) return;
+      if (down.moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); }
+      down = null;
     });
-    viewport.addEventListener("pointercancel", () => { if (drag) { drag = null; update(); } });
+    strip.addEventListener("pointercancel", () => { down = null; });
 
-    prevBtn?.addEventListener("click", () => go(index - 1));
-    nextBtn?.addEventListener("click", () => go(index + 1));
-    thumbs?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-thumb]");
-      if (button) go(Number(button.dataset.thumb));
+    strip.addEventListener("click", (event) => {
+      if (suppressClick) return;
+      const figure = event.target.closest(".ebro-photo");
+      if (figure) openLightbox(Number(figure.dataset.photo));
+    });
+    strip.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const figure = event.target.closest(".ebro-photo");
+      if (figure) { event.preventDefault(); openLightbox(Number(figure.dataset.photo)); }
     });
 
-    // --- lightbox ---
+    // --- lightbox (the enlarged view shown on click) ---
     let lightbox = null;
     function openLightbox(start) {
       if (lightbox) return;
@@ -187,7 +143,6 @@
         document.removeEventListener("keydown", onKey);
         setTimeout(() => overlay.remove(), 200);
         lightbox = null;
-        go(view); // leave the carousel on the photo the user ended on
       }
       function onKey(event) {
         if (event.key === "Escape") close();
@@ -218,7 +173,7 @@
         if (Math.abs(lp.dx) + Math.abs(lp.dy) > 8) lp.moved = true;
         if (zoom) { panX = lp.panX + lp.dx; panY = lp.panY + lp.dy; clampPan(); applyTransform(); }
       });
-      stage.addEventListener("pointerup", (event) => {
+      stage.addEventListener("pointerup", () => {
         if (!lp) return;
         const finished = lp;
         lp = null;
@@ -238,11 +193,10 @@
       lightbox = { close, show: (i) => show(i, 0) };
     }
 
-    update();
-    return { go, openLightbox, getIndex: () => index };
+    return { openLightbox };
   }
 
-  const api = { clampIndex, settleIndex, create };
+  const api = { clampIndex, create };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else global.EbrostayGallery = api;
 })(typeof window !== "undefined" ? window : globalThis);

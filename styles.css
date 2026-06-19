@@ -1878,42 +1878,55 @@ a.property-media {
   border-color: var(--green);
 }
 
-/* Property photo carousel (ebro- prefixed to avoid the legacy enhance.js gallery) */
+/* Property photo strip (ebro- prefixed to avoid the legacy enhance.js gallery) */
 .detail-media.ebro-gallery {
+  min-height: 0;
   cursor: default;
+  background: var(--sunken);
 }
 
-.ebro-viewport {
-  height: clamp(260px, 38vw, 440px);
-  overflow: hidden;
+.ebro-strip {
+  display: flex;
+  gap: 10px;
+  height: clamp(220px, 32vw, 380px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
   cursor: grab;
-  touch-action: pan-y;
 }
 
-.ebro-viewport:active {
+.ebro-strip:active {
   cursor: grabbing;
 }
 
-.ebro-track {
-  display: flex;
-  height: 100%;
-  transition: transform 0.35s var(--ease-out, ease);
-  will-change: transform;
-}
-
-.ebro-slide {
-  flex: 0 0 100%;
+.ebro-photo {
+  flex: 0 0 auto;
   height: 100%;
   margin: 0;
-  user-select: none;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--mist);
+  cursor: zoom-in;
 }
 
-.ebro-slide img {
-  width: 100%;
+.ebro-photo img {
   height: 100%;
-  object-fit: cover;
+  width: auto;
+  max-width: none;
   display: block;
-  pointer-events: none;
+  user-select: none;
+  transition: transform 0.35s var(--ease-out, ease);
+}
+
+.ebro-photo:hover img,
+.ebro-photo:focus-visible img {
+  transform: scale(1.06);
+}
+
+.ebro-photo:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 .ebro-nav {
@@ -2058,7 +2071,7 @@ body.gallery-lock {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ebro-track,
+  .ebro-photo img,
   .ebro-lightbox,
   .ebro-lightbox-stage,
   .ebro-lightbox-img {

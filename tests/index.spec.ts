@@ -9,7 +9,17 @@ test.describe('Page load', () => {
     await expect(page).toHaveTitle(/Ebrostay/);
   });
 
-  test('sets Spanish as the default language', async ({ page }) => {
+  test('defaults to English when browser locale is not Spanish', async ({ page }) => {
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('.language-option.is-active')).toHaveText('EN');
+  });
+});
+
+test.describe('Page load — Spanish browser locale', () => {
+  test.use({ locale: 'es-ES' });
+
+  test('defaults to Spanish when browser locale is Spanish', async ({ page }) => {
+    await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
     await expect(page.locator('.language-option.is-active')).toHaveText('ES');
   });

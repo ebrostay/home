@@ -45,7 +45,7 @@ let markersById = new Map();
 let mapNeedsFit = true;
 let highlightTimer = null;
 
-let currentLanguage = localStorage.getItem("ebrostay-language") || "es";
+let currentLanguage = localStorage.getItem("ebrostay-language") || (navigator.language?.startsWith("es") ? "es" : "en");
 const datePickers = {};
 
 function flatpickrLocale() {

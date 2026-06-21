@@ -13,7 +13,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'python3 -m http.server 8080',
+    command: 'npx http-server . -p 8080 --silent',
     port: 8080,
     reuseExistingServer: !process.env.CI,
   },

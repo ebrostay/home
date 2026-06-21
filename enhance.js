@@ -443,7 +443,6 @@
       var button = event.target.closest("[data-audience-option]");
       if (!button) return;
       applyAudience(button.dataset.audienceOption === "owner" ? "owner" : "tenant", true);
-      playBrandChime();
     });
     return node;
   }
@@ -1058,7 +1057,7 @@
     fab.innerHTML = `${icon("message-circle")}<span></span>`;
     document.body.appendChild(panel);
     document.body.appendChild(fab);
-    fab.addEventListener("click", function () { panel.classList.toggle("is-open"); playBrandChime(); });
+    fab.addEventListener("click", function () { panel.classList.toggle("is-open"); });
     panel.querySelector("[data-support-close]").addEventListener("click", function () { panel.classList.remove("is-open"); });
     panel.querySelector("[data-support-send]").addEventListener("click", function () {
       var message = panel.querySelector("textarea").value.trim() || text("assistantPlaceholder");
@@ -1078,26 +1077,6 @@
       panel.querySelector("textarea").placeholder = text("assistantPlaceholder");
       setText(panel.querySelector("[data-support-send]"), text("assistantSend"));
     }
-  }
-
-  function playBrandChime() {
-    try {
-      var AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      var ctx = new AudioContext();
-      var gain = ctx.createGain();
-      gain.gain.value = 0.035;
-      gain.connect(ctx.destination);
-      [523.25, 659.25, 783.99].forEach(function (frequency, index) {
-        var osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = frequency;
-        osc.connect(gain);
-        osc.start(ctx.currentTime + index * 0.055);
-        osc.stop(ctx.currentTime + index * 0.055 + 0.13);
-      });
-      setTimeout(function () { ctx.close(); }, 420);
-    } catch { /* no audio */ }
   }
 
   function refreshLanguageSensitiveEnhancements() {

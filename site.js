@@ -156,7 +156,46 @@ function passesQuickFilters(property) {
   return true;
 }
 
+// Enhanced filters (address, min bedrooms/bathrooms, saved-only) are injected by
+// enhance.js. They are read here so the SAME filtered list drives cards, the
+// result count AND the map markers — one source of truth (KAN-11).
+function getEnhancedFilters() {
+  const addressInput = document.querySelector("#addressQuery");
+  const minBedrooms = Number(document.querySelector("#minBedrooms")?.value || 0);
+  const minBathrooms = Number(document.querySelector("#minBathrooms")?.value || 0);
+  let savedOnly = false;
+  try { savedOnly = localStorage.getItem("ebrostay-saved-only") === "true"; } catch { savedOnly = false; }
+  return {
+    address: (addressInput?.value || "").trim().toLowerCase(),
+    minBedrooms,
+    minBathrooms,
+    savedOnly
+  };
+}
+
+function propertyMatchesText(property, query) {
+  const parts = [
+    property.address,
+    property.addressKey,
+    property.city,
+    t(property.areaKey),
+    t(property.nameKey),
+    t(property.copyKey),
+    property.detailsKey ? t(property.detailsKey) : ""
+  ];
+  return parts.filter(Boolean).join(" ").toLowerCase().includes(query);
+}
+
+function passesEnhancedFilters(property, enhanced) {
+  if (enhanced.address && !propertyMatchesText(property, enhanced.address)) return false;
+  if (enhanced.minBedrooms && Number(property.bedrooms || 0) < enhanced.minBedrooms) return false;
+  if (enhanced.minBathrooms && Number(property.bathrooms || 0) < enhanced.minBathrooms) return false;
+  if (enhanced.savedOnly && !favorites.has(String(property.id))) return false;
+  return true;
+}
+
 function isAvailable(property, filter) {
+  if (!passesEnhancedFilters(property, getEnhancedFilters())) return false;
   if (!passesQuickFilters(property)) return false;
   if (!filter) return true;
   if (filter.city && !property.city.includes(filter.city)) return false;
@@ -311,21 +350,23 @@ function renderProperties() {
   const selectedSort = sortBy?.value || activeFilter?.sortBy || "best";
   const filtered = sortProperties(properties.filter((property) => isAvailable(property, activeFilter)), selectedSort);
   const count = filtered.length;
+  const enhanced = getEnhancedFilters();
+  const enhancedActive = Boolean(enhanced.address || enhanced.minBedrooms || enhanced.minBathrooms || enhanced.savedOnly);
 
   if (statusOverride) availabilityStatus.textContent = statusOverride;
-  else if (!activeFilter && quickFilters.size === 0) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
+  else if (!activeFilter && quickFilters.size === 0 && !enhancedActive) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
   else if (count === 0) availabilityStatus.textContent = t("status.none");
   else if (count === 1) availabilityStatus.textContent = t("status.one");
   else availabilityStatus.textContent = interpolate("status.matches", { count });
 
   if (count === 0) {
     propertyGrid.innerHTML = `
-      <div class="empty-state">
-        <h3>${t("empty.title")}</h3>
-        <p>${t("empty.body")}</p>
+      <div class="empty-state" role="status">
+        <h3 class="empty-state-title">${t("empty.title")}</h3>
+        <p class="empty-state-body">${t("empty.body")}</p>
         <div class="empty-state-actions">
-          <a class="button primary" href="#contact">${t("empty.contact")}</a>
-          <a class="button ghost" data-whatsapp href="${whatsappLink(t("whatsapp.general"))}" target="_blank" rel="noopener">${t("empty.whatsapp")}</a>
+          <a class="button primary" href="#contact" data-empty-contact>${t("empty.contact")}</a>
+          <a class="button ghost whatsapp-button" href="${whatsappLink(t("whatsapp.general"))}" target="_blank" rel="noopener" data-empty-whatsapp>${t("empty.whatsapp")}</a>
         </div>
       </div>
     `;
@@ -381,6 +422,10 @@ function renderProperties() {
 
   updateMapMarkers(filtered);
 }
+
+// Exposed so enhance.js (a separate IIFE) can drive the single render pipeline
+// after changing enhanced/saved-only filters instead of hiding cards post-hoc.
+window.renderProperties = renderProperties;
 
 function applyLanguage(language) {
   currentLanguage = translations[language] ? language : "es";

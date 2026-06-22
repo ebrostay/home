@@ -615,23 +615,31 @@ textarea {
 }
 
 .empty-state {
-  grid-column: 1 / -1;
   display: grid;
-  gap: 0.85rem;
+  gap: 10px;
   justify-items: start;
-  padding: 1.75rem;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--sunken);
+  border: 1px dashed var(--line-strong, var(--line));
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 4vw, 32px);
+  background: var(--surface);
 }
 
-.empty-state h3 { margin: 0; }
-.empty-state p { margin: 0; max-width: 52ch; color: var(--ink-soft, inherit); }
+.empty-state-title {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.empty-state-body {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--muted);
+}
 
 .empty-state-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .property-card {

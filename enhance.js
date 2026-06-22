@@ -697,34 +697,14 @@
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
+  // KAN-11: enhanced/address/saved-only filters no longer hide cards post-hoc.
+  // They feed the SAME filtered list that site.js renderProperties uses to draw
+  // cards, the result count AND the map markers — one source of truth. We just
+  // re-run that single pipeline; the filter values are read back inside
+  // renderProperties via getEnhancedFilters(), so no stale hidden cards remain.
   function applyEnhancedListingFilters() {
-    var grid = document.querySelector("#propertyGrid");
-    if (!grid) return;
-    var address = (document.querySelector("#addressQuery")?.value || "").trim().toLowerCase();
-    var minBedrooms = Number(document.querySelector("#minBedrooms")?.value || 0);
-    var minBathrooms = Number(document.querySelector("#minBathrooms")?.value || 0);
-    var saved = new Set(favoriteIds());
-    var savedOnly = isSavedOnly();
-    var visible = 0;
-    grid.querySelectorAll("[data-property-id]").forEach(function (card) {
-      var property = propertyById(card.dataset.propertyId);
-      var ok = true;
-      if (property) {
-        if (address && !propertySearchText(property).includes(address)) ok = false;
-        if (minBedrooms && Number(property.bedrooms || 0) < minBedrooms) ok = false;
-        if (minBathrooms && Number(property.bathrooms || 0) < minBathrooms) ok = false;
-        if (savedOnly && !saved.has(String(property.id))) ok = false;
-      }
-      card.hidden = !ok;
-      if (ok) visible += 1;
-    });
-    var status = document.querySelector("#availabilityStatus");
-    if (status && (address || minBedrooms || minBathrooms || savedOnly)) {
-      if (savedOnly && visible === 0) status.textContent = text("favoritesEmpty");
-      else if (savedOnly) status.textContent = text("favoritesShowing");
-      else status.textContent = lang() === "es" ? `${visible} viviendas encontradas.` : `${visible} homes found.`;
-    }
-    decoratePropertyCards();
+    if (!document.querySelector("#propertyGrid")) return;
+    if (typeof window.renderProperties === "function") window.renderProperties();
     updateSavedLinks();
   }
 
@@ -761,7 +741,13 @@
     var grid = document.querySelector("#propertyGrid");
     if (!grid || grid.dataset.enhancedObserved) return;
     grid.dataset.enhancedObserved = "true";
-    new MutationObserver(function () { applyEnhancedListingFilters(); }).observe(grid, { childList: true });
+    // renderProperties (site.js) owns the filtered card list now; when it rewrites
+    // the grid we only re-decorate (icons/saved links). We must NOT re-run the
+    // filter here or we would recurse with renderProperties' own DOM writes.
+    new MutationObserver(function () {
+      decoratePropertyCards();
+      updateSavedLinks();
+    }).observe(grid, { childList: true });
     grid.addEventListener("click", function () { window.setTimeout(function () { updateSavedLinks(); decoratePropertyCards(); }, 50); });
   }
 

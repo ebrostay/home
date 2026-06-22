@@ -487,6 +487,22 @@
     setText(panel.querySelector("[data-owner-panel-secondary]"), text("ownerPanelSecondary"));
   }
 
+  // Header CTA must reflect the active audience: tenants search for a stay,
+  // owners are pushed toward the owner lead form (#owner-apply). Runs after
+  // applyKeyedTranslations so a language switch never reverts it (the nav-cta
+  // still carries data-i18n="nav.cta" for the tenant default).
+  function updateHeaderCtaForAudience(mode) {
+    var cta = document.querySelector(".site-header .nav-cta");
+    if (!cta) return;
+    if (mode === "owner") {
+      cta.textContent = text("ownerNavCta");
+      cta.setAttribute("href", "index.html#owner-apply");
+    } else {
+      cta.textContent = siteText("nav.cta");
+      cta.setAttribute("href", "#search");
+    }
+  }
+
   function updateHeroForAudience(mode) {
     var hero = document.querySelector(".hero");
     if (!hero) return;
@@ -527,6 +543,7 @@
     updateOwnerPanelTexts();
     updateHeroBenefits();
     updateHeroForAudience(mode);
+    updateHeaderCtaForAudience(mode);
     var switchElement = document.querySelector("[data-audience-switch]");
     if (switchElement) switchElement.classList.toggle("is-first-visit", isFirstAudienceVisit() && mode === "tenant");
   }

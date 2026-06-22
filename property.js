@@ -94,6 +94,7 @@ function updateSeoTags() {
 
   document.querySelector('meta[name="description"]')?.setAttribute("content", description);
   document.querySelector('meta[property="og:title"]')?.setAttribute("content", `${t(property.nameKey)} | Ebrostay`);
+  document.querySelector('meta[name="twitter:title"]')?.setAttribute("content", `${t(property.nameKey)} | Ebrostay`);
   document.querySelector('meta[property="og:description"]')?.setAttribute("content", description);
   if (property.photos?.length) {
     document.querySelector('meta[property="og:image"]')?.setAttribute("content", property.photos[0]);

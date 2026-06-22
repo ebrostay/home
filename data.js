@@ -5,6 +5,9 @@ const translations = {
   es: {
     "meta.title": "Ebrostay | Alquiler corporativo de media estancia en Zaragoza",
     "meta.description": "Ebrostay gestiona viviendas amuebladas de media estancia en Zaragoza para empresas y profesionales, y la gestión integral para propietarios. El puente entre ambos.",
+    "meta.account.title": "Ebrostay | Mi cuenta",
+    "meta.about.title": "Ebrostay | Misión, visión y nuestra historia",
+    "meta.property.title": "Ebrostay | Vivienda en Zaragoza",
     "nav.home": "Inicio",
     "nav.search": "Buscar",
     "nav.how": "Cómo funciona",
@@ -690,6 +693,9 @@ const translations = {
   en: {
     "meta.title": "Ebrostay | Mid-term corporate rentals in Zaragoza",
     "meta.description": "Ebrostay manages furnished mid-term homes in Zaragoza for companies and professionals, and full management for owners. The bridge between both.",
+    "meta.account.title": "Ebrostay | My account",
+    "meta.about.title": "Ebrostay | Mission, vision and our story",
+    "meta.property.title": "Ebrostay | Furnished homes in Zaragoza",
     "nav.home": "Home",
     "nav.search": "Search",
     "nav.how": "How it works",

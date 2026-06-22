@@ -79,6 +79,7 @@ function applyLanguage(language) {
   currentLanguage = translations[language] ? language : "es";
   localStorage.setItem("ebrostay-language", currentLanguage);
   document.documentElement.lang = currentLanguage;
+  document.title = t("meta.account.title");
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
   });

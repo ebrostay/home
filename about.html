@@ -3,8 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ebrostay | Misión, visión y nuestra historia</title>
+    <title data-i18n="meta.about.title">Ebrostay | Misión, visión y nuestra historia</title>
     <meta name="description" content="El puente entre empresas y propietarios. Misión y visión de Ebrostay: alquiler corporativo de media estancia, reconstruido desde primeros principios. Con raíces en Zaragoza, pensado para Europa.">
+    <meta property="og:title" data-i18n-attr="content:meta.about.title" content="Ebrostay | Misión, visión y nuestra historia">
+    <meta name="twitter:title" data-i18n-attr="content:meta.about.title" content="Ebrostay | Misión, visión y nuestra historia">
     <link rel="canonical" href="https://ebrostay.com/about.html">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/ebrostay-icon-180.png">
@@ -153,8 +155,15 @@
         currentLanguage = translations[language] ? language : "es";
         localStorage.setItem("ebrostay-language", currentLanguage);
         document.documentElement.lang = currentLanguage;
+        document.title = t("meta.about.title");
         document.querySelectorAll("[data-i18n]").forEach((element) => {
           element.textContent = t(element.dataset.i18n);
+        });
+        document.querySelectorAll("[data-i18n-attr]").forEach((element) => {
+          element.dataset.i18nAttr.split(";").forEach((pair) => {
+            const [attribute, key] = pair.split(":");
+            if (attribute && key) element.setAttribute(attribute, t(key));
+          });
         });
         languageButtons.forEach((button) => {
           button.classList.toggle("is-active", button.dataset.lang === currentLanguage);

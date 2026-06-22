@@ -36,6 +36,7 @@
       ownerPanelSecondary: "Ver ventajas para propietarios",
       tenantNavCta: "Buscar vivienda",
       ownerNavCta: "Publicar vivienda",
+      ownerNavDashboard: "Mi portal",
       benefits: [
         ["armchair", "Pisos amueblados"],
         ["headphones", "Soporte 24/7"],
@@ -116,6 +117,7 @@
       ownerPanelSecondary: "See owner benefits",
       tenantNavCta: "Find a home",
       ownerNavCta: "List a home",
+      ownerNavDashboard: "My portal",
       benefits: [
         ["armchair", "Fully furnished"],
         ["headphones", "24/7 support"],
@@ -533,6 +535,8 @@
 
   function applyAudience(mode, persist) {
     mode = mode === "owner" ? "owner" : "tenant";
+    // Owner portal pages are inherently owner-focused — never show tenant nav there.
+    if (isOwnerPortalPage()) mode = "owner";
     if (persist) {
       try { localStorage.setItem(AUDIENCE_KEY, mode); } catch { /* ignore */ }
       markAudienceSeen();
@@ -544,6 +548,7 @@
     updateHeroBenefits();
     updateHeroForAudience(mode);
     updateHeaderCtaForAudience(mode);
+    applyOwnerNav(mode === "owner");
     var switchElement = document.querySelector("[data-audience-switch]");
     if (switchElement) switchElement.classList.toggle("is-first-visit", isFirstAudienceVisit() && mode === "tenant");
   }
@@ -588,6 +593,49 @@
       });
     }
     updateSavedLinks();
+  }
+
+  // Partner/owner portal pages have no tenant browsing context, so they should
+  // always present owner-focused header navigation regardless of stored audience.
+  function isOwnerPortalPage() {
+    // The homepage carries an audience switch (and an in-page owner section), so
+    // it is never a dedicated portal — only standalone owner pages qualify.
+    if (document.querySelector("[data-audience-switch], .hero")) return false;
+    return Boolean(
+      document.querySelector("#partnerLoading, #partnerSignedOut, #partnerDashboard, [data-owner-portal]")
+    );
+  }
+
+  // Owner-facing states must drop tenant-only header items (Saved, Find a stay,
+  // My account) and surface owner-relevant actions instead (KAN-26).
+  function applyOwnerNav(isOwner) {
+    var headerActions = document.querySelector(".header-actions");
+    if (!headerActions) return;
+
+    // Saved-home nav only makes sense while a tenant is browsing listings.
+    headerActions.querySelectorAll("[data-saved-flats-link]").forEach(function (node) {
+      node.hidden = isOwner;
+    });
+
+    // "My account" is the tenant booking account; hide it in owner states.
+    var account = headerActions.querySelector(".admin-link[href*='account.html']");
+    if (account) account.hidden = isOwner;
+
+    // Primary CTA: tenant search vs. owner onboarding/portal destination.
+    var cta = headerActions.querySelector(".nav-cta");
+    if (cta) {
+      if (cta.dataset.tenantHref === undefined) cta.dataset.tenantHref = cta.getAttribute("href") || "#search";
+      if (isOwner) {
+        cta.removeAttribute("data-i18n");
+        var onPortal = isOwnerPortalPage();
+        cta.textContent = text(onPortal ? "ownerNavDashboard" : "ownerNavCta");
+        cta.setAttribute("href", onPortal ? "partner.html" : "index.html#owner");
+      } else {
+        cta.setAttribute("data-i18n", "nav.cta");
+        cta.textContent = siteText("nav.cta");
+        cta.setAttribute("href", cta.dataset.tenantHref);
+      }
+    }
   }
 
   function favoriteIds() {

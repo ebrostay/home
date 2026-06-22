@@ -57,12 +57,29 @@ test.describe('Property detail page', () => {
     await expect(page.locator('#bookingWhatsappButton')).toBeVisible();
   });
 
-  test('email button has mailto href', async ({ page }) => {
+  // Once the required booking fields are filled in, the CTAs activate and point
+  // at the prefilled mailto/wa.me request (see booking-request.spec.ts for the
+  // full payload coverage). Drive flatpickr directly so its onChange fires.
+  async function fillBookingRequest(page: import('@playwright/test').Page) {
+    await page.evaluate(() => {
+      const start = (document.querySelector('#bookingStart') as any)?._flatpickr;
+      const end = (document.querySelector('#bookingEnd') as any)?._flatpickr;
+      start.setDate('2026-08-20', true);
+      end.setDate('2026-10-20', true);
+    });
+    const textarea = page.locator('#bookingTenants');
+    await textarea.fill('Test Tenant');
+    await textarea.dispatchEvent('input');
+  }
+
+  test('email button has mailto href once required fields are set', async ({ page }) => {
+    await fillBookingRequest(page);
     const href = await page.locator('#bookingEmailButton').getAttribute('href');
     expect(href).toMatch(/mailto:/);
   });
 
-  test('whatsapp button links to wa.me', async ({ page }) => {
+  test('whatsapp button links to wa.me once required fields are set', async ({ page }) => {
+    await fillBookingRequest(page);
     const href = await page.locator('#bookingWhatsappButton').getAttribute('href');
     expect(href).toMatch(/wa\.me/);
   });

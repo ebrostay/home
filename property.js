@@ -354,15 +354,28 @@ function updateBookingSummary() {
   updateRequestLinks();
 }
 
-// Build a branded, plain-text recap of the request that we drop into the
-// prefilled email body / WhatsApp message. `channel` "whatsapp" gets *bold*
-// markdown on the header and total so the recap reads cleanly in the app.
-function buildRequestSummary(channel) {
-  const bold = (text) => (channel === "whatsapp" ? `*${text}*` : text);
-  const startDate = document.querySelector("#bookingStart")?.value;
-  const endDate = document.querySelector("#bookingEnd")?.value;
-  const tenants = document.querySelector("#bookingTenants")?.value.trim();
+// Collect everything the visitor has entered into a single normalized payload
+// so the email and WhatsApp CTAs always speak from the exact same request.
+// `valid` is true only once the required fields (both dates + at least one
+// tenant) are filled in — the CTAs stay blocked until then.
+function buildRequestPayload() {
+  const startDate = document.querySelector("#bookingStart")?.value || "";
+  const endDate = document.querySelector("#bookingEnd")?.value || "";
+  const tenants = (document.querySelector("#bookingTenants")?.value || "")
+    .split("\n")
+    .map((name) => name.trim())
+    .filter(Boolean);
   const est = computeEstimate(startDate, endDate);
+  const valid = est.status === "ok" && tenants.length > 0;
+  return { startDate, endDate, tenants, est, valid };
+}
+
+// Build a branded, plain-text recap from the normalized payload that we drop
+// into the prefilled email body / WhatsApp message. `channel` "whatsapp" gets
+// *bold* markdown on the header and total so the recap reads cleanly in the app.
+function buildRequestSummary(channel, payload = buildRequestPayload()) {
+  const bold = (text) => (channel === "whatsapp" ? `*${text}*` : text);
+  const { startDate, endDate, tenants, est } = payload;
 
   const lines = [
     bold(t("request.summaryHeader")),
@@ -387,11 +400,8 @@ function buildRequestSummary(channel) {
     lines.push(`- ${t("book.estimateTotal")}: ${bold(money(est.total))}`);
   }
 
-  if (tenants) {
-    const names = tenants.split("\n").map((name) => name.trim()).filter(Boolean);
-    if (names.length) {
-      lines.push("", `${t("request.tenantsLabel")}:`, ...names.map((name) => `- ${name}`));
-    }
+  if (tenants.length) {
+    lines.push("", `${t("request.tenantsLabel")}:`, ...tenants.map((name) => `- ${name}`));
   }
 
   lines.push("", t("request.summaryFooter"));
@@ -399,19 +409,39 @@ function buildRequestSummary(channel) {
 }
 
 // Keep the two request buttons pointing at a prefilled, branded message that
-// reflects whatever the visitor has selected so far.
+// reflects whatever the visitor has selected so far. Both channels share the
+// same payload, and the CTAs stay disabled until the required fields are set.
 function updateRequestLinks() {
   const emailButton = document.querySelector("#bookingEmailButton");
   const whatsappButton = document.querySelector("#bookingWhatsappButton");
   if (!property || (!emailButton && !whatsappButton)) return;
 
+  const payload = buildRequestPayload();
+  const buttons = [emailButton, whatsappButton].filter(Boolean);
+
+  if (!payload.valid) {
+    buttons.forEach((button) => {
+      button.setAttribute("aria-disabled", "true");
+      button.classList.add("is-disabled");
+      button.removeAttribute("href");
+      button.title = t("request.missingFields");
+    });
+    return;
+  }
+
+  buttons.forEach((button) => {
+    button.removeAttribute("aria-disabled");
+    button.classList.remove("is-disabled");
+    button.removeAttribute("title");
+  });
+
   if (emailButton) {
     const subject = `${t("request.emailSubject")} – ${t(property.nameKey)}`;
-    const body = buildRequestSummary("email");
+    const body = buildRequestSummary("email", payload);
     emailButton.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
   if (whatsappButton) {
-    whatsappButton.href = whatsappLink(buildRequestSummary("whatsapp"));
+    whatsappButton.href = whatsappLink(buildRequestSummary("whatsapp", payload));
   }
 }
 
@@ -510,11 +540,20 @@ function preselectSearchDates(minStart, minEndFor) {
 
 // Send a booking request straight to Ebrostay by email or WhatsApp, with the
 // chosen dates and estimate prefilled — track it the same way for analytics.
-document.querySelector("#bookingEmailButton")?.addEventListener("click", () => {
-  window.umami?.track("booking-request", { property: property?.id, channel: "email" });
+function handleRequestClick(channel, event) {
+  // A disabled CTA has no href yet; block the click and nudge the visitor.
+  if (event.currentTarget.getAttribute("aria-disabled") === "true") {
+    event.preventDefault();
+    pageToast(t("request.missingFields"));
+    return;
+  }
+  window.umami?.track("booking-request", { property: property?.id, channel });
+}
+document.querySelector("#bookingEmailButton")?.addEventListener("click", (event) => {
+  handleRequestClick("email", event);
 });
-document.querySelector("#bookingWhatsappButton")?.addEventListener("click", () => {
-  window.umami?.track("booking-request", { property: property?.id, channel: "whatsapp" });
+document.querySelector("#bookingWhatsappButton")?.addEventListener("click", (event) => {
+  handleRequestClick("whatsapp", event);
 });
 
 

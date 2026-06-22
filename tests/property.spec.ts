@@ -158,6 +158,68 @@ test.describe('Property detail page — cost policy badges (KAN-10)', () => {
   });
 });
 
+// KAN-21: the floating "Need help?" support FAB must not cover the gallery
+// thumbnail strip on media-heavy property pages, and the last thumbnail must
+// remain fully clickable. movera1 has multiple photos so the thumbnail strip
+// (carousel nav) renders.
+test.describe('Property detail page — support FAB vs gallery thumbnails (KAN-21)', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));
+    await page.goto('/property.html?id=movera1');
+    await expect(page.locator('#detailName')).not.toBeEmpty();
+  });
+
+  test('FAB does not overlap the last gallery thumbnail and thumb is clickable', async ({ page }) => {
+    const fab = page.locator('.support-fab');
+    const thumbs = page.locator('.ebro-cf-thumb');
+    await expect(fab).toBeVisible();
+    await expect(thumbs.first()).toBeVisible();
+
+    const count = await thumbs.count();
+    expect(count).toBeGreaterThan(1);
+    const lastThumb = thumbs.nth(count - 1);
+
+    // Reproduce the KAN-21 condition: bring the thumbnail strip into view so it
+    // sits in the FAB's fixed bottom-right band, where the overlap was reported.
+    const strip = page.locator('.ebro-cf-thumbs');
+    await strip.scrollIntoViewIfNeeded();
+
+    const rectsOverlap = (a: any, b: any) =>
+      a.x < b.x + b.width && a.x + a.width > b.x &&
+      a.y < b.y + b.height && a.y + a.height > b.y;
+
+    const fabBox = await fab.boundingBox();
+    const stripBox = await strip.boundingBox();
+    expect(fabBox).not.toBeNull();
+    expect(stripBox).not.toBeNull();
+
+    // The FAB must not cover the gallery thumbnail strip (the reported bug:
+    // the FAB sat over the strip's bottom-right). Without the fix the FAB
+    // overlaps the strip; with it, the FAB clears above the strip.
+    expect(
+      rectsOverlap(fabBox!, stripBox!),
+      'support FAB must not overlap the gallery thumbnail strip'
+    ).toBe(false);
+
+    // No individual thumbnail may overlap the FAB either.
+    for (let i = 0; i < count; i++) {
+      const box = await thumbs.nth(i).boundingBox();
+      expect(box).not.toBeNull();
+      expect(
+        rectsOverlap(fabBox!, box!),
+        `support FAB must not overlap gallery thumbnail #${i + 1}`
+      ).toBe(false);
+    }
+
+    // The last thumbnail must be actually clickable (no element intercepts the click).
+    await lastThumb.scrollIntoViewIfNeeded();
+    await lastThumb.click({ timeout: 2000 });
+    await expect(lastThumb).toHaveClass(/is-active/);
+  });
+});
+
 test.describe('Property detail page — invalid ID', () => {
   test('shows an explicit not-found state and does not silently redirect', async ({ page }) => {
     await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));

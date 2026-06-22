@@ -72,6 +72,12 @@
       assistantOwnerPlaceholder: "Soy propietario y necesito ayuda con...",
       assistantAccountCopy: "Dinos qué pasa con tu cuenta o tu reserva y te abrimos un WhatsApp con el mensaje preparado.",
       assistantAccountPlaceholder: "Tengo una reserva y necesito ayuda con...",
+      adminAssistantOpen: "Soporte de administración",
+      adminAssistantTitle: "Soporte de administración",
+      adminAssistantCopy: "Cuéntanos la incidencia de gestión y abrimos un WhatsApp con el equipo de operaciones.",
+      adminAssistantPlaceholder: "No puedo acceder al panel de administración / necesito ayuda con...",
+      adminAssistantSend: "Avisar a operaciones",
+      adminAssistantSubject: "Soporte de administración Ebrostay",
       legal: "Ebrostay trata tus datos solo para responder solicitudes y gestionar reservas. Consulta nuestra política de privacidad y derechos GDPR.",
       trustVerified: "Vivienda verificada",
       trustDeposit: "Fianza protegida",
@@ -157,6 +163,12 @@
       assistantOwnerPlaceholder: "I am a property owner and need help with...",
       assistantAccountCopy: "Tell us what is happening with your account or booking and we will open WhatsApp with the message ready.",
       assistantAccountPlaceholder: "I have a booking and need help with...",
+      adminAssistantOpen: "Admin support",
+      adminAssistantTitle: "Admin support",
+      adminAssistantCopy: "Tell us the management issue and we will open WhatsApp with the operations team.",
+      adminAssistantPlaceholder: "I cannot access the admin panel / I need help with...",
+      adminAssistantSend: "Notify operations",
+      adminAssistantSubject: "Ebrostay admin support",
       legal: "Ebrostay uses your data only to answer requests and manage bookings. See our privacy policy and GDPR rights.",
       trustVerified: "Verified home",
       trustDeposit: "Deposit protected",
@@ -179,6 +191,10 @@
       noPortalTop: "The portal remains part of the owner experience, not the main distraction."
     }
   };
+
+  function isAdminPage() {
+    return !!document.querySelector(".admin-page");
+  }
 
   function lang() {
     var stored = "";
@@ -207,11 +223,13 @@
   }
 
   function supportCopyKey() {
+    if (isAdminPage()) return "adminAssistantCopy";
     var ctx = supportContext();
     return ctx === "owner" ? "assistantOwnerCopy" : ctx === "account" ? "assistantAccountCopy" : "assistantCopy";
   }
 
   function supportPlaceholderKey() {
+    if (isAdminPage()) return "adminAssistantPlaceholder";
     var ctx = supportContext();
     return ctx === "owner" ? "assistantOwnerPlaceholder" : ctx === "account" ? "assistantAccountPlaceholder" : "assistantPlaceholder";
   }
@@ -603,7 +621,7 @@
       firstNav.textContent = text("homeNav");
     }
     var headerActions = document.querySelector(".header-actions");
-    if (headerActions && !headerActions.querySelector(".saved-flats-link")) {
+    if (!isAdminPage() && headerActions && !headerActions.querySelector(".saved-flats-link")) {
       var hasSearchSection = !!document.querySelector("#search");
       var saved = document.createElement("a");
       saved.className = "saved-flats-link";
@@ -1096,15 +1114,20 @@
     refreshIcons();
   }
 
+  function assistantKey(base) {
+    if (!isAdminPage()) return base;
+    return "admin" + base.charAt(0).toUpperCase() + base.slice(1);
+  }
+
   function updateSupportText() {
     var panel = document.querySelector(".support-panel");
     var fab = document.querySelector(".support-fab");
-    if (fab) setText(fab.querySelector("span"), text("assistantOpen"));
+    if (fab) setText(fab.querySelector("span"), text(assistantKey("assistantOpen")));
     if (panel) {
-      setText(panel.querySelector("h3"), text("assistantTitle"));
+      setText(panel.querySelector("h3"), text(assistantKey("assistantTitle")));
       setText(panel.querySelector("p"), text(supportCopyKey()));
       panel.querySelector("textarea").placeholder = text(supportPlaceholderKey());
-      setText(panel.querySelector("[data-support-send]"), text("assistantSend"));
+      setText(panel.querySelector("[data-support-send]"), text(assistantKey("assistantSend")));
     }
   }
 

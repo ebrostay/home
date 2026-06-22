@@ -81,6 +81,15 @@ test.describe('Hero section', () => {
     await expect(trustItems).toHaveCount(3);
   });
 
+  test('trust signal uses request-only copy, no live online-payment claim', async ({ page }) => {
+    const trustRow = page.locator('.trust-row');
+    // online payment is not live yet: the trust row must not promise it
+    await expect(trustRow).not.toContainText(/pago online/i);
+    await expect(trustRow).not.toContainText(/online (booking|payment)/i);
+    // and must use the request-only wording instead
+    await expect(trustRow).toContainText(/sin pago ahora|no payment now/i);
+  });
+
   test('search form has all required fields', async ({ page }) => {
     const form = page.locator('#heroSearch');
     await expect(form.locator('[name="city"]')).toBeVisible();

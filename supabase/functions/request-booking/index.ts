@@ -19,21 +19,27 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_MONTHS = 11;
 const COMMISSION_PCT = 0.15;
 
-function addMonthsMinusDay(startDate: string, months: number) {
+function addMonths(startDate: string, months: number) {
   const end = new Date(`${startDate}T00:00:00Z`);
   end.setUTCMonth(end.getUTCMonth() + months);
+  return end.toISOString().slice(0, 10);
+}
+
+function addMonthsMinusDay(startDate: string, months: number) {
+  const end = new Date(`${addMonths(startDate, months)}T00:00:00Z`);
   end.setUTCDate(end.getUTCDate() - 1);
   return end.toISOString().slice(0, 10);
 }
 
 // Billed months for a stay: whole months from the start date, rounded up,
-// minimum one. A stay ending exactly on start + n months - 1 day is n months.
+// minimum one. The end date is the (exclusive) check-out date, so a stay from
+// the start to exactly start + n months is billed as n months.
 function billedMonths(startDate: string, endDate: string) {
   const start = new Date(`${startDate}T00:00:00Z`);
   const end = new Date(`${endDate}T00:00:00Z`);
   let months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth());
   if (months < 1) months = 1;
-  while (addMonthsMinusDay(startDate, months) < endDate) months += 1;
+  while (addMonths(startDate, months) < endDate) months += 1;
   return months;
 }
 

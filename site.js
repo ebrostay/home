@@ -752,7 +752,7 @@ initListingsMap();
 setupDatePickers();
 applyLanguage(currentLanguage);
 
-if (window.location.hash === "#login" && authDialog) {
+if (["#login", "#auth", "#authDialog"].includes(window.location.hash) && authDialog) {
   showAuthForm();
   setAuthMode("signin");
   authDialog.showModal();

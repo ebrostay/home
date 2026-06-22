@@ -683,6 +683,43 @@ function applyLanguage(language) {
   updateDetailMarker();
 }
 
+// Render the explicit not-found / unavailable state for unknown or unpublished
+// property IDs. Hides the listing layout (so there's no fallback-catalogue flash)
+// and shows a friendly message with "back to listings" + WhatsApp help CTAs.
+function showNotFound() {
+  document.querySelector("#detailMain")?.setAttribute("hidden", "");
+  const block = document.querySelector("#detailNotFound");
+  if (block) block.hidden = false;
+
+  const year = document.querySelector("#year");
+  if (year) year.textContent = new Date().getFullYear();
+
+  const applyNotFoundLanguage = (language) => {
+    currentLanguage = translations[language] ? language : "es";
+    localStorage.setItem("ebrostay-language", currentLanguage);
+    document.documentElement.lang = currentLanguage;
+
+    document.title = `${t("notfound.title")} | Ebrostay`;
+    document.querySelectorAll("[data-i18n]").forEach((element) => {
+      element.textContent = t(element.dataset.i18n);
+    });
+
+    const whatsapp = document.querySelector("#notFoundWhatsapp");
+    if (whatsapp) whatsapp.href = whatsappLink(t("notfound.whatsappText"));
+
+    languageButtons.forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.lang === currentLanguage);
+      button.setAttribute("aria-pressed", String(button.dataset.lang === currentLanguage));
+    });
+  };
+
+  languageButtons.forEach((button) => {
+    button.addEventListener("click", () => applyNotFoundLanguage(button.dataset.lang));
+  });
+  applyNotFoundLanguage(currentLanguage);
+  window.lucide?.createIcons();
+}
+
 async function boot() {
   if (window.EbrostayBackend?.isConfigured()) {
     await EbrostayBackend.init({});
@@ -690,7 +727,9 @@ async function boot() {
 
   property = properties.find((item) => item.id === propertyId);
   if (!property) {
-    window.location.replace("index.html#search");
+    // Unknown or unpublished property: show an explicit not-found state with
+    // a CTA back to current listings plus WhatsApp help — never a silent redirect.
+    showNotFound();
     return;
   }
 

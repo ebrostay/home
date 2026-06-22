@@ -68,10 +68,10 @@
       assistantPlaceholder: "Estoy intentando reservar y necesito ayuda con...",
       assistantSend: "Pedir ayuda",
       legal: "Ebrostay trata tus datos solo para responder solicitudes y gestionar reservas. Consulta nuestra política de privacidad y derechos GDPR.",
-      highDemand: "Alta demanda",
-      visitsToday: "15 visitas hoy",
-      transparentReviews: "Reseñas verificadas próximamente",
-      trustPilot: "Opiniones públicas en preparación",
+      trustVerified: "Vivienda verificada",
+      trustDeposit: "Fianza protegida",
+      trustSupport: "Soporte 24/7",
+      trustPrice: "Precio total sin sorpresas",
       mediaPhotos: "Fotos",
       mediaFloorplan: "Plano",
       mediaVideo: "Vídeo",
@@ -148,10 +148,10 @@
       assistantPlaceholder: "I am trying to book and need help with...",
       assistantSend: "Ask for help",
       legal: "Ebrostay uses your data only to answer requests and manage bookings. See our privacy policy and GDPR rights.",
-      highDemand: "High demand",
-      visitsToday: "15 visits today",
-      transparentReviews: "Verified reviews coming soon",
-      trustPilot: "Public reviews in preparation",
+      trustVerified: "Verified home",
+      trustDeposit: "Deposit protected",
+      trustSupport: "24/7 support",
+      trustPrice: "Total price, no surprises",
       mediaPhotos: "Photos",
       mediaFloorplan: "Floor plan",
       mediaVideo: "Video",
@@ -890,10 +890,10 @@
     var strip = document.createElement("div");
     strip.className = "trust-detail-strip";
     strip.innerHTML = [
-      ["flame", text("highDemand")],
-      ["eye", text("visitsToday")],
-      ["star", text("transparentReviews")],
-      ["shield-check", text("trustPilot")]
+      ["badge-check", text("trustVerified")],
+      ["shield-check", text("trustDeposit")],
+      ["headphones", text("trustSupport")],
+      ["receipt-text", text("trustPrice")]
     ].map(function (row) { return `<div class="trust-detail-card">${icon(row[0])}<div>${row[1]}</div></div>`; }).join("");
     var firstSection = content.querySelector(".detail-section");
     if (firstSection) firstSection.insertAdjacentElement("beforebegin", strip);

@@ -93,6 +93,30 @@ test.describe('Property detail page', () => {
     await expect(page.locator('#detailMedia')).toHaveClass(/property-media/);
   });
 
+  test('shows no fake scarcity or placeholder review text (KAN-17)', async ({ page }) => {
+    // Trust strip must render with factual content, not scarcity/placeholder copy.
+    await expect(page.locator('.trust-detail-strip')).toBeVisible();
+    const body = page.locator('body');
+    await expect(body).not.toContainText(/visitas hoy|visits today/i);
+    await expect(body).not.toContainText(/alta demanda|high demand/i);
+    await expect(body).not.toContainText(/próximamente|coming soon/i);
+    await expect(body).not.toContainText(/opiniones públicas en preparación|public reviews in preparation/i);
+    // Factual trust copy is present instead.
+    await expect(page.locator('.trust-detail-strip')).toContainText(/vivienda verificada|verified home/i);
+  });
+
+  test('shows no scarcity or placeholder text in English (KAN-17)', async ({ page }) => {
+    // Load the page already in English so the trust strip renders English copy.
+    await page.addInitScript(() => localStorage.setItem('ebrostay-language', 'en'));
+    await page.goto(PROPERTY_URL);
+    await expect(page.locator('#detailName')).not.toBeEmpty();
+    const body = page.locator('body');
+    await expect(body).not.toContainText(/visits today|visitas hoy/i);
+    await expect(body).not.toContainText(/coming soon|próximamente/i);
+    await expect(body).not.toContainText(/in preparation|en preparación/i);
+    await expect(page.locator('.trust-detail-strip')).toContainText(/verified home|deposit protected/i);
+  });
+
   test('switches to English', async ({ page }) => {
     await page.locator('[data-lang="en"]').click();
     await expect(page.locator('[data-lang="en"]')).toHaveClass(/is-active/);

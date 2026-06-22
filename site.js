@@ -287,7 +287,7 @@ function updateMapMarkers(list) {
   list.forEach((property) => {
     const stackIndex = stackByAddress[property.addressKey] || 0;
     stackByAddress[property.addressKey] = stackIndex + 1;
-    const pinLabel = property.price.replace("EUR", "€").trim();
+    const pinLabel = formatPrice(property.priceNumber, currentLanguage).replace("EUR", "€").trim();
     const icon = L.divIcon({
       className: "map-price-pin-wrap",
       html: `<span class="map-price-pin" style="--pin-stack: ${stackIndex}">${pinLabel}</span>`,
@@ -295,7 +295,7 @@ function updateMapMarkers(list) {
     });
     const marker = L.marker([property.lat, property.lng], { icon, title: t(property.nameKey) });
     marker.bindPopup(
-      `<strong>${t(property.nameKey)}</strong><br>${t(property.areaKey)}<br>${interpolate("listing.price", { price: property.price })}`
+      `<strong>${t(property.nameKey)}</strong><br>${t(property.areaKey)}<br>${interpolate("listing.price", { price: formatPrice(property.priceNumber, currentLanguage) })}`
     );
     marker.on("click", () => highlightCard(property.id));
     marker.addTo(markerLayer);
@@ -396,7 +396,7 @@ function renderProperties() {
               <h3><a class="property-title-link" href="${detailUrl}">${t(property.nameKey)}</a></h3>
             </div>
             <div class="property-price">
-              <strong>${interpolate("listing.price", { price: property.price })}</strong>
+              <strong>${interpolate("listing.price", { price: formatPrice(property.priceNumber, currentLanguage) })}</strong>
               ${property.priceNoteKey ? `<span class="price-note">${t(property.priceNoteKey)}</span>` : ""}
             </div>
           </div>

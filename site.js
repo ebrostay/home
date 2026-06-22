@@ -166,6 +166,10 @@ function isAvailable(property, filter) {
   if (filter.amenities.some((amenity) => !property.amenities.includes(amenity))) return false;
 
   if (filter.checkIn && filter.checkOut) {
+    // A listing cannot be booked before its availability start date.
+    const availableFrom = dateValue(property.availableFrom);
+    if (availableFrom && filter.checkIn < availableFrom) return false;
+    // Reject ranges that overlap a booked/held block.
     return !property.unavailable.some(([start, end]) => rangesOverlap(filter.checkIn, filter.checkOut, dateValue(start), dateValue(end)));
   }
 
@@ -313,6 +317,21 @@ function renderProperties() {
   else if (count === 0) availabilityStatus.textContent = t("status.none");
   else if (count === 1) availabilityStatus.textContent = t("status.one");
   else availabilityStatus.textContent = interpolate("status.matches", { count });
+
+  if (count === 0) {
+    propertyGrid.innerHTML = `
+      <div class="empty-state">
+        <h3>${t("empty.title")}</h3>
+        <p>${t("empty.body")}</p>
+        <div class="empty-state-actions">
+          <a class="button primary" href="#contact">${t("empty.contact")}</a>
+          <a class="button ghost" data-whatsapp href="${whatsappLink(t("whatsapp.general"))}" target="_blank" rel="noopener">${t("empty.whatsapp")}</a>
+        </div>
+      </div>
+    `;
+    updateMapMarkers(filtered);
+    return;
+  }
 
   propertyGrid.innerHTML = filtered.map((property) => {
     const isFavorite = favorites.has(property.id);

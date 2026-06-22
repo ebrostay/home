@@ -83,6 +83,26 @@ test.describe('Property detail page', () => {
   });
 });
 
+test.describe('Property detail page — cost policy badges (KAN-10)', () => {
+  test('capped-utilities listing shows a capped badge, not a plain bills-included badge', async ({ page }) => {
+    await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));
+    await page.goto('/property.html?id=movera1');
+    await expect(page.locator('#detailName')).not.toBeEmpty();
+
+    const badges = page.locator('#detailBadges span');
+    await expect(badges).toContainText([/tope|capped/i]);
+    // The plain "bills included" badge must NOT appear for a capped listing.
+    await expect(page.locator('#detailBadges')).not.toContainText(/Gastos incluidos|Bills included/);
+  });
+
+  test('fully-included listing shows the bills-included badge', async ({ page }) => {
+    await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));
+    await page.goto('/property.html?id=pedro1');
+    await expect(page.locator('#detailName')).not.toBeEmpty();
+    await expect(page.locator('#detailBadges')).toContainText(/Gastos incluidos|Bills included/);
+  });
+});
+
 test.describe('Property detail page — invalid ID', () => {
   test('redirects to search on unknown property ID', async ({ page }) => {
     await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));

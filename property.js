@@ -33,7 +33,7 @@ function badgeList() {
   return [
     property.checked && "badge.checked",
     property.depositProtected && "badge.deposit",
-    property.billsIncluded && "badge.bills"
+    billsBadgeKey(property)
   ].filter(Boolean);
 }
 

@@ -151,7 +151,7 @@ function getFilterFromForm(form, requireValidRange = false) {
 
 function passesQuickFilters(property) {
   if (quickFilters.has("checked") && !property.checked) return false;
-  if (quickFilters.has("bills") && !property.billsIncluded) return false;
+  if (quickFilters.has("bills") && billsPolicyOf(property) !== "included") return false;
   if (quickFilters.has("deposit") && !property.depositProtected) return false;
   return true;
 }
@@ -184,7 +184,7 @@ function badgeList(property) {
   return [
     property.checked && "badge.checked",
     property.depositProtected && "badge.deposit",
-    property.billsIncluded && "badge.bills"
+    billsBadgeKey(property)
   ].filter(Boolean);
 }
 

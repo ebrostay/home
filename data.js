@@ -68,6 +68,7 @@ const translations = {
     "badge.checked": "Verificada",
     "badge.deposit": "Fianza reembolsable",
     "badge.bills": "Gastos incluidos",
+    "badge.billsCapped": "Gastos con tope",
     "type.apartment": "Apartamento",
     "type.room": "Habitación",
     "type.home": "Casa",
@@ -456,12 +457,12 @@ const translations = {
     "properties.movera0.name": "Movera 7 - Segunda Planta",
     "properties.movera0.area": "Movera",
     "properties.movera0.copy": "Piso de 3 habitaciones privadas en Movera 7 (segunda planta), ideal para equipos de empresa, técnicos y estancias por proyecto.",
-    "properties.movera0.details": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos y baño completo. Gastos incluidos con suministros limitados a 50 EUR por habitación, autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
+    "properties.movera0.details": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos y baño completo. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
     "properties.movera0.priceNote": "o 450 EUR/habitación",
     "properties.movera1.name": "Movera 7 - Primera Planta",
     "properties.movera1.area": "Movera",
     "properties.movera1.copy": "Piso de 3 habitaciones privadas en Movera 7, ideal para equipos de empresa, técnicos y estancias por proyecto.",
-    "properties.movera1.details": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos, baño completo y terraza. Gastos incluidos con suministros limitados a 50 EUR por habitación, autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
+    "properties.movera1.details": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos, baño completo y terraza. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
     "properties.movera1.priceNote": "o 450 EUR/habitación",
     "map.title": "Mapa de viviendas",
     "map.copy": "Cada pin muestra el precio mensual de una vivienda. Toca un pin para resaltar la vivienda o usa los botones para ir a cada dirección.",
@@ -622,6 +623,10 @@ const translations = {
     "admin.field.deposit": "Fianza (EUR)",
     "admin.field.upfront": "Renta por adelantado (EUR)",
     "admin.field.utilitiesCap": "Límite de suministros (EUR/mes)",
+    "admin.field.billsPolicy": "Gastos",
+    "admin.billsPolicy.included": "Gastos incluidos",
+    "admin.billsPolicy.capped": "Gastos con tope",
+    "admin.billsPolicy.excluded": "Gastos no incluidos",
     "admin.field.energy": "Certificado energético",
     "admin.field.video": "Enlace de vídeo (opcional)",
     "admin.field.bedsEs": "Camas (español, ej. 2 dobles y 1 individual)",
@@ -736,6 +741,7 @@ const translations = {
     "badge.checked": "Verified",
     "badge.deposit": "Refundable deposit",
     "badge.bills": "Bills included",
+    "badge.billsCapped": "Capped utilities",
     "type.apartment": "Apartment",
     "type.room": "Room",
     "type.home": "House",
@@ -1124,12 +1130,12 @@ const translations = {
     "properties.movera0.name": "Movera 7 - Segunda Planta",
     "properties.movera0.area": "Movera",
     "properties.movera0.copy": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays.",
-    "properties.movera0.details": "Three private bedrooms with shared living, dining, and equipped kitchen, plus a full bathroom. Expenses included with utilities capped at 50 EUR per room, self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
+    "properties.movera0.details": "Three private bedrooms with shared living, dining, and equipped kitchen, plus a full bathroom. Utilities capped at 50 EUR per room (anything above is billed separately), self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
     "properties.movera0.priceNote": "or 450 EUR/room",
     "properties.movera1.name": "Movera 7 - Primera Planta",
     "properties.movera1.area": "Movera",
     "properties.movera1.copy": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays.",
-    "properties.movera1.details": "Three private bedrooms with shared living, dining, and equipped kitchen, full bathroom, and terrace. Expenses included with utilities capped at 50 EUR per room, self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
+    "properties.movera1.details": "Three private bedrooms with shared living, dining, and equipped kitchen, full bathroom, and terrace. Utilities capped at 50 EUR per room (anything above is billed separately), self check-in by lockbox, and 24/7 support. Whole flat or room by room.",
     "properties.movera1.priceNote": "or 450 EUR/room",
     "map.title": "Homes map",
     "map.copy": "Each pin shows a home's monthly price. Tap a pin to highlight the home or use the buttons to jump to each address.",
@@ -1290,6 +1296,10 @@ const translations = {
     "admin.field.deposit": "Deposit (EUR)",
     "admin.field.upfront": "Upfront rent (EUR)",
     "admin.field.utilitiesCap": "Utilities cap (EUR/month)",
+    "admin.field.billsPolicy": "Bills",
+    "admin.billsPolicy.included": "Bills included",
+    "admin.billsPolicy.capped": "Capped utilities",
+    "admin.billsPolicy.excluded": "Bills not included",
     "admin.field.energy": "Energy certificate",
     "admin.field.video": "Video link (optional)",
     "admin.field.bedsEs": "Beds (Spanish, e.g. 2 dobles y 1 individual)",
@@ -1362,6 +1372,7 @@ const properties = [
     checked: true,
     depositProtected: true,
     billsIncluded: true,
+    billsPolicy: "included",
     amenities: ["wifi", "desk", "lift", "heating", "kitchen"],
     unavailable: [["2026-06-20", "2026-06-24"], ["2026-07-04", "2026-07-10"], ["2026-08-12", "2026-08-18"]]
   },
@@ -1386,6 +1397,7 @@ const properties = [
     checked: true,
     depositProtected: true,
     billsIncluded: true,
+    billsPolicy: "included",
     amenities: ["wifi", "desk", "lift", "heating", "kitchen", "ac"],
     unavailable: [["2026-06-27", "2026-07-03"], ["2026-07-18", "2026-07-22"], ["2026-08-10", "2026-08-14"]]
   },
@@ -1415,7 +1427,7 @@ const properties = [
     isNew: true,
     checked: true,
     depositProtected: true,
-    billsIncluded: true,
+    billsPolicy: "capped",
     amenities: ["wifi", "desk", "heating", "kitchen"],
     photos: [
       "assets/movera-second-hero.jpg",
@@ -1453,7 +1465,7 @@ const properties = [
     isNew: true,
     checked: true,
     depositProtected: true,
-    billsIncluded: true,
+    billsPolicy: "capped",
     amenities: ["wifi", "desk", "heating", "kitchen", "terrace"],
     photos: [
       "assets/movera-first-hero.jpg",
@@ -1470,6 +1482,22 @@ const addressLocations = {
   pedro: { lat: 41.65393, lng: -0.90783 },
   movera: { lat: 41.64929, lng: -0.82209 }
 };
+
+// Cost policy: "included" (all bills in rent), "capped" (utilities up to a cap,
+// excess billed separately), or "excluded" (tenant pays bills). Falls back to the
+// legacy billsIncluded boolean for backward compatibility.
+function billsPolicyOf(property) {
+  if (property.billsPolicy) return property.billsPolicy;
+  return property.billsIncluded ? "included" : "excluded";
+}
+
+// Badge i18n key for a property's cost policy, or null if no badge should show.
+function billsBadgeKey(property) {
+  const policy = billsPolicyOf(property);
+  if (policy === "included") return "badge.bills";
+  if (policy === "capped") return "badge.billsCapped";
+  return null;
+}
 
 function whatsappLink(text) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;

@@ -845,10 +845,20 @@
     var videoSource = document.querySelector("#detailVideoButton");
     var video = tabs.querySelector("[data-media-video]");
     if (video && videoSource) {
-      video.hidden = videoSource.hidden || !videoSource.href || videoSource.href.endsWith("#");
-      video.href = videoSource.href;
-      video.target = "_blank";
-      video.rel = "noopener";
+      // Mirror the sticky-panel CTA's visibility exactly: a real video tour exists
+      // only when the source button is shown AND carries a non-anchor href.
+      var rawHref = videoSource.getAttribute("href");
+      var hasVideo = !videoSource.hidden && Boolean(rawHref) && rawHref !== "#" && !rawHref.endsWith("#");
+      video.hidden = !hasVideo;
+      if (hasVideo) {
+        video.href = videoSource.href;
+        video.target = "_blank";
+        video.rel = "noopener";
+      } else {
+        video.removeAttribute("href");
+        video.removeAttribute("target");
+        video.removeAttribute("rel");
+      }
     }
     var floorplan = tabs.querySelector("[data-media-floorplan]");
     var floorplanSection = document.querySelector("#floorplanSection");
@@ -1035,6 +1045,11 @@
     if (detail && !detail.dataset.enhanceObserved) {
       detail.dataset.enhanceObserved = "true";
       new MutationObserver(function () { window.setTimeout(enhanceDetailPage, 0); }).observe(detail, { childList: true, subtree: true });
+      // property.js toggles the sticky video CTA via attributes (not childList),
+      // so listen for its explicit signal to re-sync the media-tabs video CTA.
+      document.addEventListener("ebrostay:video-cta-updated", function () {
+        window.setTimeout(updateDetailMediaTabs, 0);
+      });
     }
   }
 

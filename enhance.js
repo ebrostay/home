@@ -68,6 +68,10 @@
       assistantCopy: "Dinos tu duda y te abrimos un WhatsApp con el mensaje preparado.",
       assistantPlaceholder: "Estoy intentando reservar y necesito ayuda con...",
       assistantSend: "Pedir ayuda",
+      assistantOwnerCopy: "Cuéntanos qué necesitas como propietario y te abrimos un WhatsApp con el mensaje preparado.",
+      assistantOwnerPlaceholder: "Soy propietario y necesito ayuda con...",
+      assistantAccountCopy: "Dinos qué pasa con tu cuenta o tu reserva y te abrimos un WhatsApp con el mensaje preparado.",
+      assistantAccountPlaceholder: "Tengo una reserva y necesito ayuda con...",
       legal: "Ebrostay trata tus datos solo para responder solicitudes y gestionar reservas. Consulta nuestra política de privacidad y derechos GDPR.",
       trustVerified: "Vivienda verificada",
       trustDeposit: "Fianza protegida",
@@ -149,6 +153,10 @@
       assistantCopy: "Tell us the issue and we will open WhatsApp with the message ready.",
       assistantPlaceholder: "I am trying to book and need help with...",
       assistantSend: "Ask for help",
+      assistantOwnerCopy: "Tell us what you need as an owner and we will open WhatsApp with the message ready.",
+      assistantOwnerPlaceholder: "I am a property owner and need help with...",
+      assistantAccountCopy: "Tell us what is happening with your account or booking and we will open WhatsApp with the message ready.",
+      assistantAccountPlaceholder: "I have a booking and need help with...",
       legal: "Ebrostay uses your data only to answer requests and manage bookings. See our privacy policy and GDPR rights.",
       trustVerified: "Verified home",
       trustDeposit: "Deposit protected",
@@ -181,6 +189,31 @@
 
   function text(key) {
     return (copy[lang()] && copy[lang()][key]) || copy.es[key] || key;
+  }
+
+  // Detect which audience the floating help widget should speak to:
+  // owner (partner / owner portal), account (signed-in booking/account pages), or tenant.
+  function supportContext() {
+    var path = (window.location.pathname || "").toLowerCase();
+    // Owner portal: the dedicated partner page (not the owner pitch on the homepage).
+    if (path.indexOf("partner") !== -1 || document.querySelector(".partner-grid, .partner-empty")) {
+      return "owner";
+    }
+    // Account / admin pages: existing bookings, not a new booking.
+    if (path.indexOf("account") !== -1 || path.indexOf("admin") !== -1 || document.querySelector(".account-page, .admin-page")) {
+      return "account";
+    }
+    return "tenant";
+  }
+
+  function supportCopyKey() {
+    var ctx = supportContext();
+    return ctx === "owner" ? "assistantOwnerCopy" : ctx === "account" ? "assistantAccountCopy" : "assistantCopy";
+  }
+
+  function supportPlaceholderKey() {
+    var ctx = supportContext();
+    return ctx === "owner" ? "assistantOwnerPlaceholder" : ctx === "account" ? "assistantAccountPlaceholder" : "assistantPlaceholder";
   }
 
   function siteText(key) {
@@ -1056,7 +1089,7 @@
     fab.addEventListener("click", function () { panel.classList.toggle("is-open"); });
     panel.querySelector("[data-support-close]").addEventListener("click", function () { panel.classList.remove("is-open"); });
     panel.querySelector("[data-support-send]").addEventListener("click", function () {
-      var message = panel.querySelector("textarea").value.trim() || text("assistantPlaceholder");
+      var message = panel.querySelector("textarea").value.trim() || text(supportPlaceholderKey());
       window.open(whatsappLink(message), "_blank", "noopener");
     });
     updateSupportText();
@@ -1069,8 +1102,8 @@
     if (fab) setText(fab.querySelector("span"), text("assistantOpen"));
     if (panel) {
       setText(panel.querySelector("h3"), text("assistantTitle"));
-      setText(panel.querySelector("p"), text("assistantCopy"));
-      panel.querySelector("textarea").placeholder = text("assistantPlaceholder");
+      setText(panel.querySelector("p"), text(supportCopyKey()));
+      panel.querySelector("textarea").placeholder = text(supportPlaceholderKey());
       setText(panel.querySelector("[data-support-send]"), text("assistantSend"));
     }
   }

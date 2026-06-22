@@ -470,7 +470,9 @@ quickButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const value = button.dataset.quick;
     quickFilters.has(value) ? quickFilters.delete(value) : quickFilters.add(value);
-    button.classList.toggle("is-active", quickFilters.has(value));
+    const active = quickFilters.has(value);
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
     mapNeedsFit = true;
     renderProperties();
   });
@@ -552,7 +554,10 @@ if (resetAvailability) {
     activeFilter = null;
     statusOverride = null;
     quickFilters.clear();
-    quickButtons.forEach((button) => button.classList.remove("is-active"));
+    quickButtons.forEach((button) => {
+      button.classList.remove("is-active");
+      button.setAttribute("aria-pressed", "false");
+    });
     availabilityFilter?.reset();
     if (availabilityFilter) {
       availabilityFilter.elements.city.value = "Zaragoza";

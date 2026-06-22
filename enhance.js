@@ -711,7 +711,9 @@
       node.textContent = `${text("favorites")} ${count ? `(${count})` : ""}`;
     });
     document.querySelectorAll("[data-saved-flats-link], .saved-quick-filter").forEach(function (node) {
-      node.classList.toggle("is-active", isSavedOnly());
+      var active = isSavedOnly();
+      node.classList.toggle("is-active", active);
+      if (node.classList.contains("saved-quick-filter")) node.setAttribute("aria-pressed", String(active));
     });
   }
 
@@ -751,6 +753,7 @@
       savedButton.type = "button";
       savedButton.className = "saved-quick-filter";
       savedButton.setAttribute("data-saved-flats-link", "");
+      savedButton.setAttribute("aria-pressed", String(isSavedOnly()));
       savedButton.innerHTML = `${icon("heart")} <span></span>`;
       quick.appendChild(savedButton);
       savedButton.addEventListener("click", function () { setSavedOnly(!isSavedOnly()); });

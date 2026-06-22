@@ -158,6 +158,20 @@ test.describe('Marketplace / search section', () => {
     // deposit button is removed by enhance.js
   });
 
+  test('quick filter toggles aria-pressed matching is-active class', async ({ page }) => {
+    const button = page.locator('[data-quick="checked"]');
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await expect(button).not.toHaveClass(/is-active/);
+
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    await expect(button).toHaveClass(/is-active/);
+
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await expect(button).not.toHaveClass(/is-active/);
+  });
+
   test('property grid container is present', async ({ page }) => {
     await expect(page.locator('#propertyGrid')).toBeAttached();
   });

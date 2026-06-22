@@ -193,7 +193,7 @@
   };
 
   function isAdminPage() {
-    return !!document.querySelector(".admin-page");
+    return (window.location.pathname || "").toLowerCase().indexOf("admin") !== -1;
   }
 
   function lang() {
@@ -545,11 +545,12 @@
   // applyKeyedTranslations so a language switch never reverts it (the nav-cta
   // still carries data-i18n="nav.cta" for the tenant default).
   function updateHeaderCtaForAudience(mode) {
+    if (isAdminPage()) return;
     var cta = document.querySelector(".site-header .nav-cta");
     if (!cta) return;
     if (mode === "owner") {
       cta.textContent = text("ownerNavCta");
-      cta.setAttribute("href", "index.html#owner-apply");
+      cta.setAttribute("href", "index.html#owner");
     } else {
       cta.textContent = siteText("nav.cta");
       cta.setAttribute("href", "#search");
@@ -673,7 +674,8 @@
     if (account) account.hidden = isOwner;
 
     // Primary CTA: tenant search vs. owner onboarding/portal destination.
-    var cta = headerActions.querySelector(".nav-cta");
+    // Admin pre-login pages own their CTA statically (Acceso administración).
+    var cta = isAdminPage() ? null : headerActions.querySelector(".nav-cta");
     if (cta) {
       if (cta.dataset.tenantHref === undefined) cta.dataset.tenantHref = cta.getAttribute("href") || "#search";
       if (isOwner) {

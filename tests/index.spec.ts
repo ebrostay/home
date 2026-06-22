@@ -329,13 +329,13 @@ test.describe('Owner mode header CTA (KAN-15)', () => {
     await page.locator('[data-audience-option="owner"]').click();
     await expect(page.locator('html')).toHaveAttribute('data-audience', 'owner');
     await expect(cta).toContainText(/list a home|publish/i);
-    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+    await expect(cta).toHaveAttribute('href', 'index.html#owner');
   });
 
   test('switching back to tenant mode restores the search CTA', async ({ page }) => {
     const cta = page.locator('.site-header .nav-cta');
     await page.locator('[data-audience-option="owner"]').click();
-    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+    await expect(cta).toHaveAttribute('href', 'index.html#owner');
 
     await page.locator('[data-audience-option="tenant"]').click();
     await expect(page.locator('html')).toHaveAttribute('data-audience', 'tenant');
@@ -346,7 +346,7 @@ test.describe('Owner mode header CTA (KAN-15)', () => {
   test('language switch keeps the owner CTA while in owner mode (EN -> ES)', async ({ page }) => {
     const cta = page.locator('.site-header .nav-cta');
     await page.locator('[data-audience-option="owner"]').click();
-    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+    await expect(cta).toHaveAttribute('href', 'index.html#owner');
 
     await page.locator('[data-lang="es"]').click();
     await expect(page.locator('[data-lang="es"]')).toHaveClass(/is-active/);
@@ -354,7 +354,7 @@ test.describe('Owner mode header CTA (KAN-15)', () => {
     await expect(page.locator('html')).toHaveAttribute('data-audience', 'owner');
     await expect(cta).toContainText(/publicar vivienda/i);
     await expect(cta).not.toContainText(/buscar vivienda/i);
-    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+    await expect(cta).toHaveAttribute('href', 'index.html#owner');
   });
 
   test('language switch keeps the tenant CTA while in tenant mode', async ({ page }) => {

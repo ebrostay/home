@@ -27,9 +27,9 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
 
     // rent = 1 * 950, commission = 15% * 950 = 142.50, deposit 0
     // total = 950 + 142.50 = 1092.50
-    await expect(summary.locator('.is-total')).toContainText('1092.50 EUR');
-    await expect(summary).toContainText('950.00 EUR'); // rent line
-    await expect(summary).toContainText('142.50 EUR'); // commission line
+    await expect(summary.locator('.is-total')).toContainText('1,092.5 EUR');
+    await expect(summary).toContainText('950 EUR'); // rent line
+    await expect(summary).toContainText('142.5 EUR'); // commission line
   });
 
   test('email and whatsapp prefilled summaries use the corrected 1-month count', async ({ page }) => {
@@ -40,6 +40,10 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
 
     await expect(page.locator('#bookingSummary')).toContainText('1 month');
 
+    // KAN-23: email/WhatsApp CTAs stay blocked until at least one tenant is given.
+    await page.locator('#bookingTenants').fill('Test Tenant');
+    await expect(page.locator('#bookingEmailButton')).toHaveAttribute('href', /mailto:/);
+
     const emailHref = await page.locator('#bookingEmailButton').getAttribute('href');
     const waHref = await page.locator('#bookingWhatsappButton').getAttribute('href');
     const email = decodeURIComponent(emailHref || '');
@@ -48,7 +52,7 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
     for (const body of [email, wa]) {
       expect(body).toContain('1 month');
       expect(body).not.toContain('2 months');
-      expect(body).toContain('1092.50 EUR'); // estimated total
+      expect(body).toContain('1,092.5 EUR'); // estimated total (KAN-20 locale format)
     }
   });
 
@@ -63,6 +67,6 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
     await expect(summary).toContainText('2 months');
     // rent = 2 * 950 = 1900, commission = 15% * 1900 = 285 (below one-month cap)
     // total = 1900 + 285 = 2185
-    await expect(summary.locator('.is-total')).toContainText('2185.00 EUR');
+    await expect(summary.locator('.is-total')).toContainText('2,185 EUR');
   });
 });

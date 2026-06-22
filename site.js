@@ -354,6 +354,7 @@ function renderProperties() {
   const enhancedActive = Boolean(enhanced.address || enhanced.minBedrooms || enhanced.minBathrooms || enhanced.savedOnly);
 
   if (statusOverride) availabilityStatus.textContent = statusOverride;
+  else if (enhanced.savedOnly) availabilityStatus.textContent = count === 0 ? t("status.savedEmpty") : t("status.saved");
   else if (!activeFilter && quickFilters.size === 0 && !enhancedActive) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
   else if (count === 0) availabilityStatus.textContent = t("status.none");
   else if (count === 1) availabilityStatus.textContent = t("status.one");

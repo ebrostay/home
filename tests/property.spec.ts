@@ -52,6 +52,20 @@ test.describe('Property detail page', () => {
     await expect(page.locator('.calendar-legend')).toBeVisible();
   });
 
+  test('default calendar heading says dates are available, not unavailable (KAN-5)', async ({ page }) => {
+    await page.goto('/property.html?id=movera1');
+    await expect(page.locator('#detailName')).not.toBeEmpty();
+    const copy = page.locator('[data-i18n="detail.blockedCopy"]');
+    await expect(copy).toBeVisible();
+    // ES default: no conflicting range selected -> should say "disponibles", never "no están disponibles"
+    await expect(copy).toContainText(/disponibles/);
+    await expect(copy).not.toContainText(/no están disponibles/);
+    // EN wording
+    await page.locator('[data-lang="en"]').click();
+    await expect(copy).toContainText(/currently available/i);
+    await expect(copy).not.toContainText(/unavailable/i);
+  });
+
   test('contact buttons are visible', async ({ page }) => {
     await expect(page.locator('#bookingEmailButton')).toBeVisible();
     await expect(page.locator('#bookingWhatsappButton')).toBeVisible();

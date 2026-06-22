@@ -25,6 +25,24 @@ test.describe('Page load — Spanish browser locale', () => {
   });
 });
 
+test.describe('Bills quick filter (KAN-10)', () => {
+  test('"Bills included" filter excludes capped-utilities (Movera) listings', async ({ page }) => {
+    await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));
+    await page.goto('/');
+
+    // Movera (capped) and Pedro (included) cards both exist unfiltered.
+    await expect(page.locator('[data-property-id="movera1"]')).toBeVisible();
+    await expect(page.locator('[data-property-id="pedro1"]')).toBeVisible();
+
+    await page.locator('[data-quick="bills"]').click();
+
+    // Capped listings must be filtered out; genuinely-included ones remain.
+    await expect(page.locator('[data-property-id="movera0"]')).toHaveCount(0);
+    await expect(page.locator('[data-property-id="movera1"]')).toHaveCount(0);
+    await expect(page.locator('[data-property-id="pedro1"]')).toBeVisible();
+  });
+});
+
 test.describe('Header', () => {
   test('shows brand logo and wordmark', async ({ page }) => {
     await expect(page.locator('.brand-mark')).toBeVisible();

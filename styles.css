@@ -423,6 +423,12 @@ textarea {
   cursor: pointer;
 }
 
+.button.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
 .button.primary {
   background: var(--clay);
   color: #fff;
@@ -606,6 +612,26 @@ textarea {
 .property-list {
   display: grid;
   gap: 14px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.85rem;
+  justify-items: start;
+  padding: 1.75rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+}
+
+.empty-state h3 { margin: 0; }
+.empty-state p { margin: 0; max-width: 52ch; color: var(--ink-soft, inherit); }
+
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .property-card {

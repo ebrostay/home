@@ -372,6 +372,7 @@ textarea {
 }
 
 .hero-search {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(160px, 1.2fr) 150px 150px 110px auto;
   gap: 10px;
@@ -3967,6 +3968,9 @@ select::-ms-expand { display: none; }
               border-color var(--dur-base, 240ms) var(--ease-out);
 }
 .hero-search:focus-within {
+  /* Lift above sibling .trust-row (its own stacking context from heroRise)
+     so an open custom-select popup is not painted underneath it. */
+  z-index: 30;
   border-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.22);
 }

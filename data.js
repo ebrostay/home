@@ -1533,6 +1533,22 @@ function whatsappLink(text) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
+// Single locale-aware price formatter shared by listing cards, the property
+// detail page, the booking widget, and the email / WhatsApp recaps so every
+// surface shows the same string. Spanish uses a "." thousands separator
+// (1.350 EUR), English a "," (1,350 EUR). Whole euros drop the decimals;
+// fractional amounts keep up to two so we never show stray ".00".
+function formatPrice(number, language) {
+  const amount = Number(number) || 0;
+  const locale = language === "en" ? "en-GB" : "es-ES";
+  const hasCents = Math.round(amount * 100) % 100 !== 0;
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: hasCents ? 2 : 0
+  }).format(amount);
+  return `${formatted} EUR`;
+}
+
 // Spec line shared by the listing cards and the property page:
 // "3 habitaciones · 1 baño · 70 m² · Planta 1" (only fields that exist)
 function propertySpecs(property, translate, interpolateFn) {

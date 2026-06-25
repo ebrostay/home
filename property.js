@@ -12,10 +12,12 @@ function interpolate(key, values) {
   return Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, value), t(key));
 }
 
-// Prices are always shown with two decimals, e.g. 950.00 EUR.
-const formatEur = (amount) => interpolate("cond.eur", { amount: Number(amount).toFixed(2) });
-const formatEurMonth = (amount) => interpolate("cond.eurMonth", { amount: Number(amount).toFixed(2) });
-const monthlyPriceLabel = () => interpolate("listing.price", { price: formatEur(property.priceNumber) });
+// All euro amounts go through the shared, locale-aware formatPrice (data.js)
+// so the detail page, booking widget and recaps match the listing cards:
+// "1.350 EUR" (es) / "1,350 EUR" (en), no stray decimals on whole euros.
+const formatEur = (amount) => formatPrice(amount, currentLanguage);
+const formatEurMonth = (amount) => interpolate("listing.price", { price: formatPrice(amount, currentLanguage) });
+const monthlyPriceLabel = () => formatEurMonth(property.priceNumber);
 
 function dateValue(value) {
   return value ? new Date(`${value}T00:00:00`) : null;
@@ -651,7 +653,7 @@ function updateDetailMarker() {
   detailMap.eachLayer((layer) => {
     if (layer instanceof L.Marker) detailMap.removeLayer(layer);
   });
-  const pinLabel = property.price.replace("EUR", "€").trim();
+  const pinLabel = formatPrice(property.priceNumber, currentLanguage).replace("EUR", "€").trim();
   const icon = L.divIcon({
     className: "map-price-pin-wrap",
     html: `<span class="map-price-pin">${pinLabel}</span>`,

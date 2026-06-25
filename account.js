@@ -48,7 +48,7 @@ function renderBookings() {
           </span>
           ${addressLine(booking.address)}
           <span>${formatBookingDate(booking.start_date)} &ndash; ${formatBookingDate(booking.end_date)}${booking.months ? ` &middot; ${monthsLabel(booking.months)}` : ""}</span>
-          <span>${interpolate("cond.eur", { amount: booking.amount_eur })}</span>
+          <span>${formatPrice(booking.amount_eur, currentLanguage)}</span>
           <span class="booking-card-cta">${t("bookings.viewDetails")} &rarr;</span>
         </span>
       </a>

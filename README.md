@@ -9,11 +9,11 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 ## Highlights
 
 - **Bilingual (ES/EN)** UI driven by an in-page translation dictionary.
-- **Listings & search** with date/guest/type/budget filters, sorting, and favorites.
+- **Listings & search** with date/guest/type/budget filters and sorting.
 - **Property pages** with photo galleries, availability calendars, rental conditions, floor plans, and an interactive location map.
 - **Interactive maps** via Leaflet + OpenStreetMap tiles.
 - **Booking requests**: pick dates, see an estimated total (full stay billed in whole months + commission + refundable deposit, computed server-side), and send a request. Ebrostay is emailed and confirms manually — no online charge.
-- **Tenant accounts**: stays, saved homes, and arrival details.
+- **Tenant accounts**: stays and arrival details.
 - **Owner portal** with payout (IBAN) details capture.
 - **Admin panel** to manage listings, availability, photos, and detailed property data.
 - **SEO/AI-ready**: per-page meta + JSON-LD, `sitemap.xml`, `robots.txt`, and `llms.txt`.
@@ -35,7 +35,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | `index.html` | Home: hero search, listings grid, map, inquiry form, sign-in dialog |
 | `property.html` | Property detail: gallery, availability calendar, conditions, floor plans, location map, booking-request CTA |
 | `booking.html` | Booking detail: stay facts and arrival info for a confirmed stay |
-| `account.html` | Tenant account: stays, saved homes, arrival details |
+| `account.html` | Tenant account: stays, arrival details |
 | `partner.html` | Owner portal: properties, stays, and payout (IBAN) details |
 | `admin.html` | Admin: manage availability and "available from" dates |
 | `admin-property.html` | Admin: full property editor (details, photos, geocoding) |
@@ -47,7 +47,7 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 | File | Purpose |
 | --- | --- |
 | `data.js` | ES/EN translation dictionary and built-in sample property data |
-| `backend.js` | Supabase bridge — auth, listings, availability, favorites, inquiries, booking requests; falls back to sample data when unconfigured |
+| `backend.js` | Supabase bridge — auth, listings, availability, inquiries, booking requests; falls back to sample data when unconfigured |
 | `supabase-config.js` | Supabase URL + anon key (public-safe) |
 | `site.js` | Home page logic: search, filtering, listings map, inquiry form, auth |
 | `property.js` | Property detail logic: gallery, calendar, map, booking requests |
@@ -62,12 +62,12 @@ It is a **static front end** (plain HTML/CSS/JavaScript, no build step) hosted o
 - `upgrade-2026-06-*.sql` — incremental migrations for projects created before a feature existed (each is safe to re-run). Cover property photos, richer property details, guest bookings/info, availability holds, the owner portal, and booking requests.
 - `functions/` — Supabase Edge Functions (Deno/TypeScript):
   - `request-booking` — computes price/commission/availability server-side, records the booking request, and emails Ebrostay (and an acknowledgement to the guest) via Resend. Needs the `RESEND_API_KEY` secret to send mail; without it the request is still recorded for the admin panel.
-  - `ai-property-assistant` — DeepSeek-powered helper for the property editor: extracts listing fields from a pasted document and translates text fields between ES and EN. Needs the `DEEPSEEK_API_KEY` secret; see [`docs/deepseek-ai-setup.md`](docs/deepseek-ai-setup.md).
+  - `ai-property-assistant` — DeepSeek-powered helper for the property editor: extracts listing fields from a pasted document and translates text fields between ES and EN. Needs the `DEEPSEEK_API_KEY` secret; see [`docs/spec/07-integrations.md`](docs/spec/07-integrations.md).
 
 ### Other
 - `assets/` — logos, icons, hero images, and property photos.
 - `styles.css` — all site styling.
-- `docs/` — `supabase-setup.md` (step-by-step backend setup) and design notes.
+- `docs/spec/` — the full reconstruction specification (overview, architecture, data model, business rules, functional spec, integrations, auth/security, conventions, acceptance criteria, decision log, and a rebuild-from-scratch checklist). Start at [`docs/spec/00-outline.md`](docs/spec/00-outline.md).
 - `sitemap.xml`, `robots.txt`, `llms.txt`, `site.webmanifest` — SEO, crawler, AI, and PWA metadata.
 - `CNAME`, `.nojekyll` — GitHub Pages custom domain and bypass of Jekyll processing.
 
@@ -94,7 +94,7 @@ The site runs on built-in sample data out of the box. To enable dynamic listings
 
 The anon key is designed to be public — all access is enforced by database RLS policies and server-side Edge Functions. The Resend key lives only in Supabase secrets.
 
-Full instructions, including upgrade migrations and where each kind of data lives, are in [`docs/supabase-setup.md`](docs/supabase-setup.md).
+Full instructions, including upgrade migrations and where each kind of data lives, are in the reconstruction spec — see the [rebuild-from-scratch checklist](docs/spec/12-rebuild-checklist.md) and [architecture](docs/spec/03-architecture.md).
 
 ## Deployment
 

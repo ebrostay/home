@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // KAN-28 — Admin pre-login should use admin-specific navigation and support copy.
-// The /admin surface must not expose tenant booking / saved-home flows before auth.
+// The /admin surface must not expose tenant booking flows before auth.
 
 test.describe('Admin pre-login surface', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,17 +10,11 @@ test.describe('Admin pre-login surface', () => {
     await page.waitForFunction(() => !!document.querySelector('.support-fab'));
   });
 
-  test('header shows no tenant Saved-homes nav', async ({ page }) => {
-    await expect(page.locator('.saved-flats-link')).toHaveCount(0);
-    await expect(page.locator('.header-actions')).not.toContainText('Guardados');
-    await expect(page.locator('.header-actions')).not.toContainText('Saved');
-  });
-
   test('header shows no tenant "Find a stay" CTA', async ({ page }) => {
     const header = page.locator('.header-actions');
     await expect(header).not.toContainText('Buscar vivienda');
     await expect(header).not.toContainText('Find a stay');
-    // No header link routes into tenant search / saved / account flows.
+    // No header link routes into tenant search / account flows.
     await expect(page.locator('.header-actions a[href*="index.html#search"]')).toHaveCount(0);
     await expect(page.locator('.header-actions a[href*="account.html"]')).toHaveCount(0);
   });

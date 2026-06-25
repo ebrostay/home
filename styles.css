@@ -701,26 +701,6 @@ a.property-media {
   font-weight: 600;
 }
 
-.favorite-button {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  max-width: calc(100% - 24px);
-  border: 0;
-  border-radius: var(--radius-pill);
-  padding: 7px 10px;
-  color: var(--ink);
-  background: var(--glass-strong);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.favorite-button.is-active {
-  color: #fff;
-  background: var(--red);
-}
-
 .property-body {
   display: grid;
   gap: 13px;
@@ -3965,7 +3945,6 @@ html[data-audience="owner"] #contact { display: none; }
 @media (max-width: 560px) {
   .site-header { gap: 8px; padding: 8px clamp(12px, 4vw, 16px); }
   .header-actions { gap: 6px; }
-  .saved-flats-link { display: none !important; }
   .header-actions .admin-link { display: none !important; }
   .nav-cta { padding: 9px 13px; font-size: 0.85rem; }
   .theme-toggle { width: 36px; height: 36px; }

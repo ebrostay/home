@@ -1,24 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Owner mode header navigation (KAN-26)', () => {
-  test('tenant mode shows saved link, account and search CTA', async ({ page }) => {
+  test('tenant mode shows account and search CTA', async ({ page }) => {
     await page.goto('/');
     const header = page.locator('.header-actions');
-    await expect(header.locator('[data-saved-flats-link]')).toBeVisible();
     await expect(header.locator(".admin-link[href*='account.html']")).toBeVisible();
     const cta = header.locator('.nav-cta');
     await expect(cta).toHaveAttribute('href', /#search/);
   });
 
-  test('switching to owner mode hides Saved / Find a stay / My account links', async ({ page }) => {
+  test('switching to owner mode hides Find a stay / My account links', async ({ page }) => {
     await page.goto('/');
     // Switch to the owner audience via the compact header toggle.
     await page.locator('[data-audience-option="owner"]').click();
     await expect(page.locator('html')).toHaveAttribute('data-audience', 'owner');
 
     const header = page.locator('.header-actions');
-    // Saved-home nav is hidden outside tenant browsing states.
-    await expect(header.locator('[data-saved-flats-link]')).toBeHidden();
     // Tenant "My account" link is hidden.
     await expect(header.locator(".admin-link[href*='account.html']")).toBeHidden();
     // Primary CTA points to owner onboarding, not tenant search.
@@ -35,7 +32,6 @@ test.describe('Owner mode header navigation (KAN-26)', () => {
     await expect(page.locator('html')).toHaveAttribute('data-audience', 'tenant');
 
     const header = page.locator('.header-actions');
-    await expect(header.locator('[data-saved-flats-link]')).toBeVisible();
     await expect(header.locator(".admin-link[href*='account.html']")).toBeVisible();
     await expect(header.locator('.nav-cta')).toHaveAttribute('href', /#search/);
   });
@@ -43,8 +39,6 @@ test.describe('Owner mode header navigation (KAN-26)', () => {
   test('partner portal shows owner nav, not tenant nav', async ({ page }) => {
     await page.goto('/partner.html');
     const header = page.locator('.header-actions');
-    // Saved link, if injected, must be hidden on the owner portal.
-    await expect(header.locator('[data-saved-flats-link]')).toBeHidden();
     // Tenant "My account" link hidden on owner portal.
     await expect(header.locator(".admin-link[href*='account.html']")).toBeHidden();
     // CTA is owner-focused (onboarding or portal), never tenant search.

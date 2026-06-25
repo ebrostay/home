@@ -78,6 +78,11 @@ create table if not exists public.profiles (
 alter table public.availability_blocks
   add column if not exists user_id uuid references public.profiles (id) on delete set null;
 
+-- Favorites / saved-homes: 🚫 OUT OF SCOPE FOR MVP (removed 2026-06-25).
+-- The heart toggle, saved-only filter and header "Guardados" link were removed
+-- from the app; backend.js no longer reads or writes this table. The table and
+-- its RLS policies are kept (harmless, idempotent) so the feature can be
+-- re-enabled later without a destructive migration. Safe to drop if unused.
 create table if not exists public.favorites (
   user_id uuid not null references auth.users (id) on delete cascade,
   property_id text not null references public.properties (id) on delete cascade,
@@ -234,6 +239,7 @@ create policy "Admins read profiles"
   using (public.is_admin());
 
 -- Favorites: users manage their own favorites
+-- 🚫 Out of scope for MVP (see the favorites table comment above) — retained but unwired.
 drop policy if exists "Users read own favorites" on public.favorites;
 create policy "Users read own favorites"
   on public.favorites for select

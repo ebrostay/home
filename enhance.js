@@ -5,14 +5,10 @@
 
   var AUDIENCE_KEY = "ebrostay-audience";
   var AUDIENCE_SEEN_KEY = "ebrostay-audience-seen";
-  var SAVED_ONLY_KEY = "ebrostay-saved-only";
 
   var copy = {
     es: {
       homeNav: "Inicio",
-      favorites: "Guardados",
-      favoritesEmpty: "Todavía no has guardado viviendas.",
-      favoritesShowing: "Mostrando viviendas guardadas.",
       switchLabel: "Elige tu perfil",
       tenant: "Buscar alojamiento",
       tenantSub: "Alojo a mi equipo",
@@ -60,7 +56,6 @@
       filtersBathrooms: "Baños mínimos",
       filtersAny: "Cualquiera",
       filtersClear: "Limpiar filtros",
-      filtersSaved: "Ver guardados",
       mapTitle: "Mapa interactivo",
       mapCopy: "Acércate, muévete por Zaragoza y toca un precio para ver la vivienda. Los pins se actualizan con los anuncios publicados.",
       assistantOpen: "¿Necesitas ayuda?",
@@ -101,9 +96,6 @@
     },
     en: {
       homeNav: "Home",
-      favorites: "Saved",
-      favoritesEmpty: "You have not saved any homes yet.",
-      favoritesShowing: "Showing saved homes.",
       switchLabel: "Choose your profile",
       tenant: "Find a stay",
       tenantSub: "Housing for my team",
@@ -151,7 +143,6 @@
       filtersBathrooms: "Minimum bathrooms",
       filtersAny: "Any",
       filtersClear: "Clear filters",
-      filtersSaved: "Show saved",
       mapTitle: "Interactive map",
       mapCopy: "Zoom, move around Zaragoza and tap a price to view the home. Pins update from the published listings.",
       assistantOpen: "Need help?",
@@ -295,17 +286,6 @@
     return typeof CONTACT_EMAIL !== "undefined" ? CONTACT_EMAIL : "info@ebrostay.com";
   }
 
-  function toast(message) {
-    var existing = document.querySelector(".ebro-toast");
-    if (existing) existing.remove();
-    var node = document.createElement("p");
-    node.className = "ebro-toast";
-    node.setAttribute("role", "status");
-    node.textContent = message;
-    document.body.appendChild(node);
-    setTimeout(function () { node.remove(); }, 3500);
-  }
-
   function addGlobalStyles() {
     if (document.getElementById("ebro-enhancement-styles")) return;
     var style = document.createElement("style");
@@ -361,14 +341,10 @@
       .trust-row { gap: 12px; }
       .trust-row span { display: inline-flex; align-items: center; gap: 7px; border: 0; border-radius: 0; padding: 0; background: transparent; color: rgba(255,255,255,.93); font-size: .92rem; }
       .trust-row span svg { width: 17px; height: 17px; color: #f3c2a6; }
-      .saved-flats-link { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 8px 12px; background: var(--surface); color: var(--text-brand); font-weight: 600; text-decoration: none; white-space: nowrap; }
-      .saved-flats-link svg { width: 16px; height: 16px; }
       .filter-panel .button.ghost, #resetAvailability { border-color: var(--green); color: var(--text-brand); font-weight: 600; }
       .enhanced-filter-row { display: grid; gap: 14px; }
       .enhanced-filter-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .quick-filters [data-quick="deposit"] { display: none !important; }
-      .quick-filters .saved-quick-filter { border-color: var(--green); color: var(--text-brand); }
-      .quick-filters .saved-quick-filter.is-active { color: #fff; background: var(--green); }
       .marketplace-layout { grid-template-columns: 260px minmax(0, 1.3fr) minmax(330px, 0.9fr); }
       .google-map-wrap { min-height: 560px; background: var(--green-900); }
       .listings-map .leaflet-tile { filter: saturate(.72) hue-rotate(32deg) contrast(.96) brightness(1.02); }
@@ -390,7 +366,6 @@
       .site-footer { flex-wrap: wrap; }
       .footer-legal-note { flex-basis: 100%; margin: 2px 0 0; color: var(--muted); font-size: .82rem; }
       .footer-legal-note a { color: var(--text-brand); font-weight: 600; }
-      .ebro-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 80; max-width: calc(100vw - 40px); border: 1px solid var(--green); border-left: 4px solid var(--green); border-radius: 8px; padding: 12px 14px; background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
       .support-fab { position: fixed; right: 22px; bottom: 22px; z-index: 70; display: inline-flex; align-items: center; gap: 9px; border: 0; border-radius: var(--radius-pill); padding: 12px 16px; color: #fff; background: var(--green); font-weight: 600; box-shadow: var(--shadow-brand); cursor: pointer; }
       .support-fab svg { width: 18px; height: 18px; }
       .support-panel { position: fixed; right: 22px; bottom: 82px; z-index: 70; display: none; width: min(360px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px; background: var(--surface); box-shadow: var(--shadow); }
@@ -607,30 +582,6 @@
       firstNav.href = firstNav.getAttribute("href")?.startsWith("index") ? "index.html#top" : "#top";
       firstNav.textContent = text("homeNav");
     }
-    var headerActions = document.querySelector(".header-actions");
-    if (!isAdminPage() && headerActions && !headerActions.querySelector(".saved-flats-link")) {
-      var hasSearchSection = !!document.querySelector("#search");
-      var saved = document.createElement("a");
-      saved.className = "saved-flats-link";
-      // On pages without a #search section, point at the home search instead of
-      // generating a dead same-page #search anchor.
-      saved.href = hasSearchSection ? "#search" : "index.html#saved";
-      saved.setAttribute("data-saved-flats-link", "");
-      saved.innerHTML = `${icon("heart")}<span></span>`;
-      var authButton = headerActions.querySelector(".auth-button") || headerActions.querySelector(".nav-cta");
-      headerActions.insertBefore(saved, authButton || headerActions.firstChild);
-      saved.addEventListener("click", function (event) {
-        if (!hasSearchSection) {
-          // Cross-page: navigate home and signal saved-only intent on arrival.
-          setSavedOnly(true);
-          return; // let the href (index.html#saved) drive navigation
-        }
-        event.preventDefault();
-        setSavedOnly(!isSavedOnly());
-        document.querySelector("#search")?.scrollIntoView({ behavior: "smooth" });
-      });
-    }
-    updateSavedLinks();
   }
 
   // Partner/owner portal pages have no tenant browsing context, so they should
@@ -644,7 +595,7 @@
     );
   }
 
-  // Owner-facing states must drop tenant-only header items (Saved, Find a stay,
+  // Owner-facing states must drop tenant-only header items (Find a stay,
   // My account) and surface owner-relevant actions instead (KAN-26).
   function applyOwnerNav(isOwner) {
     // Admin pages ship their own static admin nav (KAN-28); the tenant/owner
@@ -652,11 +603,6 @@
     if (isAdminPage()) return;
     var headerActions = document.querySelector(".header-actions");
     if (!headerActions) return;
-
-    // Saved-home nav only makes sense while a tenant is browsing listings.
-    headerActions.querySelectorAll("[data-saved-flats-link]").forEach(function (node) {
-      node.hidden = isOwner;
-    });
 
     // "My account" is the tenant booking account; hide it in owner states.
     var account = headerActions.querySelector(".admin-link[href*='account.html']");
@@ -680,34 +626,6 @@
         cta.setAttribute("href", cta.dataset.tenantHref);
       }
     }
-  }
-
-  function favoriteIds() {
-    try { return JSON.parse(localStorage.getItem("ebrostay-favorites") || "[]").map(String); } catch { return []; }
-  }
-
-  function isSavedOnly() {
-    try { return localStorage.getItem(SAVED_ONLY_KEY) === "true"; } catch { return false; }
-  }
-
-  function setSavedOnly(value) {
-    try { localStorage.setItem(SAVED_ONLY_KEY, value ? "true" : "false"); } catch { /* ignore */ }
-    updateSavedLinks();
-    applyEnhancedListingFilters();
-    if (value && favoriteIds().length === 0) toast(text("favoritesEmpty"));
-    if (value && favoriteIds().length > 0) toast(text("favoritesShowing"));
-  }
-
-  function updateSavedLinks() {
-    var count = favoriteIds().length;
-    document.querySelectorAll("[data-saved-flats-link] span, .saved-quick-filter span").forEach(function (node) {
-      node.textContent = `${text("favorites")} ${count ? `(${count})` : ""}`;
-    });
-    document.querySelectorAll("[data-saved-flats-link], .saved-quick-filter").forEach(function (node) {
-      var active = isSavedOnly();
-      node.classList.toggle("is-active", active);
-      if (node.classList.contains("saved-quick-filter")) node.setAttribute("aria-pressed", String(active));
-    });
   }
 
   function enhanceSearchFilters() {
@@ -740,28 +658,12 @@
     var reset = form.querySelector("#resetAvailability");
     if (reset) reset.textContent = text("filtersClear");
 
-    var quick = document.querySelector(".quick-filters");
-    if (quick && !quick.querySelector(".saved-quick-filter")) {
-      var savedButton = document.createElement("button");
-      savedButton.type = "button";
-      savedButton.className = "saved-quick-filter";
-      savedButton.setAttribute("data-saved-flats-link", "");
-      savedButton.setAttribute("aria-pressed", String(isSavedOnly()));
-      savedButton.innerHTML = `${icon("heart")} <span></span>`;
-      quick.appendChild(savedButton);
-      savedButton.addEventListener("click", function () { setSavedOnly(!isSavedOnly()); });
-    }
-
     form.addEventListener("input", function () { window.setTimeout(applyEnhancedListingFilters, 0); });
     form.addEventListener("change", function () { window.setTimeout(applyEnhancedListingFilters, 0); });
     form.addEventListener("reset", function () {
-      window.setTimeout(function () {
-        setSavedOnly(false);
-        applyEnhancedListingFilters();
-      }, 0);
+      window.setTimeout(applyEnhancedListingFilters, 0);
     });
     updateEnhancedFilterText();
-    updateSavedLinks();
   }
 
   function updateEnhancedFilterText() {
@@ -779,7 +681,6 @@
     var mapCopy = document.querySelector(".map-copy span");
     if (mapTitle) mapTitle.textContent = text("mapTitle");
     if (mapCopy) mapCopy.textContent = text("mapCopy");
-    updateSavedLinks();
   }
 
   function propertyById(id) {
@@ -795,7 +696,7 @@
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
-  // KAN-11: enhanced/address/saved-only filters no longer hide cards post-hoc.
+  // KAN-11: enhanced/address filters no longer hide cards post-hoc.
   // They feed the SAME filtered list that site.js renderProperties uses to draw
   // cards, the result count AND the map markers — one source of truth. We just
   // re-run that single pipeline; the filter values are read back inside
@@ -803,7 +704,6 @@
   function applyEnhancedListingFilters() {
     if (!document.querySelector("#propertyGrid")) return;
     if (typeof window.renderProperties === "function") window.renderProperties();
-    updateSavedLinks();
   }
 
   function amenityIcon(label) {
@@ -840,13 +740,12 @@
     if (!grid || grid.dataset.enhancedObserved) return;
     grid.dataset.enhancedObserved = "true";
     // renderProperties (site.js) owns the filtered card list now; when it rewrites
-    // the grid we only re-decorate (icons/saved links). We must NOT re-run the
+    // the grid we only re-decorate (icons). We must NOT re-run the
     // filter here or we would recurse with renderProperties' own DOM writes.
     new MutationObserver(function () {
       decoratePropertyCards();
-      updateSavedLinks();
     }).observe(grid, { childList: true });
-    grid.addEventListener("click", function () { window.setTimeout(function () { updateSavedLinks(); decoratePropertyCards(); }, 50); });
+    grid.addEventListener("click", function () { window.setTimeout(function () { decoratePropertyCards(); }, 50); });
   }
 
   function simplifyValueAndHow() {
@@ -1240,15 +1139,6 @@
     if (location.hash === "#owner") applyAudience("owner", true);
   }
 
-  // Deep-link / cross-page entry into saved-only mode via #saved (used by the
-  // Guardados link from pages that have no #search section).
-  function checkSavedHash() {
-    if (location.hash !== "#saved") return;
-    if (!document.querySelector("#search")) return;
-    setSavedOnly(true);
-    document.querySelector("#search")?.scrollIntoView({ behavior: "smooth" });
-  }
-
   function boot() {
     addGlobalStyles();
     applyKeyedTranslations(lang());
@@ -1257,7 +1147,6 @@
     initThemeToggle();
     initOwnerForm();
     checkOwnerHash();
-    checkSavedHash();
     enhanceSearchFilters();
     observeListings();
     decoratePropertyCards();
@@ -1269,7 +1158,6 @@
     initObservers();
     refreshIcons();
     window.addEventListener("hashchange", checkOwnerHash);
-    window.addEventListener("hashchange", checkSavedHash);
 
     document.querySelectorAll("[data-lang]").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -1284,7 +1172,6 @@
         applyEnhancedListingFilters();
         enhanceDetailPage();
         addOwnerExtras();
-        updateSavedLinks();
         refreshIcons();
       }, delay);
     });

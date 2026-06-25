@@ -1,6 +1,6 @@
 // Ebrostay Supabase backend bridge.
 // When supabase-config.js has credentials, listings, availability,
-// favorites, auth, and the contact form all run on Supabase.
+// auth, and the contact form all run on Supabase.
 // Without credentials every feature falls back to the static behavior.
 
 const EbrostayBackend = (() => {
@@ -303,23 +303,6 @@ const EbrostayBackend = (() => {
     return null;
   }
 
-  async function loadFavorites() {
-    if (!user) return null;
-    const { data, error } = await getClient().from("favorites").select("property_id");
-    if (error) return null;
-    return data.map((row) => row.property_id);
-  }
-
-  async function saveFavorite(propertyId, on) {
-    if (!user) return;
-    const sb = getClient();
-    if (on) {
-      await sb.from("favorites").upsert({ user_id: user.id, property_id: propertyId });
-    } else {
-      await sb.from("favorites").delete().match({ user_id: user.id, property_id: propertyId });
-    }
-  }
-
   async function sendInquiry(fields) {
     const sb = getClient();
     if (!sb) return { ok: false };
@@ -494,7 +477,7 @@ const EbrostayBackend = (() => {
     return { ok: !error };
   }
 
-  // Admin: permanently delete a property. Availability, photos, favorites and
+  // Admin: permanently delete a property. Availability, photos and
   // guest info rows cascade away with it, but the photo files in storage do
   // not, so remove those first (best-effort). RLS limits this to admins.
   async function deleteProperty(propertyId) {
@@ -532,8 +515,6 @@ const EbrostayBackend = (() => {
     setPropertyPublished,
     deleteProperty,
     deactivateAccount,
-    loadFavorites,
-    saveFavorite,
     sendInquiry,
     submitOwnerLead,
     loadOwnerDashboard,

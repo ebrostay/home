@@ -99,7 +99,6 @@ function setupDatePickers() {
 let activeFilter = null;
 let statusOverride = null;
 let quickFilters = new Set();
-let favorites = new Set(JSON.parse(localStorage.getItem("ebrostay-favorites") || "[]"));
 
 const t = (key) => translations[currentLanguage][key] || translations.es[key] || key;
 
@@ -156,20 +155,17 @@ function passesQuickFilters(property) {
   return true;
 }
 
-// Enhanced filters (address, min bedrooms/bathrooms, saved-only) are injected by
+// Enhanced filters (address, min bedrooms/bathrooms) are injected by
 // enhance.js. They are read here so the SAME filtered list drives cards, the
 // result count AND the map markers — one source of truth (KAN-11).
 function getEnhancedFilters() {
   const addressInput = document.querySelector("#addressQuery");
   const minBedrooms = Number(document.querySelector("#minBedrooms")?.value || 0);
   const minBathrooms = Number(document.querySelector("#minBathrooms")?.value || 0);
-  let savedOnly = false;
-  try { savedOnly = localStorage.getItem("ebrostay-saved-only") === "true"; } catch { savedOnly = false; }
   return {
     address: (addressInput?.value || "").trim().toLowerCase(),
     minBedrooms,
-    minBathrooms,
-    savedOnly
+    minBathrooms
   };
 }
 
@@ -190,7 +186,6 @@ function passesEnhancedFilters(property, enhanced) {
   if (enhanced.address && !propertyMatchesText(property, enhanced.address)) return false;
   if (enhanced.minBedrooms && Number(property.bedrooms || 0) < enhanced.minBedrooms) return false;
   if (enhanced.minBathrooms && Number(property.bathrooms || 0) < enhanced.minBathrooms) return false;
-  if (enhanced.savedOnly && !favorites.has(String(property.id))) return false;
   return true;
 }
 
@@ -351,16 +346,10 @@ function renderProperties() {
   const filtered = sortProperties(properties.filter((property) => isAvailable(property, activeFilter)), selectedSort);
   const count = filtered.length;
   const enhanced = getEnhancedFilters();
-  const enhancedActive = Boolean(enhanced.address || enhanced.minBedrooms || enhanced.minBathrooms || enhanced.savedOnly);
+  const enhancedActive = Boolean(enhanced.address || enhanced.minBedrooms || enhanced.minBathrooms);
 
   if (statusOverride) availabilityStatus.textContent = statusOverride;
-  else if (enhanced.savedOnly) availabilityStatus.textContent = count === 0 ? t("status.savedEmpty") : t("status.saved");
   else if (!activeFilter && quickFilters.size === 0 && !enhancedActive) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
-  // Saved-only is its own status voice so the header Guardados view announces
-  // itself (KAN-12), while still flowing through the one filtered pipeline.
-  else if (enhanced.savedOnly && count === 0) availabilityStatus.textContent = t("status.savedNone");
-  else if (enhanced.savedOnly && count === 1) availabilityStatus.textContent = t("status.savedOne");
-  else if (enhanced.savedOnly) availabilityStatus.textContent = interpolate("status.saved", { count });
   else if (count === 0) availabilityStatus.textContent = t("status.none");
   else if (count === 1) availabilityStatus.textContent = t("status.one");
   else availabilityStatus.textContent = interpolate("status.matches", { count });
@@ -381,7 +370,6 @@ function renderProperties() {
   }
 
   propertyGrid.innerHTML = filtered.map((property) => {
-    const isFavorite = favorites.has(property.id);
     const detailUrl = `property.html?id=${property.id}`;
     const badges = badgeList(property).map((key) => `<span>${t(key)}</span>`).join("");
     const amenities = property.amenities.map((key) => `<span>${t(`amenity.${key}`)}</span>`).join("");
@@ -393,7 +381,6 @@ function renderProperties() {
       <article class="property-card" data-property-id="${property.id}">
         <a class="property-media property-${property.addressKey}" href="${detailUrl}" aria-label="${t(property.nameKey)}"${mediaStyle}>
           <span class="availability-pill">${t("listing.available")}</span>
-          <button class="favorite-button${isFavorite ? " is-active" : ""}" type="button" data-favorite="${property.id}" aria-label="${isFavorite ? t("listing.saved") : t("listing.favorite")}">${isFavorite ? t("listing.saved") : t("listing.favorite")}</button>
         </a>
         <div class="property-body">
           <div class="property-title-row">
@@ -430,7 +417,7 @@ function renderProperties() {
 }
 
 // Exposed so enhance.js (a separate IIFE) can drive the single render pipeline
-// after changing enhanced/saved-only filters instead of hiding cards post-hoc.
+// after changing enhanced filters instead of hiding cards post-hoc.
 window.renderProperties = renderProperties;
 
 function applyLanguage(language) {
@@ -579,18 +566,8 @@ if (resetAvailability) {
 
 if (propertyGrid) {
   propertyGrid.addEventListener("click", (event) => {
-    const favoriteId = event.target.closest("[data-favorite]")?.dataset.favorite;
     const requestId = event.target.closest("[data-request]")?.dataset.request;
     const mapFocusId = event.target.closest("[data-map-focus]")?.dataset.mapFocus;
-
-    if (favoriteId) {
-      event.preventDefault();
-      const turnedOn = !favorites.has(favoriteId);
-      turnedOn ? favorites.add(favoriteId) : favorites.delete(favoriteId);
-      localStorage.setItem("ebrostay-favorites", JSON.stringify([...favorites]));
-      if (window.EbrostayBackend?.getUser()) EbrostayBackend.saveFavorite(favoriteId, turnedOn);
-      renderProperties();
-    }
 
     if (mapFocusId) focusProperty(mapFocusId);
 
@@ -649,21 +626,6 @@ function updateAuthUI(user) {
   if (userChip) userChip.hidden = !configured || !user;
   if (user && userEmail) userEmail.textContent = user.email || "";
   if (adminLink) adminLink.hidden = !EbrostayBackend?.getIsAdmin();
-}
-
-async function syncFavorites() {
-  const remote = await EbrostayBackend.loadFavorites();
-  if (remote === null) return;
-  const merged = new Set(remote);
-  favorites.forEach((id) => {
-    if (!merged.has(id)) {
-      merged.add(id);
-      EbrostayBackend.saveFavorite(id, true);
-    }
-  });
-  favorites = merged;
-  localStorage.setItem("ebrostay-favorites", JSON.stringify([...favorites]));
-  renderProperties();
 }
 
 // Auth dialog modes: signin / signup (tabs), reset (forgot password),
@@ -838,12 +800,6 @@ if (window.EbrostayBackend) {
             return;
           }
         } catch { /* corrupted entry */ }
-      }
-      if (user) {
-        syncFavorites();
-      } else {
-        favorites = new Set(JSON.parse(localStorage.getItem("ebrostay-favorites") || "[]"));
-        renderProperties();
       }
     }
   });

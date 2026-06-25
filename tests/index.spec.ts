@@ -264,8 +264,7 @@ test.describe('Contact section', () => {
       (window as any).EbrostayBackend = {
         isConfigured: () => true,
         sendInquiry: async () => ({ ok: true }),
-        getIsAdmin: () => false,
-        loadFavorites: async () => []
+        getIsAdmin: () => false
       };
     });
     const form = page.locator('#inquiryForm');
@@ -288,34 +287,6 @@ test.describe('Language switching', () => {
     await page.locator('[data-lang="en"]').click();
     await page.locator('[data-lang="es"]').click();
     await expect(page.locator('[data-lang="es"]')).toHaveClass(/is-active/);
-  });
-});
-
-test.describe('Saved homes — header Guardados (KAN-12)', () => {
-  test('header Guardados applies the saved-only filter to cards, quick filter, status and map pins', async ({ page }) => {
-    await page.locator('#propertyGrid .property-card').first().waitFor();
-
-    const cards = page.locator('#propertyGrid .property-card');
-    const totalCount = await cards.count();
-    expect(totalCount).toBeGreaterThan(1); // need an unsaved card to prove filtering
-
-    // Save exactly one listing.
-    await cards.first().locator('.favorite-button').click();
-
-    // Activate saved-only via the header Guardados link.
-    await page.locator('.saved-flats-link').click();
-
-    // Only the saved card stays visible.
-    await expect(page.locator('#propertyGrid .property-card:not([hidden])')).toHaveCount(1);
-
-    // The saved quick filter button shows its active state (shared code path).
-    await expect(page.locator('.saved-quick-filter')).toHaveClass(/is-active/);
-
-    // Status reflects the saved-only state (count-agnostic: singular or plural).
-    await expect(page.locator('#availabilityStatus')).toContainText(/saved homes?|viviendas? guardadas?/i);
-
-    // Map pins match the single visible card.
-    await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1);
   });
 });
 

@@ -68,6 +68,11 @@ const EbrostayBackend = (() => {
       checked: row.checked,
       depositProtected: row.deposit_protected,
       billsIncluded: row.bills_included,
+      // Prefer an explicit bills_policy column; fall back to the legacy
+      // bills_included boolean combined with a utilities cap so older
+      // databases (no bills_policy column) still surface a capped policy.
+      billsPolicy: row.bills_policy
+        || (row.bills_included ? (row.utilities_cap_eur ? "capped" : "included") : "excluded"),
       amenities: row.amenities || [],
       bedrooms: row.bedrooms,
       bathrooms: row.bathrooms,

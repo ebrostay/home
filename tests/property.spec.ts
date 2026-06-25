@@ -159,10 +159,29 @@ test.describe('Property detail page — cost policy badges (KAN-10)', () => {
 });
 
 test.describe('Property detail page — invalid ID', () => {
-  test('redirects to search on unknown property ID', async ({ page }) => {
+  test('shows an explicit not-found state and does not silently redirect', async ({ page }) => {
     await page.route(/supabase\.co/, route => route.fulfill({ status: 500, body: '{"error":"test-blocked"}' }));
-    await page.goto('/property.html?id=nonexistent');
-    // JS redirects to index.html#search when the property is not found
-    await expect(page).toHaveURL(/#search/);
+    await page.goto('/property.html?id=DOESNOTEXIST');
+
+    // Stays on the property page — no silent redirect to search.
+    await expect(page).toHaveURL(/property\.html\?id=DOESNOTEXIST/);
+    await expect(page).not.toHaveURL(/#search/);
+
+    // The friendly not-found state is shown, and the listing layout is hidden
+    // (so unpublished IDs never flash the fallback catalogue).
+    const notFound = page.locator('#detailNotFound');
+    await expect(notFound).toBeVisible();
+    await expect(page.locator('#notFoundTitle')).not.toBeEmpty();
+    await expect(page.locator('#detailMain')).toBeHidden();
+
+    // CTA back to current listings.
+    const listings = page.locator('#notFoundListings');
+    await expect(listings).toBeVisible();
+    await expect(listings).toHaveAttribute('href', /#search/);
+
+    // Contact / WhatsApp help CTA.
+    const whatsapp = page.locator('#notFoundWhatsapp');
+    await expect(whatsapp).toBeVisible();
+    await expect(whatsapp).toHaveAttribute('href', /wa\.me/);
   });
 });

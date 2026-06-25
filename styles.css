@@ -1032,6 +1032,30 @@ a.property-media {
   text-decoration: none;
 }
 
+.detail-notfound {
+  max-width: 620px;
+  margin: 48px auto;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.detail-notfound h1 {
+  margin: 0 0 14px;
+}
+
+.detail-notfound p {
+  margin: 0 auto 28px;
+  max-width: 52ch;
+  color: var(--ink-soft, inherit);
+}
+
+.detail-notfound-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
 .detail-back:hover {
   text-decoration: underline;
 }

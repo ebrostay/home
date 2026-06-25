@@ -45,6 +45,16 @@
     </header>
 
     <main class="detail-page">
+      <section class="detail-notfound" id="detailNotFound" hidden>
+        <h1 id="notFoundTitle" data-i18n="notfound.title">Esta vivienda ya no está disponible</h1>
+        <p id="notFoundCopy" data-i18n="notfound.copy">El anuncio que buscas no existe o ya no está publicado. Puede que se haya alquilado o retirado. Mira nuestras viviendas disponibles o escríbenos y te ayudamos a encontrar tu próxima estancia.</p>
+        <div class="detail-notfound-actions">
+          <a class="button primary" id="notFoundListings" href="index.html#search" data-i18n="notfound.listings">Ver viviendas disponibles</a>
+          <a class="button whatsapp-button" id="notFoundWhatsapp" href="#" target="_blank" rel="noopener" data-i18n="notfound.whatsapp">Pídenos ayuda por WhatsApp</a>
+        </div>
+      </section>
+
+      <div class="detail-layout-wrap" id="detailMain">
       <a class="detail-back" href="index.html#search">&larr; <span data-i18n="detail.back">Volver a resultados</span></a>
 
       <div class="detail-media" id="detailMedia">
@@ -138,6 +148,7 @@
             <p class="booking-note" data-i18n="book.note">Envíanos tu solicitud sin pagar nada ahora. Revisamos la disponibilidad y te respondemos en breve para confirmar la reserva. El total es solo una estimación (estancia completa, comisión de gestión y fianza reembolsable).</p>
           </div>
         </aside>
+      </div>
       </div>
     </main>
 

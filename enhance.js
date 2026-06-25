@@ -1142,11 +1142,26 @@
   // Replace native <select> popups (unstyleable in Safari) with an accessible,
   // themed custom dropdown. The native <select> stays as the source of truth so
   // form submission and existing change-listeners keep working unchanged.
+  // Flatpickr renders its own month <select> (.flatpickr-monthDropdown-months)
+  // inside the calendar popup. It owns that element's styling and positioning,
+  // so wrapping it in our custom dropdown breaks the calendar header. Skip it.
+  function isFlatpickrSelect(select) {
+    return select.classList.contains("flatpickr-monthDropdown-months") ||
+      Boolean(select.closest && select.closest(".flatpickr-calendar"));
+  }
+
   function enhanceSelects(root) {
     var scope = root || document;
     var selects = scope.querySelectorAll("select:not([data-enhanced-select])");
     Array.prototype.forEach.call(selects, function (select) {
       if (select.multiple || select.size > 1) return;
+      if (isFlatpickrSelect(select)) {
+        // Mark it enhanced-but-untouched so the :not([data-enhanced-select])
+        // selector and the MutationObserver stop revisiting it on every
+        // flatpickr re-render.
+        select.setAttribute("data-enhanced-select", "");
+        return;
+      }
       try {
         buildCustomSelect(select);
       } catch (e) {

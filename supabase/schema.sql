@@ -24,6 +24,8 @@ create table if not exists public.properties (
   checked boolean not null default true,
   deposit_protected boolean not null default true,
   bills_included boolean not null default true,
+  bills_policy text not null default 'included'
+    check (bills_policy in ('included', 'capped', 'excluded')),
   amenities text[] not null default '{}',
   name text not null,
   area_es text,
@@ -343,6 +345,14 @@ update public.properties set
   self_checkin = coalesce(self_checkin, true),
   min_stay_months = coalesce(min_stay_months, 1)
 where id = 'movera1';
+
+-- Both Movera homes bill utilities up to a 50 EUR/room cap (excess billed
+-- separately), so their real cost policy is "capped", not plain bills-included.
+update public.properties set
+  bills_included = true,
+  utilities_cap_eur = coalesce(utilities_cap_eur, 50),
+  bills_policy = 'capped'
+where id in ('movera0', 'movera1');
 
 -- ---------------------------------------------------------------------------
 -- After running this file:

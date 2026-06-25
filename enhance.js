@@ -193,7 +193,9 @@
   };
 
   function isAdminPage() {
-    return !!document.querySelector(".admin-page");
+    // partner.html shares the .admin-page styling class but is an owner portal,
+    // so match the admin panel by path instead of the shared CSS class.
+    return (window.location.pathname || "").toLowerCase().indexOf("admin") !== -1;
   }
 
   function lang() {
@@ -645,6 +647,9 @@
   // Owner-facing states must drop tenant-only header items (Saved, Find a stay,
   // My account) and surface owner-relevant actions instead (KAN-26).
   function applyOwnerNav(isOwner) {
+    // Admin pages ship their own static admin nav (KAN-28); the tenant/owner
+    // audience CTA must not overwrite it.
+    if (isAdminPage()) return;
     var headerActions = document.querySelector(".header-actions");
     if (!headerActions) return;
 

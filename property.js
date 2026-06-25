@@ -704,11 +704,41 @@ async function boot() {
     window.umami?.track("view-property", { property: property.id });
   });
 
-  // "Reservar" buttons on the listing cards land here with #book
-  if (window.location.hash === "#book") {
-    const widget = document.querySelector("#bookingWidget");
-    const target = widget && !widget.hidden ? widget : document.querySelector(".detail-request-card");
-    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  // "Reservar" buttons on the listing cards land here with #book. The page is
+  // built in JS, so the #book anchor only exists now (after hydration) — bring
+  // the booking card into view and move focus to where the visitor acts next.
+  if (window.location.hash === "#book") scrollToBooking();
+}
+
+// Scroll the booking card into view and move focus to the reservation widget.
+// The detail page builds its DOM in JS, so the #book anchor only exists after
+// hydration — a plain CSS anchor can't land here. We focus the booking heading
+// (made programmatically focusable) rather than the start-date field on purpose:
+// flatpickr's date input is readonly and pops its calendar when focused.
+function scrollToBooking() {
+  const anchor = document.querySelector("#book");
+  if (!anchor) return;
+  const widget = document.querySelector("#bookingWidget");
+  const target = widget && !widget.hidden ? widget : anchor;
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const focusTarget =
+    (widget && !widget.hidden && widget.querySelector("h4")) ||
+    anchor.querySelector("h4, h3, h2") ||
+    anchor;
+  if (!/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(focusTarget.tagName) && !focusTarget.hasAttribute("tabindex")) {
+    focusTarget.setAttribute("tabindex", "-1");
+  }
+
+  // Other async widgets (the Leaflet map) grab focus while they settle, so claim
+  // focus once the page has fully loaded — after them — and leave the scroll in
+  // place. window "load" has usually already fired by hydration; fall back to a
+  // microtask-deferred focus in that case.
+  const claimFocus = () => focusTarget.focus({ preventScroll: true });
+  if (document.readyState === "complete") {
+    requestAnimationFrame(() => requestAnimationFrame(claimFocus));
+  } else {
+    window.addEventListener("load", () => requestAnimationFrame(claimFocus), { once: true });
   }
 }
 

@@ -3004,6 +3004,233 @@ body.gallery-lock {
   z-index: 3;
 }
 
+/* Themed month dropdown (replaces the native <select> popup, which the OS
+   renders and CSS can't style). Built by enhanceMonthDropdown() in site.js. */
+.flatpickr-current-month { overflow: visible; }
+/* overflow:visible lets the dropdown spill out of the header; position+z-index
+   lift the whole header (and the dropdown) into a stacking context above the
+   day grid, so the list paints over the day numbers instead of under them. */
+.flatpickr-months {
+  overflow: visible;
+  position: relative;
+  z-index: 5;
+}
+
+.fp-month {
+  position: relative;
+  display: inline-flex;
+}
+/* High specificity (.flatpickr-calendar … ) to beat flatpickr's own
+   .flatpickr-current-month .flatpickr-monthDropdown-months width rule. */
+.flatpickr-calendar .fp-month .fp-month__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  max-width: none;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  pointer-events: none;
+}
+.fp-month__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.fp-month__button::after {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask: center / 14px no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  mask: center / 14px no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  transition: transform 0.15s ease;
+}
+.fp-month:hover .fp-month__button { background: var(--sunken); }
+.fp-month.is-open .fp-month__button {
+  background: var(--sunken);
+  border-color: var(--line);
+}
+.fp-month.is-open .fp-month__button::after { transform: rotate(180deg); }
+
+.fp-month__list {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
+  max-height: 220px;
+  padding: 6px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+}
+.fp-month__option {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+.fp-month__option:hover,
+.fp-month__option:focus-visible {
+  background: var(--sunken);
+  outline: none;
+}
+.fp-month__option[aria-selected="true"] {
+  color: #fff;
+  background: var(--green);
+}
+
+[data-theme="dark"] .fp-month__option:hover,
+[data-theme="dark"] .fp-month__option:focus-visible,
+[data-theme="dark"] .fp-month:hover .fp-month__button,
+[data-theme="dark"] .fp-month.is-open .fp-month__button {
+  background: rgba(245, 243, 238, 0.08);
+}
+[data-theme="dark"] .fp-month__option[aria-selected="true"] {
+  background: var(--green-400);
+  color: var(--text-inverse);
+}
+
+/* Flatpickr: use the brand green for the selected day / today marker instead
+   of flatpickr's stock blue, in both light and dark themes. */
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.flatpickr-day.today:not(.selected) {
+  border-color: var(--green);
+}
+.flatpickr-day.today:not(.selected):hover {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+/* Flatpickr dark theme — flatpickr ships a light-only stylesheet, so the
+   popup calendar needs explicit overrides under [data-theme="dark"]. */
+[data-theme="dark"] .flatpickr-calendar {
+  background: var(--surface-card);
+  color: var(--text-body);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="dark"] .flatpickr-calendar.arrowTop::before { border-bottom-color: var(--border-subtle); }
+[data-theme="dark"] .flatpickr-calendar.arrowTop::after { border-bottom-color: var(--surface-card); }
+[data-theme="dark"] .flatpickr-calendar.arrowBottom::before { border-top-color: var(--border-subtle); }
+[data-theme="dark"] .flatpickr-calendar.arrowBottom::after { border-top-color: var(--surface-card); }
+
+[data-theme="dark"] .flatpickr-months .flatpickr-month,
+[data-theme="dark"] .flatpickr-current-month,
+[data-theme="dark"] .flatpickr-current-month input.cur-year,
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .flatpickr-weekdays { background: transparent; }
+[data-theme="dark"] span.flatpickr-weekday { color: var(--green-300); }
+
+/* Week-number column (weekNumbers: true): flatpickr's defaults are a near-black
+   number and a light separator, both unreadable on the dark calendar. */
+[data-theme="dark"] .flatpickr-weekwrapper span.flatpickr-day,
+[data-theme="dark"] .flatpickr-weekwrapper span.flatpickr-day:hover {
+  color: var(--text-subtle);
+  background: transparent;
+}
+[data-theme="dark"] .flatpickr-weekwrapper .flatpickr-weeks {
+  box-shadow: 1px 0 0 var(--border-subtle);
+}
+
+[data-theme="dark"] .flatpickr-months .flatpickr-prev-month svg,
+[data-theme="dark"] .flatpickr-months .flatpickr-next-month svg {
+  fill: var(--text-muted);
+}
+[data-theme="dark"] .flatpickr-months .flatpickr-prev-month:hover svg,
+[data-theme="dark"] .flatpickr-months .flatpickr-next-month:hover svg {
+  fill: var(--text-strong);
+}
+
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months {
+  background: var(--surface-card);
+}
+[data-theme="dark"] .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+  background: var(--surface-card);
+  color: var(--text-body);
+}
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+  background: rgba(245, 243, 238, 0.06);
+}
+[data-theme="dark"] .numInputWrapper span.arrowUp::after { border-bottom-color: var(--text-muted); }
+[data-theme="dark"] .numInputWrapper span.arrowDown::after { border-top-color: var(--text-muted); }
+[data-theme="dark"] .numInputWrapper:hover { background: rgba(245, 243, 238, 0.06); }
+
+[data-theme="dark"] .flatpickr-day { color: var(--text-body); }
+[data-theme="dark"] .flatpickr-day.today { border-color: var(--green-400); }
+[data-theme="dark"] .flatpickr-day.today:hover {
+  background: var(--green-400);
+  border-color: var(--green-400);
+  color: var(--text-inverse);
+}
+[data-theme="dark"] .flatpickr-day:hover,
+[data-theme="dark"] .flatpickr-day:focus,
+[data-theme="dark"] .flatpickr-day.prevMonthDay:hover,
+[data-theme="dark"] .flatpickr-day.nextMonthDay:hover {
+  background: rgba(245, 243, 238, 0.08);
+  border-color: transparent;
+}
+[data-theme="dark"] .flatpickr-day.selected,
+[data-theme="dark"] .flatpickr-day.selected:hover,
+[data-theme="dark"] .flatpickr-day.startRange,
+[data-theme="dark"] .flatpickr-day.endRange,
+[data-theme="dark"] .flatpickr-day.selected.startRange,
+[data-theme="dark"] .flatpickr-day.selected.endRange {
+  background: var(--green-400);
+  border-color: var(--green-400);
+  color: var(--text-inverse);
+}
+[data-theme="dark"] .flatpickr-day.inRange {
+  background: var(--surface-brand-soft);
+  border-color: var(--surface-brand-soft);
+  box-shadow: -5px 0 0 var(--surface-brand-soft), 5px 0 0 var(--surface-brand-soft);
+}
+[data-theme="dark"] .flatpickr-day.prevMonthDay,
+[data-theme="dark"] .flatpickr-day.nextMonthDay,
+[data-theme="dark"] .flatpickr-day.flatpickr-disabled,
+[data-theme="dark"] .flatpickr-day.flatpickr-disabled:hover {
+  color: var(--text-subtle);
+  background: transparent;
+  border-color: transparent;
+}
+
 /* Account page: booking cards with cover photo */
 .account-bookings .booking-card {
   padding: 0;
@@ -3439,8 +3666,10 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--ring-focus);
 }
 
-/* Selects: remove native (Safari) appearance, add consistent custom chevron */
-select {
+/* Selects: remove native (Safari) appearance, add consistent custom chevron.
+   Exclude flatpickr's month dropdown — it's a native <select> that flatpickr
+   styles itself, and our chevron/padding would otherwise duplicate onto it. */
+select:not(.flatpickr-monthDropdown-months) {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -3451,8 +3680,8 @@ select {
   background-size: 16px;
   cursor: pointer;
 }
-select::-ms-expand { display: none; }
-[data-theme="dark"] select {
+select:not(.flatpickr-monthDropdown-months)::-ms-expand { display: none; }
+[data-theme="dark"] select:not(.flatpickr-monthDropdown-months) {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a7a08f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
 }
 

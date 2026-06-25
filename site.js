@@ -52,12 +52,140 @@ function flatpickrLocale() {
   return currentLanguage === "es" && typeof flatpickr !== "undefined" ? flatpickr.l10ns.es : "default";
 }
 
+function addMonths(date, count) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  result.setMonth(result.getMonth() + count);
+  return result;
+}
+
 function defaultStayRange() {
   const checkIn = new Date();
   checkIn.setHours(0, 0, 0, 0);
-  const checkOut = new Date(checkIn);
-  checkOut.setMonth(checkOut.getMonth() + 1);
-  return { checkIn, checkOut };
+  // Move-out defaults to (and can be no earlier than) one month after move-in.
+  return { checkIn, checkOut: addMonths(checkIn, 1) };
+}
+
+// Keep the move-out picker at least one month after the chosen move-in date,
+// pushing its value forward if the current selection is now too early.
+function enforceMinCheckOut(outPicker, checkInDate) {
+  if (!outPicker || !checkInDate) return;
+  const minCheckOut = addMonths(checkInDate, 1);
+  outPicker.set("minDate", minCheckOut);
+  const current = outPicker.selectedDates[0];
+  if (!current || current < minCheckOut) outPicker.setDate(minCheckOut, true);
+}
+
+// Flatpickr renders its month picker as a native <select>, whose open option
+// list uses the OS-native popup that CSS can't style (and looks foreign on the
+// calendar). Replace it with a themed dropdown that mirrors the native select
+// (kept in the DOM as the source of truth so flatpickr's month switching and
+// keyboard access keep working).
+function enhanceMonthDropdown(instance) {
+  const select = instance?.monthsDropdownContainer;
+  if (!select || select.dataset.fpStyled) return;
+  select.dataset.fpStyled = "1";
+
+  const wrap = document.createElement("div");
+  wrap.className = "fp-month";
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+  select.classList.add("fp-month__native");
+  select.setAttribute("tabindex", "-1");
+  select.setAttribute("aria-hidden", "true");
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "fp-month__button";
+  button.setAttribute("aria-haspopup", "listbox");
+  button.setAttribute("aria-expanded", "false");
+
+  const list = document.createElement("div");
+  list.className = "fp-month__list";
+  list.setAttribute("role", "listbox");
+  list.hidden = true;
+
+  wrap.appendChild(button);
+  wrap.appendChild(list);
+
+  let open = false;
+
+  function onDocPointer(event) {
+    if (!wrap.contains(event.target)) close();
+  }
+  function close() {
+    if (!open) return;
+    open = false;
+    list.hidden = true;
+    wrap.classList.remove("is-open");
+    button.setAttribute("aria-expanded", "false");
+    document.removeEventListener("mousedown", onDocPointer, true);
+  }
+  function openList() {
+    if (open) return;
+    open = true;
+    renderList();
+    list.hidden = false;
+    wrap.classList.add("is-open");
+    button.setAttribute("aria-expanded", "true");
+    document.addEventListener("mousedown", onDocPointer, true);
+    list.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }
+  function syncLabel() {
+    // Derive from instance.currentMonth, not the <select> index: on
+    // onMonthChange flatpickr has updated currentMonth but not yet the select.
+    const months = instance.l10n?.months?.longhand;
+    button.textContent = months
+      ? months[instance.currentMonth]
+      : (select.options[select.selectedIndex]?.text || "");
+  }
+  function renderList() {
+    list.innerHTML = "";
+    Array.prototype.forEach.call(select.options, (opt, index) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "fp-month__option";
+      item.setAttribute("role", "option");
+      item.textContent = opt.text;
+      if (index === select.selectedIndex) item.setAttribute("aria-selected", "true");
+      item.addEventListener("click", () => {
+        if (select.selectedIndex !== index) {
+          select.selectedIndex = index;
+          // Drives flatpickr's own month-switch handler bound to the select.
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        close();
+        button.focus();
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function sync() {
+    syncLabel();
+    if (open) renderList();
+  }
+
+  // Let flatpickr's onClose reset the list, and onMonthChange/onYearChange
+  // resync the label — flatpickr navigates by updating the native select's
+  // value, which fires no "change" event for us to listen to.
+  select._fpCloseMonthList = close;
+  select._fpSyncMonth = sync;
+
+  button.addEventListener("click", () => (open ? close() : openList()));
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+    else if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openList();
+    }
+  });
+
+  // Flatpickr rebuilds the <option>s when the year changes (months get enabled/
+  // disabled) and updates selectedIndex when navigating — keep button + list in sync.
+  syncLabel();
+  new MutationObserver(sync).observe(select, { childList: true });
+  select.addEventListener("change", sync);
 }
 
 function setupDatePickers() {
@@ -69,30 +197,31 @@ function setupDatePickers() {
     altFormat: "j M Y",
     minDate: "today",
     locale: flatpickrLocale(),
-    disableMobile: true
+    disableMobile: true,
+    weekNumbers: true,
+    onReady: (selectedDates, dateStr, instance) => enhanceMonthDropdown(instance),
+    onClose: (selectedDates, dateStr, instance) => instance.monthsDropdownContainer?._fpCloseMonthList?.(),
+    onMonthChange: (selectedDates, dateStr, instance) => instance.monthsDropdownContainer?._fpSyncMonth?.(),
+    onYearChange: (selectedDates, dateStr, instance) => instance.monthsDropdownContainer?._fpSyncMonth?.()
   };
   const heroCheckIn = heroSearch?.querySelector('[name="checkIn"]');
   const heroCheckOut = heroSearch?.querySelector('[name="checkOut"]');
-  if (heroCheckOut) datePickers.heroOut = flatpickr(heroCheckOut, { ...base, minDate: defaultCheckIn, defaultDate: defaultCheckOut });
+  if (heroCheckOut) datePickers.heroOut = flatpickr(heroCheckOut, { ...base, minDate: defaultCheckOut, defaultDate: defaultCheckOut });
   if (heroCheckIn) {
     datePickers.hero = flatpickr(heroCheckIn, {
       ...base,
       defaultDate: defaultCheckIn,
-      onChange: (dates) => {
-        if (dates[0]) datePickers.heroOut?.set("minDate", dates[0]);
-      }
+      onChange: (dates) => enforceMinCheckOut(datePickers.heroOut, dates[0])
     });
   }
   const checkInElement = document.querySelector("#checkIn");
   const checkOutElement = document.querySelector("#checkOut");
   if (checkInElement && checkOutElement) {
-    datePickers.checkOut = flatpickr(checkOutElement, { ...base, minDate: defaultCheckIn, defaultDate: defaultCheckOut });
+    datePickers.checkOut = flatpickr(checkOutElement, { ...base, minDate: defaultCheckOut, defaultDate: defaultCheckOut });
     datePickers.checkIn = flatpickr(checkInElement, {
       ...base,
       defaultDate: defaultCheckIn,
-      onChange: (dates) => {
-        if (dates[0]) datePickers.checkOut.set("minDate", dates[0]);
-      }
+      onChange: (dates) => enforceMinCheckOut(datePickers.checkOut, dates[0])
     });
   }
 }

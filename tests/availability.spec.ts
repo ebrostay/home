@@ -12,8 +12,10 @@ async function search(page, checkIn: string, checkOut: string) {
       const inEl = (document.querySelector('#checkIn') as any)._flatpickr;
       const outEl = (document.querySelector('#checkOut') as any)._flatpickr;
       inEl.set('minDate', null);
-      outEl.set('minDate', null);
       inEl.setDate(ci, true);
+      // Setting check-in re-applies a "one month later" minDate to check-out
+      // (the min-stay rule), so clear it again before setting the test's range.
+      outEl.set('minDate', null);
       outEl.setDate(co, true);
     },
     [checkIn, checkOut],

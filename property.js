@@ -223,8 +223,21 @@ function renderConditions() {
 
   const videoButton = document.querySelector("#detailVideoButton");
   if (videoButton) {
-    videoButton.hidden = !property.videoUrl;
-    if (property.videoUrl) videoButton.href = property.videoUrl;
+    const hasVideo = Boolean(property.videoUrl);
+    videoButton.hidden = !hasVideo;
+    if (hasVideo) {
+      videoButton.href = property.videoUrl;
+      videoButton.target = "_blank";
+      videoButton.rel = "noopener";
+    } else {
+      // No real video tour: drop the dead "#" href entirely so no dead CTA remains.
+      videoButton.removeAttribute("href");
+      videoButton.removeAttribute("target");
+      videoButton.removeAttribute("rel");
+    }
+    // Let enhance.js mirror this state onto the media-tabs video CTA. Attribute
+    // changes don't trip its childList observer, so signal explicitly.
+    document.dispatchEvent(new CustomEvent("ebrostay:video-cta-updated"));
   }
 }
 

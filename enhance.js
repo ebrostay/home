@@ -62,13 +62,6 @@
       filtersSaved: "Ver guardados",
       mapTitle: "Mapa interactivo",
       mapCopy: "Acércate, muévete por Zaragoza y toca un precio para ver la vivienda. Los pins se actualizan con los anuncios publicados.",
-      chatTitle: "Cuéntanos qué necesitas",
-      chatIntro: "Escríbenos como en un chat. Dejamos tu solicitud preparada para WhatsApp o email.",
-      chatName: "Tu nombre",
-      chatEmail: "Tu email",
-      chatMessage: "Fechas, personas, zona o vivienda...",
-      chatWhatsapp: "Enviar por WhatsApp",
-      chatEmailCta: "Enviar por email",
       assistantOpen: "¿Necesitas ayuda?",
       assistantTitle: "Asistente Ebrostay",
       assistantCopy: "Dinos tu duda y te abrimos un WhatsApp con el mensaje preparado.",
@@ -149,13 +142,6 @@
       filtersSaved: "Show saved",
       mapTitle: "Interactive map",
       mapCopy: "Zoom, move around Zaragoza and tap a price to view the home. Pins update from the published listings.",
-      chatTitle: "Tell us what you need",
-      chatIntro: "Write as if it were a chat. We prepare your request for WhatsApp or email.",
-      chatName: "Your name",
-      chatEmail: "Your email",
-      chatMessage: "Dates, people, area or property...",
-      chatWhatsapp: "Send by WhatsApp",
-      chatEmailCta: "Send by email",
       assistantOpen: "Need help?",
       assistantTitle: "Ebrostay assistant",
       assistantCopy: "Tell us the issue and we will open WhatsApp with the message ready.",
@@ -346,14 +332,6 @@
       .how-section.is-slogan { grid-template-columns: .8fr 1.2fr; align-items: center; }
       .how-section.is-slogan .steps article { min-height: 150px; }
       .how-section.is-slogan .steps article svg { width: 22px; height: 22px; color: var(--green); }
-      .contact-chat { display: grid; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(18px, 4vw, 28px); background: var(--surface); box-shadow: var(--shadow-md); }
-      .contact-chat-thread { display: grid; gap: 10px; }
-      .chat-bubble { width: fit-content; max-width: 86%; border-radius: 18px; padding: 10px 13px; font-weight: 600; }
-      .chat-bubble.agent { background: var(--mist); color: var(--text-strong); }
-      .chat-bubble.user { justify-self: end; background: var(--green); color: #fff; }
-      .contact-chat-fields { display: grid; gap: 10px; }
-      .contact-chat-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-      .inquiry-form.is-replaced-by-chat { display: none; }
       .site-footer { flex-wrap: wrap; }
       .footer-legal-note { flex-basis: 100%; margin: 2px 0 0; color: var(--muted); font-size: .82rem; }
       .footer-legal-note a { color: var(--text-brand); font-weight: 600; }
@@ -780,57 +758,6 @@
     refreshIcons();
   }
 
-  function replaceContactFormWithChat() {
-    var form = document.querySelector("#inquiryForm");
-    var section = document.querySelector(".contact-section");
-    if (!form || !section || section.querySelector(".contact-chat")) return;
-    form.classList.add("is-replaced-by-chat");
-    var chat = document.createElement("form");
-    chat.className = "contact-chat";
-    chat.innerHTML = `
-      <div class="contact-chat-thread">
-        <div class="chat-bubble agent"><strong data-chat-title></strong><br><span data-chat-intro></span></div>
-        <div class="chat-bubble user">${lang() === "es" ? "Hola, necesito ayuda con una estancia." : "Hi, I need help with a stay."}</div>
-      </div>
-      <div class="contact-chat-fields">
-        <input name="name" autocomplete="name" required>
-        <input name="email" type="email" autocomplete="email" required>
-        <textarea name="message" rows="4" required></textarea>
-      </div>
-      <div class="contact-chat-actions">
-        <button class="button whatsapp-button" type="button" data-chat-whatsapp></button>
-        <button class="button ghost" type="submit" data-chat-email></button>
-      </div>
-    `;
-    form.insertAdjacentElement("afterend", chat);
-    chat.querySelector("[data-chat-whatsapp]").addEventListener("click", function () {
-      window.location.href = whatsappLink(chatMessage(chat));
-    });
-    chat.addEventListener("submit", function (event) {
-      event.preventDefault();
-      var subject = lang() === "es" ? "Solicitud Ebrostay" : "Ebrostay request";
-      window.location.href = `mailto:${contactEmail()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(chatMessage(chat))}`;
-    });
-    updateContactChatText();
-  }
-
-  function chatMessage(form) {
-    var data = new FormData(form);
-    return `Name / Nombre: ${data.get("name") || ""}\nEmail: ${data.get("email") || ""}\n\n${data.get("message") || ""}`;
-  }
-
-  function updateContactChatText() {
-    var chat = document.querySelector(".contact-chat");
-    if (!chat) return;
-    setText(chat.querySelector("[data-chat-title]"), text("chatTitle"));
-    setText(chat.querySelector("[data-chat-intro]"), text("chatIntro"));
-    chat.querySelector('input[name="name"]').placeholder = text("chatName");
-    chat.querySelector('input[name="email"]').placeholder = text("chatEmail");
-    chat.querySelector('textarea[name="message"]').placeholder = text("chatMessage");
-    setText(chat.querySelector("[data-chat-whatsapp]"), text("chatWhatsapp"));
-    setText(chat.querySelector("[data-chat-email]"), text("chatEmailCta"));
-  }
-
   function addFooterLegal() {
     var footer = document.querySelector(".site-footer");
     if (!footer) return;
@@ -1078,7 +1005,6 @@
     improveNavigation();
     updateEnhancedFilterText();
     simplifyValueAndHow();
-    updateContactChatText();
     addFooterLegal();
     updateSupportText();
     updateDetailMediaTabs();
@@ -1204,7 +1130,6 @@
     observeListings();
     decoratePropertyCards();
     simplifyValueAndHow();
-    replaceContactFormWithChat();
     addFooterLegal();
     addSupportAssistant();
     enhanceDetailPage();

@@ -220,9 +220,17 @@ test.describe('Contact section', () => {
     await expect(btn).toHaveAttribute('href', /wa\.me/);
   });
 
+  test('shows exactly one lead form (no duplicate contact forms)', async ({ page }) => {
+    // KAN-14: the Contact section must hold a single primary lead form.
+    const section = page.locator('#contact');
+    await expect(section.locator('form')).toHaveCount(1);
+    await expect(section.locator('#inquiryForm')).toBeVisible();
+    // The old chat-style duplicate must no longer be injected.
+    await expect(page.locator('.contact-chat')).toHaveCount(0);
+  });
+
   test('inquiry form has all required fields', async ({ page }) => {
-    // enhance.js replaces #inquiryForm with a .contact-chat form; test the chat form
-    const form = page.locator('.contact-chat');
+    const form = page.locator('#inquiryForm');
     await expect(form.locator('[name="name"]')).toBeVisible();
     await expect(form.locator('[name="email"]')).toBeVisible();
     await expect(form.locator('[name="message"]')).toBeVisible();
@@ -230,9 +238,28 @@ test.describe('Contact section', () => {
   });
 
   test('name and email fields are required', async ({ page }) => {
-    const form = page.locator('.contact-chat');
+    const form = page.locator('#inquiryForm');
     await expect(form.locator('[name="name"]')).toHaveAttribute('required', '');
     await expect(form.locator('[name="email"]')).toHaveAttribute('required', '');
+  });
+
+  test('submitting the inquiry form shows a confirmation', async ({ page }) => {
+    // Force the backend path so submission resolves to an in-page confirmation
+    // (instead of a mailto: handoff) and assert the success note appears.
+    await page.evaluate(() => {
+      (window as any).EbrostayBackend = {
+        isConfigured: () => true,
+        sendInquiry: async () => ({ ok: true }),
+        getIsAdmin: () => false,
+        loadFavorites: async () => []
+      };
+    });
+    const form = page.locator('#inquiryForm');
+    await form.locator('[name="name"]').fill('Test User');
+    await form.locator('[name="email"]').fill('test@example.com');
+    await form.locator('[name="message"]').fill('Need a 3 month stay.');
+    await form.locator('button[type="submit"]').click();
+    await expect(form.locator('.form-note.is-success')).toBeVisible();
   });
 });
 

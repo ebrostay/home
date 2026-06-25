@@ -663,7 +663,8 @@
     if (account) account.hidden = isOwner;
 
     // Primary CTA: tenant search vs. owner onboarding/portal destination.
-    var cta = headerActions.querySelector(".nav-cta");
+    // Admin pre-login pages own their CTA statically (Acceso administración).
+    var cta = isAdminPage() ? null : headerActions.querySelector(".nav-cta");
     if (cta) {
       if (cta.dataset.tenantHref === undefined) cta.dataset.tenantHref = cta.getAttribute("href") || "#search";
       if (isOwner) {

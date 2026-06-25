@@ -354,6 +354,7 @@ function renderProperties() {
   const enhancedActive = Boolean(enhanced.address || enhanced.minBedrooms || enhanced.minBathrooms || enhanced.savedOnly);
 
   if (statusOverride) availabilityStatus.textContent = statusOverride;
+  else if (enhanced.savedOnly) availabilityStatus.textContent = count === 0 ? t("status.savedEmpty") : t("status.saved");
   else if (!activeFilter && quickFilters.size === 0 && !enhancedActive) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
   // Saved-only is its own status voice so the header Guardados view announces
   // itself (KAN-12), while still flowing through the one filtered pipeline.

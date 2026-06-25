@@ -41,6 +41,10 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
 
     await expect(page.locator('#bookingSummary')).toContainText('1 month');
 
+    // KAN-23: email/WhatsApp CTAs stay blocked until at least one tenant is given.
+    await page.locator('#bookingTenants').fill('Test Tenant');
+    await expect(page.locator('#bookingEmailButton')).toHaveAttribute('href', /mailto:/);
+
     const emailHref = await page.locator('#bookingEmailButton').getAttribute('href');
     const waHref = await page.locator('#bookingWhatsappButton').getAttribute('href');
     const email = decodeURIComponent(emailHref || '');
@@ -49,7 +53,7 @@ test.describe('Booking estimate — whole-month counting (KAN-7)', () => {
     for (const body of [email, wa]) {
       expect(body).toContain('1 month');
       expect(body).not.toContain('2 months');
-      expect(body).toContain('1,092.5 EUR'); // estimated total (KAN-20 format)
+      expect(body).toContain('1,092.5 EUR'); // estimated total (KAN-20 locale format)
     }
   });
 

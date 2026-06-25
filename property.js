@@ -432,21 +432,26 @@ function updateRequestLinks() {
   const payload = buildRequestPayload();
   const buttons = [emailButton, whatsappButton].filter(Boolean);
 
-  if (!payload.valid) {
-    buttons.forEach((button) => {
+  // Block *submission* until the required fields (dates + a tenant) are set —
+  // the click handler honours aria-disabled and nudges the visitor. We still
+  // keep the prefilled href populated as soon as there's a date estimate so the
+  // preview (and deep links with dates) always reflect the real request.
+  buttons.forEach((button) => {
+    if (payload.valid) {
+      button.removeAttribute("aria-disabled");
+      button.classList.remove("is-disabled");
+      button.removeAttribute("title");
+    } else {
       button.setAttribute("aria-disabled", "true");
       button.classList.add("is-disabled");
-      button.removeAttribute("href");
       button.title = t("request.missingFields");
-    });
+    }
+  });
+
+  if (payload.est.status !== "ok") {
+    buttons.forEach((button) => button.removeAttribute("href"));
     return;
   }
-
-  buttons.forEach((button) => {
-    button.removeAttribute("aria-disabled");
-    button.classList.remove("is-disabled");
-    button.removeAttribute("title");
-  });
 
   if (emailButton) {
     const subject = `${t("request.emailSubject")} – ${t(property.nameKey)}`;

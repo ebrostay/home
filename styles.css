@@ -3438,6 +3438,127 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--ring-focus);
 }
 
+/* Selects: remove native (Safari) appearance, add consistent custom chevron */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+select::-ms-expand { display: none; }
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a7a08f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+
+/* Custom select dropdown — replaces the unstyleable native popup (esp. Safari).
+   The native <select> is visually hidden but stays in the DOM as source of truth. */
+.select-ui {
+  position: relative;
+  width: 100%;
+}
+.select-ui__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.select-ui__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.select-ui__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-ui__button::after {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background-color: var(--muted);
+  -webkit-mask: center / 16px no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  mask: center / 16px no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  transition: transform 0.15s ease;
+}
+.select-ui.is-open .select-ui__button::after {
+  transform: rotate(180deg);
+}
+.select-ui__button:focus-visible,
+.select-ui.is-open .select-ui__button {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: var(--ring-focus);
+}
+.select-ui__list {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+.select-ui.is-up .select-ui__list {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+.select-ui__option {
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.select-ui__option.is-active {
+  background: var(--stone-100);
+}
+[data-theme="dark"] .select-ui__option.is-active {
+  background: rgba(245, 243, 238, 0.08);
+}
+.select-ui__option[aria-selected="true"] {
+  color: var(--green);
+  font-weight: 600;
+}
+.select-ui__option[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .property-card,
 .availability-filter,
 .map-card,

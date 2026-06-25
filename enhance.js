@@ -1139,6 +1139,205 @@
     if (location.hash === "#owner") applyAudience("owner", true);
   }
 
+  // Replace native <select> popups (unstyleable in Safari) with an accessible,
+  // themed custom dropdown. The native <select> stays as the source of truth so
+  // form submission and existing change-listeners keep working unchanged.
+  function enhanceSelects(root) {
+    var scope = root || document;
+    var selects = scope.querySelectorAll("select:not([data-enhanced-select])");
+    Array.prototype.forEach.call(selects, function (select) {
+      if (select.multiple || select.size > 1) return;
+      try {
+        buildCustomSelect(select);
+      } catch (e) {
+        /* leave native select in place on any failure */
+      }
+    });
+  }
+
+  // Catch selects added after load (e.g. admin forms, geocode picker).
+  function observeSelects() {
+    if (window.__ebrostaySelectObserver || !document.body) return;
+    var mo = new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var added = mutations[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          if (n.nodeType !== 1) continue;
+          if (n.tagName === "SELECT" || (n.querySelector && n.querySelector("select:not([data-enhanced-select])"))) {
+            enhanceSelects();
+            return;
+          }
+        }
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    window.__ebrostaySelectObserver = mo;
+  }
+
+  function buildCustomSelect(select) {
+    select.setAttribute("data-enhanced-select", "");
+
+    var wrap = document.createElement("div");
+    wrap.className = "select-ui";
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "select-ui__button";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+    if (select.id) button.setAttribute("aria-labelledby", "");
+
+    var label = document.createElement("span");
+    label.className = "select-ui__label";
+    button.appendChild(label);
+
+    var list = document.createElement("ul");
+    list.className = "select-ui__list";
+    list.setAttribute("role", "listbox");
+    list.hidden = true;
+
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    wrap.appendChild(button);
+    wrap.appendChild(list);
+    select.classList.add("select-ui__native");
+    select.setAttribute("tabindex", "-1");
+    select.setAttribute("aria-hidden", "true");
+
+    var open = false;
+    var activeIndex = -1;
+
+    function syncLabel() {
+      var opt = select.options[select.selectedIndex];
+      label.textContent = opt ? opt.textContent : "";
+    }
+
+    function renderOptions() {
+      list.innerHTML = "";
+      Array.prototype.forEach.call(select.options, function (opt, i) {
+        var li = document.createElement("li");
+        li.className = "select-ui__option";
+        li.setAttribute("role", "option");
+        li.textContent = opt.textContent;
+        li.dataset.index = i;
+        if (opt.disabled) li.setAttribute("aria-disabled", "true");
+        if (i === select.selectedIndex) li.setAttribute("aria-selected", "true");
+        li.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          if (opt.disabled) return;
+          choose(i);
+        });
+        li.addEventListener("mousemove", function () {
+          setActive(i);
+        });
+        list.appendChild(li);
+      });
+    }
+
+    function choose(i) {
+      if (i < 0 || i >= select.options.length) return;
+      select.selectedIndex = i;
+      select.dispatchEvent(new Event("input", { bubbles: true }));
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncLabel();
+      close();
+      button.focus();
+    }
+
+    function setActive(i) {
+      activeIndex = i;
+      Array.prototype.forEach.call(list.children, function (li) {
+        var on = +li.dataset.index === i;
+        li.classList.toggle("is-active", on);
+        if (on && li.scrollIntoView) {
+          var lr = li.getBoundingClientRect();
+          var cr = list.getBoundingClientRect();
+          if (lr.bottom > cr.bottom || lr.top < cr.top) li.scrollIntoView({ block: "nearest" });
+        }
+      });
+    }
+
+    function position() {
+      wrap.classList.remove("is-up");
+      var rect = button.getBoundingClientRect();
+      var spaceBelow = window.innerHeight - rect.bottom;
+      var needed = Math.min(list.scrollHeight, 260) + 8;
+      if (spaceBelow < needed && rect.top > spaceBelow) wrap.classList.add("is-up");
+    }
+
+    function openList() {
+      if (open || select.disabled) return;
+      renderOptions();
+      list.hidden = false;
+      open = true;
+      button.setAttribute("aria-expanded", "true");
+      wrap.classList.add("is-open");
+      position();
+      setActive(select.selectedIndex >= 0 ? select.selectedIndex : 0);
+      document.addEventListener("mousedown", onDocClick, true);
+      window.addEventListener("resize", close);
+      window.addEventListener("scroll", close, true);
+    }
+
+    function close() {
+      if (!open) return;
+      list.hidden = true;
+      open = false;
+      button.setAttribute("aria-expanded", "false");
+      wrap.classList.remove("is-open", "is-up");
+      document.removeEventListener("mousedown", onDocClick, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    }
+
+    function onDocClick(e) {
+      if (!wrap.contains(e.target)) close();
+    }
+
+    button.addEventListener("click", function () {
+      if (open) close();
+      else openList();
+    });
+
+    button.addEventListener("keydown", function (e) {
+      var key = e.key;
+      if (!open) {
+        if (key === "ArrowDown" || key === "ArrowUp" || key === "Enter" || key === " ") {
+          e.preventDefault();
+          openList();
+        }
+        return;
+      }
+      if (key === "ArrowDown") {
+        e.preventDefault();
+        setActive(Math.min(activeIndex + 1, select.options.length - 1));
+      } else if (key === "ArrowUp") {
+        e.preventDefault();
+        setActive(Math.max(activeIndex - 1, 0));
+      } else if (key === "Home") {
+        e.preventDefault();
+        setActive(0);
+      } else if (key === "End") {
+        e.preventDefault();
+        setActive(select.options.length - 1);
+      } else if (key === "Enter" || key === " ") {
+        e.preventDefault();
+        choose(activeIndex);
+      } else if (key === "Escape") {
+        e.preventDefault();
+        close();
+      }
+    });
+
+    // Keep label in sync when other code changes the value or translates options.
+    select.addEventListener("change", syncLabel);
+    var mo = new MutationObserver(syncLabel);
+    mo.observe(select, { childList: true, subtree: true, characterData: true });
+
+    syncLabel();
+  }
+
   function boot() {
     addGlobalStyles();
     applyKeyedTranslations(lang());
@@ -1156,6 +1355,8 @@
     enhanceDetailPage();
     addOwnerExtras();
     initObservers();
+    enhanceSelects();
+    observeSelects();
     refreshIcons();
     window.addEventListener("hashchange", checkOwnerHash);
 
@@ -1172,6 +1373,7 @@
         applyEnhancedListingFilters();
         enhanceDetailPage();
         addOwnerExtras();
+        enhanceSelects();
         refreshIcons();
       }, delay);
     });

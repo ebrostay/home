@@ -32,7 +32,7 @@ test.describe('KAN-6 availability search respects availableFrom', () => {
     const empty = page.locator('#propertyGrid .empty-state');
     await expect(empty).toBeVisible();
     await expect(empty.locator('a[href="#contact"]')).toBeVisible();
-    const wa = empty.locator('a[data-whatsapp]');
+    const wa = empty.locator('a[data-empty-whatsapp]');
     await expect(wa).toBeVisible();
     await expect(wa).toHaveAttribute('href', /wa\.me|whatsapp/i);
   });

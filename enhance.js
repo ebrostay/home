@@ -571,14 +571,22 @@
     }
     var headerActions = document.querySelector(".header-actions");
     if (headerActions && !headerActions.querySelector(".saved-flats-link")) {
+      var hasSearchSection = !!document.querySelector("#search");
       var saved = document.createElement("a");
       saved.className = "saved-flats-link";
-      saved.href = "#search";
+      // On pages without a #search section, point at the home search instead of
+      // generating a dead same-page #search anchor.
+      saved.href = hasSearchSection ? "#search" : "index.html#saved";
       saved.setAttribute("data-saved-flats-link", "");
       saved.innerHTML = `${icon("heart")}<span></span>`;
       var authButton = headerActions.querySelector(".auth-button") || headerActions.querySelector(".nav-cta");
       headerActions.insertBefore(saved, authButton || headerActions.firstChild);
       saved.addEventListener("click", function (event) {
+        if (!hasSearchSection) {
+          // Cross-page: navigate home and signal saved-only intent on arrival.
+          setSavedOnly(true);
+          return; // let the href (index.html#saved) drive navigation
+        }
         event.preventDefault();
         setSavedOnly(!isSavedOnly());
         document.querySelector("#search")?.scrollIntoView({ behavior: "smooth" });
@@ -1174,6 +1182,15 @@
     if (location.hash === "#owner") applyAudience("owner", true);
   }
 
+  // Deep-link / cross-page entry into saved-only mode via #saved (used by the
+  // Guardados link from pages that have no #search section).
+  function checkSavedHash() {
+    if (location.hash !== "#saved") return;
+    if (!document.querySelector("#search")) return;
+    setSavedOnly(true);
+    document.querySelector("#search")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   function boot() {
     addGlobalStyles();
     applyKeyedTranslations(lang());
@@ -1182,6 +1199,7 @@
     initThemeToggle();
     initOwnerForm();
     checkOwnerHash();
+    checkSavedHash();
     enhanceSearchFilters();
     observeListings();
     decoratePropertyCards();
@@ -1194,6 +1212,7 @@
     initObservers();
     refreshIcons();
     window.addEventListener("hashchange", checkOwnerHash);
+    window.addEventListener("hashchange", checkSavedHash);
 
     document.querySelectorAll("[data-lang]").forEach(function (button) {
       button.addEventListener("click", function () {

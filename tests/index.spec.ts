@@ -270,8 +270,8 @@ test.describe('Saved homes — header Guardados (KAN-12)', () => {
     // The saved quick filter button shows its active state (shared code path).
     await expect(page.locator('.saved-quick-filter')).toHaveClass(/is-active/);
 
-    // Status reflects the saved-only state.
-    await expect(page.locator('#availabilityStatus')).toContainText(/saved homes|viviendas guardadas/i);
+    // Status reflects the saved-only state (count-agnostic: singular or plural).
+    await expect(page.locator('#availabilityStatus')).toContainText(/saved homes?|viviendas? guardadas?/i);
 
     // Map pins match the single visible card.
     await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1);

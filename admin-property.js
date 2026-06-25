@@ -213,6 +213,10 @@ function renderEditForm() {
   const flag = (labelKey, name, checked) => `
     <label class="admin-flag"><input type="checkbox" name="${name}" ${checked ? "checked" : ""}> <span>${t(labelKey)}</span></label>
   `;
+  // Current cost policy for the row: explicit column wins, else derive from the
+  // legacy bills_included flag combined with any utilities cap.
+  const billsPolicyValue = row.bills_policy
+    || (row.bills_included ? (row.utilities_cap_eur ? "capped" : "included") : "excluded");
   // Bilingual fields carry translate metadata + a per-field translate button,
   // so the editor can fill the counterpart language on demand or automatically.
   const transBtn = (group, lang) =>
@@ -271,6 +275,12 @@ function renderEditForm() {
         ${text("admin.field.deposit", "deposit_amount", row.deposit_amount, "number")}
         ${text("admin.field.upfront", "upfront_rent_eur", row.upfront_rent_eur, "number")}
         ${text("admin.field.utilitiesCap", "utilities_cap_eur", row.utilities_cap_eur, "number")}
+        <label>
+          <span>${t("admin.field.billsPolicy")}</span>
+          <select name="bills_policy">
+            ${["included", "capped", "excluded"].map((policy) => `<option value="${policy}" ${billsPolicyValue === policy ? "selected" : ""}>${t(`admin.billsPolicy.${policy}`)}</option>`).join("")}
+          </select>
+        </label>
         <label>
           <span>${t("admin.field.energy")}</span>
           <select name="energy_rating">
@@ -340,7 +350,6 @@ function renderEditForm() {
         ${flag("admin.flag.isNew", "is_new", row.is_new)}
         ${flag("admin.flag.checked", "checked", row.checked)}
         ${flag("admin.flag.deposit", "deposit_protected", row.deposit_protected)}
-        ${flag("admin.flag.bills", "bills_included", row.bills_included)}
         ${flag("admin.flag.pets", "pets_allowed", row.pets_allowed)}
         ${flag("admin.flag.smoking", "smoking_allowed", row.smoking_allowed)}
         ${flag("admin.flag.couples", "couples_allowed", row.couples_allowed)}
@@ -660,7 +669,10 @@ function editPayloadFromForm(form) {
     is_new: formData.has("is_new"),
     checked: formData.has("checked"),
     deposit_protected: formData.has("deposit_protected"),
-    bills_included: formData.has("bills_included"),
+    bills_policy: textOrNull("bills_policy") || "included",
+    // Keep the legacy boolean in sync for older clients: only an excluded
+    // policy means bills are not included (capped still bundles an allowance).
+    bills_included: (textOrNull("bills_policy") || "included") !== "excluded",
     is_published: formData.has("is_published")
   };
 }

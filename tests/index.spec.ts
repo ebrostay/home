@@ -304,3 +304,50 @@ test.describe('Saved homes — header Guardados (KAN-12)', () => {
     await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1);
   });
 });
+
+test.describe('Owner mode header CTA (KAN-15)', () => {
+  test('switching to owner mode changes the header CTA text and href', async ({ page }) => {
+    const cta = page.locator('.site-header .nav-cta');
+    // Tenant default (EN locale).
+    await expect(cta).toContainText(/find a home|find a stay/i);
+    await expect(cta).toHaveAttribute('href', '#search');
+
+    await page.locator('[data-audience-option="owner"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-audience', 'owner');
+    await expect(cta).toContainText(/list a home|publish/i);
+    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+  });
+
+  test('switching back to tenant mode restores the search CTA', async ({ page }) => {
+    const cta = page.locator('.site-header .nav-cta');
+    await page.locator('[data-audience-option="owner"]').click();
+    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+
+    await page.locator('[data-audience-option="tenant"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-audience', 'tenant');
+    await expect(cta).toContainText(/find a home|find a stay/i);
+    await expect(cta).toHaveAttribute('href', '#search');
+  });
+
+  test('language switch keeps the owner CTA while in owner mode (EN -> ES)', async ({ page }) => {
+    const cta = page.locator('.site-header .nav-cta');
+    await page.locator('[data-audience-option="owner"]').click();
+    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+
+    await page.locator('[data-lang="es"]').click();
+    await expect(page.locator('[data-lang="es"]')).toHaveClass(/is-active/);
+    // Still owner mode: CTA must be owner copy (ES "Publicar vivienda"), not "Buscar vivienda".
+    await expect(page.locator('html')).toHaveAttribute('data-audience', 'owner');
+    await expect(cta).toContainText(/publicar vivienda/i);
+    await expect(cta).not.toContainText(/buscar vivienda/i);
+    await expect(cta).toHaveAttribute('href', 'index.html#owner-apply');
+  });
+
+  test('language switch keeps the tenant CTA while in tenant mode', async ({ page }) => {
+    const cta = page.locator('.site-header .nav-cta');
+    await page.locator('[data-lang="es"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-audience', 'tenant');
+    await expect(cta).toContainText(/buscar vivienda/i);
+    await expect(cta).toHaveAttribute('href', '#search');
+  });
+});

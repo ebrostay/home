@@ -356,6 +356,11 @@ function renderProperties() {
   if (statusOverride) availabilityStatus.textContent = statusOverride;
   else if (enhanced.savedOnly) availabilityStatus.textContent = count === 0 ? t("status.savedEmpty") : t("status.saved");
   else if (!activeFilter && quickFilters.size === 0 && !enhancedActive) availabilityStatus.textContent = interpolate("status.all", { count: properties.length });
+  // Saved-only is its own status voice so the header Guardados view announces
+  // itself (KAN-12), while still flowing through the one filtered pipeline.
+  else if (enhanced.savedOnly && count === 0) availabilityStatus.textContent = t("status.savedNone");
+  else if (enhanced.savedOnly && count === 1) availabilityStatus.textContent = t("status.savedOne");
+  else if (enhanced.savedOnly) availabilityStatus.textContent = interpolate("status.saved", { count });
   else if (count === 0) availabilityStatus.textContent = t("status.none");
   else if (count === 1) availabilityStatus.textContent = t("status.one");
   else availabilityStatus.textContent = interpolate("status.matches", { count });

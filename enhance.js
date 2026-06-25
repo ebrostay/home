@@ -193,6 +193,8 @@
   };
 
   function isAdminPage() {
+    // partner.html shares the .admin-page styling class but is an owner portal,
+    // so match the admin panel by path instead of the shared CSS class.
     return (window.location.pathname || "").toLowerCase().indexOf("admin") !== -1;
   }
 
@@ -540,23 +542,6 @@
     setText(panel.querySelector("[data-owner-panel-secondary]"), text("ownerPanelSecondary"));
   }
 
-  // Header CTA must reflect the active audience: tenants search for a stay,
-  // owners are pushed toward the owner lead form (#owner-apply). Runs after
-  // applyKeyedTranslations so a language switch never reverts it (the nav-cta
-  // still carries data-i18n="nav.cta" for the tenant default).
-  function updateHeaderCtaForAudience(mode) {
-    if (isAdminPage()) return;
-    var cta = document.querySelector(".site-header .nav-cta");
-    if (!cta) return;
-    if (mode === "owner") {
-      cta.textContent = text("ownerNavCta");
-      cta.setAttribute("href", "index.html#owner");
-    } else {
-      cta.textContent = siteText("nav.cta");
-      cta.setAttribute("href", "#search");
-    }
-  }
-
   function updateHeroForAudience(mode) {
     var hero = document.querySelector(".hero");
     if (!hero) return;
@@ -599,7 +584,8 @@
     updateOwnerPanelTexts();
     updateHeroBenefits();
     updateHeroForAudience(mode);
-    updateHeaderCtaForAudience(mode);
+    // applyOwnerNav is the single authority for the header CTA + tenant-only nav
+    // items across both audiences (supersedes the earlier KAN-15 CTA helper).
     applyOwnerNav(mode === "owner");
     var switchElement = document.querySelector("[data-audience-switch]");
     if (switchElement) switchElement.classList.toggle("is-first-visit", isFirstAudienceVisit() && mode === "tenant");
@@ -661,6 +647,9 @@
   // Owner-facing states must drop tenant-only header items (Saved, Find a stay,
   // My account) and surface owner-relevant actions instead (KAN-26).
   function applyOwnerNav(isOwner) {
+    // Admin pages ship their own static admin nav (KAN-28); the tenant/owner
+    // audience CTA must not overwrite it.
+    if (isAdminPage()) return;
     var headerActions = document.querySelector(".header-actions");
     if (!headerActions) return;
 
@@ -682,7 +671,9 @@
         cta.removeAttribute("data-i18n");
         var onPortal = isOwnerPortalPage();
         cta.textContent = text(onPortal ? "ownerNavDashboard" : "ownerNavCta");
-        cta.setAttribute("href", onPortal ? "partner.html" : "index.html#owner");
+        // Homepage owners route to the owner lead-form anchor (shared with the
+        // in-page owner CTAs); standalone portal pages go to the portal itself.
+        cta.setAttribute("href", onPortal ? "partner.html" : "index.html#owner-apply");
       } else {
         cta.setAttribute("data-i18n", "nav.cta");
         cta.textContent = siteText("nav.cta");

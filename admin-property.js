@@ -685,7 +685,9 @@ async function uploadPhotos(files, isFloorplan) {
   for (const file of files) {
     const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
     const path = `${propertyId}/${Date.now()}-${cleanName}`;
-    const { error: uploadError } = await sb.storage.from("property-photos").upload(path, file);
+    const { error: uploadError } = await sb.storage
+      .from("property-photos")
+      .upload(path, file, { cacheControl: "31536000" });
     if (uploadError) {
       showStatus("admin.error");
       return;
@@ -998,7 +1000,7 @@ async function uploadExtractedImages() {
     const path = `${propertyId}/${Date.now()}-${counter}-ai.jpg`;
     const { error: uploadError } = await sb.storage
       .from("property-photos")
-      .upload(path, image.blob, { contentType: "image/jpeg" });
+      .upload(path, image.blob, { contentType: "image/jpeg", cacheControl: "31536000" });
     if (uploadError) {
       showStatus("admin.error");
       return;

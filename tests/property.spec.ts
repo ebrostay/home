@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // pedro1 is a known property in data.js
 const PROPERTY_URL = '/property.html?id=pedro1';

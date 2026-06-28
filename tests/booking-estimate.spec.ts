@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-7: a check-in -> check-out exactly N months apart must bill as N months.
 // pedro1: priceNumber 950, no deposit, commission = 15% of rent (capped at one

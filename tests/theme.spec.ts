@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const PAGES = ['/', '/about.html', '/property.html?id=pedro1', '/booking.html', '/privacy.html'];
 

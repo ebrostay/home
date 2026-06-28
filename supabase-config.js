@@ -6,6 +6,13 @@
 //
 // While these are empty the website keeps working with the built-in
 // sample data from data.js.
+//
+// IMPORTANT: this committed default points at the STAGING project, not
+// production. It is the fallback used whenever config isn't injected — i.e.
+// CI test runs and local `npx playwright test`. Keeping it on staging means an
+// accidental live backend hit during testing never touches ebrostay.com (prod).
+// Production credentials are injected at deploy time by scripts/inject-config.js
+// from the SUPABASE_*_PROD secrets (see the Azure Static Web Apps workflow).
 
-const SUPABASE_URL = "https://zbgywbigbdvqaxdloamh.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZ3l3YmlnYmR2cWF4ZGxvYW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzY0MjQsImV4cCI6MjA5Njg1MjQyNH0.wt0gUrs2KNRE8sd0Yn55wsm_Zvd1RE84Lk3yPzEpwwg";
+const SUPABASE_URL = "https://iwxearkwuxzrlikmblxl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3eGVhcmt3dXh6cmxpa21ibHhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4Nzk4MzEsImV4cCI6MjA5NzQ1NTgzMX0.orAgzDR6d-wgzpm7IkOGHfEtPu_9MLJbYquTjby5L-w";

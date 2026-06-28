@@ -1,10 +1,4 @@
-// NOTE: this spec intentionally imports the stock Playwright `test`, not the
-// shared ./fixtures base. The global Supabase block in ./fixtures perturbs the
-// timing of the pre-existing flaky "Contact section › submitting the inquiry
-// form shows a confirmation" test below, flipping it red in CI. Until that test
-// is hardened, index.spec stays opted out. The homepage tests here still stub
-// supabase.co per-test where they assert backend-driven content.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -266,12 +260,14 @@ test.describe('Contact section', () => {
   test('submitting the inquiry form shows a confirmation', async ({ page }) => {
     // Force the backend path so submission resolves to an in-page confirmation
     // (instead of a mailto: handoff) and assert the success note appears.
+    // Mutate the existing backend object's methods rather than replacing
+    // window.EbrostayBackend: site.js calls the lexically-scoped `EbrostayBackend`
+    // const for sendInquiry, so reassigning the window property alone would leave
+    // the real (failing) sendInquiry in place.
     await page.evaluate(() => {
-      (window as any).EbrostayBackend = {
-        isConfigured: () => true,
-        sendInquiry: async () => ({ ok: true }),
-        getIsAdmin: () => false
-      };
+      const backend = (window as any).EbrostayBackend;
+      backend.isConfigured = () => true;
+      backend.sendInquiry = async () => ({ ok: true });
     });
     const form = page.locator('#inquiryForm');
     await form.locator('[name="name"]').fill('Test User');

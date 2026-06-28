@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-24: owner entry points must land on a real in-page #owner anchor.
 test.describe('Owner anchor — homepage (KAN-24)', () => {

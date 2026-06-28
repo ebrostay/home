@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // movera1 has no videoUrl in data.js — its video CTAs must stay hidden (KAN-16).
 const NO_VIDEO_URL = '/property.html?id=movera1';

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-25: document titles (and share metadata) must follow the active language.
 

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // movera1 is a published property in data.js. The "Reservar" links on the home
 // result cards point to property.html?id=...#book — the booking widget must be

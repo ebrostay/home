@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-27 — the floating help widget must adapt its copy to the page context:
 // owner (partner.html), account (account.html), or tenant (default).

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-20: a single locale-aware formatter (formatPrice in data.js) must drive
 // every price surface. The listing card and the detail page for the same

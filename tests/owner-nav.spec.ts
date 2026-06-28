@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Owner mode header navigation (KAN-26)', () => {
   test('tenant mode shows account and search CTA', async ({ page }) => {

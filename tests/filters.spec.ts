@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-11: enhanced/address filters must run through the same filtered list that
 // feeds cards, the result count AND the map. Filtering to zero matches must show

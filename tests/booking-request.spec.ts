@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
 // KAN-23: the email + WhatsApp request CTAs must build from one normalized
 // payload that includes the entered check-in, check-out and tenant names, and

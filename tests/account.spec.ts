@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Account sign-in CTA (KAN-22)', () => {
   test('signed-out CTA targets a real auth element, not a dead #login anchor', async ({ page }) => {

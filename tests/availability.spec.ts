@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // All seed listings have an availableFrom in July 2026 (earliest 2026-07-01).
 // KAN-6: search must exclude listings whose availableFrom is after the

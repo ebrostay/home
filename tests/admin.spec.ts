@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // KAN-28 — Admin pre-login should use admin-specific navigation and support copy.
 // The /admin surface must not expose tenant booking flows before auth.

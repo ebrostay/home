@@ -51,6 +51,21 @@ jobs:
           ref: staging
           path: site/staging
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The committed supabase-config.js points at staging (safe for CI/local
+      # tests). For the live site we overwrite it with production credentials so
+      # ebrostay.com talks to the prod project. The /staging subdir keeps its own
+      # committed staging config and is intentionally left untouched.
+      - name: Inject production Supabase config
+        working-directory: site
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_PROD }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_PROD }}
+        run: node scripts/inject-config.js
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

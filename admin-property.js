@@ -677,17 +677,54 @@ function editPayloadFromForm(form) {
   };
 }
 
+// Downscale to <=1920px wide and re-encode to WebP q80 in the browser before
+// upload, mirroring the batch compression run on the existing library. Photos
+// (stored as PNG/JPEG) typically shrink ~95%+ with no visible quality loss.
+// Returns { blob, ext, contentType }; falls back to the original file whenever
+// WebP can't be produced or the result wouldn't actually be smaller.
+async function compressImageForUpload(file) {
+  const MAX_WIDTH = 1920;
+  const QUALITY = 0.8;
+  const type = file.type || "";
+  // Only re-encode raster photos; leave SVG/GIF and non-images untouched.
+  if (!type.startsWith("image/") || type === "image/svg+xml" || type === "image/gif") {
+    return { blob: file, ext: null, contentType: type || undefined };
+  }
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_WIDTH / bitmap.width); // cap width, never upscale
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", QUALITY));
+    // Bail out if the browser can't encode WebP, or it didn't actually help.
+    if (!blob || blob.type !== "image/webp" || blob.size >= file.size) {
+      return { blob: file, ext: null, contentType: type || undefined };
+    }
+    return { blob, ext: "webp", contentType: "image/webp" };
+  } catch (err) {
+    return { blob: file, ext: null, contentType: type || undefined };
+  }
+}
+
 async function uploadPhotos(files, isFloorplan) {
   const sb = EbrostayBackend.getClient();
   let maxOrder = Math.max(0, ...(row?.property_photos || []).map((photo) => photo.sort_order));
   showStatus("admin.uploading");
 
   for (const file of files) {
-    const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+    const compressed = await compressImageForUpload(file);
+    let cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+    // Match the stored extension to the actual bytes when we re-encoded to WebP.
+    if (compressed.ext) cleanName = cleanName.replace(/\.[a-z0-9]+$/i, "") + "." + compressed.ext;
     const path = `${propertyId}/${Date.now()}-${cleanName}`;
     const { error: uploadError } = await sb.storage
       .from("property-photos")
-      .upload(path, file, { cacheControl: "31536000" });
+      .upload(path, compressed.blob, { cacheControl: "31536000", contentType: compressed.contentType });
     if (uploadError) {
       showStatus("admin.error");
       return;
@@ -997,10 +1034,12 @@ async function uploadExtractedImages() {
   for (const image of chosen) {
     const isFloorplan = image.classification === "floorplan";
     counter += 1;
-    const path = `${propertyId}/${Date.now()}-${counter}-ai.jpg`;
+    const compressed = await compressImageForUpload(image.blob);
+    const ext = compressed.ext || "jpg";
+    const path = `${propertyId}/${Date.now()}-${counter}-ai.${ext}`;
     const { error: uploadError } = await sb.storage
       .from("property-photos")
-      .upload(path, image.blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+      .upload(path, compressed.blob, { contentType: compressed.contentType || "image/jpeg", cacheControl: "31536000" });
     if (uploadError) {
       showStatus("admin.error");
       return;

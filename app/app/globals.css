@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* The theme bootstrap script in [locale]/layout.tsx stamps
+   <html data-theme="light|dark"> before paint; Tailwind's `dark:` variant
+   and these tokens both key off that attribute (no @media fallback needed). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, Arial), Helvetica, sans-serif;
+}

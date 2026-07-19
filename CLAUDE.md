@@ -1,24 +1,51 @@
 # CLAUDE.md
 
-Ebrostay — static website for mid-term corporate rentals in Zaragoza (ebrostay.com). Plain HTML/CSS/vanilla JS, **no build step, no framework**, hosted on GitHub Pages. Optional Supabase backend (auth, data, booking requests via Edge Functions); without it the site runs on built-in sample data from `data.js`.
+Ebrostay **v2 redesign branch** (`redesign/v2`) — rebuild of ebrostay.com
+(mid-term corporate rentals, Zaragoza) on Azure. v1 (static HTML/JS + Supabase,
+still the production site) lives on `main`; its full spec is in `docs/spec/`
+and is the functional reference here.
+
+## Stack & layout
+
+- `app/` — Next.js App Router with **`output: "export"`** (static HTML only — no
+  middleware, no server components at runtime), TypeScript, Tailwind v4
+  (CSS-first config in `app/app/globals.css`), next-intl.
+- `api/` — C# Azure Functions, **.NET 9 isolated** (SWA managed functions;
+  upgrade to .NET 10 when SWA supports it). Route prefix `api` (host.json).
+- Hosting: Azure Static Web Apps — frontend + managed functions + built-in auth
+  (GitHub/Microsoft). Cosmos DB serverless (NoSQL) + Blob Storage for photos.
 
 ## Commands
 
-- `npm test` — Playwright test suite (`tests/`)
-- `npm run test:ui` — Playwright UI mode
-- `npm run config` — inject Supabase credentials from `.env` into `supabase-config.js` (never commit real credentials; the template is `supabase-config.template.js`)
+- `cd app && npm run dev` — frontend dev server (pages under `/es` … `/en`)
+- `cd app && npm run build` — static export to `app/out` (must stay green)
+- `~/.dotnet/dotnet build api` — build the API (or `cd api && func start`)
+- `swa start app/out --api-location api` — full local emulation incl. auth
 
 ## Conventions
 
-- Keep it dependency-free: vanilla JS per page (`site.js`, `property.js`, `booking.js`, …), shared nav in `nav.js`. No bundlers or frameworks.
-- Bilingual ES/EN via the in-page translation dictionary — every user-facing string needs both languages.
-- Database changes go in `supabase/` as dated `upgrade-*.sql` migration files; `schema.sql` reflects the full schema.
-- Payments are intentionally removed: bookings are email-confirmed requests (no Stripe; Revolut Business planned).
-- SEO matters: keep per-page meta/JSON-LD, `sitemap.xml`, and `llms.txt` in sync with content changes.
+- **Bilingual ES/EN is a hard requirement**: every user-facing string goes in
+  `app/messages/es.json` **and** `en.json`. Spanish is default. Routes are
+  always locale-prefixed (`localePrefix: "always"`); import `Link`/`useRouter`
+  from `@/i18n/navigation`, never from `next/link`/`next/navigation`.
+- **Light and dark mode** both first-class. Theme is `data-theme` on `<html>`
+  (set pre-paint by the bootstrap script in `app/app/[locale]/layout.tsx`);
+  Tailwind `dark:` variant keys off it. Never use `@media (prefers-color-scheme)`
+  directly.
+- **Static export limits**: no Next middleware, no route handlers, no dynamic
+  SSR. Dynamic data is fetched client-side from `/api/*`. `/` → `/es/` redirect
+  and auth-gated routes live in `app/public/staticwebapp.config.json`.
+- **Authorization is enforced in the C# functions** (read
+  `x-ms-client-principal`), never only via SWA route rules or UI gates.
+- Business rules (pricing: whole-month billing, 15% commission capped at one
+  month, 11-month max) are specified in `docs/spec/05-business-rules.md` — v2
+  must match them exactly.
+- Secrets never in the client or repo: Functions app settings only.
 
 ## Skills & plugins
 
-This project ships Claude Code extensions in `.claude/` (available to all devs):
-
-- **frontend-design** (`.claude/skills/frontend-design/`) — visual design guidance for distinctive, non-templated UI. **Use it for any visual/UI work**: new pages or sections, restyling, landing/marketing content. If it hasn't auto-invoked when a task turns out to involve visual design, ask the user whether to apply it before writing markup/CSS.
-- **superpowers** (plugin, enabled in `.claude/settings.json`) — workflow skills (brainstorming, planning, TDD, debugging). It self-registers via its own hooks. If a task fits one of its workflows and it hasn't triggered, ask the user whether to use it rather than silently skipping it.
+- **frontend-design** (`.claude/skills/frontend-design/`) — use for any
+  visual/UI work (the v2 visual identity is built with it; keep the Ebrostay
+  logo).
+- **superpowers** plugin — workflow skills (brainstorming, planning, TDD,
+  debugging); offer it when a task fits.

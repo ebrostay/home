@@ -1,7 +1,15 @@
 node_modules/
-playwright-report/
-test-results/
 .env
+
+# Next.js (app/)
+app/.next/
+app/out/
+app/next-env.d.ts
+
+# .NET / Azure Functions (api/)
+api/bin/
+api/obj/
+api/local.settings.json
 
 # Claude Code personal overrides
 .claude/settings.local.json

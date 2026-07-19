@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §5 Business Rules & Algorithms
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section is the authoritative source for **every numeric output in the UI**.
 A faithful rebuild that follows the pseudocode and constants here reproduces the
@@ -251,7 +251,7 @@ block end 2026-07-10 → `07-11 < 07-10` false → no overlap.)
 | `bills` | `billsPolicyOf(property) === "included"` |
 | `deposit` | `property.depositProtected === true` |
 
-`billsPolicyOf` (`data.js:1525`) returns `property.billsPolicy` if set, else falls
+`billsPolicyOf` (`data.js:1515`) returns `property.billsPolicy` if set, else falls
 back to the legacy boolean: `billsIncluded ? "included" : "excluded"`. So
 "Gastos incluidos" hides `capped` and `excluded` homes. Multiple chips apply
 **jointly (AND)**.

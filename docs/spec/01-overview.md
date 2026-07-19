@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §1 Overview & goals
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section gives a new engineer or product manager everything needed to understand
 **what Ebrostay is, the problem it solves, how it makes money, the two non-negotiable

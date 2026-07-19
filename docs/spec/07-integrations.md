@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §7 Integrations
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section catalogues every external dependency the system talks to, and how
 each is wired. The guiding principle is **graceful degradation**: the front end
@@ -109,7 +109,7 @@ an object in this bucket; the row in `property_photos` stores its `storage_path`
 | Bucket | `property-photos` (public read) |
 | Path convention | `{propertyId}/{Date.now()}-{slug}.{ext}` (uploads from the editor) |
 | Public URL | `photoUrl(storagePath)` → `sb.storage.from("property-photos").getPublicUrl(path).data.publicUrl` |
-| Upload | `sb.storage.from("property-photos").upload(path, file)` (editor) |
+| Upload | `sb.storage.from("property-photos").upload(path, file, { cacheControl: "31536000" })` — editor uploads set 1-year cache headers (both the raw and compressed-JPEG paths) |
 | Delete | `deleteProperty` removes objects **first** (best-effort) before deleting the row, because storage objects do **not** cascade with DB rows. |
 
 Photos are sorted by `sort_order` then `storage_path`; the first non-floorplan

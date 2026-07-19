@@ -1,6 +1,6 @@
 # §10 — Acceptance criteria / test catalogue
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section is the verifiable pass/fail layer of the reconstruction spec: the
 bridge from behavior (§6 Functional spec) and rules (§5 Business rules) to a
@@ -63,7 +63,7 @@ Behavior in §6.1; predicates/sort keys in §5.
 | R-Home-1 | One pipeline drives cards, the result count (`role="status"`), and map markers; the three always agree. | ✅ | After any filter/sort change, `#availabilityStatus` count == rendered cards == map markers. |
 | R-Home-2 | Hero search: city fixed Zaragoza; check-in defaults today, check-out +1 month; guests 1–8 (default 2). Submit copies to filter panel, scrolls to `#search`, persists dates. | 🔎 | Submitting the hero form scrolls to `#search`, the filter panel shows the same dates/guests, and `localStorage[ebrostay-search-dates]` holds `{checkIn,checkOut,guests}`. |
 | R-Home-3 | Filter predicate: type matches, `price_number ≤` budget (when set), `guests ≥` requested, all checked amenities present, check-in `≥ available_from`, requested range does not overlap any block. | 🔎 | For each clause, a property violating only that clause is excluded and an otherwise-identical passing property is included. |
-| R-Home-4 | Check-out must be after check-in. | 🔎 | Check-out ≤ check-in shows the inline status message and does not re-run the search. |
+| R-Home-4 | Check-out must be after check-in; the hero/filter pickers additionally enforce check-out ≥ check-in + 1 month (`enforceMinCheckOut`). | 🔎 | Picking a check-in bumps an earlier/nearer check-out forward to +1 month; a manually-entered check-out ≤ check-in shows the inline status message and does not re-run the search. |
 | R-Home-5 | Quick filters: "Verificadas" (`checked`), "Gastos incluidos" (`bills_policy==='included'`), "Fianza" (`deposit_protected`); combinable (AND). | 🔎 | Enabling "Gastos incluidos" hides `capped`/`excluded` homes; two active quick filters apply jointly. |
 | R-Home-6 | Sort: `best` (rating desc, price asc — default), `price` asc, `new` (isNew desc, then price asc). | 🔎 | Rendered card order matches the selected key for the sample set. |
 | R-Home-7 | Enhanced filters (`enhance.js`): address text search across name/area/address/city/description; min bedrooms; min bathrooms; "saved only" (persisted, 🚫 out-of-scope (MVP)). | 🔎 | An address substring narrows cards+count+pins together; "saved only" (🚫 out-of-scope (MVP)) shows exactly the favorited set and survives reload. |
@@ -192,7 +192,9 @@ Conventions in §9; architecture/deploy in §3.
 
 Input to the plan, not the plan. "Real backend?" = requires a live (staging)
 Supabase project rather than the mocked/sample-data path. **Key gap:** the
-existing Playwright suite mocks Supabase out entirely, so every "Yes" row below —
+existing Playwright suite mocks Supabase out entirely — a global auto-fixture in
+`tests/fixtures.ts` (`blockSupabase`) fulfills every `*.supabase.co` request with
+HTTP 500, forcing the sample-data path — so every "Yes" row below —
 auth, RLS, RPCs, admin mutations, owner isolation, favorites sync, deactivation —
 is currently **uncovered**. Backend/auth/RLS coverage is a genuine hole, not a
 regression risk in existing tests.

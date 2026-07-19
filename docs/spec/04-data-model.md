@@ -1,5 +1,5 @@
 # Ebrostay Reconstruction Spec — §4 Data Model
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section is the authoritative description of the Ebrostay persistence layer. It
 covers every table in the `public` schema, the `property-photos` storage bucket, the

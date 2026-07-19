@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §12 Rebuild-from-scratch checklist
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 The operational "do this in order" to stand the system up from nothing to a running
 clone on `ebrostay.com`. Steps are ordered by dependency. Each step says what it
@@ -15,9 +15,12 @@ produces and how to verify it before moving on.
 >    `upgrade-2026-06-stripe-bookings.sql`, do not create the `bookings` table, do
 >    not wire any payment provider in this rebuild.
 
-A site with **no backend at all** is a valid stopping point: skip §12.1–§12.7,
-leave `supabase-config.js` on placeholders, and the site runs entirely on `data.js`
-sample data (graceful degradation, see §3.3). The steps below add the live backend.
+A site with **no backend at all** is a valid stopping point: skip §12.1–§12.7 and
+blank `supabase-config.js` back to the template placeholders — note the committed
+file now carries real **staging** values (§3.4, commit `5d900e2`), so an untouched
+checkout runs live against staging, not static — and the site runs entirely on
+`data.js` sample data (graceful degradation, see §3.3). The steps below add the
+live backend.
 
 ---
 
@@ -50,9 +53,11 @@ sample data (graceful degradation, see §3.3). The steps below add the live back
 1. Left sidebar → **SQL Editor**.
 2. Open `supabase/schema.sql`, copy **all** of it, paste, **Run**.
 
-`schema.sql` is the single source of truth for a fresh project. It creates, in one
-idempotent script (`create table if not exists`, `drop policy if exists` /
-`create policy`, `create or replace function`):
+`schema.sql` creates the **core** of a fresh project — but it is **not** a full
+consolidation: the feature migrations in §12.3 are required on top (see the
+correction there). In one idempotent script (`create table if not exists`,
+`drop policy if exists` / `create policy`, `create or replace function`) it
+creates:
 
 - Tables: `properties`, `availability_blocks`, `profiles`, `favorites` (🚫 out-of-scope (MVP)),
   `bookings` (🗑️ legacy Stripe — present in schema but unused), `inquiries`,
@@ -70,15 +75,24 @@ idempotent script (`create table if not exists`, `drop policy if exists` /
 
 ---
 
-## 12.3 Apply upgrade migrations (only if the project predates a feature)
+## 12.3 Apply upgrade migrations (REQUIRED for a fresh rebuild)
 
-A project created straight from the current `schema.sql` **already includes**
-everything below — skip this whole step for a clean rebuild. The `upgrade-*.sql`
-files exist to bring **older** projects forward incrementally. **Each is idempotent
-/ safe to run more than once** (`add column if not exists`, `create table if not
-exists`, `create extension if not exists`, guarded policy drops).
+> ⚠️ **Correction (2026-07-19 audit).** An earlier revision of this step claimed
+> `schema.sql` already includes everything below — **that is wrong.** Verified
+> against the DDL: `schema.sql` folds in only *property-details*, *bills-policy*,
+> *guest-bookings* (`availability_blocks.user_id`), and *property-photos*. It
+> contains **none** of: the owner portal (`profiles.is_owner`,
+> `properties.owner_id`, `owner_payout_details`, `owner_leads` + policies),
+> `booking_requests` 🔜, guest info (`property_guest_info`, `properties.address`,
+> `property_photos.is_floorplan`), or the availability holds / `btree_gist`
+> **no-overlap guard**. A from-scratch rebuild MUST run `schema.sql` **and then
+> every `upgrade-*.sql` below except the Stripe one** — matching §4 "Migration
+> provenance", which has said so all along.
 
-Run, in the SQL Editor, only the ones your project is missing:
+The `upgrade-*.sql` files bring a project forward incrementally. **Each is
+idempotent / safe to run more than once** (`add column if not exists`,
+`create table if not exists`, `create extension if not exists`, guarded policy
+drops) — so on a fresh project, simply run all of them (skipping Stripe):
 
 | Migration file | Adds | Idempotent |
 | --- | --- | --- |
@@ -121,13 +135,13 @@ front end loads only published rows (`backend.js → loadProperties()` filters
 
 1. **Project Settings → API** → copy **Project URL** and **anon public** key.
 2. Choose one method:
-   - **Manual (matches README / GitHub Pages path):** edit `supabase-config.js`
-     and replace the two placeholder constants:
+   - **Manual:** edit `supabase-config.js` and replace the committed constants
+     (they hold the **staging** project's values in the repo — §3.4) with yours:
      ```js
      const SUPABASE_URL = "https://xxxx.supabase.co";
      const SUPABASE_ANON_KEY = "eyJ...";   // anon public key (safe to publish)
      ```
-   - **Templated (matches the Azure pipeline / local dev):** put the values in
+   - **Templated (matches both CI pipelines / local dev):** put the values in
      `.env` (copy from `.env.example`) and run `npm run config` — this regenerates
      `supabase-config.js` from `supabase-config.template.js` via
      `scripts/inject-config.js` (§3.4).
@@ -224,7 +238,11 @@ is the `is_admin()`-based RLS on every write (§8).
 
 1. **Pages:** the workflow `.github/workflows/pages.yml` publishes the repo root to
    GitHub Pages on push to `main` (deploy gated on the Playwright `test` job, §3.5).
-   In repo **Settings → Pages**, confirm the source is "GitHub Actions".
+   In repo **Settings → Pages**, confirm the source is "GitHub Actions". The deploy
+   job overwrites `supabase-config.js` with production values via
+   `node scripts/inject-config.js` — configure the `SUPABASE_URL_PROD` and
+   `SUPABASE_ANON_KEY_PROD` secrets in **Settings → Secrets and variables →
+   Actions**, otherwise the inject script exits 1 and the deploy fails.
 2. **Custom domain:** `CNAME` (root) already contains `ebrostay.com`; `.nojekyll`
    (root) disables Jekyll. Set the custom domain in Settings → Pages to
    `ebrostay.com` and enable "Enforce HTTPS" once the cert is issued.

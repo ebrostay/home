@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §9 Conventions (i18n, Theme, SEO, Accessibility)
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section captures the cross-cutting rules every page obeys: how text is
 translated and switched between Spanish and English; how prices and dates are
@@ -157,7 +157,9 @@ What a rebuild must reproduce, in order:
    or `data-i18n-attr="alt:hero.imageAlt"`.
 6. Sync the language toggle's `is-active` class and `aria-pressed`.
 7. Re-point flatpickr locale (Spanish picker uses `flatpickr.l10ns.es`,
-   otherwise `"default"`).
+   otherwise `"default"`). Home pickers enable `weekNumbers`; flatpickr is fully
+   themed in `styles.css` for **both light and dark modes** (calendar, themed
+   month dropdown) since `ed827d4`.
 8. Re-render any dynamic regions (auth dialog, WhatsApp links, the listing grid /
    property detail) so dictionary-driven dynamic content also flips.
 

@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §3 Architecture
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section gives the **shape of the system**: enough to stand up an equivalent
 skeleton, its configuration, and its deploy pipeline. It does not cover the data
@@ -111,8 +111,11 @@ function getClient() {
 **Exactly three conditions must all hold** for "live" mode:
 
 1. `SUPABASE_URL` is a string starting with `https://`. The un-injected template
-   placeholder `"__SUPABASE_URL__"` fails this test, so an un-configured checkout
-   is automatically static.
+   placeholder `"__SUPABASE_URL__"` fails this test. Note: since commit `5d900e2`
+   the **committed** `supabase-config.js` carries real **staging** values (§3.4),
+   so a fresh checkout boots **live against staging**, not static — the
+   placeholder-→static path now applies only after manually blanking the file
+   back to the template values.
 2. `SUPABASE_ANON_KEY` is a string **longer than 20 characters**. The placeholder
    `"__SUPABASE_ANON_KEY__"` is 22 chars — note this is a near-miss; a real anon
    JWT is hundreds of characters, so in practice the `https://` check on the URL is
@@ -146,7 +149,7 @@ serves the 4 seeded sample homes and the bilingual UI from `data.js`.
 | File | Tracked in git? | Role |
 | --- | --- | --- |
 | `supabase-config.template.js` | ✅ yes | Source template. Declares `const SUPABASE_URL = "__SUPABASE_URL__";` and `const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";`. The two `__…__` tokens are replaced at deploy time. |
-| `supabase-config.js` | ✅ yes (with placeholders) | The file the pages actually `<script src>`. In the repo it holds the **placeholder** values (so a fresh clone runs static). On deploy it is **overwritten** with real values by the inject step. May also be edited by hand for a manual setup (README §"Backend Setup" step 3). |
+| `supabase-config.js` | ✅ yes (with **staging** values) | The file the pages actually `<script src>`. Since commit `5d900e2` the repo holds the real **staging** URL + anon key (fresh clones and CI run live against staging, never prod). On deploy it is **overwritten** with production values by the inject step. May also be edited by hand for a manual setup (README §"Backend Setup" step 3). |
 | `.env.example` | ✅ yes | Documents the two variables: `SUPABASE_URL=https://your-project.supabase.co` and `SUPABASE_ANON_KEY=your-anon-key`. |
 | `.env` | ❌ no (gitignored) | Local-only. Copied from `.env.example` and filled with real values so `npm run config` works on a dev machine. |
 | `scripts/inject-config.js` | ✅ yes | The "build". See below. |
@@ -171,8 +174,11 @@ serves the 4 seeded sample homes and the bilingual UI from `data.js`.
 | `npm run test:ui` | `playwright test --ui` | Interactive runner. |
 | `npm run test:report` | `playwright show-report` | Open last HTML report. |
 
-The only runtime devDependency is `@playwright/test`. There is **no application
-dependency** — the site ships as static files plus CDN `<script>` tags.
+The devDependency is `@playwright/test`. Since commit `efc414f`, `package.json`
+also carries one `dependencies` entry — `@modelcontextprotocol/sdk` (Claude
+Code / MCP dev tooling, referenced by no shipped page). The site itself still
+ships as static files plus CDN `<script>` tags, with no bundled application
+dependency.
 
 ---
 
@@ -197,6 +203,10 @@ push to main/staging
    └─ job: deploy   (needs: test)     environment: github-pages
         checkout main      → path: site
         checkout staging   → path: site/staging   (staging served under /staging)
+        setup-node 20
+        node scripts/inject-config.js   (SUPABASE_URL_PROD / SUPABASE_ANON_KEY_PROD
+                                         secrets → overwrites site/supabase-config.js;
+                                         site/staging keeps its committed staging config)
         configure-pages (enablement: true)
         upload-pages-artifact (path: site)
         deploy-pages
@@ -213,10 +223,13 @@ Key facts a rebuild must reproduce:
 - `concurrency: { group: pages, cancel-in-progress: false }` serializes deploys.
 - Permissions: `contents: read`, `pages: write`, `id-token: write` (OIDC).
 
-> Note: `pages.yml` does **not** run `inject-config.js`. For the GitHub Pages path,
-> `supabase-config.js` is expected to already contain real values committed to the
-> branch (per README/`docs/supabase-setup.md` manual step), or to remain placeholder
-> (static mode). The Supabase secret injection only happens in the Azure workflow.
+> Note: since commit `d04d5a9`, `pages.yml` **does** run `inject-config.js` in the
+> deploy job: the committed (staging) `supabase-config.js` is overwritten with the
+> `SUPABASE_URL_PROD` / `SUPABASE_ANON_KEY_PROD` repo secrets before upload, so
+> production always ships prod credentials regardless of what is committed (the
+> `/staging` subdir intentionally keeps the committed staging config). **Both**
+> deploy workflows now inject at deploy time; if the secrets are missing the
+> inject script exits 1 and the deploy fails.
 
 ### 3.5.2 Azure Static Web Apps (secondary) — `azure-static-web-apps-*.yml`
 
@@ -225,8 +238,8 @@ Trigger: push to `main` (production) and PRs to `main` (staging slots).
 - Same `test` job (Playwright on chromium) gates deploy.
 - Adds an **inject step**: runs `node scripts/inject-config.js` with
   `SUPABASE_URL`/`SUPABASE_ANON_KEY` taken from repo secrets —
-  `*_PROD` on push to `main`, `*_STAGING` on PRs. This is the one pipeline that
-  bakes real credentials in at deploy time rather than committing them.
+  `*_PROD` on push to `main`, `*_STAGING` on PRs. Like `pages.yml` (since
+  `d04d5a9`), it bakes real credentials in at deploy time.
 - `app_location: "/"`, `output_location: "."`, `app_build_command: "echo skip"`
   (no real build).
 - Hardening already in place (recent commits): the PR deploy uses
@@ -322,8 +335,14 @@ Top-level **infra/SEO/config** files:
 - **Web server under test:** the config's `webServer` block boots the static site
   with `npx http-server . -p 8080 --silent` and points `baseURL` at
   `http://localhost:8080`. `reuseExistingServer` is on locally and off in CI.
+- **Global Supabase block:** `tests/fixtures.ts` exports the suite's shared
+  `test` base with an **auto-applied fixture** (`blockSupabase`) that fulfills
+  every `*.supabase.co` request with HTTP 500 — so the whole suite runs in
+  static/sample-data mode and never touches a live project (this also prevents
+  photo-CDN egress during runs). Specs import `test`/`expect` from
+  `./fixtures`, not from `@playwright/test` directly.
 - **Why this matters for a rebuild:** the tests exercise the **static-mode**
-  behavior (no Supabase configured), validating that graceful degradation (§3.3)
+  behavior (Supabase force-blocked), validating that graceful degradation (§3.3)
   produces a working site from `data.js` alone. CI runs `npx playwright install
   --with-deps chromium` then `npx playwright test`; a failure uploads
   `playwright-report/` and blocks deploy (§3.5).

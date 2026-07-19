@@ -295,8 +295,9 @@ here so they aren't lost. Each needs a product decision: fix, or document-as-is.
 6. **🐞 World-readable `availability_blocks`** (§8) — the `using (true)` read policy
    exposes `user_id` *and* the admin `note` field to anonymous clients.
 7. **⚠️ Two deploy workflows coexist** (§3) — `pages.yml` (GitHub Pages, canonical per
-   README) and an Azure SWA workflow; only the Azure one runs `inject-config.js`.
-   Confirm which is intended.
+   README) and an Azure SWA workflow; since `d04d5a9` **both** run `inject-config.js`
+   at deploy time (Pages uses the `*_PROD` secrets). Confirm which target is
+   intended long-term.
 8. **⚠️ Nominatim usage-policy gaps** (§7) — client geocoding sends no descriptive
    User-Agent and no throttling, against OSM policy.
 9. **⚠️ Open spam vectors** (§8) — `inquiries` and `owner_leads` allow anon insert

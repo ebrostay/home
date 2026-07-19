@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §6b Functional Spec: Account, Owner & Admin
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section documents every authenticated/admin-facing page: the tenant
 **Account** (`account.html`), the **Owner/Partner** portal (`partner.html`), the
@@ -434,7 +434,8 @@ Two independent grids — **Photos** (`is_floorplan=false`) and **Floor plans**
 (`is_floorplan=true`). Each grid:
 
 - **Upload** (`[data-photo-input]`, `accept="image/*" multiple`) → `uploadPhotos`:
-  per file, sanitize name → upload to `property-photos/<id>/<ts>-<name>` →
+  per file, sanitize name → upload to `property-photos/<id>/<ts>-<name>` with
+  `cacheControl: "31536000"` (1-year CDN caching, cuts Supabase egress — `2873f84`) →
   insert `property_photos` row with `sort_order` incremented by 10. Toast
   `admin.uploading` then `admin.saved`; reloads.
 - **Drag-reorder** — HTML5 dnd; drop only within the same group (photos vs

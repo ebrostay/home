@@ -1,6 +1,6 @@
 # Ebrostay Reconstruction Spec — §6a Functional Spec: Home & Property Pages
 
-> Baseline: as-built (branch `main`, 2026-06-25). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
+> Baseline: as-built (branch `main`, 2026-06-25; refreshed 2026-07-19 after a spec-vs-code audit). Status tags: ✅ active · 🔜 planned/unwired · 🗑️ dormant-to-remove · 🐞 suspected bug · 🚫 out-of-scope (MVP).
 
 This section specifies the two public-facing tenant pages — the **Home / marketplace**
 (`index.html` + `site.js`, progressively enhanced by `enhance.js`) and the
@@ -54,20 +54,22 @@ mobile, where the filter panel becomes a toggle (`#filterToggle` adds `.is-open`
 | Control | id / name | Type | Default | Validation |
 | --- | --- | --- | --- | --- |
 | City | `name=city` | `select` | `Zaragoza` (only option) | — |
-| Check-in | `name=checkIn` | text → flatpickr | today (`defaultStayRange`) | `minDate=today`; sets check-out `minDate` on change |
-| Check-out | `name=checkOut` | text → flatpickr | today + 1 month | `minDate` ≥ check-in |
+| Check-in | `name=checkIn` | text → flatpickr | today (`defaultStayRange`) | `minDate=today`; on change `enforceMinCheckOut` bumps check-out to ≥ check-in + 1 month |
+| Check-out | `name=checkOut` | text → flatpickr | today + 1 month | `minDate` ≥ check-in **+ 1 month** (`enforceMinCheckOut`, min-stay UX since `ed827d4`) |
 | Guests | `name=guestCount` | `number` | `2` | `min=1 max=8` |
 | Submit | — | submit | — | Copies values to filter panel (see Actions) |
 
-Flatpickr: `dateFormat Y-m-d`, `altInput` (`altFormat j M Y`), `disableMobile`, locale es
-when language es. If flatpickr is absent, inputs degrade to plain text.
+Flatpickr: `dateFormat Y-m-d`, `altInput` (`altFormat j M Y`), `disableMobile`,
+`weekNumbers`, locale es when language es. If flatpickr is absent, inputs degrade
+to plain text (plain text entry can still produce a < 1-month range — R-Home-4
+then catches check-out ≤ check-in).
 
 #### Filter panel — `form#availabilityFilter`
 | Control | id / name | Type | Default | Validation / options |
 | --- | --- | --- | --- | --- |
 | City | `#cityFilter` `name=city` | select | `Zaragoza` | only Zaragoza |
 | Check-in | `#checkIn` `name=checkIn` | flatpickr | today | `minDate=today` |
-| Check-out | `#checkOut` `name=checkOut` | flatpickr | today+1mo | `minDate` ≥ check-in; **check-out ≤ check-in → `status.invalid`, no search** (R-Home-4) |
+| Check-out | `#checkOut` `name=checkOut` | flatpickr | today+1mo | `minDate` ≥ check-in **+ 1 month** (`enforceMinCheckOut`); **check-out ≤ check-in → `status.invalid`, no search** (R-Home-4) |
 | Guests | `#guestCount` `name=guestCount` | number | `2` | `min=1 max=8` |
 | Type | `#propertyType` `name=propertyType` | select | `all` | `all`/`apartment`/`room`/`home` |
 | Budget | `#maxBudget` `name=maxBudget` | number | empty (= no limit) | `min=0 step=1`, placeholder `filters.anyBudget` |

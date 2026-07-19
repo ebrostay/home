@@ -6,14 +6,25 @@
 # Notes:
 # - westeurope was NOT accepting new resources ("location ineligible") at
 #   provisioning time, so data lives in spaincentral (Madrid — closest to
-#   Zaragoza anyway).
-# - The Static Web App is the REUSED v1 resource `ebrostay-home` (Free tier,
-#   westeurope, host thankful-sea-0e236161e.7.azurestaticapps.net): SWA only
-#   offers westeurope in Europe and existing resources are grandfathered.
-#   Its deployment token is stored as the GitHub Actions secret
+#   Zaragoza anyway) and the SWA in eastus2 (SWA's region only places the
+#   managed functions; static content is globally distributed).
+# - The Static Web App is a FRESH resource `ebrostay-v2` (Free tier, eastus2,
+#   host gentle-plant-000592f0f.7.azurestaticapps.net). Reusing the v1 SWA
+#   `ebrostay-home` was attempted and abandoned: it rejects all deployment
+#   tokens ("No matching Static Web App was found or the api key was invalid"),
+#   even freshly reset ones. It still serves a stale v1 deploy and can be
+#   deleted at cutover together with its GitHub linkage.
+#   The v2 deployment token is stored as the GitHub Actions secret
 #   AZURE_STATIC_WEB_APPS_API_TOKEN_V2 (see .github/workflows/swa-v2.yml).
 #   The old v1 workflow ("Azure Static Web Apps CI/CD" on main) is DISABLED in
-#   GitHub so pushes to main can no longer deploy v1 over v2.
+#   GitHub so pushes to main can no longer deploy v1 anywhere.
+# - Deploy recipe that works (CI mirrors it): prebuild Next (app/out) and
+#   `dotnet publish api -c Release -o api/bin/publish`, then upload both with
+#   skip_app_build + skip_api_build; apiRuntime dotnet-isolated:9.0 comes from
+#   staticwebapp.config.json. CLI equivalent:
+#   swa deploy app/out --api-location api/bin/publish \
+#     --api-language dotnetisolated --api-version 9.0 \
+#     --deployment-token <token> --env production
 set -euo pipefail
 
 RG=ebrostay

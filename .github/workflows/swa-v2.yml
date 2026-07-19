@@ -24,6 +24,15 @@ jobs:
           npm ci
           npm run build
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Publish API (.NET 9 isolated)
+        run: dotnet publish api -c Release -o api/bin/publish
+
+      # Both app and api are prebuilt; the action only uploads. The API runtime
+      # comes from platform.apiRuntime in staticwebapp.config.json.
       # No test suite on this branch yet; the Playwright/API-test gate lands
       # with the v2 test task and must then become a required `needs:` job.
       - name: Deploy to Azure Static Web Apps
@@ -33,5 +42,6 @@ jobs:
           action: upload
           app_location: app/out
           skip_app_build: true
-          api_location: api
+          api_location: api/bin/publish
+          skip_api_build: true
           output_location: ""

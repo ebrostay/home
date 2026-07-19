@@ -44,7 +44,7 @@ can never mint an admin.
 ## 3.3 Admin invitations ✅
 
 Exactly **3 admin users**, provisioned via SWA **Role management** (portal:
-Static Web App `ebrostay-home` → Role management → Invite):
+Static Web App `ebrostay-v2` → Role management → Invite):
 
 1. Invite by provider (GitHub or Microsoft) + the email/username the person
    signs in with; assign role `admin`; generate the invitation link (expires

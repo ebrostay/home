@@ -40,10 +40,10 @@ decisions and everything an implementer needs that *differs* from v1.
 Ebrostay v2 rebuilds ebrostay.com (mid-term corporate rentals, 1–11 months,
 Zaragoza) as a **Next.js App Router static export** (TypeScript, Tailwind v4,
 next-intl ES/EN with `localePrefix: "always"` and Spanish default, light and
-dark themes via `data-theme`) served by the reused v1 **Azure Static Web Apps
-Free-tier** resource, with **C# Azure Functions (.NET 9 isolated, → .NET 10
-when SWA supports it)** as SWA managed functions, **Cosmos DB serverless**
-for data and **Azure Blob Storage** for photos. The product pivots from a
+dark themes via `data-theme`) served by a fresh **Azure Static Web Apps
+Free-tier** resource (`ebrostay-v2`), with **C# Azure Functions (.NET 9
+isolated, → .NET 10 when SWA supports it)** as SWA managed functions,
+**Cosmos DB free tier** for data and **Azure Blob Storage** for photos. The product pivots from a
 curated catalogue to a **marketplace**: anonymous visitors browse and search;
 **booking requires sign-in** (SWA built-in auth, GitHub + Microsoft only);
 **any signed-in user may create listings**, which pass through an **admin

@@ -12,7 +12,7 @@ built-in auth, and the managed Functions API under one origin (no CORS).
 
 ```
                          ┌────────────────────────────────────────────────┐
-                         │  Azure Static Web Apps  "ebrostay-home" (Free) │
+                         │  Azure Static Web Apps  "ebrostay-v2" (Free)   │
   Browser ──────────────▶│                                                │
    │  GET /es/… /en/…    │  Static assets  = Next.js export (app/out)     │
    │  GET /.auth/*       │  /.auth/*       = SWA built-in auth            │
@@ -22,7 +22,7 @@ built-in auth, and the managed Functions API under one origin (no CORS).
    │                     └────────────┬───────────────────┬───────────────┘
    │                                  │                    │
    │                                  ▼                    ▼
-   │                     Cosmos DB serverless      Azure Blob Storage
+   │                     Cosmos DB free tier       Azure Blob Storage
    │                     acct "ebrostay-cosmos"    acct "ebrostayphotos"
    │                     db "ebrostay" (§2)        container
    │                                               "property-photos"
@@ -59,14 +59,15 @@ All Azure resources sit in resource group **`ebrostay`**.
 
 | Resource | Name | Tier / SKU | Region | Notes |
 | --- | --- | --- | --- | --- |
-| Static Web App | `ebrostay-home` | **Free** | **westeurope** | **Reused v1 SWA resource.** Default host `thankful-sea-0e236161e.7.azurestaticapps.net`. westeurope is **location-ineligible for NEW SWA resources**; this one is grandfathered — a reason in itself to reuse rather than recreate (ADR-021). Hosts static assets + managed functions + built-in auth. |
-| Cosmos DB account | `ebrostay-cosmos` | **Serverless**, NoSQL API | **spaincentral** | Database `ebrostay`, containers per §2. Pay-per-RU; ~€0 at this scale. |
+| Static Web App | `ebrostay-v2` | **Free** | **eastus2** | **Fresh resource.** Default host `gentle-plant-000592f0f.7.azurestaticapps.net`. Reusing the v1 SWA `ebrostay-home` (westeurope) was attempted and abandoned — it rejects all deployment tokens, even freshly reset ones; westeurope is location-ineligible for new SWAs, so eastus2 (ADR-021). Hosts static assets + managed functions + built-in auth. The old `ebrostay-home` still serves a stale v1 deploy; delete at cutover. |
+| Cosmos DB account | `ebrostay-cosmos` | **Free tier**, NoSQL API, provisioned | **spaincentral** | Database `ebrostay` with **1000 RU/s shared** across containers per §2. Free tier = first 1000 RU/s + 25 GB free forever (one per subscription) → literally **€0**; move to paid/serverless when real usage outgrows it (ADR-019). |
 | Storage account | `ebrostayphotos` | Standard LRS | **spaincentral** | Blob container **`property-photos`**, public-read (blob-level). Uploads/deletes **only via the API** (ADR-019). |
 
-Data (spaincentral) and compute/hosting (westeurope) are in different regions;
-accepted — latency is negligible for this workload and westeurope cannot be
-chosen for the new data resources' companions anyway (ADR-021 records the
-constraint and the trade-off).
+Data (spaincentral) and compute/hosting (eastus2) are in different regions;
+accepted — static assets are globally distributed, only the functions ↔ Cosmos
+hop crosses the Atlantic, and neither westeurope (ineligible) nor spaincentral
+(not an SWA region) was available for the SWA (ADR-021 records the constraint
+and the trade-off).
 
 Production DNS: **`ebrostay.com` stays on GitHub Pages (branch `main`, v1)**
 until cutover. Cutover is **early**: DNS moves to the SWA once the redesigned
@@ -129,7 +130,7 @@ Workflow: [`.github/workflows/swa-v2.yml`](../../.github/workflows/swa-v2.yml).
 
 Deploying to the SWA resource does **not** affect production while DNS still
 points at GitHub Pages — the v2 deployment is reachable on the
-`thankful-sea-…azurestaticapps.net` host for review until cutover.
+`gentle-plant-…azurestaticapps.net` host for review until cutover.
 
 ## 1.6 Runtime versions & the .NET 10 upgrade trigger ✅
 

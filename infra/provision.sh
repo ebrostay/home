@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# ⚠️ SUPERSEDED for resource definitions by infra/main.bicep (desired state;
+#   `az deployment group what-if|create -g ebrostay -f infra/main.bicep`).
+#   This script remains as the provisioning HISTORY (2026-07-19/20) and for
+#   the steps Bicep does not cover (GitHub secret wiring — see bottom).
+#
 # One-time Azure provisioning for Ebrostay v2 — captured from the commands
 # actually run on 2026-07-19. Safe to re-run (creates are idempotent-ish; they
 # fail harmlessly or no-op when the resource already exists).
@@ -36,11 +41,16 @@ STORAGE=ebrostayphotos
 az provider register -n Microsoft.Storage --wait
 az provider register -n Microsoft.DocumentDB --wait
 
-# --- Cosmos DB (serverless, NoSQL) -----------------------------------------
+# --- Cosmos DB (FREE TIER, NoSQL, provisioned) ------------------------------
+# Free tier = first 1000 RU/s + 25 GB free forever, one account/subscription.
+# The database carries the whole 1000 RU/s SHARED across its containers, so
+# the bill is literally 0. Go paid (raise RU/s or move to serverless) when
+# real usage approaches the allowance. (Initially created serverless
+# 2026-07-19; recreated as free tier 2026-07-20 while still empty.)
 az cosmosdb create -n "$COSMOS" -g "$RG" \
-  --locations regionName="$LOC" --capabilities EnableServerless
+  --locations regionName="$LOC" --enable-free-tier true
 
-az cosmosdb sql database create -a "$COSMOS" -g "$RG" -n "$DB"
+az cosmosdb sql database create -a "$COSMOS" -g "$RG" -n "$DB" --throughput 1000
 
 az cosmosdb sql container create -a "$COSMOS" -g "$RG" -d "$DB" \
   -n properties --partition-key-path /id

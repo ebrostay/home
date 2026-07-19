@@ -47,5 +47,8 @@ and is the functional reference here.
 - **frontend-design** (`.claude/skills/frontend-design/`) — use for any
   visual/UI work (the v2 visual identity is built with it; keep the Ebrostay
   logo).
+- **cosmosdb-best-practices** (user-level, `~/.claude/skills/`) — use whenever
+  touching Cosmos DB: data modeling, partition keys, queries, indexing policy,
+  or C# SDK usage in `api/`.
 - **superpowers** plugin — workflow skills (brainstorming, planning, TDD,
   debugging); offer it when a task fits.

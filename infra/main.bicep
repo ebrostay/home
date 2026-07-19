@@ -1,0 +1,143 @@
+// Ebrostay v2 infrastructure — desired state for resource group `ebrostay`.
+//
+//   deploy:  az deployment group create -g ebrostay -f infra/main.bicep
+//   preview: az deployment group what-if -g ebrostay -f infra/main.bicep
+//
+// Covers: SWA (ebrostay-v2), Cosmos DB free tier + database/containers,
+// photo storage + container, and the SWA app settings (secrets wired by
+// reference — nothing sensitive lives in this file or in parameters).
+//
+// NOT covered (see infra/provision.sh + docs/spec-v2/01-architecture.md):
+// GitHub secret AZURE_STATIC_WEB_APPS_API_TOKEN_V2, GoDaddy DNS, SWA role
+// invitations, app/api code deploys (CI: .github/workflows/swa-v2.yml).
+// Region notes (why data is spaincentral but the SWA is eastus2) are in
+// ADR-021, docs/spec-v2/05-decision-log.md.
+
+@description('Region for data resources (Cosmos, Storage).')
+param dataLocation string = 'spaincentral'
+
+@description('Region for the Static Web App (SWA offers no eligible EU region; only places the managed functions).')
+param swaLocation string = 'eastus2'
+
+param swaName string = 'ebrostay-v2'
+param cosmosAccountName string = 'ebrostay-cosmos'
+param databaseName string = 'ebrostay'
+param storageAccountName string = 'ebrostayphotos'
+param photosContainerName string = 'property-photos'
+
+// Free tier: first 1000 RU/s + 25 GB free forever (one account/subscription).
+// The database holds the full 1000 RU/s SHARED across containers => bill is 0.
+// "Go paid when we get real users": raise throughput here, redeploy (ADR-019).
+param sharedDatabaseThroughput int = 1000
+
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
+  name: cosmosAccountName
+  location: dataLocation
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    enableFreeTier: true
+    locations: [
+      {
+        locationName: dataLocation
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+  }
+}
+
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
+  parent: cosmos
+  name: databaseName
+  properties: {
+    resource: {
+      id: databaseName
+    }
+    options: {
+      throughput: sharedDatabaseThroughput
+    }
+  }
+}
+
+var containers = [
+  { name: 'properties', partitionKey: '/id' }
+  { name: 'profiles', partitionKey: '/id' }
+  { name: 'bookingRequests', partitionKey: '/propertyId' }
+  { name: 'inquiries', partitionKey: '/id' }
+]
+
+resource sqlContainers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = [
+  for c in containers: {
+    parent: database
+    name: c.name
+    properties: {
+      resource: {
+        id: c.name
+        partitionKey: {
+          paths: [c.partitionKey]
+          kind: 'Hash'
+        }
+      }
+    }
+  }
+]
+
+resource storage 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: storageAccountName
+  location: dataLocation
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    allowBlobPublicAccess: true
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+  parent: storage
+  name: 'default'
+}
+
+resource photosContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+  parent: blobService
+  name: photosContainerName
+  properties: {
+    publicAccess: 'Blob'
+  }
+}
+
+// Unlinked SWA — deploys happen via deployment token from CI, no repo binding.
+resource swa 'Microsoft.Web/staticSites@2023-01-01' = {
+  name: swaName
+  location: swaLocation
+  sku: {
+    name: 'Free'
+    tier: 'Free'
+  }
+  properties: {
+    allowConfigFileUpdates: true
+    stagingEnvironmentPolicy: 'Enabled'
+  }
+}
+
+// App settings for the managed functions; secrets referenced at deploy time,
+// so key rotation = rerun this deployment.
+resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
+  parent: swa
+  name: 'appsettings'
+  properties: {
+    COSMOS_ENDPOINT: cosmos.properties.documentEndpoint
+    COSMOS_KEY: cosmos.listKeys().primaryMasterKey
+    COSMOS_DATABASE: databaseName
+    STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    PHOTOS_CONTAINER: photosContainerName
+  }
+}
+
+output swaHostname string = swa.properties.defaultHostname
+output cosmosEndpoint string = cosmos.properties.documentEndpoint
+output blobEndpoint string = storage.properties.primaryEndpoints.blob

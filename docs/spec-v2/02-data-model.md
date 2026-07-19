@@ -3,8 +3,8 @@
 > Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
 > v1 reference: [docs/spec/04-data-model.md](../spec/04-data-model.md) (conceptual fields carry over; storage moves Postgres → Cosmos). Decisions: [ADR-011, ADR-014, ADR-016, ADR-019](05-decision-log.md).
 
-Storage moves from Supabase Postgres to **Azure Cosmos DB (serverless, NoSQL
-API)**. This is a **fresh start** (ADR-016): no v1 production data is
+Storage moves from Supabase Postgres to **Azure Cosmos DB (free tier,
+provisioned 1000 RU/s shared, NoSQL API)**. This is a **fresh start** (ADR-016): no v1 production data is
 imported; the schemas below are designed for Cosmos, not translated
 row-for-row. The *conceptual* fields of v1 §4 carry over; the relational
 apparatus (RLS, FKs, GiST constraints, triggers) is replaced by **API-enforced
@@ -19,8 +19,9 @@ text uses `{ es, en }` objects instead of v1's `*_es`/`*_en` column pairs.
 
 ## 2.1 Account, database, containers ✅
 
-Cosmos account **`ebrostay-cosmos`** (serverless, NoSQL, spaincentral, §1.2)
-→ database **`ebrostay`** → four containers:
+Cosmos account **`ebrostay-cosmos`** (free tier, NoSQL, spaincentral, §1.2)
+→ database **`ebrostay`** (shared **1000 RU/s** — the free-tier allowance —
+across all containers) → four containers:
 
 | Container | Partition key | One document per | Writers (via API only) |
 | --- | --- | --- | --- |

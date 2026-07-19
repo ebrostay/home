@@ -19,9 +19,9 @@ per entry.
 | ADR-016 | Fresh start — no data migration from v1 | ✅ locked |
 | ADR-017 | Drop the graceful-degradation fallback | ✅ locked |
 | ADR-018 | .NET 9 on managed functions now; .NET 10 when supported | ✅ locked |
-| ADR-019 | Cosmos serverless NoSQL + Blob public-read, API-mediated uploads | ✅ locked |
+| ADR-019 | Cosmos free tier NoSQL + Blob public-read, API-mediated uploads | ✅ locked |
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
-| ADR-021 | Reuse the v1 SWA resource (westeurope); data in spaincentral | ✅ locked |
+| ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
 
 ---
 
@@ -35,10 +35,10 @@ per entry.
   historical reasons.
 - **Decision:** Rebuild entirely on Azure: **Static Web Apps** (hosting +
   built-in auth + managed functions), **C# Azure Functions** for the API,
-  **Cosmos DB serverless** for data, **Blob Storage** for photos. Supabase is
+  **Cosmos DB free tier** for data, **Blob Storage** for photos. Supabase is
   not part of v2.
 - **Rationale:** Consolidation on one vendor/portal/billing surface; SWA Free
-  tier + Cosmos serverless + LRS blob storage cost **≈ €0 at this scale**; a
+  tier + Cosmos free tier + LRS blob storage cost **€0 at this scale**; a
   real (thin) API tier removes the public-anon-key/RLS model's contortions and
   gives one obvious enforcement point (§3.5); C#/.NET is the operator's
   preferred backend stack.
@@ -239,22 +239,28 @@ per entry.
   - `staticwebapp.config.json` and `Ebrostay.Api.csproj` are the only two
     files the upgrade touches (§1.6).
 
-## ADR-019 — Cosmos serverless NoSQL + Blob public-read with API-mediated uploads
+## ADR-019 — Cosmos free tier NoSQL + Blob public-read with API-mediated uploads
 
-- **Status:** ✅ locked 2026-07-19.
+- **Status:** ✅ locked 2026-07-19; amended 2026-07-20 (serverless → free tier).
 - **Context:** v2 needs a datastore and photo storage under the Azure
   consolidation (ADR-011). The workload is tiny and spiky (a few documents,
   bursts of reads), and photos must be publicly addressable for `<img>` tags
-  without auth handshakes.
-- **Decision:** **Cosmos DB serverless (NoSQL API)** — account
-  `ebrostay-cosmos`, database `ebrostay`, containers per §2.1, embedded
-  photos/availability per §2.2. **Azure Blob Storage** — account
-  `ebrostayphotos`, container **`property-photos`**, **public read**;
-  **uploads only via the API**, which validates, compresses, sets 1-year
-  cache headers, and maintains the embedded photo list (§2.6). No SAS tokens
-  or storage keys in the client.
-- **Rationale:** Serverless Cosmos bills per request — effectively €0 here —
-  with no capacity management; the document model matches the v1 access
+  without auth handshakes. Originally provisioned as **serverless**
+  (pay-per-RU, ~€0 but nonzero); the subscription's one **free-tier** slot was
+  unused, so the empty account was recreated the next day.
+- **Decision:** **Cosmos DB free tier (NoSQL API, provisioned)** — account
+  `ebrostay-cosmos`, database `ebrostay` with **1000 RU/s shared** across the
+  containers per §2.1 (exactly the free-tier allowance: first 1000 RU/s +
+  25 GB free forever), embedded photos/availability per §2.2. **Go paid when
+  there are real users**: raise provisioned RU/s (or migrate to
+  serverless/autoscale) when usage approaches the free allowance. **Azure
+  Blob Storage** — account `ebrostayphotos`, container **`property-photos`**,
+  **public read**; **uploads only via the API**, which validates, compresses,
+  sets 1-year cache headers, and maintains the embedded photo list (§2.6). No
+  SAS tokens or storage keys in the client.
+- **Rationale:** Free tier makes the datastore **literally €0** (serverless
+  was only approximately so), the 1000 RU/s allowance is far above this
+  workload, and the slot was unused. The document model matches the v1 access
   pattern (a listing is always read whole). Public-read blobs keep photo
   serving CDN-simple, exactly like v1's public Supabase bucket; funneling
   writes through the API is what RLS did for the v1 bucket, plus validation
@@ -290,32 +296,37 @@ per entry.
     `DEEPSEEK_URL`-style endpoint config remains the EU-hosting escape hatch.
   - Vendor swap later = one function + one app setting.
 
-## ADR-021 — Reuse the v1 SWA resource in westeurope; data in spaincentral
+## ADR-021 — Fresh SWA `ebrostay-v2` in eastus2; data in spaincentral
 
-- **Status:** ✅ locked 2026-07-19.
-- **Context:** A v1-era SWA resource **`ebrostay-home`** (Free, **westeurope**,
-  host `thankful-sea-0e236161e.7.azurestaticapps.net`) already exists in
-  resource group `ebrostay`. Azure has since made **westeurope
-  location-ineligible for NEW Static Web Apps**; existing resources are
-  grandfathered. New data resources (`ebrostay-cosmos`, `ebrostayphotos`)
-  were created in **spaincentral**.
-- **Decision:** **Reuse the existing SWA resource** for v2 (deploy target of
-  `swa-v2.yml`, §1.5) rather than creating a new one; keep data in
-  spaincentral. Accept the split-region layout.
-- **Rationale:** Recreating the SWA elsewhere would *lose* the grandfathered
-  westeurope placement irreversibly and add churn (new default host, new
-  deployment token, re-invited admin roles) for zero benefit. SWA static
-  assets are globally distributed anyway; only the managed-functions ↔ Cosmos
-  hop crosses regions (westeurope ↔ spaincentral, single-digit ms — irrelevant
-  at this workload).
+- **Status:** ✅ locked 2026-07-19; amended 2026-07-20 (reuse → fresh resource).
+- **Context:** Azure made **westeurope location-ineligible for new resources**
+  at provisioning time — both for SWAs and for the data accounts. Data
+  (`ebrostay-cosmos`, `ebrostayphotos`) went to **spaincentral**. For the SWA,
+  the plan was to reuse the v1-era resource **`ebrostay-home`** (Free,
+  westeurope, grandfathered) — but in practice it **rejects every deployment
+  token** ("No matching Static Web App was found or the api key was invalid"),
+  including freshly reset keys, from both CI and the SWA CLI.
+- **Decision:** Create a **fresh Free-tier SWA `ebrostay-v2`** in **eastus2**
+  (host `gentle-plant-000592f0f.7.azurestaticapps.net`) as the v2 deploy
+  target of `swa-v2.yml` (§1.5); keep data in spaincentral. Accept the
+  split-region layout. Leave `ebrostay-home` (stale v1 content) untouched
+  until cutover, then delete it.
+- **Rationale:** The old resource is undeployable; SWA offers no European
+  region other than the ineligible westeurope, and the SWA region only places
+  the managed functions — static assets are globally distributed. The
+  functions ↔ Cosmos hop (eastus2 ↔ spaincentral) is the only cross-region
+  path; tolerable now, and fixable later by recreating in westeurope when
+  eligible or via Standard tier + BYO functions in Spain (pairs with the
+  .NET 10 upgrade, ADR-018).
 - **Consequences:**
-  - Records the region-ineligibility constraint so nobody "cleans up" the SWA
-    into a dead end.
+  - Records the region-ineligibility constraint and the dead v1 resource so
+    nobody "cleans up" v2 onto it.
   - Admin role invitations (§3.3) and the custom-domain cutover (OD-1) happen
-    on this resource.
-  - If SWA is ever recreated: new deployment token
-    (`AZURE_STATIC_WEB_APPS_API_TOKEN_V2`), re-invite admins, re-add custom
-    domain — and westeurope will no longer be selectable.
+    on **`ebrostay-v2`**.
+  - Deployment token lives in the `AZURE_STATIC_WEB_APPS_API_TOKEN_V2` GitHub
+    secret; Cosmos/Blob credentials are app settings on `ebrostay-v2`.
+  - Delete `ebrostay-home` (and its disabled workflow + GitHub linkage) at
+    cutover.
 
 ---
 

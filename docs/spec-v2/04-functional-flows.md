@@ -1,0 +1,203 @@
+# Ebrostay v2 Target Spec — §4 Functional Flows
+
+> Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
+> v1 reference: [docs/spec/06a](../spec/06a-functional-home-property.md) / [06b](../spec/06b-functional-account-admin.md) (screen behavior), [docs/spec/05](../spec/05-business-rules.md) (all numbers). Decisions: [ADR-014, ADR-015, ADR-017, ADR-020](05-decision-log.md).
+
+API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
+
+| Endpoint | Auth | Purpose |
+| --- | --- | --- |
+| `GET /api/health` | anon | Liveness (exists ✅). |
+| `GET /api/properties` · `GET /api/properties/{id}` | anon | Published listings / detail, public projection (§2.2). |
+| `POST /api/inquiries` | anon | Contact inquiry (§2.5). |
+| `GET /api/me` | auth | Profile bootstrap/fetch (§3.6). |
+| `POST /api/booking-requests` | auth | Log-then-draft booking flow (§4.3). |
+| `GET/POST /api/host/properties` · `GET/PUT /api/host/properties/{id}` | auth (own) | Host listings CRUD (drafts, edits, availability). |
+| `POST /api/host/properties/{id}/submit` | auth (own) | draft/rejected → `pending_review`. |
+| `POST /api/host/properties/{id}/photos` · `DELETE …/photos/{n}` | auth (own) | Photo upload/delete via Blob (§4.4). |
+| `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings. |
+| `POST /api/ai-assistant` | auth (own listing) / admin | DeepSeek actions (§4.6). |
+| `GET /api/admin/review-queue` · `POST /api/admin/properties/{id}/approve` · `…/reject` | admin | Review queue (§4.5). |
+| `GET/PUT /api/admin/properties*` · `GET /api/admin/users*` · `PUT /api/admin/users/{id}/deactivation` | admin | All-properties mgmt, users. |
+| `GET /api/admin/booking-requests` · `PATCH …/{id}` (status) · `GET /api/admin/inquiries` | admin | Log viewers, request triage. |
+
+---
+
+## 4.1 Public browse & search ✅ (anonymous)
+
+The home page fetches published listings from `GET /api/properties` once,
+then filters/sorts **client-side** — the rules carry over from v1 **verbatim**:
+
+- **Main predicate, quick filters, enhanced filters:** per docs/spec/05
+  §5.2.1–§5.2.3 (city substring, type, max budget, min guests, amenities AND,
+  available-from, date-overlap; chips `checked`/`bills`/`deposit` combinable
+  AND; address text search across address + translated area/name/copy/details,
+  min bedrooms/bathrooms; "saved only" stays 🚫 out of scope). The bills chip
+  keys off `billsPolicy === "included"`.
+- **Sorting:** per docs/spec/05 §5.3 (`best` rating desc/price asc; `price`
+  asc; `new` isNew first/price asc).
+- **One pipeline** drives cards, the result count, and the Leaflet map markers
+  — the three always agree (v1 R-Home-1 carried).
+- **Date-overlap filtering** uses the single v2 predicate on half-open ranges
+  and excludes expired holds (§2.2.3) — the v1 grid-vs-estimate bound
+  inconsistency (docs/spec/05 §5.2.1 🐞) does not exist in v2.
+- Maps: Leaflet + OSM tiles with price-labeled markers and card↔marker
+  highlighting (docs/spec/07 §7.5 carried). Analytics: Umami events
+  (docs/spec/07 §7.8 carried).
+
+No sample-data fallback: if `/api/properties` fails, the grid shows a
+bilingual error/retry state (ADR-017).
+
+## 4.2 Property detail & estimate widget ✅
+
+Per v1 docs/spec/06a with the v2 data source: gallery + lightbox (photos where
+`isFloorplan: false`, by `sortOrder`), floor-plan section, amenities,
+conditions table (incl. `billsPolicy` copy and `utilitiesCapEur`), move-in
+cost box (`upfrontRentEur`, `depositAmount`), Leaflet location map, optional
+video CTA, and the availability calendar (blocked = blocking entries per
+§2.2.3, rendered from the public ranges).
+
+The **estimate widget is visible to everyone** — anonymous visitors see dates,
+tenant-names input, and the full itemized estimate. All rules verbatim from
+docs/spec/05: billed months (§5.1.1, end-exclusive, round up, min 1),
+rent/commission/deposit/total with the commission cap and visible
+**commission-discount line** (§5.1.2), money formatting (§5.1.3), estimate
+states `empty`/`conflict`/`toolong`/`ok` (§5.5.2, with `toolong` → the
+two-contract message for >11 months), date-picker min/max bounds (§5.5.3 —
+checkout in v2 is the exclusive end date), and CTA gating on `ok` + ≥1 tenant
+name (§5.5.4). Every figure is labelled an **estimate**; there is no online
+payment (v1 R-CORE-2 carried).
+
+For anonymous visitors the Email/WhatsApp CTAs are replaced by a **"Sign in to
+book"** CTA that routes to `/.auth/login/{provider}` with a
+`post_login_redirect_uri` back to the property page (§3.1).
+
+## 4.3 Booking flow — login-gated, log-then-draft ✅ (ADR-015)
+
+Actors: signed-in user on a published property page.
+
+```
+1. CLIENT   computeEstimate(start, end)  — per docs/spec/05 §5.1 / §5.5.2;
+            CTAs enable when status == "ok" AND tenantNames ≥ 1.
+2. CLIENT   user clicks Email or WhatsApp →
+            POST /api/booking-requests
+            { propertyId, startDate, endDate, tenantNames,
+              clientEstimate {rent, commissionRaw, commission, discount,
+                              deposit, total}, locale, channel }
+3. SERVER   validate (table below) → recompute months + estimate from the
+            property document with the SAME algorithm (docs/spec/05 §5.1) →
+            estimateMismatch = any field differs from clientEstimate by
+            > €0.01 → insert bookingRequests document (§2.4) →
+            [ACS notification hook point — no-op for now, ADR-015] →
+            200 { id, months, serverEstimate, estimateMismatch }
+4. CLIENT   builds the bilingual stay summary (v1 format per docs/spec/06a
+            R-Prop-9: property, dates, months, itemized estimate, tenant
+            names, estimate disclaimer) FROM THE SERVER ESTIMATE and opens
+            the chosen draft:
+              email    → mailto:<CONTACT_EMAIL>?subject=…&body=…
+              whatsapp → https://wa.me/<number>?text=…
+```
+
+**Parity check:** step 3 is the v2 form of the v1 parity guard (docs/spec/05
+§5.6). The algorithms are identical by spec; `estimateMismatch` is the
+tripwire that proves it in production. A mismatch **does not block** the flow
+(the request is logged, the draft opens — with server figures), but it is
+surfaced in the admin request viewer and should page the team in dev/test.
+
+Server validation order (adapted from v1 §5.5.5; first failure wins):
+
+| # | Check | Failure |
+| --- | --- | --- |
+| 1 | authenticated principal | `401 unauthorized` |
+| 2 | profile not deactivated (§3.7) | `403 account_deactivated` |
+| 3 | `propertyId` + ISO dates present, `endDate > startDate` | `400 bad_request` |
+| 4 | property exists and `status == "published"` | `404 not_found` |
+| 5 | `months ≤ min(11, maxStayMonths)` | `400 max_stay` |
+| 6 | `months ≥ max(1, minStayMonths)` | `400 min_stay` |
+| 7 | `startDate ≥ today` and `≥ availableFrom` | `409 dates_unavailable` |
+| 8 | no overlap with **blocking** entries — expired holds excluded, same predicate as the client (§2.2.3; resolves v1 🐞 §5.4.4) | `409 dates_unavailable` |
+| 9 | insert document | `500 server_error` |
+
+**No transactional email** (Resend 🗑️ dropped): the flow's delivery mechanism
+is the user-sent draft, exactly as v1's live MVP. The step-3 hook point is
+where **Azure Communication Services email** can later notify staff/guest
+without touching the flow shape (OD-2, §5). Failures after logging (user
+closes the draft) are visible to staff via the admin request log.
+
+## 4.4 Host flow ✅ (any authenticated user — ADR-014)
+
+**Dashboard** (`/{locale}/host/`): own listings with status badges
+(`draft`/`pending_review`/`published`/`rejected` + `reviewNote`/`archived`),
+availability management per listing, and the **booking-interest log** —
+`bookingRequests` for own properties (read-only; status is admin-triaged).
+
+**Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
+
+1. Create listing → `draft` (owner = caller).
+2. Editor: full property data entry — **bilingual es+en fields side by side**
+   (both required to submit), amenities, conditions, pricing, stay limits;
+   **availability blocks** (add/remove confirmed blocks and holds, §2.2.3);
+   **Nominatim geocoding** for the address (client-direct, docs/spec/07 §7.4
+   carried incl. usage-policy notes); **AI assistant** (§4.6).
+3. **Photos:** upload via `POST /api/host/properties/{id}/photos`. The API
+   validates (content type ∈ jpeg/png/webp, size cap), compresses to a web
+   size (carrying v1's compressed-JPEG practice), writes the blob with 1-year
+   cache headers, and appends `{url, isFloorplan, sortOrder}` (§2.6). Reorder,
+   floor-plan flag, and delete are editor actions on the embedded array.
+4. Submit → `pending_review` (validation: required fields in both locales,
+   ≥1 photo). Editing a **published** listing also returns it to
+   `pending_review` (§2.2.1; refinement OD-5).
+5. Admin approves → `published` (public) or rejects with a note → `rejected`;
+   host edits and resubmits.
+
+Hosts never write `status: "published"` directly and never touch other users'
+listings — enforced in the functions (§3.5), not the UI.
+
+## 4.5 Admin flow ✅ (3 invited admins — §3.3)
+
+`/{locale}/admin/` (route rule cosmetic; every endpoint checks the role):
+
+- **Review queue:** `pending_review` listings, oldest first; full detail view;
+  **Approve** → `published`, **Reject** (note required) → `rejected`.
+- **All-properties management:** list/filter every listing in any status;
+  direct edit (no re-review, §2.2.1); archive/takedown.
+- **Users:** list `profiles` (id, provider, name, created, flags);
+  **deactivate/reactivate** (§3.7). No hard delete in v2 scope.
+- **Booking-request log viewer:** all `bookingRequests`, newest first, with
+  `estimateMismatch` highlighted; status triage `new → contacted →
+  confirmed | declined` (carried from v1 §4.6). When accepting a stay the
+  admin (or host) records it as a **confirmed availability block** on the
+  property — creating blocks stays a manual acceptance act, as in v1.
+- **Inquiries viewer:** read `inquiries` (§2.5).
+
+## 4.6 AI assistant ✅ (ADR-020)
+
+v1's DeepSeek assistant (docs/spec/07 §7.3) ported to a C# function,
+`POST /api/ai-assistant`, using the **existing DeepSeek key** (Functions app
+setting, §1.3). Actions carried: **extract** (paste/OCR text or images →
+property fields), **translate** (es↔en field), **describe** (generate
+bilingual copy). Available to **hosts for their own listings** (ownership
+checked server-side) **and admins** — the widened audience vs v1 (admin-only
+editor) follows the marketplace model. Degradation carried from v1: key not
+configured → `503 ai_not_configured`, editor shows a friendly notice and works
+normally otherwise. Privacy note carried: send property text only, never
+tenant/user personal data (DeepSeek's hosted API runs in China — docs/spec/07
+§7.3).
+
+## 4.7 i18n & theme requirements ✅
+
+Hard requirements on **every** flow above (carried from v1 R-NF-3 and CLAUDE.md
+conventions):
+
+- **Every user-facing string exists in `app/messages/es.json` AND `en.json`**
+  — including error states, estimate lines, review-queue UI, and the
+  email/WhatsApp draft summary (the draft renders in the user's UI locale;
+  bilingual summary format carried from v1). Spanish is default; routes are
+  always locale-prefixed (`localePrefix: "always"`); navigation only via
+  `@/i18n/navigation`.
+- Locale-specific money/date formatting per docs/spec/05 §5.1.3 (ES
+  `14.850 EUR` / EN `14,850 EUR`; `es-ES` / `en-GB` dates).
+- **Light AND dark themes are both first-class** on every page incl. host and
+  admin surfaces: theme = `data-theme` on `<html>`, set pre-paint by the
+  layout bootstrap script; Tailwind `dark:` variant keys off it; never
+  `@media (prefers-color-scheme)` directly.

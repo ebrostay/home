@@ -25,7 +25,7 @@
   "monthBand": {
     "stayLength": "Stay length",
     "monthCount": "{count, plural, one {# month} other {# months}}",
-    "availabilityAlt": "{open} of {total} months available"
+    "availabilityAlt": "{open} of {total} months free, {partial} partially booked"
   },
   "listing": {
     "verified": "Verified",
@@ -66,6 +66,8 @@
     "forms": "forms",
     "badges": "statuses",
     "monthBand": "month band",
+    "calendar": "calendar",
+    "calendarHint": "Booked days are struck through; the month band is only the summary — day-level truth lives here.",
     "cards": "cards",
     "dialog": "dialogs",
     "openDialog": "Open dialog",

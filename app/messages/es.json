@@ -25,7 +25,7 @@
   "monthBand": {
     "stayLength": "Duración de la estancia",
     "monthCount": "{count, plural, one {# mes} other {# meses}}",
-    "availabilityAlt": "{open} de {total} meses disponibles"
+    "availabilityAlt": "{open} de {total} meses libres, {partial} parcialmente ocupados"
   },
   "listing": {
     "verified": "Verificada",
@@ -66,6 +66,8 @@
     "forms": "formularios",
     "badges": "estados",
     "monthBand": "banda de meses",
+    "calendar": "calendario",
+    "calendarHint": "Los días reservados aparecen tachados; la banda de meses es solo el resumen — el día a día vive aquí.",
     "cards": "tarjetas",
     "dialog": "diálogos",
     "openDialog": "Abrir diálogo",

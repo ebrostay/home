@@ -67,10 +67,14 @@ export function MonthBandSelect({
   );
 }
 
-// Display variant: a listing's next months, open vs occupied.
+// Display variant: a listing's next months. A month is rarely binary —
+// stays start mid-month — so the band is an honest three-state SUMMARY
+// (open / partial / occupied); day-level truth lives in the DateRangePicker.
+export type MonthState = "open" | "partial" | "occupied";
+
 export type MonthAvailability = {
   label: string; // short month label, localized by the caller (Intl)
-  open: boolean;
+  state: MonthState;
 };
 
 export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
@@ -80,7 +84,8 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
     <div
       role="img"
       aria-label={t("availabilityAlt", {
-        open: months.filter((m) => m.open).length,
+        open: months.filter((m) => m.state === "open").length,
+        partial: months.filter((m) => m.state === "partial").length,
         total: months.length,
       })}
       className="flex gap-0.5"
@@ -89,8 +94,20 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
         <div key={i} className="flex flex-1 flex-col items-center gap-1">
           <div
             className={`h-1.5 w-full rounded-full ${
-              m.open ? "bg-river" : "bg-occupied"
+              m.state === "open"
+                ? "bg-river"
+                : m.state === "occupied"
+                  ? "bg-occupied"
+                  : ""
             }`}
+            style={
+              m.state === "partial"
+                ? {
+                    background:
+                      "linear-gradient(90deg, var(--occupied) 50%, var(--river) 50%)",
+                  }
+                : undefined
+            }
           />
           <span className="data text-[0.5625rem] uppercase text-muted">
             {m.label}

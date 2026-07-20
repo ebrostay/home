@@ -58,9 +58,13 @@ physical. Implemented in `app/components/MonthBand.tsx`:
 
 - **`MonthBandSelect`** — stay-length control (hero, booking widget). Cells
   1–N green (selected span), rest river-wash. Radiogroup semantics.
-- **`AvailabilityBand`** — a listing's next 12 calendar months as thin bars:
-  river = open, occupied-solid = taken; month initials via `Intl` per locale.
-  Used on every property card; `role="img"` with a translated summary label.
+- **`AvailabilityBand`** — a listing's next 12 calendar months as thin bars.
+  **Three states**, because stays start mid-month and a binary band would
+  mislead (product-owner call, 2026-07-21): river = fully open, split
+  river/occupied = partially booked, occupied-solid = taken. Month initials
+  via `Intl` per locale; `role="img"` with a translated summary label. The
+  band is a glanceable SUMMARY only — day-level truth lives in the
+  `DateRangePicker` on the property page. Both share one color language.
 
 The load animation (`.month-cell-enter`, 35 ms stagger) is the design's one
 orchestrated motion moment. Everything else transitions at 150 ms.
@@ -113,6 +117,13 @@ availability band).
   book; both fixed in messages/PropertyCard.
 - Header frost lowered from /85 to /92 opacity — display type smeared through
   too loudly under the sticky header.
+- Date picking: **react-day-picker v10** (`ui/DateRangePicker`), inline range
+  calendar themed via `.rdp-root` token overrides in `globals.css` — selected
+  span = brand green, booked days = occupied-solid + strikethrough, today =
+  river underline; `es`/`en-GB` locales built in. Replaces v1's flatpickr,
+  which needed hand-patched Safari/dark-mode/month-dropdown CSS. Booked spans
+  are passed as both `disabled` and the `booked` modifier; `excludeDisabled`
+  guards user-drawn ranges from crossing them.
 - Selects: native `<select>` reviewed and replaced with **Radix UI Select**
   (2026-07-21, product-owner call). Safari mis-sized the native closed
   control, and macOS anchors the native menu over the control instead of

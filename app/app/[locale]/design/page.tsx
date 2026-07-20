@@ -10,8 +10,16 @@ import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Dialog } from "@/components/ui/Dialog";
-import { MonthBandDemo, AvailabilityBand } from "@/components/MonthBand";
+import {
+  MonthBandDemo,
+  AvailabilityBand,
+  type MonthState,
+} from "@/components/MonthBand";
 import { PropertyCard, type PropertyCardData } from "@/components/PropertyCard";
+import {
+  DateRangePicker,
+  type DateRange,
+} from "@/components/ui/DateRangePicker";
 
 const swatches = [
   { name: "brand / bridge", varName: "--brand" },
@@ -22,14 +30,23 @@ const swatches = [
   { name: "page / limestone", varName: "--page" },
 ];
 
-function sampleMonths(locale: string, occupied: number[]): PropertyCardData["months"] {
+function sampleMonths(
+  locale: string,
+  occupied: number[],
+  partial: number[] = [],
+): PropertyCardData["months"] {
   const fmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
     month: "narrow",
   });
   const now = new Date(2026, 6, 1);
   return Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    return { label: fmt.format(d), open: !occupied.includes(i) };
+    const state: MonthState = occupied.includes(i)
+      ? "occupied"
+      : partial.includes(i)
+        ? "partial"
+        : "open";
+    return { label: fmt.format(d), state };
   });
 }
 
@@ -42,6 +59,15 @@ export default function DesignPage() {
   const locale = useLocale();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [propertyType, setPropertyType] = useState("all");
+  const [stayRange, setStayRange] = useState<DateRange | undefined>({
+    from: new Date(2026, 7, 10),
+    to: new Date(2026, 8, 18),
+  });
+  // Two booked spans the picker must refuse (styled occupied + struck).
+  const bookedSpans = [
+    { from: new Date(2026, 7, 1), to: new Date(2026, 7, 6) },
+    { from: new Date(2026, 8, 21), to: new Date(2026, 8, 27) },
+  ];
 
   const sampleProperties: PropertyCardData[] = [
     {
@@ -55,7 +81,7 @@ export default function DesignPage() {
       sizeSqm: 78,
       verified: true,
       billsIncluded: true,
-      months: sampleMonths(locale, [0, 1, 2]),
+      months: sampleMonths(locale, [0, 1], [2]),
     },
     {
       id: "sample-2",
@@ -67,7 +93,7 @@ export default function DesignPage() {
       bathrooms: 2,
       sizeSqm: 96,
       verified: true,
-      months: sampleMonths(locale, [4, 5]),
+      months: sampleMonths(locale, [4], [5]),
     },
   ];
 
@@ -181,7 +207,22 @@ export default function DesignPage() {
         <div className="ledger-rule"><span>{t("monthBand")}</span></div>
         <div className="mt-6 max-w-xl space-y-8">
           <MonthBandDemo />
-          <AvailabilityBand months={sampleMonths(locale, [0, 1, 7])} />
+          <AvailabilityBand months={sampleMonths(locale, [0, 1], [2, 7])} />
+        </div>
+      </section>
+
+      {/* Calendar */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("calendar")}</span></div>
+        <p className="mt-4 max-w-xl text-sm text-muted">{t("calendarHint")}</p>
+        <div className="mt-4 inline-block rounded-(--radius-card) border border-line bg-surface p-4 shadow-(--shadow-card)">
+          <DateRangePicker
+            value={stayRange}
+            onChange={setStayRange}
+            booked={bookedSpans}
+            numberOfMonths={2}
+            startMonth={new Date(2026, 7, 1)}
+          />
         </div>
       </section>
 

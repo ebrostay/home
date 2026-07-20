@@ -33,6 +33,16 @@
     "month": "mes",
     "specs": "{bedrooms} hab · {bathrooms, plural, one {# baño} other {# baños}} · {size} m²"
   },
+  "filters": {
+    "city": "Ciudad",
+    "type": "Tipo de vivienda"
+  },
+  "type": {
+    "all": "Todos",
+    "apartment": "Apartamento",
+    "room": "Habitación",
+    "home": "Casa"
+  },
   "actions": {
     "book": "Solicitar reserva",
     "save": "Guardar cambios",

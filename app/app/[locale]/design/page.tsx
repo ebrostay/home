@@ -6,7 +6,8 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Field, Input, Textarea } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Dialog } from "@/components/ui/Dialog";
 import { MonthBandDemo, AvailabilityBand } from "@/components/MonthBand";
@@ -36,8 +37,11 @@ export default function DesignPage() {
   const t = useTranslations("design");
   const ts = useTranslations("status");
   const ta = useTranslations("actions");
+  const tf = useTranslations("filters");
+  const tt = useTranslations("type");
   const locale = useLocale();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [propertyType, setPropertyType] = useState("all");
 
   const sampleProperties: PropertyCardData[] = [
     {
@@ -128,11 +132,26 @@ export default function DesignPage() {
               <Input id={id} aria-describedby={describedBy} placeholder="nombre@empresa.com" />
             )}
           </Field>
-          <Field label="Ciudad">
+          <Field label={tf("city")}>
             {(id) => (
-              <Select id={id} defaultValue="zaragoza">
-                <option value="zaragoza">Zaragoza</option>
-              </Select>
+              <Select
+                id={id}
+                value="zaragoza"
+                options={[{ value: "zaragoza", label: "Zaragoza" }]}
+              />
+            )}
+          </Field>
+          <Field label={tf("type")}>
+            {(id) => (
+              <Select
+                id={id}
+                value={propertyType}
+                onChange={setPropertyType}
+                options={["all", "apartment", "room", "home"].map((v) => ({
+                  value: v,
+                  label: tt(v),
+                }))}
+              />
             )}
           </Field>
           <div className="sm:col-span-2">

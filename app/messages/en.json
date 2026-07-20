@@ -33,6 +33,16 @@
     "month": "month",
     "specs": "{bedrooms} bed · {bathrooms, plural, one {# bath} other {# baths}} · {size} m²"
   },
+  "filters": {
+    "city": "City",
+    "type": "Property type"
+  },
+  "type": {
+    "all": "All",
+    "apartment": "Apartment",
+    "room": "Room",
+    "home": "House"
+  },
   "actions": {
     "book": "Request to book",
     "save": "Save changes",

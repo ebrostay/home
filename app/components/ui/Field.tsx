@@ -1,6 +1,5 @@
 import type {
   InputHTMLAttributes,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
 import { useId } from "react";
@@ -47,32 +46,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${controlBase} ${props.className ?? ""}`} />;
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  // appearance-none: Safari ignores padding on native-rendered selects (wrong
-  // height) and every browser paints its own arrow. We own the closed control
-  // and draw the chevron; the OPEN menu stays OS-native on purpose — v1 tried
-  // a hand-rolled dropdown and paid for it in Safari/stacking bugs.
-  return (
-    <span className="relative block">
-      <select
-        {...props}
-        className={`${controlBase} appearance-none pr-9 ${props.className ?? ""}`}
-      />
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 16 16"
-        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M4 6.5 8 10l4-3.5" />
-      </svg>
-    </span>
-  );
-}
+// The Select control lives in ./Select.tsx (Radix-based, client component).
 
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (

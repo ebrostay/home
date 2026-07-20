@@ -85,8 +85,10 @@ ornamental rule was considered and rejected.
 `site/Footer`, `site/Logo` (inline SVG mark + wordmark), `site/ThemeToggle`
 (persists `ebrostay-theme`, pre-paint bootstrap in layout), 
 `site/LanguageSwitch` (locale-preserving route swap), `ui/Button`
-(primary/secondary/ghost/danger × sm/md/lg), `ui/Field` + `Input`/`Select`/
-`Textarea` (label/hint/error, `aria-describedby` wired), `ui/Badge` (the
+(primary/secondary/ghost/danger × sm/md/lg), `ui/Field` + `Input`/`Textarea`
+(label/hint/error, `aria-describedby` wired), `ui/Select` (**Radix UI
+Select** — trigger styled identically to `Input`; the popup is ours: themed,
+opens below the trigger, identical across browsers), `ui/Badge` (the
 marketplace status vocabulary), `ui/Dialog` (native `<dialog>`),
 `MonthBand`, `PropertyCard` (photo, badges, specs line, price in data voice,
 availability band).
@@ -111,3 +113,10 @@ availability band).
   book; both fixed in messages/PropertyCard.
 - Header frost lowered from /85 to /92 opacity — display type smeared through
   too loudly under the sticky header.
+- Selects: native `<select>` reviewed and replaced with **Radix UI Select**
+  (2026-07-21, product-owner call). Safari mis-sized the native closed
+  control, and macOS anchors the native menu over the control instead of
+  below it. Radix gives an owned, themed popup below the trigger with the
+  a11y/keyboard machinery maintained upstream — unlike v1's hand-rolled
+  dropdown (its Safari/stacking bugs are in the v1 git history). Native
+  `<option>` elements are not used anywhere.

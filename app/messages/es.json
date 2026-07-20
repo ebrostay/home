@@ -4,5 +4,65 @@
     "title": "Ebrostay",
     "tagline": "Alquiler corporativo de media estancia en Zaragoza.",
     "scaffold": "v2 en construcción — este es el esqueleto del rediseño."
+  },
+  "nav": {
+    "mainNav": "Navegación principal",
+    "homes": "Viviendas",
+    "about": "Nosotros",
+    "signIn": "Entrar"
+  },
+  "footer": {
+    "tagline": "Viviendas amuebladas y verificadas para estancias de 1 a 11 meses en Zaragoza.",
+    "siteLinks": "Enlaces del sitio",
+    "homes": "Viviendas",
+    "about": "Nosotros",
+    "privacy": "Privacidad"
+  },
+  "theme": {
+    "switchToLight": "Cambiar a modo claro",
+    "switchToDark": "Cambiar a modo oscuro"
+  },
+  "monthBand": {
+    "stayLength": "Duración de la estancia",
+    "monthCount": "{count, plural, one {# mes} other {# meses}}",
+    "availabilityAlt": "{open} de {total} meses disponibles"
+  },
+  "listing": {
+    "verified": "Verificada",
+    "bills": "Gastos incl.",
+    "month": "mes",
+    "specs": "{bedrooms} hab · {bathrooms, plural, one {# baño} other {# baños}} · {size} m²"
+  },
+  "actions": {
+    "book": "Solicitar reserva",
+    "save": "Guardar cambios",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "search": "Buscar"
+  },
+  "status": {
+    "published": "Publicada",
+    "pendingReview": "En revisión",
+    "draft": "Borrador",
+    "rejected": "Rechazada",
+    "occupied": "Ocupada"
+  },
+  "design": {
+    "title": "Sistema de diseño",
+    "intro": "El libro de estilo de Ebrostay v2: «el libro mayor de una estancia». Río = libre, verde = tuya, tinta = ocupada.",
+    "palette": "paleta",
+    "type": "tipografía",
+    "buttons": "botones",
+    "forms": "formularios",
+    "badges": "estados",
+    "monthBand": "banda de meses",
+    "cards": "tarjetas",
+    "dialog": "diálogos",
+    "openDialog": "Abrir diálogo",
+    "dialogTitle": "¿Enviar solicitud?",
+    "dialogBody": "La solicitud de reserva se envía por correo. El equipo la revisa y confirma manualmente.",
+    "displaySample": "Un piso, un contrato, meses tranquilos junto al Ebro",
+    "bodySample": "Cada vivienda se entrega amueblada, verificada y lista para entrar a vivir. Los importes mostrados son estimaciones; el contrato fija el precio final.",
+    "dataSample": "1.350 € / mes · fianza 1.350 € · 3 meses"
   }
 }

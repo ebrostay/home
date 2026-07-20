@@ -34,6 +34,7 @@ decisions and everything an implementer needs that *differs* from v1.
 | [03-auth-and-roles.md](03-auth-and-roles.md) | SWA built-in auth, role model, admin invitations, `x-ms-client-principal` contract, profile bootstrap, deactivation |
 | [04-functional-flows.md](04-functional-flows.md) | Public browse/search, property detail & estimate, login-gated booking flow, host flow, admin flow, AI assistant, i18n/theme |
 | [05-decision-log.md](05-decision-log.md) | ADR-011 … ADR-021 + open decisions |
+| [06-design-language.md](06-design-language.md) | The v2 identity: palette, type, availability semantics, the month-band signature, component inventory, copy rules |
 
 ## v2 in one paragraph
 

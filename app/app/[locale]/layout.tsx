@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Onest, Spline_Sans_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { Header } from "@/components/site/Header";
+import { Footer } from "@/components/site/Footer";
 import "../globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const onest = Onest({
+  variable: "--font-onest",
+  subsets: ["latin"],
+});
+
+const splineMono = Spline_Sans_Mono({
+  variable: "--font-spline-mono",
   subsets: ["latin"],
 });
 
@@ -46,9 +53,13 @@ export default async function LocaleLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${bricolage.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}
+      >
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <Header />
+          <div className="flex-1">{children}</div>
+          <Footer />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1,29 +1,199 @@
 @import "tailwindcss";
 
-/* The theme bootstrap script in [locale]/layout.tsx stamps
-   <html data-theme="light|dark"> before paint; Tailwind's `dark:` variant
-   and these tokens both key off that attribute (no @media fallback needed). */
+/* ============================================================
+   EBROSTAY v2 — "the calm ledger of a stay"
+   Logo-derived palette: bridge green + river blue over cool
+   limestone; ink is green-black. Availability semantics are
+   system-wide: river = open, green = selected/yours, ink = occupied.
+   The theme bootstrap script in [locale]/layout.tsx stamps
+   <html data-theme="light|dark"> before paint.
+   ============================================================ */
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* surfaces */
+  --page: #f6f8f6;
+  --surface: #ffffff;
+  --surface-2: #eef2ee;
+  --overlay: rgba(21, 37, 31, 0.55);
+
+  /* text */
+  --ink: #15251f;
+  --body-text: #3d4f47;
+  --muted: #68786f;
+  --inverse: #f6f8f6;
+
+  /* brand */
+  --brand: #1f8a57;          /* the logo's bridge green — actions */
+  --brand-strong: #157047;   /* hover / AA text on light */
+  --brand-soft: #e3f2e9;
+
+  /* river */
+  --river: #9cc4f0;          /* the logo's river — open, informational */
+  --river-deep: #4a7fb5;     /* readable river for text/icons */
+  --river-soft: #e9f1fa;     /* open-month wash, info surfaces */
+
+  /* lines & focus */
+  --line: #dbe2db;
+  --line-strong: #b9c4bb;
+  --ring: #4a7fb5;
+
+  /* availability semantics: a month that is taken. Solid and closed in
+     both themes (never derive from --ink, which flips with the theme). */
+  --occupied: #26362e;
+
+  /* status */
+  --ok: #1f8a57;
+  --warn: #b07c10;
+  --danger: #b23f3f;
+  --warn-soft: #f7ecd4;
+  --danger-soft: #f7e3e3;
+
+  /* elevation */
+  --shadow-card: 0 1px 2px rgba(21, 37, 31, 0.06), 0 8px 24px -12px rgba(21, 37, 31, 0.18);
+  --shadow-pop: 0 4px 12px rgba(21, 37, 31, 0.1), 0 24px 48px -12px rgba(21, 37, 31, 0.28);
 }
 
 :root[data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --page: #0f1713;
+  --surface: #16201b;
+  --surface-2: #1d2a23;
+  --overlay: rgba(4, 8, 6, 0.66);
+
+  --ink: #e8efea;
+  --body-text: #b9c7bf;
+  --muted: #83958a;
+  --inverse: #15251f;
+
+  --brand: #35a873;
+  --brand-strong: #4dbd88;
+  --brand-soft: #17362a;
+
+  --river: #9cc4f0;
+  --river-deep: #8ab4e4;
+  --river-soft: #182634;
+
+  --line: #24322b;
+  --line-strong: #38493f;
+  --ring: #8ab4e4;
+
+  --occupied: #46554d;
+
+  --ok: #35a873;
+  --warn: #d8a83a;
+  --danger: #d76a6a;
+  --warn-soft: #33290f;
+  --danger-soft: #351a1a;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px -12px rgba(0, 0, 0, 0.7);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-overlay: var(--overlay);
+
+  --color-ink: var(--ink);
+  --color-body: var(--body-text);
+  --color-muted: var(--muted);
+  --color-inverse: var(--inverse);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+
+  --color-river: var(--river);
+  --color-river-deep: var(--river-deep);
+  --color-river-soft: var(--river-soft);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ring: var(--ring);
+  --color-occupied: var(--occupied);
+
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-onest);
+  --font-mono: var(--font-spline-mono);
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.5rem;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans, Arial), Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--body-text);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+  color: var(--ink);
+  font-family: var(--font-bricolage), var(--font-onest), sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* Ledger rule: hairline + small-caps mono label, the section voice.
+   <div class="ledger-rule"><span>viviendas</span></div> */
+.ledger-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--muted);
+}
+.ledger-rule::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+.ledger-rule > span {
+  font-family: var(--font-spline-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Data voice: prices, dates, month labels */
+.data {
+  font-family: var(--font-spline-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+::selection {
+  background: var(--river);
+  color: #15251f;
+}
+
+/* Month-band load animation — the one orchestrated moment. */
+@keyframes month-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.month-cell-enter {
+  animation: month-rise 0.35s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+  animation-delay: calc(var(--cell-index) * 35ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .month-cell-enter { animation: none; }
+  * { transition-duration: 0.01ms !important; }
 }

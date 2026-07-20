@@ -4,5 +4,65 @@
     "title": "Ebrostay",
     "tagline": "Mid-term corporate rentals in Zaragoza.",
     "scaffold": "v2 under construction — this is the redesign skeleton."
+  },
+  "nav": {
+    "mainNav": "Main navigation",
+    "homes": "Homes",
+    "about": "About",
+    "signIn": "Sign in"
+  },
+  "footer": {
+    "tagline": "Furnished, verified homes for 1–11 month stays in Zaragoza.",
+    "siteLinks": "Site links",
+    "homes": "Homes",
+    "about": "About",
+    "privacy": "Privacy"
+  },
+  "theme": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "monthBand": {
+    "stayLength": "Stay length",
+    "monthCount": "{count, plural, one {# month} other {# months}}",
+    "availabilityAlt": "{open} of {total} months available"
+  },
+  "listing": {
+    "verified": "Verified",
+    "bills": "Bills incl.",
+    "month": "month",
+    "specs": "{bedrooms} bed · {bathrooms, plural, one {# bath} other {# baths}} · {size} m²"
+  },
+  "actions": {
+    "book": "Request to book",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "close": "Close",
+    "search": "Search"
+  },
+  "status": {
+    "published": "Published",
+    "pendingReview": "In review",
+    "draft": "Draft",
+    "rejected": "Rejected",
+    "occupied": "Occupied"
+  },
+  "design": {
+    "title": "Design system",
+    "intro": "The Ebrostay v2 style book: “the calm ledger of a stay”. River = open, green = yours, ink = occupied.",
+    "palette": "palette",
+    "type": "typography",
+    "buttons": "buttons",
+    "forms": "forms",
+    "badges": "statuses",
+    "monthBand": "month band",
+    "cards": "cards",
+    "dialog": "dialogs",
+    "openDialog": "Open dialog",
+    "dialogTitle": "Send request?",
+    "dialogBody": "The booking request is sent by email. The team reviews and confirms it manually.",
+    "displaySample": "One flat, one contract, calm months by the Ebro",
+    "bodySample": "Every home comes furnished, verified and move-in ready. All amounts shown are estimates; the contract sets the final price.",
+    "dataSample": "€1,350 / month · deposit €1,350 · 3 months"
   }
 }

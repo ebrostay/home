@@ -27,6 +27,12 @@ const splineMono = Spline_Sans_Mono({
 export const metadata: Metadata = {
   title: "Ebrostay",
   description: "Alquiler corporativo de media estancia en Zaragoza",
+  icons: {
+    icon: [
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+  },
 };
 
 export function generateStaticParams() {

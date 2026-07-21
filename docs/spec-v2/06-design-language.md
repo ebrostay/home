@@ -105,6 +105,11 @@ availability band).
   group 4-digit numbers; rule R-X-2 of docs/spec/09 requires `1.350`).
 - Buttons say what they do ("Solicitar reserva", never "Enviar"); money is
   always labelled an estimate (R-CORE-2).
+- **Voice** (adopted from the v1 design system's brand-voice guideline —
+  §6.9): plain, confident, local; lead with the benefit ("Book your home in
+  Zaragoza in minutes"), never platform-speak ("seamless booking solutions");
+  be specific and unhedged ("Free cancellation up to 48h before check-in",
+  never "policies may apply.*"). Vague hedging erodes trust.
 
 ## 6.8 Decisions & notes from the design pass
 
@@ -132,3 +137,32 @@ availability band).
   a11y/keyboard machinery maintained upstream — unlike v1's hand-rolled
   dropdown (its Safari/stacking bugs are in the v1 git history). Native
   `<option>` elements are not used anywhere.
+
+## 6.9 Relationship to the v1 design system (2026-07-21 A/B)
+
+The v1 DS (github.com/ebrostay/ebrostay-design-system, synced to the
+"Ebrostay Design System" Claude Design project) was compared against this
+system after the v2 identity shipped. **Convergences** (independent — the v2
+pass never saw the DS): Bricolage Grotesque as display face, mono for
+prices/refs, hairline-first restraint, `data-theme` dark mode, plain-voice
+copy. **Deliberate divergences kept** (the "restart" axes, product-owner
+call): no clay/terracotta, cool limestone vs warm stone, green-charcoal vs
+warm-black dark, tighter radii, the month-band signature and availability
+color semantics.
+
+**Adopted from the DS** (identity-neutral craft, approved 2026-07-21):
+1. Logo asset pack → `app/public/brand/` (wordmark ± inverse, mark inverse,
+   dark app icon, SVG favicon — wired via layout `metadata.icons`). The
+   header keeps the HTML wordmark (theme-aware); SVGs are for favicons, OG,
+   email.
+2. Fluid display type scale (`--text-2xl…6xl` clamp() steps + tight
+   line-heights) overriding Tailwind's fixed steps.
+3. Dark-mode translucent hairlines (`--line*` as white-alpha on dark) and
+   the `--star` rating-gold token (river-deep already serves the info role).
+4. The skeleton loader pattern (`.skeleton`, reduced-motion-gated), restyled
+   with v2 tokens.
+5. Brand-voice do/don'ts folded into §6.7.
+
+The DS's React UI kits (Header/Home/Results/Detail/Auth) serve as
+**feature-coverage checklists** for the public-pages and auth tasks — never
+as styling sources.

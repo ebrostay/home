@@ -49,6 +49,7 @@
   --danger: #b23f3f;
   --warn-soft: #f7ecd4;
   --danger-soft: #f7e3e3;
+  --star: #e6a52a; /* rating gold (river-deep serves the "info" role) */
 
   /* elevation */
   --shadow-card: 0 1px 2px rgba(21, 37, 31, 0.06), 0 8px 24px -12px rgba(21, 37, 31, 0.18);
@@ -74,8 +75,10 @@
   --river-deep: #8ab4e4;
   --river-soft: #182634;
 
-  --line: #24322b;
-  --line-strong: #38493f;
+  /* Translucent hairlines read better than opaque lines on dark —
+     v1-design-system craft, v2 colors. */
+  --line: rgba(232, 239, 234, 0.1);
+  --line-strong: rgba(232, 239, 234, 0.24);
   --ring: #8ab4e4;
 
   --occupied: #46554d;
@@ -85,6 +88,7 @@
   --danger: #d76a6a;
   --warn-soft: #33290f;
   --danger-soft: #351a1a;
+  --star: #edb23e;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
   --shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px -12px rgba(0, 0, 0, 0.7);
@@ -119,10 +123,24 @@
   --color-danger: var(--danger);
   --color-warn-soft: var(--warn-soft);
   --color-danger-soft: var(--danger-soft);
+  --color-star: var(--star);
 
   --font-display: var(--font-bricolage);
   --font-sans: var(--font-onest);
   --font-mono: var(--font-spline-mono);
+
+  /* Fluid display scale — adopted from the v1 design system (proven
+     phone-min → desktop-max tuning); overrides Tailwind's fixed steps. */
+  --text-2xl: clamp(1.625rem, calc(1.3rem + 1.6vw), 2rem);
+  --text-2xl--line-height: 1.2;
+  --text-3xl: clamp(2rem, calc(1.55rem + 2.2vw), 2.5rem);
+  --text-3xl--line-height: 1.15;
+  --text-4xl: clamp(2.375rem, calc(1.7rem + 3.3vw), 3.125rem);
+  --text-4xl--line-height: 1.1;
+  --text-5xl: clamp(2.75rem, calc(1.85rem + 4.4vw), 3.875rem);
+  --text-5xl--line-height: 1.05;
+  --text-6xl: clamp(3.25rem, calc(2rem + 6vw), 4.75rem);
+  --text-6xl--line-height: 1.02;
 
   --radius-card: 0.875rem;
   --radius-control: 0.5rem;
@@ -246,6 +264,31 @@ h1, h2, h3 {
   box-shadow: inset 0 -2px 0 var(--river);
 }
 
+/* Skeleton loader — v1-design-system pattern restyled with v2 tokens.
+   <div class="skeleton h-4 w-32" /> etc.; motion gated below. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: var(--radius-control);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--ink) 7%, transparent),
+    transparent
+  );
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  to { transform: translateX(100%); }
+}
+
 /* Month-band load animation — the one orchestrated moment. */
 @keyframes month-rise {
   from { opacity: 0; transform: translateY(4px); }
@@ -258,5 +301,6 @@ h1, h2, h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .month-cell-enter { animation: none; }
+  .skeleton::after { animation: none; }
   * { transition-duration: 0.01ms !important; }
 }

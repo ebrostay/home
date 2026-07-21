@@ -226,6 +226,22 @@ export default function DesignPage() {
         </div>
       </section>
 
+      {/* Loading states */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("loading")}</span></div>
+        <div className="mt-6 max-w-sm overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card)">
+          <div className="skeleton aspect-[4/3] rounded-none" />
+          <div className="space-y-2.5 p-4">
+            <div className="flex justify-between gap-3">
+              <div className="skeleton h-4 w-32" />
+              <div className="skeleton h-4 w-16" />
+            </div>
+            <div className="skeleton h-3 w-24" />
+            <div className="skeleton h-3 w-40" />
+          </div>
+        </div>
+      </section>
+
       {/* Cards */}
       <section className="mt-14">
         <div className="ledger-rule"><span>{t("cards")}</span></div>

@@ -67,6 +67,7 @@
     "badges": "estados",
     "monthBand": "banda de meses",
     "calendar": "calendario",
+    "loading": "estados de carga",
     "calendarHint": "Los días reservados se marcan con una línea diagonal; la banda de meses es solo el resumen — el día a día vive aquí.",
     "cards": "tarjetas",
     "dialog": "diálogos",

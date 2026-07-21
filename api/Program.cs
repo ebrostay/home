@@ -32,4 +32,6 @@ builder.Services.AddSingleton(sp =>
     return sp.GetRequiredService<CosmosClient>().GetDatabase(database);
 });
 
+builder.Services.AddSingleton<Ebrostay.Api.Services.ProfileService>();
+
 builder.Build().Run();

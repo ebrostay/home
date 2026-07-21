@@ -1,16 +1,16 @@
 {
   "trailingSlash": "auto",
   "routes": [
-    {
-      "route": "/",
-      "redirect": "/es/",
-      "statusCode": 302
-    }
+    { "route": "/", "redirect": "/es/", "statusCode": 302 },
+    { "route": "/es/account/*", "allowedRoles": ["authenticated"] },
+    { "route": "/en/account/*", "allowedRoles": ["authenticated"] },
+    { "route": "/es/host/*", "allowedRoles": ["authenticated"] },
+    { "route": "/en/host/*", "allowedRoles": ["authenticated"] },
+    { "route": "/es/admin/*", "allowedRoles": ["admin"] },
+    { "route": "/en/admin/*", "allowedRoles": ["admin"] }
   ],
   "responseOverrides": {
-    "404": {
-      "rewrite": "/404.html"
-    }
+    "404": { "rewrite": "/404.html" }
   },
   "platform": {
     "apiRuntime": "dotnet-isolated:9.0"

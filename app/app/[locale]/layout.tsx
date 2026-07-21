@@ -8,6 +8,7 @@ import { routing } from "@/i18n/routing";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Analytics } from "@/components/site/Analytics";
+import { AuthProvider } from "@/components/site/AuthProvider";
 import "../globals.css";
 
 // Display face: Familjen Grotesk (chosen 2026-07-22 via /design/type
@@ -71,9 +72,11 @@ export default async function LocaleLayout({
         className={`${familjen.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
+          <AuthProvider>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </AuthProvider>
         </NextIntlClientProvider>
         <Analytics />
       </body>

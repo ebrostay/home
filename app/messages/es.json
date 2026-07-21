@@ -161,5 +161,14 @@
     "displaySample": "Un piso, un contrato, meses tranquilos junto al Ebro",
     "bodySample": "Cada vivienda se entrega amueblada, verificada y lista para entrar a vivir. Los importes mostrados son estimaciones; el contrato fija el precio final.",
     "dataSample": "1.350 € / mes · fianza 1.350 € · 3 meses"
+  },
+  "auth": {
+    "signInWith": "Entrar con",
+    "github": "GitHub",
+    "microsoft": "Microsoft",
+    "account": "Mi cuenta",
+    "adminPanel": "Administración",
+    "signOut": "Salir",
+    "deactivated": "Tu cuenta está desactivada. Escríbenos para reactivarla."
   }
 }

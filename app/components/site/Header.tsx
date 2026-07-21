@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Wordmark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { AuthMenu } from "./AuthMenu";
 
 export function Header() {
   const t = useTranslations("nav");
@@ -32,13 +33,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <LanguageSwitch />
           <ThemeToggle />
-          {/* Sign-in entry point; wired to /.auth in the auth task */}
-          <Link
-            href="/account"
-            className="hidden rounded-(--radius-control) bg-brand px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-strong sm:block"
-          >
-            {t("signIn")}
-          </Link>
+          <AuthMenu />
         </div>
       </div>
     </header>

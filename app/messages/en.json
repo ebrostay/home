@@ -161,5 +161,14 @@
     "displaySample": "One flat, one contract, calm months by the Ebro",
     "bodySample": "Every home comes furnished, verified and move-in ready. All amounts shown are estimates; the contract sets the final price.",
     "dataSample": "€1,350 / month · deposit €1,350 · 3 months"
+  },
+  "auth": {
+    "signInWith": "Sign in with",
+    "github": "GitHub",
+    "microsoft": "Microsoft",
+    "account": "My account",
+    "adminPanel": "Admin panel",
+    "signOut": "Sign out",
+    "deactivated": "Your account is deactivated. Contact us to reactivate it."
   }
 }

@@ -31,6 +31,36 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   via SWA rewrites — cosmetic + marginally better SEO. Current `?id=` model
   works with static export today.
 
+## Search & stay model
+- **[P][M]** **Overlapping availability search when the month selector is used**
+  (Raphael, 2026-07-22). Today search requires an exact date-range fit
+  (moveIn → moveIn + N whole months). When the user expresses a stay as a
+  *duration* via the month-band (not exact dates), the search should instead
+  find properties with **any** window that can fit ~N months — an
+  overlap/flexible search — rather than a hard fixed-range fit.
+- **[P][M]** **Exact-date / sub-month stays.** Bookings aren't limited to whole
+  months — a stay is any duration from **30 days up to just under 12 months**
+  (Raphael: `30 … 12×30−1` days). The current model simplifies to whole months
+  (billing rounds up; the hero band is 1–11). Allow exact date-range search and
+  booking, decoupled from whole-month *billing*. (Pin down the day-count basis:
+  30-day months vs. a real calendar year — matters at the boundary.)
+- **[P][S]** **Link duration ↔ dates.** When the whole-month stay-length
+  selector changes, move the to-date picker (and vice-versa). Note the current
+  layout: the hero has a month-band but no explicit checkout picker; the
+  property page has a from/to `DateRangePicker` but no month-band — so this
+  implies putting both controls on at least one surface, a small design choice.
+- **[L][M]** **Max stay is UNDER 12 months, not 11 — and there's a live bug.**
+  The real ceiling is Spanish residency law: stays reaching 12 months change the
+  tenancy regime (LAU — *vivienda* vs. *uso distinto*). Current code caps at 11
+  whole months (`app/lib/pricing.ts` `MAX_STAY_MONTHS = 11`; `> 11` →
+  two-contract message) — a simplification. **Correctness gap:** because billing
+  rounds *up* to whole months, a perfectly legal ~11½-month stay rounds to 12
+  billed months and wrongly triggers the two-contract message. Reconcile the
+  legal calendar-duration ceiling (< 12 months) with whole-month billing
+  rounding; touches `pricing.ts`, ADR-005, `docs/spec/05-business-rules.md`, and
+  the picker/band caps. Needs a product+legal ruling on how billed-months vs.
+  actual-duration interact right at the 12-month line.
+
 ## Infra & ops
 - **[O][S]** Delete the old v1 SWA `ebrostay-home` (westeurope) at cutover — it
   rejects all deployment tokens and still serves a stale v1; its main-branch

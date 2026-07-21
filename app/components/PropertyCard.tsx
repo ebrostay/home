@@ -33,7 +33,7 @@ export function PropertyCard({
 
   return (
     <Link
-      href={`/homes/${property.id}`}
+      href={{ pathname: "/property", query: { id: property.id } }}
       className="group block overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card) transition-shadow hover:shadow-(--shadow-pop)"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">

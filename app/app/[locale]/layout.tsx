@@ -7,6 +7,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { Analytics } from "@/components/site/Analytics";
 import "../globals.css";
 
 // Display face: Familjen Grotesk (chosen 2026-07-22 via /design/type
@@ -74,6 +75,7 @@ export default async function LocaleLayout({
           <div className="flex-1">{children}</div>
           <Footer />
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );

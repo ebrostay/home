@@ -21,6 +21,7 @@ public record PropertySummary(
     int SizeM2,
     int PriceNumber,
     string BillsPolicy,
+    string[] Amenities,
     double? Rating,
     bool IsNew,
     bool Checked,
@@ -88,8 +89,8 @@ public static class PublicProjection
         => new(
             p.Id, p.City, p.Type, p.Name, p.Area, p.Lat, p.Lng,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2,
-            p.PriceNumber, p.BillsPolicy, p.Rating, p.IsNew, p.Checked,
-            p.DepositProtected, p.AvailableFrom,
+            p.PriceNumber, p.BillsPolicy, p.Amenities, p.Rating, p.IsNew,
+            p.Checked, p.DepositProtected, p.AvailableFrom,
             p.Photos
                 .Where(ph => !ph.IsFloorplan)
                 .OrderBy(ph => ph.SortOrder)

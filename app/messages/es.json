@@ -3,7 +3,18 @@
     "kicker": "Zaragoza",
     "title": "Ebrostay",
     "tagline": "Alquiler corporativo de media estancia en Zaragoza.",
-    "scaffold": "v2 en construcción — este es el esqueleto del rediseño."
+    "heroTitle": "Meses tranquilos junto al Ebro",
+    "heroTagline": "Viviendas amuebladas y verificadas para estancias de 1 a 11 meses en Zaragoza. Sin sorpresas: los importes son estimaciones claras y el contrato fija el precio final.",
+    "heroImageAlt": "Zaragoza junto al río Ebro",
+    "moveIn": "Entrada",
+    "guests": "Personas",
+    "loading": "Cargando viviendas…",
+    "results": "{count, plural, one {# vivienda} other {# viviendas}}",
+    "noResultsTitle": "Ninguna vivienda coincide",
+    "noResultsBody": "Prueba con otras fechas, menos meses o menos filtros.",
+    "error": "No se pudieron cargar las viviendas.",
+    "retry": "Reintentar",
+    "clearStay": "Entrada {date} · {months} m"
   },
   "nav": {
     "mainNav": "Navegación principal",
@@ -31,11 +42,73 @@
     "verified": "Verificada",
     "bills": "Gastos incl.",
     "month": "mes",
-    "specs": "{bedrooms} hab · {bathrooms, plural, one {# baño} other {# baños}} · {size} m²"
+    "specs": "{bedrooms} hab · {bathrooms, plural, one {# baño} other {# baños}} · {size} m²",
+    "new": "Nueva"
   },
   "filters": {
     "city": "Ciudad",
-    "type": "Tipo de vivienda"
+    "type": "Tipo de vivienda",
+    "budget": "Presupuesto máx.",
+    "anyBudget": "Sin límite",
+    "amenities": "Equipamiento",
+    "sort": "Ordenar"
+  },
+  "sort": {
+    "best": "Mejor valoradas",
+    "price": "Precio: menor a mayor",
+    "new": "Novedades primero"
+  },
+  "amenity": {
+    "wifi": "Wifi",
+    "desk": "Escritorio",
+    "lift": "Ascensor",
+    "ac": "Aire acond.",
+    "washer": "Lavadora",
+    "parking": "Parking",
+    "heating": "Calefacción",
+    "kitchen": "Cocina equipada"
+  },
+  "detail": {
+    "back": "Volver a las viviendas",
+    "specs": "Características",
+    "amenities": "Equipamiento",
+    "conditions": "Condiciones",
+    "bills": "Suministros",
+    "billsIncluded": "Incluidos",
+    "billsCapped": "Con tope de {cap} €/mes",
+    "billsExcluded": "No incluidos",
+    "deposit": "Fianza",
+    "stay": "Estancia",
+    "stayRange": "{min}–{max} meses",
+    "floor": "Planta {floor}",
+    "energy": "Certificado energético",
+    "pets": "Mascotas",
+    "smoking": "Fumar",
+    "couples": "Parejas",
+    "selfCheckin": "Autoentrada",
+    "yes": "Sí",
+    "no": "No",
+    "beds": "Camas",
+    "availability": "Disponibilidad",
+    "location": "Ubicación",
+    "notFoundTitle": "Vivienda no encontrada",
+    "notFoundBody": "Puede que ya no esté publicada.",
+    "guests": "{count, plural, one {# persona} other {# personas}}",
+    "photoOf": "Foto {n} de {total}"
+  },
+  "estimate": {
+    "title": "Calcula tu estancia",
+    "hint": "Elige entrada y salida en el calendario. Los días con línea diagonal están ocupados.",
+    "months": "{count, plural, one {# mes} other {# meses}} × {price} €",
+    "rent": "Alquiler",
+    "commission": "Gestión Ebrostay (15 %, IVA incl.)",
+    "commissionCap": "Descuento por tope de un mes",
+    "deposit": "Fianza (reembolsable)",
+    "total": "Total estimado",
+    "disclaimer": "Importe orientativo. El contrato fija el precio final; sin pago online.",
+    "tooLong": "Más de 11 meses requiere dos contratos — escríbenos y lo preparamos.",
+    "cta": "Solicitar reserva",
+    "ctaHint": "Disponible al iniciar sesión — muy pronto."
   },
   "type": {
     "all": "Todos",

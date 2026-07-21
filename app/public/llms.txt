@@ -1,0 +1,30 @@
+# Ebrostay
+
+> Mid-term corporate rental marketplace in Zaragoza, Spain. Furnished homes
+> for whole-month stays of 1 to 11 months, aimed at companies housing their
+> people and at property owners listing their homes. Fully bilingual
+> (Spanish/English), booking requests online with no upfront payment.
+
+Key facts:
+
+- Stays are billed in whole months (1–11); prices are shown per month.
+- Any signed-in user can list a property; the Ebrostay team reviews every
+  listing before it is published.
+- Booking flow: search, review a verified home, send a booking request —
+  payment and the refundable deposit are agreed separately, nothing is
+  charged online.
+- Based in Zaragoza (Spain); the name and logo refer to the stone bridge
+  (Puente de Piedra) over the river Ebro.
+
+## Pages
+
+- [Viviendas (ES)](https://ebrostay.com/es/): search published homes
+- [Homes (EN)](https://ebrostay.com/en/): search published homes
+- [Sobre Ebrostay (ES)](https://ebrostay.com/es/about/): mission and how it works
+- [About Ebrostay (EN)](https://ebrostay.com/en/about/): mission and how it works
+- [Privacidad (ES)](https://ebrostay.com/es/privacy/): privacy policy and legal notice
+- [Privacy (EN)](https://ebrostay.com/en/privacy/): privacy policy and legal notice
+
+## Contact
+
+- Email: info@ebrostay.com

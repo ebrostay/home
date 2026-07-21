@@ -3,7 +3,18 @@
     "kicker": "Zaragoza",
     "title": "Ebrostay",
     "tagline": "Mid-term corporate rentals in Zaragoza.",
-    "scaffold": "v2 under construction — this is the redesign skeleton."
+    "heroTitle": "Calm months by the Ebro",
+    "heroTagline": "Furnished, verified homes for 1–11 month stays in Zaragoza. No surprises: amounts are clear estimates and the contract sets the final price.",
+    "heroImageAlt": "Zaragoza by the Ebro river",
+    "moveIn": "Move-in",
+    "guests": "Guests",
+    "loading": "Loading homes…",
+    "results": "{count, plural, one {# home} other {# homes}}",
+    "noResultsTitle": "No homes match",
+    "noResultsBody": "Try different dates, fewer months, or fewer filters.",
+    "error": "The homes could not be loaded.",
+    "retry": "Retry",
+    "clearStay": "Move-in {date} · {months} mo"
   },
   "nav": {
     "mainNav": "Main navigation",
@@ -31,11 +42,73 @@
     "verified": "Verified",
     "bills": "Bills incl.",
     "month": "month",
-    "specs": "{bedrooms} bed · {bathrooms, plural, one {# bath} other {# baths}} · {size} m²"
+    "specs": "{bedrooms} bed · {bathrooms, plural, one {# bath} other {# baths}} · {size} m²",
+    "new": "New"
   },
   "filters": {
     "city": "City",
-    "type": "Property type"
+    "type": "Property type",
+    "budget": "Max budget",
+    "anyBudget": "No limit",
+    "amenities": "Amenities",
+    "sort": "Sort"
+  },
+  "sort": {
+    "best": "Best rated",
+    "price": "Price: low to high",
+    "new": "New first"
+  },
+  "amenity": {
+    "wifi": "Wifi",
+    "desk": "Desk",
+    "lift": "Lift",
+    "ac": "Air con",
+    "washer": "Washer",
+    "parking": "Parking",
+    "heating": "Heating",
+    "kitchen": "Equipped kitchen"
+  },
+  "detail": {
+    "back": "Back to homes",
+    "specs": "Facts",
+    "amenities": "Amenities",
+    "conditions": "Conditions",
+    "bills": "Bills",
+    "billsIncluded": "Included",
+    "billsCapped": "Capped at {cap} €/month",
+    "billsExcluded": "Not included",
+    "deposit": "Deposit",
+    "stay": "Stay",
+    "stayRange": "{min}–{max} months",
+    "floor": "Floor {floor}",
+    "energy": "Energy certificate",
+    "pets": "Pets",
+    "smoking": "Smoking",
+    "couples": "Couples",
+    "selfCheckin": "Self check-in",
+    "yes": "Yes",
+    "no": "No",
+    "beds": "Beds",
+    "availability": "Availability",
+    "location": "Location",
+    "notFoundTitle": "Home not found",
+    "notFoundBody": "It may no longer be published.",
+    "guests": "{count, plural, one {# guest} other {# guests}}",
+    "photoOf": "Photo {n} of {total}"
+  },
+  "estimate": {
+    "title": "Price your stay",
+    "hint": "Pick move-in and move-out in the calendar. Days with a diagonal line are taken.",
+    "months": "{count, plural, one {# month} other {# months}} × €{price}",
+    "rent": "Rent",
+    "commission": "Ebrostay service (15%, VAT incl.)",
+    "commissionCap": "One-month-cap discount",
+    "deposit": "Deposit (refundable)",
+    "total": "Estimated total",
+    "disclaimer": "Indicative amount. The contract sets the final price; no online payment.",
+    "tooLong": "Stays over 11 months need two contracts — write to us and we'll arrange it.",
+    "cta": "Request to book",
+    "ctaHint": "Available once signed in — coming very soon."
   },
   "type": {
     "all": "All",

@@ -1,0 +1,13 @@
+{
+  "name": "Ebrostay",
+  "short_name": "Ebrostay",
+  "description": "Mid-term corporate rentals in Zaragoza — furnished homes for stays of 1 to 11 months.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f6",
+  "theme_color": "#1f8a57",
+  "icons": [
+    { "src": "/brand/ebrostay-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/ebrostay-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

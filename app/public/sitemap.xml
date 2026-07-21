@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://ebrostay.com/es/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/"/>
+  </url>
+  <url>
+    <loc>https://ebrostay.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/"/>
+  </url>
+  <url>
+    <loc>https://ebrostay.com/es/about/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/about/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/about/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/about/"/>
+  </url>
+  <url>
+    <loc>https://ebrostay.com/en/about/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/about/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/about/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/about/"/>
+  </url>
+  <url>
+    <loc>https://ebrostay.com/es/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/privacy/"/>
+  </url>
+  <url>
+    <loc>https://ebrostay.com/en/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ebrostay.com/es/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ebrostay.com/en/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ebrostay.com/es/privacy/"/>
+  </url>
+</urlset>

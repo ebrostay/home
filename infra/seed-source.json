@@ -1,0 +1,225 @@
+[
+ {
+  "id": "pedro1",
+  "city": "zaragoza",
+  "type": "apartment",
+  "addressKey": "pedro",
+  "name": {
+   "es": "Pedro II el Católico 3 - 1 IZQ",
+   "en": "Pedro II el Católico 3 - 1 IZQ"
+  },
+  "area": {
+   "es": "Universidad - Pedro II el Católico",
+   "en": "University - Pedro II el Católico"
+  },
+  "copy": {
+   "es": "Piso amueblado en Pedro II el Católico 3, preparado para estancias de media duración en Zaragoza.",
+   "en": "Furnished flat at Pedro II el Católico 3, prepared for medium-stay rentals in Zaragoza."
+  },
+  "details": {
+   "es": "Primero izquierda en una ubicación urbana y bien comunicada, con cocina equipada, zona de trabajo y gestión local Ebrostay.",
+   "en": "First-floor left flat in a connected urban location, with equipped kitchen, work area, and local Ebrostay management."
+  },
+  "lat": 41.65393,
+  "lng": -0.90783,
+  "guests": 4,
+  "priceNumber": 950,
+  "price": "950 EUR",
+  "rating": 4.8,
+  "floorNumber": 1,
+  "availableFrom": "2026-07-01",
+  "isNew": false,
+  "checked": true,
+  "depositProtected": true,
+  "billsPolicy": "included",
+  "amenities": [
+   "wifi",
+   "desk",
+   "lift",
+   "heating",
+   "kitchen"
+  ],
+  "unavailable": [
+   [
+    "2026-06-20",
+    "2026-06-24"
+   ],
+   [
+    "2026-07-04",
+    "2026-07-10"
+   ],
+   [
+    "2026-08-12",
+    "2026-08-18"
+   ]
+  ],
+  "photos": []
+ },
+ {
+  "id": "pedro2",
+  "city": "zaragoza",
+  "type": "apartment",
+  "addressKey": "pedro",
+  "name": {
+   "es": "Pedro II el Católico 3 - 2 IZQ",
+   "en": "Pedro II el Católico 3 - 2 IZQ"
+  },
+  "area": {
+   "es": "Universidad - Pedro II el Católico",
+   "en": "University - Pedro II el Católico"
+  },
+  "copy": {
+   "es": "Segundo izquierda en el mismo edificio, una opción práctica para profesionales, estudiantes o traslados temporales.",
+   "en": "Second-floor left flat in the same building, practical for professionals, students, or temporary relocations."
+  },
+  "details": {
+   "es": "Vivienda amueblada con distribución funcional, wifi, calefacción y soporte local para llegada y estancia.",
+   "en": "Furnished home with functional layout, wifi, heating, and local support for arrival and stay."
+  },
+  "lat": 41.65416,
+  "lng": -0.90756,
+  "guests": 4,
+  "priceNumber": 980,
+  "price": "980 EUR",
+  "rating": 4.7,
+  "floorNumber": 2,
+  "availableFrom": "2026-07-10",
+  "isNew": true,
+  "checked": true,
+  "depositProtected": true,
+  "billsPolicy": "included",
+  "amenities": [
+   "wifi",
+   "desk",
+   "lift",
+   "heating",
+   "kitchen",
+   "ac"
+  ],
+  "unavailable": [
+   [
+    "2026-06-27",
+    "2026-07-03"
+   ],
+   [
+    "2026-07-18",
+    "2026-07-22"
+   ],
+   [
+    "2026-08-10",
+    "2026-08-14"
+   ]
+  ],
+  "photos": []
+ },
+ {
+  "id": "movera0",
+  "city": "zaragoza",
+  "type": "apartment",
+  "addressKey": "movera",
+  "name": {
+   "es": "Movera 7 - Segunda Planta",
+   "en": "Movera 7 - Segunda Planta"
+  },
+  "area": {
+   "es": "Movera",
+   "en": "Movera"
+  },
+  "copy": {
+   "es": "Piso de 3 habitaciones privadas en Movera 7 (segunda planta), ideal para equipos de empresa, técnicos y estancias por proyecto.",
+   "en": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays."
+  },
+  "details": {
+   "es": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos y baño completo. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
+   "en": "Three private bedrooms with shared living, dining, and equipped kitchen, plus a full bathroom. Utilities capped at 50 EUR per room (anything above is billed separately), self check-in by lockbox, and 24/7 support. Whole flat or room by room."
+  },
+  "lat": 41.64929,
+  "lng": -0.82209,
+  "guests": 3,
+  "priceNumber": 1350,
+  "price": "1.350 EUR",
+  "rating": 4.9,
+  "floorNumber": 2,
+  "availableFrom": "2026-07-01",
+  "isNew": true,
+  "checked": true,
+  "depositProtected": true,
+  "billsPolicy": "capped",
+  "amenities": [
+   "wifi",
+   "desk",
+   "heating",
+   "kitchen"
+  ],
+  "unavailable": [
+   [
+    "2026-07-26",
+    "2026-08-02"
+   ]
+  ],
+  "photos": [
+   "assets/movera-second-hero.jpg",
+   "assets/movera-second-bedroom-1.jpg",
+   "assets/movera-second-bedroom-2.jpg",
+   "assets/movera-second-bedroom-3.jpg",
+   "assets/movera-second-bathroom.jpg"
+  ]
+ },
+ {
+  "id": "movera1",
+  "city": "zaragoza",
+  "type": "apartment",
+  "addressKey": "movera",
+  "name": {
+   "es": "Movera 7 - Primera Planta",
+   "en": "Movera 7 - Primera Planta"
+  },
+  "area": {
+   "es": "Movera",
+   "en": "Movera"
+  },
+  "copy": {
+   "es": "Piso de 3 habitaciones privadas en Movera 7, ideal para equipos de empresa, técnicos y estancias por proyecto.",
+   "en": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays."
+  },
+  "details": {
+   "es": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos, baño completo y terraza. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
+   "en": "Three private bedrooms with shared living, dining, and equipped kitchen, full bathroom, and terrace. Utilities capped at 50 EUR per room (anything above is billed separately), self check-in by lockbox, and 24/7 support. Whole flat or room by room."
+  },
+  "lat": 41.64952,
+  "lng": -0.82182,
+  "guests": 3,
+  "priceNumber": 1350,
+  "price": "1.350 EUR",
+  "rating": 4.7,
+  "floorNumber": 1,
+  "availableFrom": "2026-07-01",
+  "isNew": true,
+  "checked": true,
+  "depositProtected": true,
+  "billsPolicy": "capped",
+  "amenities": [
+   "wifi",
+   "desk",
+   "heating",
+   "kitchen",
+   "terrace"
+  ],
+  "unavailable": [
+   [
+    "2026-06-22",
+    "2026-06-29"
+   ],
+   [
+    "2026-08-01",
+    "2026-08-16"
+   ]
+  ],
+  "photos": [
+   "assets/movera-first-hero.jpg",
+   "assets/movera-first-bedroom-1.jpg",
+   "assets/movera-first-bedroom-2.jpg",
+   "assets/movera-first-bathroom.jpg"
+  ]
+ }
+]

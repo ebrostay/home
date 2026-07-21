@@ -119,7 +119,8 @@ availability band).
   too loudly under the sticky header.
 - Date picking: **react-day-picker v10** (`ui/DateRangePicker`), inline range
   calendar themed via `.rdp-root` token overrides in `globals.css` — selected
-  span = brand green, booked days = occupied-solid + strikethrough, today =
+  span = brand green, booked days = occupied-solid with a diagonal slash
+  drawn behind the number (hotel-calendar mark), today =
   river underline; `es`/`en-GB` locales built in. Replaces v1's flatpickr,
   which needed hand-patched Safari/dark-mode/month-dropdown CSS. Booked spans
   are passed as both `disabled` and the `booked` modifier; `excludeDisabled`

@@ -67,7 +67,7 @@
     "badges": "statuses",
     "monthBand": "month band",
     "calendar": "calendar",
-    "calendarHint": "Booked days are struck through; the month band is only the summary — day-level truth lives here.",
+    "calendarHint": "Booked days are crossed with a diagonal line; the month band is only the summary — day-level truth lives here.",
     "cards": "cards",
     "dialog": "dialogs",
     "openDialog": "Open dialog",

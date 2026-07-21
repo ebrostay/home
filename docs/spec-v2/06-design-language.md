@@ -61,8 +61,11 @@ physical. Implemented in `app/components/MonthBand.tsx`:
 - **`AvailabilityBand`** — a listing's next 12 calendar months as thin bars.
   **Three states**, because stays start mid-month and a binary band would
   mislead (product-owner call, 2026-07-21): river = fully open, split
-  river/occupied = partially booked, occupied-solid = taken. Month initials
-  via `Intl` per locale; `role="img"` with a translated summary label. The
+  river/occupied = partially booked, occupied-solid = taken. Labels are
+  **3-letter localized months** (`Intl` short, periods stripped — single
+  initials were ambiguous: J = ene/jun/jul); a hairline tick plus a small
+  `’YY` mark under January indicate the year boundary (2026-07-22 call).
+  `role="img"` with a translated summary label. The
   band is a glanceable SUMMARY only — day-level truth lives in the
   `DateRangePicker` on the property page. Both share one color language.
 

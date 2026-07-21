@@ -57,6 +57,17 @@
     "rejected": "Rechazada",
     "occupied": "Ocupada"
   },
+  "typeCompare": {
+    "title": "Comparativa de tipografía display",
+    "intro": "El mismo titular, la marca y una tarjeta en cuatro tipografías. Bricolage es la actual (también era la display de v1 — continuidad, no ruptura). El cuerpo permanece en Onest en todos los casos.",
+    "current": "actual",
+    "note": {
+      "bricolage": "La titular actual: grotesca cálida con cortes peculiares. Converge con v1 y con el wordmark del logo.",
+      "familjen": "Grotesca cálida como Bricolage pero de esqueleto más sereno y redondeado — continuidad de tono, distancia de forma.",
+      "schibsted": "Más afilada y editorial — voz de «periódico serio»; endurece el conjunto.",
+      "fraunces": "La apuesta distinta: serif cálida de display — otro género tipográfico; más hostelería clásica, menos plataforma."
+    }
+  },
   "design": {
     "title": "Sistema de diseño",
     "intro": "El libro de estilo de Ebrostay v2: «el libro mayor de una estancia». Río = libre, verde = tuya, tinta = ocupada.",

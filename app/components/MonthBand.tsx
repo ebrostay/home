@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 
 // ============================================================
@@ -73,12 +73,14 @@ export function MonthBandSelect({
 export type MonthState = "open" | "partial" | "occupied";
 
 export type MonthAvailability = {
-  label: string; // short month label, localized by the caller (Intl)
+  label: string; // 3-letter month label, localized by the caller (Intl short)
   state: MonthState;
+  newYear?: number; // 2-digit year — set on the first month of a new year
 };
 
 export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
   const t = useTranslations("monthBand");
+  const hasYearMarks = months.some((m) => m.newYear !== undefined);
 
   return (
     <div
@@ -91,28 +93,39 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
       className="flex gap-0.5"
     >
       {months.map((m, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1">
-          <div
-            className={`h-1.5 w-full rounded-full ${
-              m.state === "open"
-                ? "bg-river"
-                : m.state === "occupied"
-                  ? "bg-occupied"
-                  : ""
-            }`}
-            style={
-              m.state === "partial"
-                ? {
-                    background:
-                      "linear-gradient(90deg, var(--occupied) 50%, var(--river) 50%)",
-                  }
-                : undefined
-            }
-          />
-          <span className="data text-[0.5625rem] uppercase text-muted">
-            {m.label}
-          </span>
-        </div>
+        <Fragment key={i}>
+          {/* year boundary: a hairline tick between Dec and Jan */}
+          {m.newYear !== undefined && i > 0 && (
+            <div aria-hidden className="w-px self-stretch bg-line-strong" />
+          )}
+          <div className="flex flex-1 flex-col items-center gap-1">
+            <div
+              className={`h-1.5 w-full rounded-full ${
+                m.state === "open"
+                  ? "bg-river"
+                  : m.state === "occupied"
+                    ? "bg-occupied"
+                    : ""
+              }`}
+              style={
+                m.state === "partial"
+                  ? {
+                      background:
+                        "linear-gradient(90deg, var(--occupied) 50%, var(--river) 50%)",
+                    }
+                  : undefined
+              }
+            />
+            <span className="data text-[0.5625rem] uppercase leading-none text-muted">
+              {m.label}
+            </span>
+            {hasYearMarks && (
+              <span className="data text-[0.5rem] leading-none text-muted/70">
+                {m.newYear !== undefined ? `’${m.newYear}` : " "}
+              </span>
+            )}
+          </div>
+        </Fragment>
       ))}
     </div>
   );

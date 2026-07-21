@@ -36,7 +36,7 @@ function sampleMonths(
   partial: number[] = [],
 ): PropertyCardData["months"] {
   const fmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    month: "narrow",
+    month: "short",
   });
   const now = new Date(2026, 6, 1);
   return Array.from({ length: 12 }, (_, i) => {
@@ -46,7 +46,12 @@ function sampleMonths(
       : partial.includes(i)
         ? "partial"
         : "open";
-    return { label: fmt.format(d), state };
+    return {
+      // "sept." -> "sep": strip periods, cap at 3 chars (CSS uppercases)
+      label: fmt.format(d).replace(/\./g, "").slice(0, 3),
+      state,
+      newYear: d.getMonth() === 0 ? d.getFullYear() % 100 : undefined,
+    };
   });
 }
 

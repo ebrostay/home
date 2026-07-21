@@ -3,6 +3,7 @@
 import { DayPicker, type DateRange, type Matcher } from "react-day-picker";
 import { es, enGB } from "react-day-picker/locale";
 import { useLocale } from "next-intl";
+import "react-day-picker/style.css";
 
 export type { DateRange };
 

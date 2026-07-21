@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "react-day-picker/style.css";
 
 /* ============================================================
    EBROSTAY v2 — "the calm ledger of a stay"
@@ -185,8 +184,11 @@ h1, h2, h3 {
 }
 
 /* react-day-picker themed onto the system. Same availability language as
-   the month-band: selected span = bridge green, booked = occupied-solid. */
-.rdp-root {
+   the month-band: selected span = bridge green, booked = occupied-solid.
+   NOTE on specificity: the library stylesheet loads AFTER this file (it is
+   imported by the DateRangePicker component), so every override here must
+   out-rank it — hence the doubled/descendant selectors. */
+.rdp-root.rdp-root {
   --rdp-accent-color: var(--brand);
   --rdp-accent-background-color: var(--brand-soft);
   --rdp-today-color: var(--river-deep);
@@ -196,43 +198,43 @@ h1, h2, h3 {
   font-size: 0.875rem;
   color: var(--body-text);
 }
-.rdp-caption_label {
+.rdp-root .rdp-caption_label {
   font-family: var(--font-bricolage), sans-serif;
   font-weight: 600;
   color: var(--ink);
   text-transform: capitalize; /* es month names are lowercase by locale */
 }
-.rdp-weekday {
+.rdp-root .rdp-weekday {
   font-family: var(--font-spline-mono), monospace;
   font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
-.rdp-chevron {
+.rdp-root .rdp-chevron {
   fill: var(--muted);
 }
-.rdp-range_start .rdp-day_button,
-.rdp-range_end .rdp-day_button {
+.rdp-root .rdp-range_start .rdp-day_button,
+.rdp-root .rdp-range_end .rdp-day_button {
   background: var(--brand);
   border: none;
   color: #fff;
 }
-.rdp-range_middle {
+.rdp-root .rdp-range_middle {
   background: var(--brand-soft);
 }
-.rdp-range_middle .rdp-day_button {
+.rdp-root .rdp-range_middle .rdp-day_button {
   color: var(--ink);
 }
 /* A booked (disabled) day: solid, struck through — "closed water". */
-.rdp-day.day-booked .rdp-day_button {
+.rdp-root .rdp-day.day-booked .rdp-day_button {
   background: var(--occupied);
   color: var(--inverse);
   border-radius: 0.375rem;
   text-decoration: line-through;
   opacity: 0.9;
 }
-.rdp-today:not(.rdp-selected) .rdp-day_button {
+.rdp-root .rdp-today:not(.rdp-selected) .rdp-day_button {
   box-shadow: inset 0 -2px 0 var(--river);
 }
 

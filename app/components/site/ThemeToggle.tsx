@@ -7,14 +7,26 @@ type Theme = "light" | "dark";
 
 export function ThemeToggle() {
   const t = useTranslations("theme");
-  // The bootstrap script has already stamped <html data-theme> pre-paint;
-  // read it after mount so server and first client render agree.
+  // The bootstrap script stamps <html data-theme> pre-paint on full loads,
+  // but client-side navigations re-render <html> and can drop the attribute —
+  // so on every mount we re-resolve from storage and re-stamp.
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    setTheme(
-      (document.documentElement.dataset.theme as Theme | undefined) ?? "light",
-    );
+    let resolved: Theme;
+    try {
+      const stored = localStorage.getItem("ebrostay-theme");
+      resolved =
+        stored === "light" || stored === "dark"
+          ? stored
+          : matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+    } catch {
+      resolved = "light";
+    }
+    document.documentElement.dataset.theme = resolved;
+    setTheme(resolved);
   }, []);
 
   function toggle() {

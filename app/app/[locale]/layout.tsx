@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Bricolage_Grotesque, Onest, Spline_Sans_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
@@ -51,7 +52,11 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+        {/* next/script keeps this out of the React-rendered tree, so client
+            navigations don't re-render a raw <script> (Next 16 error). */}
+        <Script id="theme-bootstrap" strategy="beforeInteractive">
+          {themeBootstrap}
+        </Script>
       </head>
       <body
         className={`${bricolage.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}

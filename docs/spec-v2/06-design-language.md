@@ -44,7 +44,7 @@ review/rejection states.
 
 | Role | Face | Usage |
 | --- | --- | --- |
-| Display | **Bricolage Grotesque** (`--font-display`) | headlines, card titles; tight leading, −0.015em tracking |
+| Display | **Familjen Grotesk** (`--font-display`) | headlines, card titles; tight leading, −0.015em tracking. Chosen 2026-07-22 via the `/design/type` side-by-side (kept warm-grotesque tone, replaced Bricolage — which was also v1's display face — for a genuinely distinct form) |
 | Body | **Onest** (`--font-sans`) | everything else |
 | Data | **Spline Sans Mono** (`--font-mono`, class `.data`) | prices, dates, month labels, section eyebrows; tabular numerals |
 
@@ -146,9 +146,11 @@ availability band).
 The v1 DS (github.com/ebrostay/ebrostay-design-system, synced to the
 "Ebrostay Design System" Claude Design project) was compared against this
 system after the v2 identity shipped. **Convergences** (independent — the v2
-pass never saw the DS): Bricolage Grotesque as display face, mono for
-prices/refs, hairline-first restraint, `data-theme` dark mode, plain-voice
-copy. **Deliberate divergences kept** (the "restart" axes, product-owner
+pass never saw the DS): Bricolage Grotesque as display face (later replaced:
+once the convergence surfaced, a `/design/type` side-by-side led to
+**Familjen Grotesk** on 2026-07-22 — warm-grotesque tone kept, v1's exact
+face deliberately not), mono for prices/refs, hairline-first restraint,
+`data-theme` dark mode, plain-voice copy. **Deliberate divergences kept** (the "restart" axes, product-owner
 call): no clay/terracotta, cool limestone vs warm stone, green-charcoal vs
 warm-black dark, tighter radii, the month-band signature and availability
 color semantics.

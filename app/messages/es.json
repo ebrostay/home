@@ -59,11 +59,11 @@
   },
   "typeCompare": {
     "title": "Comparativa de tipografía display",
-    "intro": "El mismo titular, la marca y una tarjeta en cuatro tipografías. Bricolage es la actual (también era la display de v1 — continuidad, no ruptura). El cuerpo permanece en Onest en todos los casos.",
+    "intro": "El mismo titular, la marca y una tarjeta en cuatro tipografías. Familjen Grotesk es la actual (elegida el 2026-07-22 en esta comparativa); Bricolage era la display de v1. El cuerpo permanece en Onest en todos los casos.",
     "current": "actual",
     "note": {
-      "bricolage": "La titular actual: grotesca cálida con cortes peculiares. Converge con v1 y con el wordmark del logo.",
-      "familjen": "Grotesca cálida como Bricolage pero de esqueleto más sereno y redondeado — continuidad de tono, distancia de forma.",
+      "bricolage": "La anterior (también la display de v1): grotesca cálida con cortes peculiares.",
+      "familjen": "La actual: grotesca cálida de esqueleto sereno y redondeado — el tono de v1, con forma propia.",
       "schibsted": "Más afilada y editorial — voz de «periódico serio»; endurece el conjunto.",
       "fraunces": "La apuesta distinta: serif cálida de display — otro género tipográfico; más hostelería clásica, menos plataforma."
     }

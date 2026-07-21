@@ -125,7 +125,7 @@
   --color-danger-soft: var(--danger-soft);
   --color-star: var(--star);
 
-  --font-display: var(--font-bricolage);
+  --font-display: var(--font-familjen);
   --font-sans: var(--font-onest);
   --font-mono: var(--font-spline-mono);
 
@@ -159,7 +159,7 @@ body {
 
 h1, h2, h3 {
   color: var(--ink);
-  font-family: var(--font-bricolage), var(--font-onest), sans-serif;
+  font-family: var(--font-familjen), var(--font-onest), sans-serif;
   letter-spacing: -0.015em;
 }
 
@@ -217,7 +217,7 @@ h1, h2, h3 {
   color: var(--body-text);
 }
 .rdp-root .rdp-caption_label {
-  font-family: var(--font-bricolage), sans-serif;
+  font-family: var(--font-familjen), sans-serif;
   font-weight: 600;
   color: var(--ink);
   text-transform: capitalize; /* es month names are lowercase by locale */

@@ -59,11 +59,11 @@
   },
   "typeCompare": {
     "title": "Display typeface comparison",
-    "intro": "The same headline, wordmark and card in four typefaces. Bricolage is the incumbent (it was also v1's display face — continuity, not departure). Body stays Onest throughout.",
+    "intro": "The same headline, wordmark and card in four typefaces. Familjen Grotesk is the current face (chosen 2026-07-22 in this comparison); Bricolage was v1's display face. Body stays Onest throughout.",
     "current": "current",
     "note": {
-      "bricolage": "The incumbent: warm grotesque with quirky cuts. Converges with v1 and the logo wordmark.",
-      "familjen": "Warm like Bricolage but a calmer, rounder skeleton — same tone, different form.",
+      "bricolage": "The previous face (also v1's display): warm grotesque with quirky cuts.",
+      "familjen": "The current face: warm grotesque with a calm, rounded skeleton — v1's tone, its own form.",
       "schibsted": "Sharper and more editorial — the 'serious paper' voice; hardens the whole.",
       "fraunces": "The wildcard: a warm display serif — a different genre entirely; more classic hospitality, less platform."
     }

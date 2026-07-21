@@ -3,5 +3,5 @@
     <path fill="#1f8a57" d="M7 30 L7 21 A17 17 0 0 1 41 21 L41 30 L35 30 L35 22 A11 11 0 0 0 13 22 L13 30 Z"></path>
     <path fill="#9cc4f0" d="M13 30 L13 26.5 C16.5 25.1 19.5 27.4 24 26.3 C28.5 25.2 31.5 27.4 35 26.3 L35 30 Z"></path>
   </g>
-  <text x="54" y="34" font-family="&#39;Bricolage Grotesque&#39;,&#39;Hanken Grotesque&#39;,system-ui,sans-serif" font-size="30" font-weight="600" letter-spacing="-0.5" fill="#1a1814">Ebro<tspan fill="#1f8a57">stay</tspan></text>
+  <text x="54" y="34" font-family="&#39;Familjen Grotesk&#39;,&#39;Onest&#39;,system-ui,sans-serif" font-size="30" font-weight="600" letter-spacing="-0.5" fill="#1a1814">Ebro<tspan fill="#1f8a57">stay</tspan></text>
 </svg>

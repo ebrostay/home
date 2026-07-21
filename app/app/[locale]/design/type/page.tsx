@@ -16,8 +16,8 @@ const schibsted = Schibsted_Grotesk({ subsets: ["latin"] });
 const fraunces = Fraunces({ subsets: ["latin"] });
 
 const faces = [
-  { key: "bricolage", name: "Bricolage Grotesque", font: bricolage, current: true },
-  { key: "familjen", name: "Familjen Grotesk", font: familjen, current: false },
+  { key: "familjen", name: "Familjen Grotesk", font: familjen, current: true },
+  { key: "bricolage", name: "Bricolage Grotesque", font: bricolage, current: false },
   { key: "schibsted", name: "Schibsted Grotesk", font: schibsted, current: false },
   { key: "fraunces", name: "Fraunces", font: fraunces, current: false },
 ] as const;

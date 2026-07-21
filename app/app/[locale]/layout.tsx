@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Bricolage_Grotesque, Onest, Spline_Sans_Mono } from "next/font/google";
+import { Familjen_Grotesk, Onest, Spline_Sans_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -9,8 +9,10 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import "../globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+// Display face: Familjen Grotesk (chosen 2026-07-22 via /design/type
+// comparison; replaced Bricolage, which was also v1's display face).
+const familjen = Familjen_Grotesk({
+  variable: "--font-familjen",
   subsets: ["latin"],
 });
 
@@ -65,7 +67,7 @@ export default async function LocaleLayout({
         </Script>
       </head>
       <body
-        className={`${bricolage.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}
+        className={`${familjen.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
           <Header />

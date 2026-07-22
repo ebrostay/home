@@ -13,7 +13,7 @@ import {
   fetchProperty,
   type PropertyDetail,
 } from "@/lib/api";
-import { computeEstimate, formatEuro, MAX_STAY_MONTHS } from "@/lib/pricing";
+import { computeEstimate, formatEuro } from "@/lib/pricing";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -274,7 +274,11 @@ function DetailBody({
 
             {estimate && (
               <div className="mt-4 border-t border-line pt-4">
-                {estimate.tooLong ? (
+                {estimate.tooShort ? (
+                  <p className="rounded-(--radius-control) bg-warn-soft p-3 text-sm text-warn">
+                    {t("estimate.tooShort")}
+                  </p>
+                ) : estimate.tooLong ? (
                   <p className="rounded-(--radius-control) bg-warn-soft p-3 text-sm text-warn">
                     {t("estimate.tooLong")}
                   </p>

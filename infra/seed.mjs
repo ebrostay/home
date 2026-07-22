@@ -99,7 +99,7 @@ function toDoc(p) {
     billsPolicy: p.billsPolicy ?? "excluded",
     utilitiesCapEur: x.utilitiesCapEur ?? null,
     minStayMonths: 1,
-    maxStayMonths: 11,
+    maxStayMonths: 12,
 
     rating: p.rating ?? null,
     isNew: !!p.isNew,

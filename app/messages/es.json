@@ -4,7 +4,7 @@
     "title": "Ebrostay",
     "tagline": "Alquiler corporativo de media estancia en Zaragoza.",
     "heroTitle": "Meses tranquilos junto al Ebro",
-    "heroTagline": "Viviendas amuebladas y verificadas para estancias de 1 a 11 meses en Zaragoza. Sin sorpresas: los importes son estimaciones claras y el contrato fija el precio final.",
+    "heroTagline": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses en Zaragoza. Sin sorpresas: los importes son estimaciones claras y el contrato fija el precio final.",
     "heroImageAlt": "Zaragoza junto al río Ebro",
     "moveIn": "Entrada",
     "guests": "Personas",
@@ -23,7 +23,7 @@
     "signIn": "Entrar"
   },
   "footer": {
-    "tagline": "Viviendas amuebladas y verificadas para estancias de 1 a 11 meses en Zaragoza.",
+    "tagline": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses en Zaragoza.",
     "siteLinks": "Enlaces del sitio",
     "homes": "Viviendas",
     "about": "Nosotros",
@@ -106,9 +106,10 @@
     "deposit": "Fianza (reembolsable)",
     "total": "Total estimado",
     "disclaimer": "Importe orientativo. El contrato fija el precio final; sin pago online.",
-    "tooLong": "Más de 11 meses requiere dos contratos — escríbenos y lo preparamos.",
+    "tooLong": "Más de 12 meses cambia el tipo de contrato — escríbenos y lo preparamos.",
     "cta": "Solicitar reserva",
-    "ctaHint": "Disponible al iniciar sesión — muy pronto."
+    "ctaHint": "Disponible al iniciar sesión — muy pronto.",
+    "tooShort": "La estancia mínima es de 31 días. Alarga las fechas."
   },
   "type": {
     "all": "Todos",

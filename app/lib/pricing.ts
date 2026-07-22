@@ -1,8 +1,11 @@
-// Booking math — MUST match docs/spec/05 §5.1 exactly (v1 parity; the C#
-// booking endpoint recomputes and flags mismatches, spec-v2 §4.3).
+// Booking math. Billing follows docs/spec/05 §5.1 (whole-month, monthly);
+// duration LIMITS follow the Spanish-law research (spec-v2/07-legal-notes.md
+// §D + ADR-022): a legal temporary stay is >= 31 days and <= 12 months.
 // Dates are "YYYY-MM-DD" strings; ranges are half-open [start, end).
+// The C# booking endpoint recomputes and flags mismatches (spec-v2 §4.3).
 
-export const MAX_STAY_MONTHS = 11;
+export const MAX_STAY_MONTHS = 12; // legal ceiling ("no exceder de doce meses")
+export const MIN_STAY_DAYS = 31; // legal floor ("no inferior a treinta y un días")
 export const COMMISSION_RATE = 0.15;
 
 export function addMonths(iso: string, count: number): string {
@@ -11,6 +14,11 @@ export function addMonths(iso: string, count: number): string {
   // JS rolls 31 Jan + 1m into March; clamp to the last day of the target month
   if (date.getUTCDate() !== d) date.setUTCDate(0);
   return date.toISOString().slice(0, 10);
+}
+
+export function addDays(iso: string, count: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + count)).toISOString().slice(0, 10);
 }
 
 // Whole months, end-exclusive, rounded up, minimum 1 (v1 ADR-005):
@@ -29,7 +37,8 @@ export type Estimate = {
   commissionDiscount: number; // the visible saving when the cap bites
   deposit: number;
   total: number;
-  tooLong: boolean; // > 11 months => two-contract message (R-Prop-6)
+  tooShort: boolean; // < 31 days — below the legal temporary floor (ADR-022)
+  tooLong: boolean; // > 12 months (by CALENDAR duration) — regime flips (ADR-022)
 };
 
 export function computeEstimate(
@@ -51,7 +60,10 @@ export function computeEstimate(
     commissionDiscount,
     deposit,
     total: rent + commission + deposit,
-    tooLong: months > MAX_STAY_MONTHS,
+    // Legality is CALENDAR duration, not billed (rounded-up) months: an
+    // 11½-month stay bills as 12 months but is legally under the ceiling.
+    tooShort: end < addDays(start, MIN_STAY_DAYS),
+    tooLong: end > addMonths(start, MAX_STAY_MONTHS),
   };
 }
 

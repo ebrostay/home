@@ -10,7 +10,9 @@ import { useTranslations } from "next-intl";
 //   river wash = open · bridge green = selected/yours · ink = occupied
 // ============================================================
 
-const MAX_MONTHS = 11;
+// Legal ceiling for a temporary stay (spec-v2 ADR-022). Whole-month granularity
+// on the selector; the 31-day floor is enforced on the booking date range.
+const MAX_MONTHS = 12;
 
 export function MonthBandSelect({
   value,

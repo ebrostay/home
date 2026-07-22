@@ -4,8 +4,8 @@
 // Dates are "YYYY-MM-DD" strings; ranges are half-open [start, end).
 // The C# booking endpoint recomputes and flags mismatches (spec-v2 §4.3).
 
-export const MAX_STAY_MONTHS = 12; // legal ceiling ("no exceder de doce meses")
 export const MIN_STAY_DAYS = 31; // legal floor ("no inferior a treinta y un días")
+export const MAX_STAY_DAYS = 365; // ceiling: stay must be < 365 days (under a year; leap year ignored — ADR-022)
 export const COMMISSION_RATE = 0.15;
 
 export function addMonths(iso: string, count: number): string {
@@ -26,7 +26,7 @@ export function addDays(iso: string, count: number): string {
 export function billedMonths(start: string, end: string): number {
   if (end <= start) return 1;
   let n = 1;
-  while (addMonths(start, n) < end && n <= MAX_STAY_MONTHS + 1) n++;
+  while (addMonths(start, n) < end && n <= 13) n++; // a <365-day stay bills ≤12 months
   return n;
 }
 
@@ -38,7 +38,7 @@ export type Estimate = {
   deposit: number;
   total: number;
   tooShort: boolean; // < 31 days — below the legal temporary floor (ADR-022)
-  tooLong: boolean; // > 12 months (by CALENDAR duration) — regime flips (ADR-022)
+  tooLong: boolean; // >= 365 days — a year or more flips the regime (ADR-022)
 };
 
 export function computeEstimate(
@@ -60,10 +60,10 @@ export function computeEstimate(
     commissionDiscount,
     deposit,
     total: rent + commission + deposit,
-    // Legality is CALENDAR duration, not billed (rounded-up) months: an
-    // 11½-month stay bills as 12 months but is legally under the ceiling.
-    tooShort: end < addDays(start, MIN_STAY_DAYS),
-    tooLong: end > addMonths(start, MAX_STAY_MONTHS),
+    // Duration is measured in DAYS, not billed (rounded-up) months: an
+    // 11½-month stay bills as 12 months but is well under the ceiling.
+    tooShort: end < addDays(start, MIN_STAY_DAYS), // < 31 days
+    tooLong: end >= addDays(start, MAX_STAY_DAYS), // >= 365 days (not < a year)
   };
 }
 

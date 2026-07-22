@@ -4,7 +4,7 @@
     "title": "Ebrostay",
     "tagline": "Mid-term corporate rentals in Zaragoza.",
     "heroTitle": "Calm months by the Ebro",
-    "heroTagline": "Furnished, verified homes for 1–12 month stays in Zaragoza. No surprises: amounts are clear estimates and the contract sets the final price.",
+    "heroTagline": "Furnished, verified homes for 1–11 month stays in Zaragoza. No surprises: amounts are clear estimates and the contract sets the final price.",
     "heroImageAlt": "Zaragoza by the Ebro river",
     "moveIn": "Move-in",
     "guests": "Guests",
@@ -23,7 +23,7 @@
     "signIn": "Sign in"
   },
   "footer": {
-    "tagline": "Furnished, verified homes for 1–12 month stays in Zaragoza.",
+    "tagline": "Furnished, verified homes for 1–11 month stays in Zaragoza.",
     "siteLinks": "Site links",
     "homes": "Homes",
     "about": "About",
@@ -106,7 +106,7 @@
     "deposit": "Deposit (refundable)",
     "total": "Estimated total",
     "disclaimer": "Indicative amount. The contract sets the final price; no online payment.",
-    "tooLong": "Over 12 months changes the contract type — write to us and we’ll arrange it.",
+    "tooLong": "A year or more changes the contract type — write to us and we’ll arrange it.",
     "cta": "Request to book",
     "ctaHint": "Available once signed in — coming very soon.",
     "tooShort": "The minimum stay is 31 days. Extend the dates."

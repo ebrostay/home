@@ -77,8 +77,9 @@ Confirm each before relying:
   platform-compliance obligation for Ebrostay** — high priority to confirm.
 
 ## D. Implications for the product
-- **Duration limits:** enforce **≥31 days** and **≤12 months** (was: 1–11
-  whole months). See the pricing-cap item in [../BACKLOG.md](../BACKLOG.md).
+- **Duration limits:** enforced as **≥31 days** and **<365 days** (ADR-022 —
+  a deliberately simple day count, leap years ignored, slightly stricter than
+  the reform's "≤12 months"). Whole-month controls cap at 11.
 - **Billing:** daily proration is **legal and our free choice** (A.2); it's also
   common in the mid-term segment via PM tooling. Decision pending — see BACKLOG.
 - **Contracts (out of app scope, but note):** each contract should state the

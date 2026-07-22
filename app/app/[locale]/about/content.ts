@@ -40,11 +40,11 @@ export const aboutContent: Record<"es" | "en", AboutContent> = {
   es: {
     metaTitle: "Sobre Ebrostay — El puente entre empresas y propietarios",
     metaDescription:
-      "Misión e historia de Ebrostay: marketplace de alquiler corporativo de media estancia en Zaragoza. Estancias de 1 a 12 meses, todo online.",
+      "Misión e historia de Ebrostay: marketplace de alquiler corporativo de media estancia en Zaragoza. Estancias de 1 a 11 meses, todo online.",
     kicker: "Sobre Ebrostay",
     title: "El puente entre empresas y propietarios.",
     lead:
-      "Ebrostay conecta a las empresas que alojan a su gente con los propietarios que publican su vivienda: estancias de 1 a 12 meses en Zaragoza, con precio mensual claro y todo el proceso online.",
+      "Ebrostay conecta a las empresas que alojan a su gente con los propietarios que publican su vivienda: estancias de 1 a 11 meses en Zaragoza, con precio mensual claro y todo el proceso online.",
     missionLabel: "misión y visión",
     missionTitle: "A dónde vamos y qué hacemos cada día.",
     mission: {
@@ -98,11 +98,11 @@ export const aboutContent: Record<"es" | "en", AboutContent> = {
   en: {
     metaTitle: "About Ebrostay — The bridge between companies and owners",
     metaDescription:
-      "Ebrostay's mission and story: a mid-term corporate rental marketplace in Zaragoza. Stays of 1 to 12 months, fully online.",
+      "Ebrostay's mission and story: a mid-term corporate rental marketplace in Zaragoza. Stays of 1 to 11 months, fully online.",
     kicker: "About Ebrostay",
     title: "The bridge between companies and property owners.",
     lead:
-      "Ebrostay connects the companies that house their people with the owners who list their homes: stays of 1 to 12 months in Zaragoza, with one clear monthly price and the whole process online.",
+      "Ebrostay connects the companies that house their people with the owners who list their homes: stays of 1 to 11 months in Zaragoza, with one clear monthly price and the whole process online.",
     missionLabel: "mission & vision",
     missionTitle: "Where we're going, and what we do every day.",
     mission: {

@@ -22,7 +22,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-019 | Cosmos free tier NoSQL + Blob public-read, API-mediated uploads | ✅ locked |
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
 | ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
-| ADR-022 | Stay duration ≥31 days & ≤12 months; billing stays monthly | ✅ locked |
+| ADR-022 | Stay duration ≥31 days & <365 days; billing stays monthly | ✅ locked |
 
 ---
 
@@ -344,27 +344,33 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
   the whole-month billing *rounds up*, so an 11½-month stay billed as 12 months
   wrongly tripped the old ">11" cap even though it is legally fine.
 - **Decision:**
-  1. **Limits:** a bookable stay is **≥ 31 days** and **≤ 12 months**
-     (`MIN_STAY_DAYS = 31`, `MAX_STAY_MONTHS = 12` in `app/lib/pricing.ts`). The
-     hero month-band offers 1–12; the property date-picker surfaces a
-     `tooShort` (< 31 days) and `tooLong` (> 12 months) state.
-  2. **The over-limit trigger is CALENDAR duration, not billed months** —
-     `end > addMonths(start, 12)`, never `billedMonths > N`. This fixes the
-     rounding bug: an 11½-month stay bills as 12 months but is *not* flagged.
-  3. **Billing stays monthly** (whole-month, round-up, min 1 — ADR-005 rounding
+  1. **Limits (deliberately simple, day-based):** a bookable stay is **≥ 31
+     days** and **< 365 days** (`MIN_STAY_DAYS = 31`, `MAX_STAY_DAYS = 365` in
+     `app/lib/pricing.ts`; **leap years ignored** — a flat 365). This is
+     *slightly stricter* than the reform's "≤ 12 months" (it disallows a full
+     365-day year), chosen for simplicity and as the safer side of the line.
+  2. **Duration is measured in DAYS, not billed months** — `tooShort =
+     end < addDays(start, 31)`, `tooLong = end >= addDays(start, 365)`, never
+     `billedMonths > N`. This fixes the rounding bug: an 11½-month stay bills as
+     12 months but is well under 365 days, so it is *not* flagged.
+  3. **Whole-month controls cap at 11:** the hero month-band offers **1–11**
+     (a full 12 months ≈ 365 days would hit the ceiling), and marketing copy is
+     "1–11 months" — also the idiomatic legally-safe *temporada* framing. The
+     precise < 365-day bound is enforced on the property date-picker, which is
+     slightly more permissive than the coarse band (up to 364 days).
+  4. **Billing stays monthly** (whole-month, round-up, min 1 — ADR-005 rounding
      retained). **Daily proration is deferred** ("monthly until we need daily",
      product-owner call) — it is legal and freely contractible (LAU art. 17,
      "salvo pacto en contrario"), recorded in [../BACKLOG.md](../BACKLOG.md) for
      when the sub-month/exact-date model lands.
-- **Rationale:** Aligns the product with where the law is heading (the reform's
-  31-day/12-month bounds) while staying safe under current law; removes a real
-  bug that rejected legal sub-12-month bookings; and keeps the billing model
-  simple until there's a reason to prorate.
+- **Rationale:** A dumb day count (< 365 days, no leap-year math) is easy to
+  reason about and audit, sits safely inside the reform's 12-month ceiling, and
+  removes the whole-month rounding bug that rejected legal sub-year bookings.
 - **Consequences:**
-  - `pricing.ts`, `MonthBand` (1–12), the property estimate (tooShort/tooLong),
-    and all user-facing "1–11 month" copy updated to "1–12".
-  - The **≥31-day floor** is enforced on the booking date range (property page),
-    not the whole-month hero band (which is a duration proxy for search).
+  - `pricing.ts`, `MonthBand` (1–11), the property estimate (tooShort/tooLong),
+    and all user-facing copy on "1–11 months".
+  - The **≥31-day floor and <365-day ceiling** are enforced on the booking date
+    range (property page); the hero band is a coarse duration proxy for search.
   - Contract-side rules the app does not enforce but ops must honor: state the
     temporality cause; don't chain >2 temporary contracts per guest (reform).
   - Open sub-decisions in the backlog: daily-proration switch + its day-count

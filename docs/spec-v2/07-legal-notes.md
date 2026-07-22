@@ -77,9 +77,9 @@ Confirm each before relying:
   platform-compliance obligation for Ebrostay** — high priority to confirm.
 
 ## D. Implications for the product
-- **Duration limits:** enforced as **≥31 days** and **<365 days** (ADR-022 —
-  a deliberately simple day count, leap years ignored, slightly stricter than
-  the reform's "≤12 months"). Whole-month controls cap at 11.
+- **Duration limits:** UI says **"up to 12 months"** (band 1–12); the enforced
+  calc is a simple day count — **≥31 days and <365 days** (leap years ignored),
+  which sits safely inside the reform's "≤12 months" (ADR-022).
 - **Billing:** daily proration is **legal and our free choice** (A.2); it's also
   common in the mid-term segment via PM tooling. Decision pending — see BACKLOG.
 - **Contracts (out of app scope, but note):** each contract should state the

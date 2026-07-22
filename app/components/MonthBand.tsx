@@ -10,10 +10,10 @@ import { useTranslations } from "next-intl";
 //   river wash = open · bridge green = selected/yours · ink = occupied
 // ============================================================
 
-// Coarse whole-month selector for search. Max 11 because a full 12 months
-// (~365 days) hits the ceiling; the precise <365-day / ≥31-day bounds are
-// enforced on the booking date range (spec-v2 ADR-022).
-const MAX_MONTHS = 11;
+// Coarse whole-month selector for search — friendly "up to 12 months" framing.
+// The real ceiling is a day count (< 365 days) enforced on the booking date
+// range; the ~1-day gap vs. "12 months" is immaterial (spec-v2 ADR-022).
+const MAX_MONTHS = 12;
 
 export function MonthBandSelect({
   value,

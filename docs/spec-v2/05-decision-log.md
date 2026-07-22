@@ -22,7 +22,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-019 | Cosmos free tier NoSQL + Blob public-read, API-mediated uploads | ✅ locked |
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
 | ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
-| ADR-022 | Stay duration ≥31 days & <365 days; billing stays monthly | ✅ locked |
+| ADR-022 | Stay "up to 12 months" (calc: ≥31 & <365 days); billing monthly | ✅ locked |
 
 ---
 
@@ -353,11 +353,12 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
      end < addDays(start, 31)`, `tooLong = end >= addDays(start, 365)`, never
      `billedMonths > N`. This fixes the rounding bug: an 11½-month stay bills as
      12 months but is well under 365 days, so it is *not* flagged.
-  3. **Whole-month controls cap at 11:** the hero month-band offers **1–11**
-     (a full 12 months ≈ 365 days would hit the ceiling), and marketing copy is
-     "1–11 months" — also the idiomatic legally-safe *temporada* framing. The
-     precise < 365-day bound is enforced on the property date-picker, which is
-     slightly more permissive than the coarse band (up to 364 days).
+  3. **UI framing is "up to 12 months"; the calc is the day count.** The hero
+     month-band offers **1–12** and marketing says "1–12 months" — the friendly,
+     round promise. The *enforced* ceiling is still `< 365 days` on the booking
+     date-picker. The ~1-day gap between "12 months" (≈365 days) and "< 365
+     days" is immaterial — nobody distinguishes 11.99 from 12.0 months — and it
+     errs on the safe side.
   4. **Billing stays monthly** (whole-month, round-up, min 1 — ADR-005 rounding
      retained). **Daily proration is deferred** ("monthly until we need daily",
      product-owner call) — it is legal and freely contractible (LAU art. 17,
@@ -367,8 +368,8 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
   reason about and audit, sits safely inside the reform's 12-month ceiling, and
   removes the whole-month rounding bug that rejected legal sub-year bookings.
 - **Consequences:**
-  - `pricing.ts`, `MonthBand` (1–11), the property estimate (tooShort/tooLong),
-    and all user-facing copy on "1–11 months".
+  - `pricing.ts` (day-count calc), `MonthBand` (1–12), the property estimate
+    (tooShort/tooLong), and user-facing copy on "1–12 months".
   - The **≥31-day floor and <365-day ceiling** are enforced on the booking date
     range (property page); the hero band is a coarse duration proxy for search.
   - Contract-side rules the app does not enforce but ops must honor: state the

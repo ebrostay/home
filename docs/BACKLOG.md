@@ -49,17 +49,34 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   layout: the hero has a month-band but no explicit checkout picker; the
   property page has a from/to `DateRangePicker` but no month-band — so this
   implies putting both controls on at least one surface, a small design choice.
-- **[L][M]** **Max stay is UNDER 12 months, not 11 — and there's a live bug.**
-  The real ceiling is Spanish residency law: stays reaching 12 months change the
-  tenancy regime (LAU — *vivienda* vs. *uso distinto*). Current code caps at 11
-  whole months (`app/lib/pricing.ts` `MAX_STAY_MONTHS = 11`; `> 11` →
-  two-contract message) — a simplification. **Correctness gap:** because billing
-  rounds *up* to whole months, a perfectly legal ~11½-month stay rounds to 12
-  billed months and wrongly triggers the two-contract message. Reconcile the
-  legal calendar-duration ceiling (< 12 months) with whole-month billing
-  rounding; touches `pricing.ts`, ADR-005, `docs/spec/05-business-rules.md`, and
-  the picker/band caps. Needs a product+legal ruling on how billed-months vs.
-  actual-duration interact right at the 12-month line.
+- **[L][M]** **Duration limits: ≥31 days and ≤12 months** (researched 2026-07-22,
+  see [spec-v2/07-legal-notes.md](spec-v2/07-legal-notes.md)). Findings: under
+  *current* LAU the regime is set by **purpose, not duration** — no statutory
+  12-month line; but a **proposed 2026 reform** (not yet law) makes it explicit:
+  min **31 days**, max **12 months**, over-12 auto-converts to a protected
+  habitual-residence tenancy, and >2 chained temporary contracts reclassify.
+  Product impact: change the model from "1–11 whole months" to **31 days up to
+  12 months**; the 31-day floor matters (not 30). Touches `pricing.ts`
+  (`MAX_STAY_MONTHS`), the picker/band caps, ADR-004/005, `docs/spec/05`.
+- **[P][S]** **Live bug at the month boundary.** Because billing rounds *up* to
+  whole months, a legal ~11½-month stay rounds to 12 billed months and wrongly
+  triggers the two-contract/over-limit message. Fix by basing the over-limit
+  trigger on **actual calendar duration** (does the stay reach 12 months?), not
+  the rounded-up billed count. Small change to `pricing.ts`.
+- **[P][M]** **Billing method — decide whole-month vs. daily proration.** Legally
+  **free to choose** (LAU art. 17: monthly is only the default "salvo pacto en
+  contrario"; no proration mandate or bar) and daily proration is common in the
+  mid-term segment. Recommendation leaning to **pro-rate partial edges to a daily
+  rate** — fairer for mid-term guests and it dissolves the whole-month rounding
+  distortion. Open sub-decision: daily-rate basis (rent÷30 vs. ÷actual days in
+  month vs. ×12÷365). Reworks ADR-004/005 pricing math + `app/lib/pricing.ts`.
+- **[L][M]** **Platform compliance to confirm with an abogado** (see legal notes
+  §C): NRA rental-registry number (RD 1312/2024) + a possible **platform duty to
+  display/verify the NRA and pull non-compliant listings** — if real, this is a
+  direct obligation on Ebrostay-as-platform, high priority; the Aragón fianza
+  deposit/registration handling (with a possible temporada exemption — sources
+  conflict); and the 2-month deposit for temporada. None independently verified
+  yet (research rate-limited mid-run).
 
 ## Infra & ops
 - **[O][S]** Delete the old v1 SWA `ebrostay-home` (westeurope) at cutover — it

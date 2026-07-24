@@ -13,7 +13,7 @@ export function LanguageSwitch() {
     <div
       role="group"
       aria-label="Idioma / Language"
-      className="flex overflow-hidden rounded-(--radius-control) border border-line"
+      className="flex h-9 items-stretch overflow-hidden rounded-(--radius-control) border border-line"
     >
       {routing.locales.map((l) => (
         <button
@@ -21,9 +21,9 @@ export function LanguageSwitch() {
           type="button"
           aria-pressed={l === locale}
           onClick={() => router.replace(pathname, { locale: l })}
-          className={`data px-2.5 py-1.5 text-xs uppercase transition-colors ${
+          className={`data grid place-items-center px-3 text-xs font-semibold uppercase transition-colors duration-(--dur-standard) ${
             l === locale
-              ? "bg-ink text-inverse"
+              ? "bg-brand-soft text-brand-strong"
               : "text-muted hover:bg-surface-2 hover:text-ink"
           }`}
         >

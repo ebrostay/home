@@ -78,7 +78,7 @@ export default async function AboutPage({ params }: Props) {
       </section>
 
       {/* How it works */}
-      <section className="mt-14">
+      <section id="how" className="mt-14 scroll-mt-24">
         <div className="ledger-rule">
           <span>{c.howLabel}</span>
         </div>
@@ -102,7 +102,7 @@ export default async function AboutPage({ params }: Props) {
       </section>
 
       {/* For hosts (v2 marketplace model) */}
-      <section className="mt-14">
+      <section id="hosts" className="mt-14 scroll-mt-24">
         <div className="ledger-rule">
           <span>{c.hostsLabel}</span>
         </div>

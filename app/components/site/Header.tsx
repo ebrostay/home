@@ -1,36 +1,25 @@
-import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Wordmark } from "./Logo";
+import { MainNav } from "./MainNav";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { AuthMenu } from "./AuthMenu";
 
+// Three tracks: the outer two are flex-1 so the nav pill sits optically
+// centred however wide the logo or the auth button get.
 export function Header() {
-  const t = useTranslations("nav");
-
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/92 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="shrink-0">
-          <Wordmark />
-        </Link>
-
-        <nav aria-label={t("mainNav")} className="hidden items-center gap-6 sm:flex">
-          <Link
-            href="/"
-            className="text-sm font-medium text-body transition-colors hover:text-ink"
-          >
-            {t("homes")}
+      <div className="mx-auto flex h-(--header-h) max-w-7xl items-center gap-4 px-4 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center">
+          <Link href="/" className="shrink-0">
+            <Wordmark />
           </Link>
-          <Link
-            href="/about"
-            className="text-sm font-medium text-body transition-colors hover:text-ink"
-          >
-            {t("about")}
-          </Link>
-        </nav>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <MainNav />
+
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
           <LanguageSwitch />
           <ThemeToggle />
           <AuthMenu />

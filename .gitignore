@@ -13,3 +13,6 @@ api/local.settings.json
 
 # Claude Code personal overrides
 .claude/settings.local.json
+
+# macOS
+.DS_Store

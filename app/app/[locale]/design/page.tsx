@@ -20,6 +20,11 @@ import {
   DateRangePicker,
   type DateRange,
 } from "@/components/ui/DateRangePicker";
+import { DateRangeField } from "@/components/ui/DateRangeField";
+import {
+  SplitDateRangeField,
+  type SplitRange,
+} from "@/components/ui/SplitDateRangeField";
 
 const swatches = [
   { name: "brand / bridge", varName: "--brand" },
@@ -57,6 +62,7 @@ function sampleMonths(
 
 export default function DesignPage() {
   const t = useTranslations("design");
+  const th = useTranslations("search.hero");
   const ts = useTranslations("status");
   const ta = useTranslations("actions");
   const tf = useTranslations("filters");
@@ -68,6 +74,14 @@ export default function DesignPage() {
     from: new Date(2026, 7, 10),
     to: new Date(2026, 8, 18),
   });
+  // Popover-field test bed: one starts empty, one pre-filled.
+  const [fieldRange, setFieldRange] = useState<DateRange | undefined>();
+  const [fieldRange2, setFieldRange2] = useState<DateRange | undefined>({
+    from: new Date(2026, 8, 1),
+    to: new Date(2027, 0, 5),
+  });
+  // Experiment: split move-in / move-out popover.
+  const [split, setSplit] = useState<SplitRange>({});
   // Two booked spans the picker must refuse (styled occupied + struck).
   const bookedSpans = [
     { from: new Date(2026, 7, 1), to: new Date(2026, 7, 6) },
@@ -84,8 +98,10 @@ export default function DesignPage() {
       bedrooms: 2,
       bathrooms: 1,
       sizeSqm: 78,
+      amenities: ["wifi", "ac", "heating", "desk", "kitchen", "lift"],
       verified: true,
       billsIncluded: true,
+      depositProtected: true,
       months: sampleMonths(locale, [0, 1], [2]),
     },
     {
@@ -97,6 +113,7 @@ export default function DesignPage() {
       bedrooms: 3,
       bathrooms: 2,
       sizeSqm: 96,
+      amenities: ["wifi", "terrace", "washer"],
       verified: true,
       months: sampleMonths(locale, [4], [5]),
     },
@@ -228,6 +245,102 @@ export default function DesignPage() {
             numberOfMonths={2}
             startMonth={new Date(2026, 7, 1)}
           />
+        </div>
+      </section>
+
+      {/* Date pickers — test bed */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("datePickers")}</span></div>
+        <p className="mt-4 max-w-xl text-sm text-muted">{t("datePickersHint")}</p>
+
+        <div className="mt-6 grid gap-8 sm:grid-cols-2 lg:max-w-3xl">
+          {/* Popover field — empty to start */}
+          <div>
+            <p className="data mb-2 text-xs uppercase tracking-wide text-muted">
+              {t("dpPopover")}
+            </p>
+            <DateRangeField
+              value={fieldRange}
+              onChange={setFieldRange}
+              moveInLabel={th("moveIn")}
+              moveOutLabel={th("moveOut")}
+              startMonth={new Date(2026, 7, 1)}
+            />
+            <p className="mt-2 text-xs text-muted">
+              {t("dpSelected")}:{" "}
+              <span className="data text-body">
+                {fieldRange?.from
+                  ? `${fieldRange.from.toLocaleDateString()} → ${
+                      fieldRange.to?.toLocaleDateString() ?? "…"
+                    }`
+                  : t("dpNone")}
+              </span>
+            </p>
+          </div>
+
+          {/* Popover field — pre-filled, with booked days it must refuse */}
+          <div>
+            <p className="data mb-2 text-xs uppercase tracking-wide text-muted">
+              {t("dpPopoverBooked")}
+            </p>
+            <DateRangeField
+              value={fieldRange2}
+              onChange={setFieldRange2}
+              moveInLabel={th("moveIn")}
+              moveOutLabel={th("moveOut")}
+              booked={bookedSpans}
+              startMonth={new Date(2026, 7, 1)}
+            />
+            <p className="mt-2 text-xs text-muted">
+              {t("dpSelected")}:{" "}
+              <span className="data text-body">
+                {fieldRange2?.from
+                  ? `${fieldRange2.from.toLocaleDateString()} → ${
+                      fieldRange2.to?.toLocaleDateString() ?? "…"
+                    }`
+                  : t("dpNone")}
+              </span>
+            </p>
+          </div>
+
+          {/* Native pair — the current hero control, for contrast */}
+          <div>
+            <p className="data mb-2 text-xs uppercase tracking-wide text-muted">
+              {t("dpNative")}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={th("moveIn")}>
+                {(id) => <Input id={id} type="date" defaultValue="2026-09-01" />}
+              </Field>
+              <Field label={th("moveOut")}>
+                {(id) => <Input id={id} type="date" defaultValue="2027-01-05" />}
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* Experiment — split move-in / move-out popover */}
+        <div className="mt-8 max-w-md">
+          <p className="data mb-2 text-xs uppercase tracking-wide text-muted">
+            {t("dpSplit")}
+          </p>
+          <p className="mb-3 text-sm text-muted">{t("dpSplitHint")}</p>
+          <SplitDateRangeField
+            value={split}
+            onChange={setSplit}
+            moveInLabel={th("moveIn")}
+            moveOutLabel={th("moveOut")}
+          />
+          <p className="mt-2 text-xs text-muted">
+            {t("dpSelected")}:{" "}
+            <span className="data text-body">
+              {split.moveIn
+                ? `${split.moveIn.toLocaleDateString()} → ${
+                    split.moveOut?.toLocaleDateString() ?? "…"
+                  }`
+                : t("dpNone")}
+            </span>
+          </p>
         </div>
       </section>
 

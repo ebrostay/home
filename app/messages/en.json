@@ -14,20 +14,45 @@
     "noResultsBody": "Try different dates, fewer months, or fewer filters.",
     "error": "The homes could not be loaded.",
     "retry": "Retry",
-    "clearStay": "Move-in {date} · {months} mo"
+    "clearStay": "Move-in {date} · {months} mo",
+    "audience": {
+      "ariaLabel": "What do you want to do",
+      "findLabel": "Find a stay",
+      "manageLabel": "Manage my flat",
+      "findNote": "Furnished, verified homes for 1–12 month stays.",
+      "manageNote": "List your property and delegate the whole management."
+    },
+    "owner": {
+      "eyebrow": "For owners",
+      "title": "Your property, managed end to end",
+      "tagline": "We list it, find tenants, and handle contracts, payments and support. You just watch the income arrive.",
+      "b1": "Hands-off management — we do the work",
+      "b2": "Steady corporate, mid-term demand",
+      "b3": "Clear, on-time payouts to your account",
+      "cta": "List my property"
+    }
   },
   "nav": {
     "mainNav": "Main navigation",
     "homes": "Homes",
+    "howWeWork": "How we work",
     "about": "About",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "pill": {
+      "find": "Find a home",
+      "list": "List your property",
+      "how": "How it works"
+    }
   },
   "footer": {
     "tagline": "Furnished, verified homes for 1–12 month stays in Zaragoza.",
     "siteLinks": "Site links",
     "homes": "Homes",
     "about": "About",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "howItWorks": "How it works",
+    "owners": "Owners",
+    "gdpr": "Ebrostay uses your data only to answer requests and manage bookings. See our privacy policy and GDPR rights."
   },
   "theme": {
     "switchToLight": "Switch to light mode",
@@ -43,7 +68,12 @@
     "bills": "Bills incl.",
     "month": "month",
     "specs": "{bedrooms} bed · {bathrooms, plural, one {# bath} other {# baths}} · {size} m²",
-    "new": "New"
+    "new": "New",
+    "viewHome": "View home",
+    "showOnMap": "Show on map",
+    "refundableDeposit": "Refundable deposit",
+    "closePreview": "Close preview",
+    "selectOnMap": "Show {name} on the map"
   },
   "filters": {
     "city": "City",
@@ -66,7 +96,8 @@
     "washer": "Washer",
     "parking": "Parking",
     "heating": "Heating",
-    "kitchen": "Equipped kitchen"
+    "kitchen": "Equipped kitchen",
+    "terrace": "Terrace"
   },
   "detail": {
     "back": "Back to homes",
@@ -80,7 +111,7 @@
     "deposit": "Deposit",
     "stay": "Stay",
     "stayRange": "{min}–{max} months",
-    "floor": "Floor {floor}",
+    "floor": "Floor",
     "energy": "Energy certificate",
     "pets": "Pets",
     "smoking": "Smoking",
@@ -89,17 +120,113 @@
     "yes": "Yes",
     "no": "No",
     "beds": "Beds",
-    "availability": "Availability",
+    "availability": "Availability · next 12 months",
     "location": "Location",
     "notFoundTitle": "Home not found",
     "notFoundBody": "It may no longer be published.",
     "guests": "{count, plural, one {# guest} other {# guests}}",
-    "photoOf": "Photo {n} of {total}"
+    "photoOf": "Photo {n} of {total}",
+    "allHomes": "All homes in Zaragoza",
+    "hostedBy": "Hosted by {name}",
+    "superhost": "Superhost",
+    "hostMeta": "Responds in {time} · hosting since {year}",
+    "allPhotos": "All {count} photos",
+    "floorPlan": "Floor plan",
+    "share": "Share",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "floorArea": "Floor area",
+    "sleeps": "Sleeps",
+    "about": "About this home",
+    "offers": "What this home offers",
+    "legendOpen": "Open",
+    "legendPartial": "Part-booked",
+    "legendBooked": "Booked",
+    "openFrom": "Open from {date}",
+    "stayTerms": "Stay terms",
+    "minStay": "Minimum stay",
+    "maxStay": "Maximum stay",
+    "whereYouWillBe": "Where you'll be",
+    "terms": {
+      "wholeMonth": {
+        "title": "Whole-month billing",
+        "body": "The stay is contracted and billed in whole months, with no part-month pro-rating."
+      },
+      "deposit": {
+        "title": "Refundable deposit",
+        "body": "Returned at the end of the stay, less any documented damage."
+      },
+      "utilities": {
+        "title": "Capped utilities",
+        "body": "Utilities are included up to the cap set out in the conditions."
+      },
+      "cancellation": {
+        "title": "Free cancellation",
+        "body": "Cancel at no cost up to 48 hours before check-in."
+      }
+    },
+    "nearby": {
+      "title": "What's nearby",
+      "subtitle": "Indicative times from central Zaragoza.",
+      "minutes": "{count} min",
+      "category": {
+        "transport": "Public transport",
+        "groceries": "Groceries & shopping",
+        "food": "Restaurants",
+        "outdoors": "Weekend & outdoors",
+        "health": "Health & care"
+      }
+    },
+    "places": {
+      "title": "Your places",
+      "intro": "Save the places you'll go often — the office, the gym, school — and see the trip from every home you look at. They're kept in this browser.",
+      "add": "Add a place",
+      "empty": "You haven't saved any places yet.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Work",
+      "modeLabel": "How you travel",
+      "kmLabel": "Distance (km)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "remove": "Remove {name}",
+      "minutes": "{count} min",
+      "estimateNote": "Times are estimates worked out from the distance you enter and how you travel.",
+      "mode": {
+        "walk": "walk",
+        "bike": "bike",
+        "tram": "tram",
+        "bus": "bus",
+        "car": "drive"
+      }
+    },
+    "booking": {
+      "month": "month",
+      "moveIn": "Move in",
+      "moveOut": "Move out",
+      "stayLength": "Length of stay",
+      "monthCount": "{count, plural, one {# month} other {# months}}",
+      "oneMore": "One month more",
+      "oneFewer": "One month fewer",
+      "stay": "Stay",
+      "commission": "Commission & management (15%, VAT 21% incl.)",
+      "depositRefundable": "Deposit · refundable",
+      "unavailable": "Those dates aren't open on this home.",
+      "vatHint": "Add every tenant's name so the rent is VAT-exempt. Booked under a company without named tenants, a 21% VAT applies that the company self-accounts for (we don't charge it).",
+      "requestWhatsApp": "Request on WhatsApp",
+      "requestEmail": "Request by email",
+      "reassurance": "You won't be charged yet — the owner confirms the final price. Free cancellation up to 48h before check-in.",
+      "requestSummary": "{name} — {from} to {to} ({months, plural, one {# month} other {# months}}). Estimated total {total}.",
+      "emailSubject": "Booking request — {name}",
+      "emailGreeting": "Hello Ebrostay,",
+      "emailSignoff": "Thank you.",
+      "home": "Home",
+      "tenantNames": "Name(s) on the booking"
+    }
   },
   "estimate": {
     "title": "Price your stay",
     "hint": "Pick move-in and move-out in the calendar. Days with a diagonal line are taken.",
-    "months": "{count, plural, one {# month} other {# months}} × €{price}",
+    "months": "{count, plural, one {# month} other {# months}} × {price} €",
     "rent": "Rent",
     "commission": "Ebrostay service (15%, VAT incl.)",
     "commissionCap": "One-month-cap discount",
@@ -161,7 +288,16 @@
     "dialogBody": "The booking request is sent by email. The team reviews and confirms it manually.",
     "displaySample": "One flat, one contract, calm months by the Ebro",
     "bodySample": "Every home comes furnished, verified and move-in ready. All amounts shown are estimates; the contract sets the final price.",
-    "dataSample": "€1,350 / month · deposit €1,350 · 3 months"
+    "dataSample": "€1,350 / month · deposit €1,350 · 3 months",
+    "datePickers": "Date pickers",
+    "datePickersHint": "A popover field (move in / move out) that opens the themed calendar — the candidate to replace the native <input type=\"date\"> pair. Compare it with the native one below.",
+    "dpPopover": "Popover field",
+    "dpPopoverBooked": "With booked days",
+    "dpNative": "Browser-native (current)",
+    "dpSelected": "Selected",
+    "dpNone": "no dates",
+    "dpSplit": "Split popover (experiment)",
+    "dpSplitHint": "Two calendars in one popover: left = move in, right = move out. Doesn't close on pick, only on outside click."
   },
   "auth": {
     "signInWith": "Sign in with",
@@ -171,5 +307,66 @@
     "adminPanel": "Admin panel",
     "signOut": "Sign out",
     "deactivated": "Your account is deactivated. Contact us to reactivate it."
+  },
+  "search": {
+    "hero": {
+      "title": "Your stay in Zaragoza, ready to move in.",
+      "subtitle": "Furnished, verified homes for 1–12 month stays, built for relocating professionals and teams.",
+      "city": "City",
+      "moveIn": "Move in",
+      "moveOut": "Move out",
+      "bedrooms": "Bedrooms",
+      "bedroomsAny": "Any",
+      "bedroomsPlus": "{count}+",
+      "search": "Search"
+    },
+    "filters": {
+      "more": "More filters",
+      "loading": "Loading homes…",
+      "homesInCity": "{count, plural, one {home} other {homes}} · Zaragoza",
+      "sortAs": "Sort: {value}",
+      "bedroomsChip": "Bedrooms · {count}+",
+      "budgetChip": "Budget · up to {amount} €",
+      "clearDates": "Clear dates",
+      "clearType": "Clear home type",
+      "clearBudget": "Clear budget",
+      "clearAmenity": "Clear {name}",
+      "reset": "Reset",
+      "apply": "Apply"
+    },
+    "view": {
+      "available": "homes available",
+      "wide": "Wide map",
+      "fitPage": "Fit page",
+      "gridView": "Grid view",
+      "listView": "List view · more detail"
+    },
+    "why": {
+      "eyebrow": "Why Ebrostay",
+      "title": "As easy as booking a hotel, but for stays of months.",
+      "intro": "Pick dates, compare verified homes and request your stay with clear pricing, human support and conditions ready for companies and professionals.",
+      "comingSoon": "Coming soon",
+      "book": {
+        "title": "Book in minutes",
+        "body": "Soon you'll pick dates, pay online and get your confirmation and invoice instantly. For now you send a request and we confirm right away."
+      },
+      "transparent": {
+        "title": "Total transparency",
+        "body": "The price you see is the price you pay: rent, deposit and conditions clear from the first click."
+      },
+      "automated": {
+        "title": "Automated end to end",
+        "body": "Contract, payment, deposit, check-in and support handled by software. Less friction, fewer errors."
+      },
+      "support": {
+        "title": "Human support, modern channels",
+        "body": "WhatsApp, email and your personal dashboard, in Spanish and English. Fast answers, for real."
+      }
+    },
+    "datePicker": {
+      "tooShort": "Stay must be at least 28 days.",
+      "tooLong": "Stay must be under a year (fewer than 365 days).",
+      "pickMoveInFirst": "Pick a move-in date first."
+    }
   }
 }

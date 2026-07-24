@@ -16,6 +16,10 @@ export function Select({
   onChange,
   options,
   placeholder,
+  bare = false,
+  label,
+  className = "",
+  "aria-label": ariaLabel,
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
 }: {
@@ -24,32 +28,72 @@ export function Select({
   onChange?: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  // "bare" strips the bordered box so the trigger can sit flush inside a
+  // seamless container (the hero search bar) while still opening the same
+  // themed popup. The default keeps the boxed control that mirrors Input.
+  bare?: boolean;
+  // When set (bare only), the label is rendered INSIDE the trigger, turning the
+  // whole cell — label included — into the click target. This mirrors the
+  // date-picker HeroCell so every field in the search bar reacts the same way.
+  label?: string;
+  // Extra classes for the trigger, so a hero cell can carry its border/flex.
+  className?: string;
+  "aria-label"?: string;
   "aria-describedby"?: string;
   "aria-invalid"?: boolean;
 }) {
+  const chevron = (
+    <RadixSelect.Icon>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        className="h-4 w-4 shrink-0 text-muted"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 6.5 8 10l4-3.5" />
+      </svg>
+    </RadixSelect.Icon>
+  );
+
+  // A bare Select with a label becomes a full-height stacked cell (label over
+  // value) that matches HeroCell — the entire area is the Radix trigger.
+  const cell = bare && label != null;
+
   return (
     <RadixSelect.Root value={value} onValueChange={onChange}>
       <RadixSelect.Trigger
         id={id}
+        aria-label={ariaLabel}
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
-        className="flex w-full items-center justify-between gap-2 rounded-(--radius-control) border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors hover:border-line-strong data-[placeholder]:text-muted"
+        className={`${
+          cell
+            ? "flex flex-col gap-1 px-4 py-2.5 text-left outline-none transition-colors duration-(--dur-standard) hover:bg-surface-2/60 data-[state=open]:bg-surface-2"
+            : bare
+              ? "flex w-full items-center justify-between gap-2 bg-transparent text-left text-[0.9375rem] font-semibold text-ink outline-none"
+              : "flex w-full items-center justify-between gap-2 rounded-(--radius-control) border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors hover:border-line-strong data-[placeholder]:text-muted"
+        } ${className}`}
       >
-        <RadixSelect.Value placeholder={placeholder} />
-        <RadixSelect.Icon>
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 16 16"
-            className="h-4 w-4 text-muted"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 6.5 8 10l4-3.5" />
-          </svg>
-        </RadixSelect.Icon>
+        {cell ? (
+          <>
+            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-body">
+              {label}
+            </span>
+            <span className="flex items-center justify-between gap-2 text-[0.9375rem] font-semibold text-ink">
+              <RadixSelect.Value placeholder={placeholder} />
+              {chevron}
+            </span>
+          </>
+        ) : (
+          <>
+            <RadixSelect.Value placeholder={placeholder} />
+            {chevron}
+          </>
+        )}
       </RadixSelect.Trigger>
 
       <RadixSelect.Portal>

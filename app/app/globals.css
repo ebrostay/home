@@ -54,6 +54,27 @@
   /* elevation */
   --shadow-card: 0 1px 2px rgba(21, 37, 31, 0.06), 0 8px 24px -12px rgba(21, 37, 31, 0.18);
   --shadow-pop: 0 4px 12px rgba(21, 37, 31, 0.1), 0 24px 48px -12px rgba(21, 37, 31, 0.28);
+
+  /* Sticky-offset anchor. The header is one fixed height and several things
+     hang off it (map column, booking panel), so it is a token, not a magic
+     number repeated at each call site. */
+  --header-h: 4rem;
+
+  /* Live height of the search filter bar, which is ALSO sticky and stacks
+     under the header. The map column sizes itself against header + filter so
+     it never hides behind the bar; FilterBar re-publishes this on resize
+     (the chip row wraps to two lines when several filters are active). This
+     fallback covers the single-row case before that effect runs. */
+  --filter-h: 4.5rem;
+
+  /* The one flat motion duration — hover, press, theme. */
+  --dur-standard: 150ms;
+
+  /* Terracotta: the "Why Ebrostay" band's accent ONLY. It lives outside the
+     brand/river/ink system on purpose — that band is the single warm moment
+     on an otherwise cool page, and the color is fixed in both themes because
+     the panel supplies its own dark ground. */
+  --clay: #e79a6b;
 }
 
 :root[data-theme="dark"] {
@@ -124,6 +145,9 @@
   --color-warn-soft: var(--warn-soft);
   --color-danger-soft: var(--danger-soft);
   --color-star: var(--star);
+  --color-clay: var(--clay);
+
+  --spacing-header: var(--header-h);
 
   --font-display: var(--font-familjen);
   --font-sans: var(--font-onest);
@@ -149,18 +173,23 @@
   --shadow-pop: var(--shadow-pop);
 }
 
-body {
-  background: var(--page);
-  color: var(--body-text);
-  font-family: var(--font-onest), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+/* These are DEFAULTS, so they belong in the base layer: unlayered rules beat
+   every layered one, which would make `text-white` on a heading (the hero,
+   the Why Ebrostay band) silently lose to the ink default. */
+@layer base {
+  body {
+    background: var(--page);
+    color: var(--body-text);
+    font-family: var(--font-onest), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-h1, h2, h3 {
-  color: var(--ink);
-  font-family: var(--font-familjen), var(--font-onest), sans-serif;
-  letter-spacing: -0.015em;
+  h1, h2, h3 {
+    color: var(--ink);
+    font-family: var(--font-familjen), var(--font-onest), sans-serif;
+    letter-spacing: -0.015em;
+  }
 }
 
 /* Ledger rule: hairline + small-caps mono label, the section voice.
@@ -264,6 +293,48 @@ h1, h2, h3 {
   box-shadow: inset 0 -2px 0 var(--river);
 }
 
+/* EXPERIMENT — split move-in/move-out calendars (SplitDateRangeField). Scoped
+   under .dp-split so it never touches the production range picker. These use
+   custom modifiers (no rdp "range" mode), so the range look is redefined here.
+   Both calendars paint the same span: green endpoints, soft fill between. */
+/* Every day is a control-radius rounded square, not the library's circle — so
+   the "today" underline and hover tint read as straight-edged, matching the
+   selected days rather than a half-circle arc. */
+.dp-split .rdp-day_button {
+  border-radius: var(--radius-control);
+}
+.dp-split .rdp-day.dp-range-start .rdp-day_button,
+.dp-split .rdp-day.dp-range-end .rdp-day_button {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  /* Soft control-radius corners (like the Sign-in / language buttons), not the
+     library's full circle. A lone endpoint keeps all four rounded. */
+  border-radius: var(--radius-control);
+}
+/* Once both dates exist, square the INNER edge so the endpoint fuses with the
+   range fill: the start opens to the right, the end closes from the left. */
+.dp-split.dp-has-range .rdp-day.dp-range-start .rdp-day_button {
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+.dp-split.dp-has-range .rdp-day.dp-range-end .rdp-day_button {
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+.dp-split .rdp-day.dp-range-mid {
+  background: var(--brand-soft);
+}
+.dp-split .rdp-day.dp-range-mid .rdp-day_button {
+  color: var(--ink);
+}
+/* Out-of-window days read as unavailable here (unlike booked days elsewhere,
+   which are deliberately solid). Endpoints stay green even if a later move-in
+   change pushed the kept move-out out of range. */
+.dp-split .rdp-day.rdp-disabled:not(.dp-range-start):not(.dp-range-end) .rdp-day_button {
+  color: var(--muted);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Skeleton loader — v1-design-system pattern restyled with v2 tokens.
    <div class="skeleton h-4 w-32" /> etc.; motion gated below. */
 .skeleton {
@@ -287,6 +358,59 @@ h1, h2, h3 {
 }
 @keyframes skeleton-sweep {
   to { transform: translateX(100%); }
+}
+
+/* Map price pins. Leaflet injects this markup as an HTML string, so these are
+   plain global classes rather than utilities. The pin is the map's echo of a
+   result card: same green for "this one", same dimming for "not this one". */
+.map-pin {
+  font-family: var(--font-spline-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  transition:
+    background var(--dur-standard),
+    color var(--dur-standard),
+    opacity var(--dur-standard),
+    transform var(--dur-standard);
+}
+/* Two degrees of focus: hover previews (is-active, a nudge to 1.16), a click
+   commits (is-selected, the bigger 1.2 that the map also pans/zooms to). */
+.map-pin.is-active,
+.map-pin.is-selected {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.map-pin.is-active {
+  transform: translate(-50%, -100%) scale(1.16);
+}
+.map-pin.is-selected {
+  transform: translate(-50%, -100%) scale(1.2);
+}
+.map-pin.is-dim {
+  opacity: 0.45;
+}
+/* Leaflet stacks markers by latitude; a focused pin must beat that. */
+.leaflet-marker-icon:has(.map-pin.is-active),
+.leaflet-marker-icon:has(.map-pin.is-selected) {
+  z-index: 500 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-pin.is-active,
+  .map-pin.is-selected {
+    transform: translate(-50%, -100%);
+  }
 }
 
 /* Month-band load animation — the one orchestrated moment. */

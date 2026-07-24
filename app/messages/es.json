@@ -14,20 +14,45 @@
     "noResultsBody": "Prueba con otras fechas, menos meses o menos filtros.",
     "error": "No se pudieron cargar las viviendas.",
     "retry": "Reintentar",
-    "clearStay": "Entrada {date} · {months} m"
+    "clearStay": "Entrada {date} · {months} m",
+    "audience": {
+      "ariaLabel": "Qué quieres hacer",
+      "findLabel": "Buscar alojamiento",
+      "manageLabel": "Gestiona mi piso",
+      "findNote": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses.",
+      "manageNote": "Publica tu vivienda y delega toda la gestión."
+    },
+    "owner": {
+      "eyebrow": "Para propietarios",
+      "title": "Tu vivienda, gestionada de principio a fin",
+      "tagline": "La publicamos, encontramos inquilinos y gestionamos contratos, cobros y soporte. Tú solo ves llegar los ingresos.",
+      "b1": "Gestión sin involucración — el trabajo lo hacemos nosotros",
+      "b2": "Demanda corporativa y de media estancia constante",
+      "b3": "Pagos claros y puntuales a tu cuenta",
+      "cta": "Publicar mi vivienda"
+    }
   },
   "nav": {
     "mainNav": "Navegación principal",
     "homes": "Viviendas",
+    "howWeWork": "Cómo funciona",
     "about": "Nosotros",
-    "signIn": "Entrar"
+    "signIn": "Entrar",
+    "pill": {
+      "find": "Buscar vivienda",
+      "list": "Publica tu vivienda",
+      "how": "Cómo funciona"
+    }
   },
   "footer": {
     "tagline": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses en Zaragoza.",
     "siteLinks": "Enlaces del sitio",
     "homes": "Viviendas",
     "about": "Nosotros",
-    "privacy": "Privacidad"
+    "privacy": "Privacidad",
+    "howItWorks": "Cómo funciona",
+    "owners": "Propietarios",
+    "gdpr": "Ebrostay usa tus datos solo para responder solicitudes y gestionar reservas. Consulta la política de privacidad y tus derechos RGPD."
   },
   "theme": {
     "switchToLight": "Cambiar a modo claro",
@@ -43,7 +68,12 @@
     "bills": "Gastos incl.",
     "month": "mes",
     "specs": "{bedrooms} hab · {bathrooms, plural, one {# baño} other {# baños}} · {size} m²",
-    "new": "Nueva"
+    "new": "Nueva",
+    "viewHome": "Ver vivienda",
+    "showOnMap": "Ver en el mapa",
+    "refundableDeposit": "Fianza reembolsable",
+    "closePreview": "Cerrar la vista previa",
+    "selectOnMap": "Ver {name} en el mapa"
   },
   "filters": {
     "city": "Ciudad",
@@ -66,7 +96,8 @@
     "washer": "Lavadora",
     "parking": "Parking",
     "heating": "Calefacción",
-    "kitchen": "Cocina equipada"
+    "kitchen": "Cocina equipada",
+    "terrace": "Terraza"
   },
   "detail": {
     "back": "Volver a las viviendas",
@@ -80,7 +111,7 @@
     "deposit": "Fianza",
     "stay": "Estancia",
     "stayRange": "{min}–{max} meses",
-    "floor": "Planta {floor}",
+    "floor": "Planta",
     "energy": "Certificado energético",
     "pets": "Mascotas",
     "smoking": "Fumar",
@@ -89,12 +120,108 @@
     "yes": "Sí",
     "no": "No",
     "beds": "Camas",
-    "availability": "Disponibilidad",
+    "availability": "Disponibilidad · próximos 12 meses",
     "location": "Ubicación",
     "notFoundTitle": "Vivienda no encontrada",
     "notFoundBody": "Puede que ya no esté publicada.",
     "guests": "{count, plural, one {# persona} other {# personas}}",
-    "photoOf": "Foto {n} de {total}"
+    "photoOf": "Foto {n} de {total}",
+    "allHomes": "Todas las viviendas en Zaragoza",
+    "hostedBy": "Anfitriona: {name}",
+    "superhost": "Superanfitriona",
+    "hostMeta": "Responde en {time} · anfitriona desde {year}",
+    "allPhotos": "Ver las {count} fotos",
+    "floorPlan": "Plano",
+    "share": "Compartir",
+    "bedrooms": "Habitaciones",
+    "bathrooms": "Baños",
+    "floorArea": "Superficie",
+    "sleeps": "Plazas",
+    "about": "Sobre esta vivienda",
+    "offers": "Lo que incluye esta vivienda",
+    "legendOpen": "Libre",
+    "legendPartial": "Parcialmente reservado",
+    "legendBooked": "Reservado",
+    "openFrom": "Libre desde {date}",
+    "stayTerms": "Términos de la estancia",
+    "minStay": "Estancia mínima",
+    "maxStay": "Estancia máxima",
+    "whereYouWillBe": "Dónde vas a estar",
+    "terms": {
+      "wholeMonth": {
+        "title": "Facturación por meses completos",
+        "body": "La estancia se contrata y se factura por meses enteros, sin prorrateos."
+      },
+      "deposit": {
+        "title": "Fianza reembolsable",
+        "body": "Se devuelve al final de la estancia, descontando solo los daños acreditados."
+      },
+      "utilities": {
+        "title": "Suministros con tope",
+        "body": "Los suministros están incluidos hasta el tope indicado en las condiciones."
+      },
+      "cancellation": {
+        "title": "Cancelación gratuita",
+        "body": "Puedes cancelar sin coste hasta 48 h antes de la entrada."
+      }
+    },
+    "nearby": {
+      "title": "Qué hay cerca",
+      "subtitle": "Tiempos orientativos desde el centro de Zaragoza.",
+      "minutes": "{count} min",
+      "category": {
+        "transport": "Transporte público",
+        "groceries": "Compras",
+        "food": "Restaurantes",
+        "outdoors": "Ocio y aire libre",
+        "health": "Salud"
+      }
+    },
+    "places": {
+      "title": "Tus sitios",
+      "intro": "Guarda los sitios a los que irás a menudo — la oficina, el gimnasio, el colegio — y verás el trayecto desde cada vivienda que mires. Se guardan en este navegador.",
+      "add": "Añadir un sitio",
+      "empty": "Todavía no has guardado ningún sitio.",
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Oficina",
+      "modeLabel": "Cómo vas",
+      "kmLabel": "Distancia (km)",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "remove": "Quitar {name}",
+      "minutes": "{count} min",
+      "estimateNote": "Los tiempos son estimaciones calculadas a partir de la distancia que indicas y del medio de transporte.",
+      "mode": {
+        "walk": "andando",
+        "bike": "en bici",
+        "tram": "en tranvía",
+        "bus": "en bus",
+        "car": "en coche"
+      }
+    },
+    "booking": {
+      "month": "mes",
+      "moveIn": "Entrada",
+      "moveOut": "Salida",
+      "stayLength": "Duración",
+      "monthCount": "{count, plural, one {# mes} other {# meses}}",
+      "oneMore": "Un mes más",
+      "oneFewer": "Un mes menos",
+      "stay": "Estancia",
+      "commission": "Comisión y gestión (15 %, IVA 21 % incl.)",
+      "depositRefundable": "Fianza · reembolsable",
+      "unavailable": "Esas fechas no están libres en esta vivienda.",
+      "vatHint": "Añade el nombre de cada inquilino para que la renta esté exenta de IVA. Si la reserva la hace una empresa sin inquilinos nombrados, se aplica un 21 % de IVA que la empresa autoliquida (nosotros no lo cobramos).",
+      "requestWhatsApp": "Solicitar por WhatsApp",
+      "requestEmail": "Solicitar por email",
+      "reassurance": "Todavía no se te cobra nada — el propietario confirma el precio final. Cancelación gratuita hasta 48 h antes de la entrada.",
+      "requestSummary": "{name} — del {from} al {to} ({months, plural, one {# mes} other {# meses}}). Total estimado {total}.",
+      "emailSubject": "Reserva — {name}",
+      "emailGreeting": "Hola Ebrostay:",
+      "emailSignoff": "Gracias.",
+      "home": "Vivienda",
+      "tenantNames": "Nombre(s) de los inquilinos"
+    }
   },
   "estimate": {
     "title": "Calcula tu estancia",
@@ -161,7 +288,16 @@
     "dialogBody": "La solicitud de reserva se envía por correo. El equipo la revisa y confirma manualmente.",
     "displaySample": "Un piso, un contrato, meses tranquilos junto al Ebro",
     "bodySample": "Cada vivienda se entrega amueblada, verificada y lista para entrar a vivir. Los importes mostrados son estimaciones; el contrato fija el precio final.",
-    "dataSample": "1.350 € / mes · fianza 1.350 € · 3 meses"
+    "dataSample": "1.350 € / mes · fianza 1.350 € · 3 meses",
+    "datePickers": "Selectores de fecha",
+    "datePickersHint": "Campo emergente (entrada/salida) que abre el calendario con estilo — el candidato para sustituir a los <input type=\"date\"> nativos. Compáralo abajo con el nativo.",
+    "dpPopover": "Campo emergente",
+    "dpPopoverBooked": "Con días ocupados",
+    "dpNative": "Nativo del navegador (actual)",
+    "dpSelected": "Seleccionado",
+    "dpNone": "sin fechas",
+    "dpSplit": "Popover doble (experimento)",
+    "dpSplitHint": "Dos calendarios en un popover: izquierda = entrada, derecha = salida. No se cierra al elegir; solo al hacer clic fuera."
   },
   "auth": {
     "signInWith": "Entrar con",
@@ -171,5 +307,66 @@
     "adminPanel": "Administración",
     "signOut": "Salir",
     "deactivated": "Tu cuenta está desactivada. Escríbenos para reactivarla."
+  },
+  "search": {
+    "hero": {
+      "title": "Tu estancia en Zaragoza, lista para entrar a vivir.",
+      "subtitle": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses, pensadas para profesionales y equipos que se trasladan.",
+      "city": "Ciudad",
+      "moveIn": "Entrada",
+      "moveOut": "Salida",
+      "bedrooms": "Habitaciones",
+      "bedroomsAny": "Cualquiera",
+      "bedroomsPlus": "{count}+",
+      "search": "Buscar"
+    },
+    "filters": {
+      "more": "Más filtros",
+      "loading": "Cargando viviendas…",
+      "homesInCity": "{count, plural, one {vivienda} other {viviendas}} · Zaragoza",
+      "sortAs": "Orden: {value}",
+      "bedroomsChip": "Habitaciones · {count}+",
+      "budgetChip": "Presupuesto · hasta {amount} €",
+      "clearDates": "Quitar las fechas",
+      "clearType": "Quitar el tipo de vivienda",
+      "clearBudget": "Quitar el presupuesto",
+      "clearAmenity": "Quitar {name}",
+      "reset": "Restablecer",
+      "apply": "Aplicar"
+    },
+    "view": {
+      "available": "viviendas disponibles",
+      "wide": "Mapa ancho",
+      "fitPage": "Ajustar a la página",
+      "gridView": "Vista de cuadrícula",
+      "listView": "Vista de lista · más detalle"
+    },
+    "why": {
+      "eyebrow": "Por qué Ebrostay",
+      "title": "Tan fácil como reservar un hotel, pero para estancias de meses.",
+      "intro": "Elige fechas, compara viviendas verificadas y solicita tu estancia con precios claros, atención humana y condiciones listas para empresas y profesionales.",
+      "comingSoon": "Próximamente",
+      "book": {
+        "title": "Reserva en minutos",
+        "body": "Pronto podrás elegir fechas, pagar online y recibir confirmación y factura al instante. Por ahora envías una solicitud y la confirmamos enseguida."
+      },
+      "transparent": {
+        "title": "Transparencia total",
+        "body": "El precio que ves es el que pagas: renta, fianza y condiciones claras desde el primer clic."
+      },
+      "automated": {
+        "title": "Automatizado de principio a fin",
+        "body": "Contrato, pago, fianza, entrada y soporte gestionados por software. Menos fricción y menos errores."
+      },
+      "support": {
+        "title": "Atención humana, canales modernos",
+        "body": "WhatsApp, email y tu panel personal, en español e inglés. Respuestas rápidas, de verdad."
+      }
+    },
+    "datePicker": {
+      "tooShort": "La estancia debe durar al menos 28 días.",
+      "tooLong": "La estancia debe ser inferior a un año (menos de 365 días).",
+      "pickMoveInFirst": "Elige primero la fecha de entrada."
+    }
   }
 }

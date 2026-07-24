@@ -1,6 +1,12 @@
 // The v1 mark, kept by decision (ADR: new identity, same logo): the stone
 // bridge over the Ebro. Colors are the brand's fixed points.
-export function LogoMark({ size = 32 }: { size?: number }) {
+export function LogoMark({
+  size = 32,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 48 48"
@@ -8,6 +14,7 @@ export function LogoMark({ size = 32 }: { size?: number }) {
       height={size}
       role="img"
       aria-hidden="true"
+      className={className}
     >
       <g transform="translate(0,7)">
         <path
@@ -25,10 +32,10 @@ export function LogoMark({ size = 32 }: { size?: number }) {
 
 export function Wordmark() {
   return (
-    <span className="flex items-center gap-2">
-      <LogoMark />
+    <span className="group flex items-center gap-2">
+      <LogoMark className="transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-px group-hover:-rotate-2" />
       <span className="font-display text-xl font-semibold tracking-tight text-ink">
-        Ebrostay
+        Ebro<span className="text-brand">stay</span>
       </span>
     </span>
   );

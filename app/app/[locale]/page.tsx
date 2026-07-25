@@ -86,8 +86,6 @@ export default function HomePage() {
     const max = filters.budget ? Number(filters.budget) : Infinity;
     const list = budgetScope.filter((p) => p.priceNumber <= max);
     const bySort = {
-      best: (a: PropertySummary, b: PropertySummary) =>
-        (b.rating ?? 0) - (a.rating ?? 0) || a.priceNumber - b.priceNumber,
       price: (a: PropertySummary, b: PropertySummary) =>
         a.priceNumber - b.priceNumber,
       new: (a: PropertySummary, b: PropertySummary) =>

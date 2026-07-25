@@ -42,7 +42,10 @@ export const defaultFilters: Filters = {
   type: "all",
   budget: "",
   amenities: [],
-  sort: "best",
+  // Was "best" (by rating). With no ratings in the data that comparator fell
+  // through to its price tiebreak anyway, so price-ascending is the same order
+  // the list has actually been showing.
+  sort: "price",
 };
 
 // The bar shows what is ACTUALLY narrowing the results, one removable chip
@@ -200,11 +203,15 @@ export function FilterBar({
           )}
         </p>
 
-        <div className="w-44">
+        {/* Wide enough for the longest label ("Orden: Precio: menor a mayor")
+            on one line; nowrap on the trigger so a future label overflows
+            visibly rather than silently wrapping the control taller. */}
+        <div className="w-64">
           <Select
+            className="whitespace-nowrap"
             value={filters.sort}
             onChange={(v) => set({ sort: v })}
-            options={["best", "price", "new"].map((v) => ({
+            options={["price", "new"].map((v) => ({
               value: v,
               label: tf("sortAs", { value: t(`sort.${v}`) }),
             }))}

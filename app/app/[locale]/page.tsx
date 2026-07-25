@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchProperties, biText, type PropertySummary } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
@@ -24,6 +24,15 @@ import {
 } from "@/components/search/FilterBar";
 import { ViewControls } from "@/components/search/ViewControls";
 import { WhyEbrostay } from "@/components/search/WhyEbrostay";
+import {
+  readResultsState,
+  writeResultsState,
+} from "@/components/search/searchUrl";
+
+// Which home the visitor last opened. Deliberately NOT in the URL: it is
+// where they were, not what they were looking at, and a shared link should
+// not jump someone else's page. One-shot — read once, then cleared.
+const FOCUS_KEY = "ebrostay:focus-home";
 
 export default function HomePage() {
   const t = useTranslations();
@@ -33,16 +42,56 @@ export default function HomePage() {
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [query, setQuery] = useState<SearchQuery>(defaultQuery);
   // v1 parity: the stay search only filters once submitted (R-Home-2); the
   // grid shows everything until then.
   const [applied, setApplied] = useState<SearchQuery | null>(null);
+  const [query, setQuery] = useState<SearchQuery>(defaultQuery);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
   const [view, setView] = useState<CardView>("grid");
   const [wide, setWide] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Restore from the URL AFTER mount, not during the first render. This page is
+  // prerendered at build time with the defaults above — its hero is the site's
+  // one piece of static marketing HTML — so a first render that read the query
+  // string would disagree with that HTML and trip hydration. (useSearchParams()
+  // is the tidier API but forces the whole subtree client-only, which empties
+  // the prerendered page.) Costs one frame of default chrome on return.
+  // Mount only: from here React state is the truth and the URL trails it.
+  // Re-reading would fight the visitor every time they touched a control.
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const s = readResultsState(new URLSearchParams(window.location.search));
+    /* eslint-disable react-hooks/set-state-in-effect -- this IS the external
+       system the rule carves out for: the URL is state React does not own, and
+       it can only be read once there is a document to read it from. */
+    if (s.applied) {
+      setApplied(s.applied);
+      setQuery(s.applied); // the bar must show what is actually filtering
+    }
+    setFilters(s.filters);
+    setView(s.view);
+    setWide(s.wide);
+    setRestored(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  // Mirror the state back into the URL so Back lands on this list, not a blank
+  // one. replaceState, not router.replace: this is bookkeeping on the entry we
+  // are already on — a router call would re-render and fight the scroll
+  // position. Gated on `restored` so the mount pass cannot wipe the query
+  // string before it has been read.
+  useEffect(() => {
+    if (!restored) return;
+    const qs = writeResultsState({ applied, filters, view, wide });
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, [restored, applied, filters, view, wide]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +104,27 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  // Coming back from a home: put its card back under the visitor's eye. Has to
+  // wait for the list — the cards do not exist until the fetch resolves, which
+  // is also why the browser's own scroll restoration cannot do this job.
+  const focusDone = useRef(false);
+  useEffect(() => {
+    if (all === null || focusDone.current) return;
+    focusDone.current = true;
+    const id = sessionStorage.getItem(FOCUS_KEY);
+    if (!id) return;
+    sessionStorage.removeItem(FOCUS_KEY);
+    // A frame for the cards to lay out before we measure them.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`home-${id}`);
+      if (!el) return; // filtered out since, or the home is gone
+      // Instant, not smooth: this is a restoration, not a journey. A long
+      // animated scroll from the top would also trip prefers-reduced-motion.
+      el.scrollIntoView({ block: "center", behavior: "auto" });
+      setSelectedId(id);
+    });
+  }, [all]);
 
   // Everything the OTHER filters allow, budget ignored. The budget control
   // draws its distribution from this: a histogram fed by its own output would
@@ -240,6 +310,7 @@ export default function HomePage() {
                       ? { moveIn: applied.moveIn, moveOut: applied.moveOut }
                       : undefined
                   }
+                  onOpen={(id) => sessionStorage.setItem(FOCUS_KEY, id)}
                   active={hoveredId === c.id || selectedId === c.id}
                   selected={selectedId === c.id}
                   onHover={setHoveredId}

@@ -38,6 +38,7 @@ export function PropertyCard({
   onHover,
   onSelect,
   stay,
+  onOpen,
 }: {
   property: PropertyCardData;
   locale: string;
@@ -51,6 +52,9 @@ export function PropertyCard({
   // The stay the visitor searched for, carried into the detail link so the
   // booking panel opens on their dates instead of its own default.
   stay?: Stay;
+  // Fired when the visitor leaves for this home's page, so the list can put
+  // them back here when they return.
+  onOpen?: (id: string) => void;
 }) {
   const t = useTranslations("listing");
   const list = view === "list";
@@ -86,6 +90,8 @@ export function PropertyCard({
 
   return (
     <article
+      /* Named so the list can scroll this card back into view on return. */
+      id={`home-${property.id}`}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
@@ -192,7 +198,10 @@ export function PropertyCard({
         <div className="mt-1.5 flex gap-2">
           <Link
             href={href}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen?.(property.id);
+            }}
             className="flex-1 rounded-(--radius-control) bg-brand px-3.5 py-2.5 text-center text-[0.8125rem] font-semibold text-white transition-colors duration-(--dur-standard) hover:bg-brand-strong"
           >
             {t("viewHome")}

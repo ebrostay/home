@@ -127,7 +127,11 @@ export default function HomePage() {
   );
 
   return (
-    <main>
+    /* overflow-x-clip contains the hero's full-bleed backdrop (and wide-map row)
+       at the viewport edge without creating a scroll container — so it never
+       spawns a horizontal scrollbar, and the sticky header/filter bar/map keep
+       working (overflow-y stays visible, unlike overflow-x-hidden). */
+    <main className="overflow-x-clip">
       <SearchHero
         query={query}
         onChange={setQuery}

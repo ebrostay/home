@@ -58,7 +58,15 @@ export function SearchHero({
 
   return (
     <section className="relative mx-auto max-w-7xl">
-      <div className="relative h-[320px] overflow-hidden md:h-[420px]">
+      {/* Full-bleed backdrop: the photo + gradient run to the viewport edges —
+          matching the filter bar's edge-to-edge surface below — while the
+          headline and search bar stay aligned to the centered 1280 column. It
+          is sized to the image band (not the whole section) so the mobile
+          search card still lands on the page background beneath it. */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 top-0 h-[320px] w-screen -translate-x-1/2 overflow-hidden md:h-[420px]"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized */}
         <img
           src="/brand/zaragoza-hero.webp"
@@ -68,13 +76,17 @@ export function SearchHero({
         {/* Angled, not vertical: the weight sits behind the text on the left
             and releases over the balcony on the right. */}
         <div
-          aria-hidden
           className="absolute inset-0"
           style={{
             background:
               "linear-gradient(105deg, rgba(21,37,31,.78) 0%, rgba(21,37,31,.55) 38%, rgba(21,37,31,.18) 70%, rgba(21,37,31,.05) 100%)",
           }}
         />
+      </div>
+
+      {/* Content frame — its height matches the image band and drives the
+          section height; the headline anchors to the centered column. */}
+      <div className="relative h-[320px] md:h-[420px]">
         <div className="absolute inset-x-6 bottom-16 text-white md:inset-x-12 md:bottom-[136px]">
           <h1 className="max-w-[18ch] font-display text-[2rem] font-bold leading-[1.05] text-white md:text-[3.25rem] md:leading-[1.02]">
             {t("title")}

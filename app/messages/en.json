@@ -290,7 +290,7 @@
     "bodySample": "Every home comes furnished, verified and move-in ready. All amounts shown are estimates; the contract sets the final price.",
     "dataSample": "€1,350 / month · deposit €1,350 · 3 months",
     "datePickers": "Date pickers",
-    "datePickersHint": "A popover field (move in / move out) that opens the themed calendar — the candidate to replace the native <input type=\"date\"> pair. Compare it with the native one below.",
+    "datePickersHint": "A popover field (move in / move out) that opens the themed calendar — the candidate to replace the native date-input pair. Compare it with the native one below.",
     "dpPopover": "Popover field",
     "dpPopoverBooked": "With booked days",
     "dpNative": "Browser-native (current)",

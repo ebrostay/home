@@ -290,7 +290,7 @@
     "bodySample": "Cada vivienda se entrega amueblada, verificada y lista para entrar a vivir. Los importes mostrados son estimaciones; el contrato fija el precio final.",
     "dataSample": "1.350 € / mes · fianza 1.350 € · 3 meses",
     "datePickers": "Selectores de fecha",
-    "datePickersHint": "Campo emergente (entrada/salida) que abre el calendario con estilo — el candidato para sustituir a los <input type=\"date\"> nativos. Compáralo abajo con el nativo.",
+    "datePickersHint": "Campo emergente (entrada/salida) que abre el calendario con estilo — el candidato para sustituir a los campos de fecha nativos. Compáralo abajo con el nativo.",
     "dpPopover": "Campo emergente",
     "dpPopoverBooked": "Con días ocupados",
     "dpNative": "Nativo del navegador (actual)",

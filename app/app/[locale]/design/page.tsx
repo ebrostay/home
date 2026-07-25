@@ -68,6 +68,18 @@ export default function DesignPage() {
   const tf = useTranslations("filters");
   const tt = useTranslations("type");
   const locale = useLocale();
+
+  // Bare toLocaleDateString() picks the runtime's default locale — en-US on the
+  // SSR host, the visitor's locale in the browser — so the pre-filled demos
+  // render "9/1/2026" on the server and "01/09/2026" on the client, tripping a
+  // hydration mismatch (the red error overlay). Pin the locale so both agree.
+  const fmtDate = (d: Date) =>
+    new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(d);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [propertyType, setPropertyType] = useState("all");
   const [stayRange, setStayRange] = useState<DateRange | undefined>({
@@ -270,8 +282,8 @@ export default function DesignPage() {
               {t("dpSelected")}:{" "}
               <span className="data text-body">
                 {fieldRange?.from
-                  ? `${fieldRange.from.toLocaleDateString()} → ${
-                      fieldRange.to?.toLocaleDateString() ?? "…"
+                  ? `${fmtDate(fieldRange.from)} → ${
+                      fieldRange.to ? fmtDate(fieldRange.to) : "…"
                     }`
                   : t("dpNone")}
               </span>
@@ -295,8 +307,8 @@ export default function DesignPage() {
               {t("dpSelected")}:{" "}
               <span className="data text-body">
                 {fieldRange2?.from
-                  ? `${fieldRange2.from.toLocaleDateString()} → ${
-                      fieldRange2.to?.toLocaleDateString() ?? "…"
+                  ? `${fmtDate(fieldRange2.from)} → ${
+                      fieldRange2.to ? fmtDate(fieldRange2.to) : "…"
                     }`
                   : t("dpNone")}
               </span>
@@ -335,8 +347,8 @@ export default function DesignPage() {
             {t("dpSelected")}:{" "}
             <span className="data text-body">
               {split.moveIn
-                ? `${split.moveIn.toLocaleDateString()} → ${
-                    split.moveOut?.toLocaleDateString() ?? "…"
+                ? `${fmtDate(split.moveIn)} → ${
+                    split.moveOut ? fmtDate(split.moveOut) : "…"
                   }`
                 : t("dpNone")}
             </span>

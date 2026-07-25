@@ -33,6 +33,11 @@
   --river: #9cc4f0;          /* the logo's river — open, informational */
   --river-deep: #4a7fb5;     /* readable river for text/icons */
   --river-soft: #e9f1fa;     /* open-month wash, info surfaces */
+  /* Fixed dark river for a solid pill with white text on a PHOTO overlay (the
+     card's "bills incl." badge). Kept identical in dark theme ON PURPOSE — an
+     image overlay is theme-independent, whereas --river-deep flips light in
+     dark and would leave low-contrast text on the pill. */
+  --river-strong: #2f6aa8;   /* white text ≈ 5.6:1, both themes */
 
   /* lines & focus */
   --line: #dbe2db;
@@ -133,6 +138,7 @@
   --color-river: var(--river);
   --color-river-deep: var(--river-deep);
   --color-river-soft: var(--river-soft);
+  --color-river-strong: var(--river-strong);
 
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);

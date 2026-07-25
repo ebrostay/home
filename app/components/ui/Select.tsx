@@ -1,6 +1,8 @@
 "use client";
 
+import { useContext } from "react";
 import * as RadixSelect from "@radix-ui/react-select";
+import { DialogPortalContext } from "./Dialog";
 
 // Radix-based select: the closed trigger matches Input exactly; the open list
 // is OUR popup — themed, positioned below the trigger, identical in every
@@ -42,6 +44,10 @@ export function Select({
   "aria-describedby"?: string;
   "aria-invalid"?: boolean;
 }) {
+  // Inside a native <dialog> (top layer), portal the popup into the dialog so it
+  // renders ABOVE the modal rather than behind it. Null everywhere else → body.
+  const portalContainer = useContext(DialogPortalContext);
+
   const chevron = (
     <RadixSelect.Icon>
       <svg
@@ -96,7 +102,7 @@ export function Select({
         )}
       </RadixSelect.Trigger>
 
-      <RadixSelect.Portal>
+      <RadixSelect.Portal container={portalContainer ?? undefined}>
         <RadixSelect.Content
           position="popper"
           sideOffset={4}

@@ -144,7 +144,7 @@ export function PropertyCard({
               </span>
             )}
             {property.billsIncluded && (
-              <span className="data rounded-full bg-river/95 px-2.5 py-[5px] text-[0.625rem] font-semibold tracking-[0.1em] text-river-deep">
+              <span className="data rounded-full bg-river-strong/95 px-2.5 py-[5px] text-[0.625rem] font-semibold tracking-[0.1em] text-white">
                 {t("bills").toUpperCase()}
               </span>
             )}

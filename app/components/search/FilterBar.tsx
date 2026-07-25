@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { Car, SlidersHorizontal, Wifi, Wind, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatEuro } from "@/lib/pricing";
 import { Chip } from "./Chip";
@@ -19,6 +19,16 @@ export const AMENITY_FILTERS = [
   "washer",
   "parking",
 ] as const;
+
+// The handful of amenities common enough to earn a permanent one-tap toggle on
+// the bar itself. They are NOT repeated as removable chips (their toggle already
+// shows the active state); everything else lives behind "More filters".
+const QUICK_AMENITIES: { key: string; Icon: LucideIcon }[] = [
+  { key: "wifi", Icon: Wifi },
+  { key: "ac", Icon: Wind },
+  { key: "parking", Icon: Car },
+];
+const QUICK_KEYS = QUICK_AMENITIES.map((a) => a.key);
 
 export type Filters = {
   type: string; // "all" | apartment | room | home
@@ -84,13 +94,22 @@ export function FilterBar({
     };
   }, []);
 
+  // Counts only what "More filters" hides — the quick amenities have their own
+  // visible toggles, so they must not inflate the badge.
   const activeCount =
     (filters.type === "all" ? 0 : 1) +
     (filters.budget ? 1 : 0) +
-    filters.amenities.length;
+    filters.amenities.filter((a) => !QUICK_KEYS.includes(a)).length;
 
   const set = (patch: Partial<Filters>) =>
     onFiltersChange({ ...filters, ...patch });
+
+  const toggleAmenity = (a: string) =>
+    set({
+      amenities: filters.amenities.includes(a)
+        ? filters.amenities.filter((x) => x !== a)
+        : [...filters.amenities, a],
+    });
 
   return (
     <div
@@ -128,18 +147,22 @@ export function FilterBar({
             })}
           </Chip>
         )}
-        {filters.amenities.map((a) => (
-          <Chip
-            key={a}
-            active
-            onClear={() =>
-              set({ amenities: filters.amenities.filter((x) => x !== a) })
-            }
-            clearLabel={tf("clearAmenity", { name: t(`amenity.${a}`) })}
-          >
-            {t(`amenity.${a}`)}
-          </Chip>
-        ))}
+        {/* Amenities chosen in "More filters" show as removable chips — except
+            the quick ones, which are represented by their permanent toggles. */}
+        {filters.amenities
+          .filter((a) => !QUICK_KEYS.includes(a))
+          .map((a) => (
+            <Chip
+              key={a}
+              active
+              onClear={() =>
+                set({ amenities: filters.amenities.filter((x) => x !== a) })
+              }
+              clearLabel={tf("clearAmenity", { name: t(`amenity.${a}`) })}
+            >
+              {t(`amenity.${a}`)}
+            </Chip>
+          ))}
 
         <Chip onClick={() => setOpen(true)}>
           <SlidersHorizontal size={14} strokeWidth={2} aria-hidden />
@@ -150,6 +173,18 @@ export function FilterBar({
             </span>
           )}
         </Chip>
+
+        {/* Always-present one-tap toggles for the most common amenities. */}
+        {QUICK_AMENITIES.map(({ key, Icon }) => (
+          <Chip
+            key={key}
+            active={filters.amenities.includes(key)}
+            onClick={() => toggleAmenity(key)}
+          >
+            <Icon size={14} strokeWidth={2} aria-hidden />
+            {t(`amenity.${key}`)}
+          </Chip>
+        ))}
 
         <p role="status" className="ml-auto text-[0.8125rem] text-muted">
           {loading ? (

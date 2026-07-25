@@ -17,6 +17,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ApiError, biText, fetchProperty, type PropertyDetail } from "@/lib/api";
+import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
 import { formatEuro } from "@/lib/pricing";
 import {
@@ -258,12 +259,33 @@ function DetailBody({
           {p.amenities.length > 0 && (
             <Section title={td("offers")}>
               <ul className="grid gap-3 sm:grid-cols-2">
-                {p.amenities.map((a) => (
-                  <li key={a} className="flex items-center gap-2.5 text-sm text-body">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-                    {t.has(`amenity.${a}`) ? t(`amenity.${a}`) : a}
-                  </li>
-                ))}
+                {p.amenities.map((a) => {
+                  const Icon = AMENITY_ICONS[a];
+                  return (
+                    <li
+                      key={a}
+                      className="flex items-center gap-2.5 text-sm text-body"
+                    >
+                      {/* An amenity we have no icon for keeps the brand dot, so
+                          the labels stay on one column edge and nothing borrows
+                          a glyph that means something else. */}
+                      {Icon ? (
+                        <Icon
+                          size={17}
+                          strokeWidth={1.75}
+                          className="shrink-0 text-brand"
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className="mx-[7.5px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
+                          aria-hidden
+                        />
+                      )}
+                      {t.has(`amenity.${a}`) ? t(`amenity.${a}`) : a}
+                    </li>
+                  );
+                })}
               </ul>
             </Section>
           )}

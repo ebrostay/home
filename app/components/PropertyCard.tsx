@@ -1,23 +1,10 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import {
-  ArrowUpDown,
-  Car,
-  ChefHat,
-  Check,
-  Flame,
-  Laptop,
-  MapPin,
-  RotateCcw,
-  Trees,
-  WashingMachine,
-  Wifi,
-  Wind,
-  type LucideIcon,
-} from "lucide-react";
+import { Check, MapPin, RotateCcw, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { AvailabilityBand, type MonthAvailability } from "@/components/MonthBand";
 
 export type CardView = "grid" | "list";
@@ -38,18 +25,6 @@ export type PropertyCardData = {
   /** Only present once the list projection carries it; the card degrades quietly. */
   description?: string;
   months: MonthAvailability[];
-};
-
-const AMENITY_ICONS: Record<string, LucideIcon> = {
-  wifi: Wifi,
-  ac: Wind,
-  heating: Flame,
-  desk: Laptop,
-  kitchen: ChefHat,
-  terrace: Trees,
-  lift: ArrowUpDown,
-  washer: WashingMachine,
-  parking: Car,
 };
 
 export function PropertyCard({

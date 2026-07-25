@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Car, SlidersHorizontal, Wifi, Wind, type LucideIcon } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { formatEuro } from "@/lib/pricing";
 import { Chip } from "./Chip";
 import type { SearchQuery } from "./SearchHero";
@@ -24,12 +25,7 @@ export const AMENITY_FILTERS = [
 // The handful of amenities common enough to earn a permanent one-tap toggle on
 // the bar itself. They are NOT repeated as removable chips (their toggle already
 // shows the active state); everything else lives behind "More filters".
-const QUICK_AMENITIES: { key: string; Icon: LucideIcon }[] = [
-  { key: "wifi", Icon: Wifi },
-  { key: "ac", Icon: Wind },
-  { key: "parking", Icon: Car },
-];
-const QUICK_KEYS = QUICK_AMENITIES.map((a) => a.key);
+const QUICK_KEYS = ["wifi", "ac", "parking"];
 
 export type Filters = {
   type: string; // "all" | apartment | room | home
@@ -181,16 +177,19 @@ export function FilterBar({
         </Chip>
 
         {/* Always-present one-tap toggles for the most common amenities. */}
-        {QUICK_AMENITIES.map(({ key, Icon }) => (
-          <Chip
-            key={key}
-            active={filters.amenities.includes(key)}
-            onClick={() => toggleAmenity(key)}
-          >
-            <Icon size={14} strokeWidth={2} aria-hidden />
-            {t(`amenity.${key}`)}
-          </Chip>
-        ))}
+        {QUICK_KEYS.map((key) => {
+          const Icon = AMENITY_ICONS[key];
+          return (
+            <Chip
+              key={key}
+              active={filters.amenities.includes(key)}
+              onClick={() => toggleAmenity(key)}
+            >
+              {Icon && <Icon size={14} strokeWidth={2} aria-hidden />}
+              {t(`amenity.${key}`)}
+            </Chip>
+          );
+        })}
 
         <p role="status" className="ml-auto text-[0.8125rem] text-muted">
           {loading ? (

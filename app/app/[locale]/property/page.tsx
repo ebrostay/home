@@ -210,19 +210,11 @@ function DetailBody({
             className="h-12 w-12 rounded-full border border-line bg-surface-2 object-cover p-1.5"
           />
           <div>
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="font-display text-[0.9375rem] font-semibold text-ink">
-                {td("hostedBy", { name: PLACEHOLDER_HOST.name })}
-              </span>
-              {PLACEHOLDER_HOST.superhost && (
-                <Badge tone="brand">{td("superhost")}</Badge>
-              )}
+            <p className="font-display text-[0.9375rem] font-semibold text-ink">
+              {td("hostedBy", { name: PLACEHOLDER_HOST.name })}
             </p>
             <p className="mt-0.5 text-xs text-muted">
-              {td("hostMeta", {
-                time: PLACEHOLDER_HOST.responseTime,
-                year: PLACEHOLDER_HOST.hostingSince,
-              })}
+              {td("hostSince", { year: PLACEHOLDER_HOST.hostingSince })}
             </p>
           </div>
         </div>

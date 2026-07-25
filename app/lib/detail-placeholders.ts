@@ -16,8 +16,6 @@
 export type Host = {
   name: string;
   avatarUrl: string;
-  superhost: boolean;
-  responseTime: string; // display string, already localized by the caller
   hostingSince: number;
 };
 
@@ -38,8 +36,6 @@ export type NearbyCategory = {
 export const PLACEHOLDER_HOST: Host = {
   name: "Marta",
   avatarUrl: "/brand/ebrostay-mark.svg",
-  superhost: true,
-  responseTime: "~1 h",
   hostingSince: 2021,
 };
 

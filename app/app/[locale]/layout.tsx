@@ -69,7 +69,11 @@ export default async function LocaleLayout({
         </Script>
       </head>
       <body
-        className={`${familjen.variable} ${onest.variable} ${splineMono.variable} flex min-h-screen flex-col antialiased`}
+        /* dvh, not vh: on mobile browsers 100vh is the height with the toolbar
+           retracted, so on first paint the page is taller than what you can
+           see and the pinned footer sits below the fold with a strip of bare
+           background under it. dvh tracks the visible viewport. */
+        className={`${familjen.variable} ${onest.variable} ${splineMono.variable} flex min-h-dvh flex-col antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>

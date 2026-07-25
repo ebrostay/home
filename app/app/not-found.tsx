@@ -42,7 +42,7 @@ export default function NotFound() {
       <body
         className={`${familjen.variable} ${onest.variable} ${splineMono.variable} antialiased`}
       >
-        <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
+        <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-16 text-center">
           <LogoMark size={44} />
           <p className="data mt-6 text-xs uppercase tracking-[0.16em] text-muted">
             404

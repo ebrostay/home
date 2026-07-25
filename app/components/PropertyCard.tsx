@@ -27,6 +27,8 @@ export type PropertyCardData = {
   months: MonthAvailability[];
 };
 
+export type Stay = { moveIn: string; moveOut: string }; // both YYYY-MM-DD
+
 export function PropertyCard({
   property,
   locale,
@@ -35,6 +37,7 @@ export function PropertyCard({
   selected = false,
   onHover,
   onSelect,
+  stay,
 }: {
   property: PropertyCardData;
   locale: string;
@@ -45,6 +48,9 @@ export function PropertyCard({
   // Card-level pick: mark this home on the map and pan/zoom to it. Navigation
   // to the detail page is reserved for the explicit "View home" button.
   onSelect?: (id: string) => void;
+  // The stay the visitor searched for, carried into the detail link so the
+  // booking panel opens on their dates instead of its own default.
+  stay?: Stay;
 }) {
   const t = useTranslations("listing");
   const list = view === "list";
@@ -55,7 +61,12 @@ export function PropertyCard({
     useGrouping: "always" as Intl.NumberFormatOptions["useGrouping"],
   }).format(property.pricePerMonth);
 
-  const href = { pathname: "/property", query: { id: property.id } } as const;
+  const href = {
+    pathname: "/property",
+    query: stay
+      ? { id: property.id, from: stay.moveIn, to: stay.moveOut }
+      : { id: property.id },
+  };
 
   const highlights = [
     property.verified && { key: "verified", Icon: Check, label: t("verified") },

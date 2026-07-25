@@ -48,6 +48,19 @@ function PropertyContent() {
   const t = useTranslations();
   const locale = useLocale();
 
+  // ?from=&to= — the stay the visitor searched for, handed over by the result
+  // card. Anything malformed is dropped rather than repaired: the panel's own
+  // default is a better answer than a half-read URL. Dates that don't SUIT the
+  // home are kept, though — the panel says so and blocks the request, which is
+  // more use than silently showing different dates than the ones asked for.
+  const searched = useMemo(() => {
+    const moveIn = params.get("from") ?? "";
+    const moveOut = params.get("to") ?? "";
+    return isIsoDate(moveIn) && isIsoDate(moveOut) && moveOut > moveIn
+      ? { moveIn, moveOut }
+      : undefined;
+  }, [params]);
+
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "missing" | "error">(
     "loading",
@@ -92,15 +105,27 @@ function PropertyContent() {
     );
   }
 
-  return <DetailBody property={property} locale={locale} />;
+  return <DetailBody property={property} locale={locale} searched={searched} />;
+}
+
+// A real "YYYY-MM-DD", not just the shape: "2026-02-31" must not survive.
+function isIsoDate(v: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const [y, m, d] = v.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return (
+    date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d
+  );
 }
 
 function DetailBody({
   property: p,
   locale,
+  searched,
 }: {
   property: PropertyDetail;
   locale: string;
+  searched?: { moveIn: string; moveOut: string };
 }) {
   const t = useTranslations();
   const td = useTranslations("detail");
@@ -408,7 +433,12 @@ function DetailBody({
           )}
         </div>
 
-        <BookingPanel property={p} locale={locale} booked={booked} />
+        <BookingPanel
+          property={p}
+          locale={locale}
+          booked={booked}
+          searched={searched}
+        />
       </div>
     </main>
   );

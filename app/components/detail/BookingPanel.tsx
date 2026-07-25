@@ -26,25 +26,35 @@ export function BookingPanel({
   property: p,
   locale,
   booked,
+  searched,
 }: {
   property: PropertyDetail;
   locale: string;
   booked: DateRange[];
+  // The stay the visitor searched for, carried from the results page. Taken as
+  // given, not fitted to this home: if it clashes with a booking or breaks a
+  // limit, the panel already says so and blocks the request — more use than
+  // quietly opening on dates they didn't ask for.
+  searched?: { moveIn: string; moveOut: string };
 }) {
   const t = useTranslations("detail.booking");
   const tc = useTranslations("estimate");
 
   // The listing may cap the stay tighter than the law does.
   const maxMonths = clamp(p.maxStayMonths || MAX_MONTHS, MIN_MONTHS, MAX_MONTHS);
-  const [moveIn, setMoveIn] = useState(() => firstSelectableDay(p));
+  const [moveIn, setMoveIn] = useState(
+    () => searched?.moveIn ?? firstSelectableDay(p),
+  );
   // The two dates are the state now; length is derived (computeEstimate rounds
-  // up to whole months, docs/spec/05 §5.1). Opening on the listing's own
-  // minimum stay means the first estimate shown is one it would accept.
-  const [moveOut, setMoveOut] = useState(() =>
-    addMonths(
-      firstSelectableDay(p),
-      clamp(p.minStayMonths || MIN_MONTHS, MIN_MONTHS, maxMonths),
-    ),
+  // up to whole months, docs/spec/05 §5.1). Absent a searched stay, open on
+  // the listing's own minimum so the first estimate shown is one it accepts.
+  const [moveOut, setMoveOut] = useState(
+    () =>
+      searched?.moveOut ??
+      addMonths(
+        firstSelectableDay(p),
+        clamp(p.minStayMonths || MIN_MONTHS, MIN_MONTHS, maxMonths),
+      ),
   );
 
   const estimate = useMemo(

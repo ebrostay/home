@@ -231,6 +231,15 @@ export default function HomePage() {
                   property={c}
                   locale={locale}
                   view={view}
+                  /* `applied`, not `query`: the bar is prefilled with today +
+                     3 months, so the live value is not evidence anyone chose
+                     it. Submitting is what makes the dates the visitor's — it
+                     is already what filters this list (R-Home-2). */
+                  stay={
+                    applied
+                      ? { moveIn: applied.moveIn, moveOut: applied.moveOut }
+                      : undefined
+                  }
                   active={hoveredId === c.id || selectedId === c.id}
                   selected={selectedId === c.id}
                   onHover={setHoveredId}

@@ -28,11 +28,10 @@ import {
   readResultsState,
   writeResultsState,
 } from "@/components/search/searchUrl";
-
-// Which home the visitor last opened. Deliberately NOT in the URL: it is
-// where they were, not what they were looking at, and a shared link should
-// not jump someone else's page. One-shot — read once, then cleared.
-const FOCUS_KEY = "ebrostay:focus-home";
+import {
+  rememberResults,
+  takeFocus,
+} from "@/components/search/resultsHandoff";
 
 export default function HomePage() {
   const t = useTranslations();
@@ -112,13 +111,19 @@ export default function HomePage() {
   useEffect(() => {
     if (all === null || focusDone.current) return;
     focusDone.current = true;
-    const id = sessionStorage.getItem(FOCUS_KEY);
+    const id = takeFocus();
     if (!id) return;
-    sessionStorage.removeItem(FOCUS_KEY);
     // A frame for the cards to lay out before we measure them.
     requestAnimationFrame(() => {
       const el = document.getElementById(`home-${id}`);
-      if (!el) return; // filtered out since, or the home is gone
+      if (!el) {
+        // Filtered out since, or the home is gone. The "all homes" link came
+        // in with scroll={false} on the strength of this restore, so nothing
+        // else will move the page — land at the top rather than wherever the
+        // home's page happened to be scrolled to.
+        window.scrollTo(0, 0);
+        return;
+      }
       // Instant, not smooth: this is a restoration, not a journey. A long
       // animated scroll from the top would also trip prefers-reduced-motion.
       el.scrollIntoView({ block: "center", behavior: "auto" });
@@ -310,7 +315,10 @@ export default function HomePage() {
                       ? { moveIn: applied.moveIn, moveOut: applied.moveOut }
                       : undefined
                   }
-                  onOpen={(id) => sessionStorage.setItem(FOCUS_KEY, id)}
+                  /* The URL is already in sync at this point (the effect
+                     above runs on every state change), so its query string
+                     IS this list. */
+                  onOpen={(id) => rememberResults(id, window.location.search)}
                   active={hoveredId === c.id || selectedId === c.id}
                   selected={selectedId === c.id}
                   onHover={setHoveredId}

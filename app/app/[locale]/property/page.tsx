@@ -17,6 +17,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ApiError, biText, fetchProperty, type PropertyDetail } from "@/lib/api";
+import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
 import { formatEuro } from "@/lib/pricing";
@@ -193,6 +194,22 @@ function DetailBody({
     [t("detail.selfCheckin"), t(p.selfCheckin ? "detail.yes" : "detail.no")],
   ];
 
+  // "All homes" goes back to the list this home was opened from, filters and
+  // all — same destination as Back, but reachable when Back isn't (a middle
+  // click, a long session). Falls back to the bare list for a visitor who
+  // arrived on a shared link. Safe to read storage while rendering: this
+  // component only mounts once the fetch resolves, so it never hydrates.
+  const [back] = useState(() => {
+    const q = resultsQueryFor(p.id);
+    return {
+      href: q === null ? "/" : `/${q}`, // "" is a real answer: the bare list
+      // When the list is going to scroll itself back to this card, Next must
+      // not also scroll to top — whichever landed last would win, and which
+      // one that is depends on how fast the properties fetch resolves.
+      fromResults: q !== null,
+    };
+  });
+
   const share = async () => {
     const url = window.location.href;
     try {
@@ -205,7 +222,11 @@ function DetailBody({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <Link href="/" className="text-sm text-muted hover:text-ink">
+      <Link
+        href={back.href}
+        scroll={!back.fromResults}
+        className="text-sm text-muted hover:text-ink"
+      >
         ← {td("allHomes")}
       </Link>
 

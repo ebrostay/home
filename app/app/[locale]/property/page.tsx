@@ -344,9 +344,7 @@ function DetailBody({
           {/* 7 — Where you'll be */}
           <Section title={td("whereYouWillBe")}>
             <ListingsMap
-              pins={[
-                { id: p.id, lat: p.lat, lng: p.lng, label: eur(p.priceNumber) },
-              ]}
+              pins={[{ id: p.id, lat: p.lat, lng: p.lng, label: p.name }]}
               className="h-60"
             />
             {p.address && (

@@ -419,6 +419,29 @@
   }
 }
 
+/* Detail-page marker. One home on the map, nothing to compare it against, so
+   the pin carries no number — it marks a place, it doesn't quote a price.
+   Concentric rather than a teardrop: it sits centred ON the coordinate instead
+   of pointing down at it, and the soft ring reads as "around here". */
+.map-marker {
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--brand) 16%, transparent);
+}
+.map-marker::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--brand);
+  border: 3px solid var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+
 /* Budget controls. The drawing IS the track: a native range input is laid over
    the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
    and touch come from the platform rather than a hand-rolled pointer handler.

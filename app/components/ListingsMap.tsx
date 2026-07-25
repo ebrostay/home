@@ -7,21 +7,22 @@ export type MapPin = {
   id: string;
   lat: number;
   lng: number;
-  label: string; // e.g. "950 €"
+  label: string; // accessible name for the marker, e.g. the home's name
 };
 
 // Leaflet + OSM tiles (carried from v1, docs/spec/07 §7.5). Pins are styled
 // divIcons (no image-asset plumbing) speaking the system language: green =
 // listing. Client-only; Leaflet touches window at import-use time, so we
 // import the library inside useEffect.
+//
+// This is the single-listing map (the detail page). The results map, where
+// pins must be told apart and carry their price, is components/search/ResultsMap.
 export function ListingsMap({
   pins,
-  activeId,
   onPinClick,
   className = "",
 }: {
   pins: MapPin[];
-  activeId?: string | null;
   onPinClick?: (id: string) => void;
   className?: string;
 }) {
@@ -51,11 +52,12 @@ export function ListingsMap({
       layerRef.current.clearLayers();
       const bounds: [number, number][] = [];
       for (const pin of pins) {
-        const active = pin.id === activeId;
         const marker = L.marker([pin.lat, pin.lng], {
+          title: pin.label,
+          alt: pin.label,
           icon: L.divIcon({
             className: "",
-            html: `<div class="data" style="transform:translate(-50%,-100%);white-space:nowrap;background:${active ? "var(--ink)" : "var(--brand)"};color:#fff;padding:3px 8px;border-radius:999px;font-size:11px;box-shadow:var(--shadow-card)">${pin.label}</div>`,
+            html: `<div class="map-marker"></div>`,
             iconSize: [0, 0],
           }),
         });
@@ -70,7 +72,7 @@ export function ListingsMap({
     return () => {
       cancelled = true;
     };
-  }, [pins, activeId, onPinClick]);
+  }, [pins, onPinClick]);
 
   useEffect(
     () => () => {

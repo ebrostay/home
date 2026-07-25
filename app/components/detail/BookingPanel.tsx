@@ -6,10 +6,8 @@ import { useTranslations } from "next-intl";
 import type { PropertyDetail } from "@/lib/api";
 import { stayFits } from "@/lib/availability";
 import { addMonths, computeEstimate, formatEuro } from "@/lib/pricing";
-import {
-  DateRangePicker,
-  type DateRange,
-} from "@/components/ui/DateRangePicker";
+import type { DateRange } from "@/components/ui/DateRangePicker";
+import { SplitDateRangeField } from "@/components/ui/SplitDateRangeField";
 
 // Contact channels are v1's, carried over verbatim from docs/spec/06a
 // (`wa.me/34678715418`, `mailto:info@ebrostay.com`). Booking is still the
@@ -39,17 +37,15 @@ export function BookingPanel({
   // The listing may cap the stay tighter than the law does.
   const maxMonths = clamp(p.maxStayMonths || MAX_MONTHS, MIN_MONTHS, MAX_MONTHS);
   const [moveIn, setMoveIn] = useState(() => firstSelectableDay(p));
-  const [months, setMonths] = useState(
-    clamp(p.minStayMonths || MIN_MONTHS, MIN_MONTHS, maxMonths),
+  // The two dates are the state now; length is derived (computeEstimate rounds
+  // up to whole months, docs/spec/05 §5.1). Opening on the listing's own
+  // minimum stay means the first estimate shown is one it would accept.
+  const [moveOut, setMoveOut] = useState(() =>
+    addMonths(
+      firstSelectableDay(p),
+      clamp(p.minStayMonths || MIN_MONTHS, MIN_MONTHS, maxMonths),
+    ),
   );
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  // Length is still what the panel bills on (whole months, docs/spec/05 §5.1),
-  // but the calendar is now the only thing that sets it: picking a range
-  // back-fills `months`, and the departure date is that many months on. The
-  // move-out cell therefore shows the billed date, which is the range the
-  // request message carries.
-  const moveOut = addMonths(moveIn, months);
 
   const estimate = useMemo(
     () => computeEstimate(moveIn, moveOut, p.priceNumber, p.depositAmount),
@@ -109,54 +105,25 @@ export function BookingPanel({
           <span className="text-sm text-muted">/ {t("month")}</span>
         </p>
 
-        {/* Dates */}
-        <div className="relative mt-5">
-          <div className="grid grid-cols-2 overflow-hidden rounded-(--radius-control) border border-line">
-            <DateCell
-              label={t("moveIn")}
-              value={fmtDate(moveIn)}
-              onClick={() => setPickerOpen((o) => !o)}
-              className="border-r border-line"
-            />
-            <DateCell
-              label={t("moveOut")}
-              value={fmtDate(moveOut)}
-              onClick={() => setPickerOpen((o) => !o)}
-            />
-          </div>
-
-          {pickerOpen && (
-            <>
-              <button
-                aria-hidden
-                tabIndex={-1}
-                className="fixed inset-0 z-40 cursor-default"
-                onClick={() => setPickerOpen(false)}
-              />
-              {/* The calendar is where day-level truth lives: booked days come
-                  back struck out, which a pair of plain date inputs cannot show. */}
-              <div className="absolute left-0 right-0 z-50 mt-2 overflow-x-auto rounded-(--radius-card) border border-line bg-surface p-3 shadow-(--shadow-pop)">
-                <DateRangePicker
-                  value={{
-                    from: new Date(`${moveIn}T00:00:00`),
-                    to: new Date(`${moveOut}T00:00:00`),
-                  }}
-                  onChange={(range) => {
-                    if (!range?.from) return;
-                    const from = toIso(range.from);
-                    setMoveIn(from);
-                    if (range.to) {
-                      const picked = monthsBetween(from, toIso(range.to));
-                      setMonths(clamp(picked, MIN_MONTHS, maxMonths));
-                      setPickerOpen(false);
-                    }
-                  }}
-                  booked={booked}
-                  numberOfMonths={1}
-                />
-              </div>
-            </>
-          )}
+        {/* Dates — the same split control the search bar uses, so arriving here
+            from a search is the same gesture twice. It carries the booked days,
+            which is why this page has a calendar at all rather than two plain
+            date fields. Anchored to the right edge: the panel is a narrow
+            right-hand column and the popover is two calendars wide. */}
+        <div className="mt-5">
+          <SplitDateRangeField
+            variant="boxed"
+            align="end"
+            moveInLabel={t("moveIn")}
+            moveOutLabel={t("moveOut")}
+            value={{ moveIn: fromIso(moveIn), moveOut: fromIso(moveOut) }}
+            onChange={(next) => {
+              if (next.moveIn) setMoveIn(toIso(next.moveIn));
+              if (next.moveOut) setMoveOut(toIso(next.moveOut));
+            }}
+            booked={booked}
+            maxMoveOut={fromIso(addMonths(moveIn, maxMonths))}
+          />
         </div>
 
         {/* Cost breakdown */}
@@ -245,31 +212,6 @@ export function BookingPanel({
   );
 }
 
-function DateCell({
-  label,
-  value,
-  onClick,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-col gap-0.5 px-3 py-2.5 text-left transition-colors duration-(--dur-standard) hover:bg-surface-2 ${className}`}
-    >
-      <span className="data text-[0.625rem] uppercase tracking-[0.12em] text-muted">
-        {label}
-      </span>
-      <span className="data text-sm font-semibold text-ink">{value}</span>
-    </button>
-  );
-}
-
 function Row({
   label,
   tone,
@@ -302,20 +244,20 @@ function WhatsAppGlyph() {
 }
 
 // --- date helpers -------------------------------------------------------
+// The panel works in "YYYY-MM-DD" (what the API, pricing and availability all
+// speak); the calendar works in Date. These two are the only crossing points.
 function toIso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, n));
+// Noon, not midnight: a local-midnight Date can land on the previous day once
+// react-day-picker compares it across a DST boundary.
+function fromIso(iso: string): Date {
+  return new Date(`${iso}T12:00:00`);
 }
 
-// Whole months from a picked range, rounded to the nearest month boundary —
-// the panel only ever bills whole months (docs/spec/05 §5.1).
-function monthsBetween(start: string, end: string): number {
-  let n = 1;
-  while (n < MAX_MONTHS && addMonths(start, n) < end) n++;
-  return n;
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, n));
 }
 
 // Open on the first day the home can actually be taken, not on today, so the

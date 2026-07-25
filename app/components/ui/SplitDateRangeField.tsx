@@ -60,6 +60,9 @@ export function SplitDateRangeField({
   moveOutLabel,
   placeholder = "—",
   variant = "boxed",
+  align = "start",
+  booked = [],
+  maxMoveOut,
 }: {
   value: SplitRange;
   onChange: (next: SplitRange) => void;
@@ -69,6 +72,19 @@ export function SplitDateRangeField({
   // "boxed" is the standalone bordered control; "hero" renders two flush cells
   // that drop into the search bar next to City / Bedrooms.
   variant?: "boxed" | "hero";
+  // Which edge the (wide) popover hangs from. "end" is for a control living in
+  // a right-hand column, where anchoring left would push the calendars off the
+  // viewport. Ignored by "hero", which always centres on the field.
+  align?: "start" | "end";
+  // Days already taken on this listing: struck out on both calendars and not
+  // selectable. NOTE this only stops you LANDING on a booked day — with two
+  // independent calendars nothing prevents a span that steps over a booked
+  // block, so a caller that cares must still check the whole range (the
+  // booking panel does, via stayFits).
+  booked?: Matcher[];
+  // A ceiling tighter than the legal one — the listing's own max stay. The
+  // caller computes the date because months are not a fixed number of days.
+  maxMoveOut?: Date;
 }) {
   const locale = useLocale();
   const t = useTranslations("search.datePicker");
@@ -105,18 +121,29 @@ export function SplitDateRangeField({
       moveIn && moveOut && dayDiff(moveIn, moveOut) > 0
         ? { after: moveIn, before: moveOut }
         : [],
+    // Same class the range picker uses, so a taken day looks taken everywhere.
+    booked,
   };
   const rangeClasses = {
     dpStart: "dp-range-start",
     dpEnd: "dp-range-end",
     dpMid: "dp-range-mid",
+    booked: "day-booked",
   };
 
-  const leftDisabled: Matcher = { before: startOfToday() };
+  const leftDisabled: Matcher[] = [{ before: startOfToday() }, ...booked];
+  // The listing's own cap, when it bites before the legal one.
+  const lastMoveOut =
+    moveIn && maxMoveOut && maxMoveOut < addDays(moveIn, MAX_OFFSET_DAYS)
+      ? maxMoveOut
+      : moveIn
+        ? addDays(moveIn, MAX_OFFSET_DAYS)
+        : undefined;
   const rightDisabled: Matcher | Matcher[] = moveIn
     ? [
         { before: addDays(moveIn, MIN_STAY_DAYS) },
-        { after: addDays(moveIn, MAX_OFFSET_DAYS) },
+        { after: lastMoveOut! },
+        ...booked,
       ]
     : () => true; // no move-in yet → nothing on the right is selectable
 
@@ -199,7 +226,11 @@ export function SplitDateRangeField({
               control is narrow, so anchor left to keep the wide popover onscreen. */}
           <div
             className={`absolute z-50 mt-2 w-max max-w-[calc(100vw-2rem)] overflow-x-auto rounded-(--radius-card) border border-line bg-surface p-3 shadow-(--shadow-pop) ${
-              hero ? "left-1/2 -translate-x-1/2" : "left-0"
+              hero
+                ? "left-1/2 -translate-x-1/2"
+                : align === "end"
+                  ? "right-0"
+                  : "left-0"
             }`}
           >
             <div

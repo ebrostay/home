@@ -332,10 +332,14 @@
 .dp-split .rdp-day.dp-range-mid .rdp-day_button {
   color: var(--ink);
 }
-/* Out-of-window days read as unavailable here (unlike booked days elsewhere,
-   which are deliberately solid). Endpoints stay green even if a later move-in
-   change pushed the kept move-out out of range. */
-.dp-split .rdp-day.rdp-disabled:not(.dp-range-start):not(.dp-range-end) .rdp-day_button {
+/* Out-of-window days read as unavailable here — faded. Booked days are also
+   disabled but must stay SOLID (the .day-booked treatment above), so the two
+   reasons a day can't be picked stay tellable apart: faded = outside the
+   allowed window, struck = someone already has it. Endpoints stay green even
+   if a later move-in change pushed the kept move-out out of range. */
+.dp-split
+  .rdp-day.rdp-disabled:not(.dp-range-start):not(.dp-range-end):not(.day-booked)
+  .rdp-day_button {
   color: var(--muted);
   opacity: 0.4;
   cursor: not-allowed;

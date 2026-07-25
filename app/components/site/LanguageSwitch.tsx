@@ -9,6 +9,17 @@ export function LanguageSwitch() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // usePathname() gives the locale-stripped PATH only. Static export has no
+  // dynamic routes, so the property page carries its id in the query
+  // (/es/property?id=slug) — switching language on the path alone dropped it
+  // and landed on "Home not found". Read at click time from window rather
+  // than useSearchParams(): this component sits in the root layout's header,
+  // and that hook would force a Suspense boundary around it on every page.
+  const switchTo = (l: string) => {
+    const { search, hash } = window.location;
+    router.replace(`${pathname}${search}${hash}`, { locale: l });
+  };
+
   return (
     <div
       role="group"
@@ -20,7 +31,7 @@ export function LanguageSwitch() {
           key={l}
           type="button"
           aria-pressed={l === locale}
-          onClick={() => router.replace(pathname, { locale: l })}
+          onClick={() => switchTo(l)}
           className={`data grid place-items-center px-3 text-xs font-semibold uppercase transition-colors duration-(--dur-standard) ${
             l === locale
               ? "bg-brand-soft text-brand-strong"

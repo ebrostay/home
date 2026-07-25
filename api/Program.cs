@@ -16,6 +16,14 @@ builder.Services.AddSingleton(_ =>
     var key = Environment.GetEnvironmentVariable("COSMOS_KEY")
         ?? throw new InvalidOperationException("COSMOS_KEY not set");
 
+    // The local emulator's gateway does not serve direct-mode replica addresses,
+    // so local.settings.json sets COSMOS_CONNECTION_MODE=Gateway. Azure is left
+    // on the SDK default (Direct).
+    var gateway = string.Equals(
+        Environment.GetEnvironmentVariable("COSMOS_CONNECTION_MODE"),
+        "Gateway",
+        StringComparison.OrdinalIgnoreCase);
+
     return new CosmosClient(endpoint, key, new CosmosClientOptions
     {
         SerializerOptions = new CosmosSerializationOptions
@@ -23,6 +31,7 @@ builder.Services.AddSingleton(_ =>
             PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
         },
         MaxRetryAttemptsOnRateLimitedRequests = 5,
+        ConnectionMode = gateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
     });
 });
 

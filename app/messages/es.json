@@ -83,6 +83,19 @@
     "amenities": "Equipamiento",
     "sort": "Ordenar"
   },
+  "budget": {
+    "label": "Presupuesto máx.",
+    "amount": "{value} €",
+    "upTo": "hasta {value} €",
+    "noLimit": "Sin límite",
+    "median": "mediana",
+    "within": "{count} de {total, plural, one {# vivienda} other {# viviendas}} dentro de tu presupuesto",
+    "addMore": "subir a {value} € añade {count, plural, one {# vivienda} other {# viviendas}}",
+    "allVisible": "ya las ves todas",
+    "custom": "Otra cantidad",
+    "eachMark": "Cada marca es una vivienda.",
+    "empty": "Ninguna vivienda coincide con los demás filtros."
+  },
   "sort": {
     "best": "Mejor valoradas",
     "price": "Precio: menor a mayor",
@@ -297,7 +310,22 @@
     "dpSelected": "Seleccionado",
     "dpNone": "sin fechas",
     "dpSplit": "Popover doble (experimento)",
-    "dpSplitHint": "Dos calendarios en un popover: izquierda = entrada, derecha = salida. No se cierra al elegir; solo al hacer clic fuera."
+    "dpSplitHint": "Dos calendarios en un popover: izquierda = entrada, derecha = salida. No se cierra al elegir; solo al hacer clic fuera.",
+    "budget": "presupuesto máximo",
+    "budgetHint": "El campo numérico de hoy no dice nada del mercado: no sabes si 1.200 € es holgado o imposible. Tres maneras de enseñar la distribución, sobre datos de ejemplo (26 viviendas).",
+    "budgetA": "A · banda de precios",
+    "budgetAWhy": "Histograma por tramos, con la mediana marcada. Enseña la forma del mercado; más allá del techo, agua cerrada — la misma trama diagonal que un día ocupado. Con pocas viviendas las columnas dejan paso a una marca por vivienda.",
+    "budgetB": "B · curva de alcance",
+    "budgetBWhy": "Acumulado: cuántas viviendas ves según el techo. Los tramos planos son el hallazgo — ahí subir el presupuesto no compra nada.",
+    "budgetC": "C · techos sugeridos",
+    "budgetCWhy": "Sin arrastrar: tres techos que salen de los propios precios (p30 / p55 / p80), cada uno con su recuento. Aguanta en móvil y con poco catálogo.",
+        "budgetCompare": "columnas o marcas",
+    "budgetCompareHint": "Los mismos precios dibujados de las dos maneras, con el mismo techo. Agrupar en tramos no se rompe con pocas viviendas — sigue dibujándose. Lo que pasa es que deja de decir nada: el alto solo puede valer 1 o 2, el ancho del tramo finge un precio aproximado que en realidad conocemos exacto, y el número de tramos lo decide la distancia entre el más barato y el más caro, no cuántas viviendas hay.",
+    "budgetCols": "columnas",
+    "budgetMarks": "marcas",
+    "budget_case1": "Las 4 de hoy · 950 / 980 / 1.350 / 1.350",
+    "budget_case2": "4 viviendas con precios muy juntos",
+    "budget_case3": "12 viviendas"
   },
   "auth": {
     "signInWith": "Entrar con",

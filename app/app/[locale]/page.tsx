@@ -56,13 +56,15 @@ export default function HomePage() {
     };
   }, [reloadKey]);
 
-  const results = useMemo(() => {
+  // Everything the OTHER filters allow, budget ignored. The budget control
+  // draws its distribution from this: a histogram fed by its own output would
+  // collapse as you drag the ceiling, and the shape has to hold still to be
+  // read.
+  const budgetScope = useMemo(() => {
     if (!all) return [];
-    const max = filters.budget ? Number(filters.budget) : Infinity;
-    const list = all.filter(
+    return all.filter(
       (p) =>
         (filters.type === "all" || p.type === filters.type) &&
-        p.priceNumber <= max &&
         filters.amenities.every((a) => p.amenities.includes(a)) &&
         (!applied ||
           (p.bedrooms >= applied.bedrooms &&
@@ -73,6 +75,16 @@ export default function HomePage() {
               p.availableFrom,
             ))),
     );
+  }, [all, filters.type, filters.amenities, applied]);
+
+  const budgetPrices = useMemo(
+    () => budgetScope.map((p) => p.priceNumber),
+    [budgetScope],
+  );
+
+  const results = useMemo(() => {
+    const max = filters.budget ? Number(filters.budget) : Infinity;
+    const list = budgetScope.filter((p) => p.priceNumber <= max);
     const bySort = {
       best: (a: PropertySummary, b: PropertySummary) =>
         (b.rating ?? 0) - (a.rating ?? 0) || a.priceNumber - b.priceNumber,
@@ -82,7 +94,7 @@ export default function HomePage() {
         Number(b.isNew) - Number(a.isNew) || a.priceNumber - b.priceNumber,
     }[filters.sort]!;
     return [...list].sort(bySort);
-  }, [all, filters, applied]);
+  }, [budgetScope, filters.budget, filters.sort]);
 
   // "1 sept → 20 nov" — the ledger voice for a stay, no year unless it matters.
   const formatRange = (q: SearchQuery) => {
@@ -148,6 +160,7 @@ export default function HomePage() {
         onFiltersChange={setFilters}
         applied={applied}
         onClearStay={() => setApplied(null)}
+        prices={budgetPrices}
         resultCount={results.length}
         loading={all === null && !failed}
         formatRange={formatRange}

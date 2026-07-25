@@ -25,6 +25,32 @@ import {
   SplitDateRangeField,
   type SplitRange,
 } from "@/components/ui/SplitDateRangeField";
+import { BudgetBand } from "@/components/search/BudgetBand";
+import { BudgetCurve } from "@/components/search/BudgetCurve";
+import { BudgetTiers } from "@/components/search/BudgetTiers";
+
+// A plausible Zaragoza mid-term market (26 homes): the four real listings are
+// too few to show what these controls do at a normal catalogue size.
+const SAMPLE_PRICES = [
+  520, 560, 620, 680, 700, 740, 780, 800, 850, 850, 890, 900, 950, 950, 990,
+  1050, 1100, 1150, 1200, 1250, 1350, 1450, 1600, 1750, 1950, 2200,
+];
+
+// Columns-vs-marks exhibit: the same prices drawn both ways at the same
+// ceiling, so the threshold is an argument you can look at rather than take on
+// trust. Each case is picked to show a different part of the trade.
+// Label keys are spelled out rather than built from the case id: a template
+// literal needs a cast to satisfy next-intl's key type, and that cast is what
+// let a missing translation reach the browser instead of the compiler.
+const BUDGET_CASES = [
+  { key: "case1", label: "budget_case1", prices: [950, 980, 1350, 1350] },
+  { key: "case2", label: "budget_case2", prices: [1200, 1210, 1220, 1230] },
+  {
+    key: "case3",
+    label: "budget_case3",
+    prices: [700, 750, 800, 820, 850, 900, 950, 1000, 1100, 1200, 1400, 1600],
+  },
+] as const;
 
 const swatches = [
   { name: "brand / bridge", varName: "--brand" },
@@ -94,6 +120,14 @@ export default function DesignPage() {
   });
   // Experiment: split move-in / move-out popover.
   const [split, setSplit] = useState<SplitRange>({});
+  // Budget test bed — each variant keeps its own ceiling so they can be
+  // compared side by side (null = no limit).
+  const [budgetA, setBudgetA] = useState<number | null>(1200);
+  const [budgetB, setBudgetB] = useState<number | null>(1200);
+  const [budgetC, setBudgetC] = useState<number | null>(null);
+  // One ceiling per case, shared by that case's two drawings — comparing them
+  // only means anything if both are set to the same number.
+  const [caseCaps, setCaseCaps] = useState<Record<string, number | null>>({});
   // Two booked spans the picker must refuse (styled occupied + struck).
   const bookedSpans = [
     { from: new Date(2026, 7, 1), to: new Date(2026, 7, 6) },
@@ -353,6 +387,101 @@ export default function DesignPage() {
                 : t("dpNone")}
             </span>
           </p>
+        </div>
+      </section>
+
+      {/* Budget filter — variants */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("budget")}</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">{t("budgetHint")}</p>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div>
+            <p className="data mb-1.5 text-xs uppercase tracking-wide text-muted">
+              {t("budgetA")}
+            </p>
+            <p className="mb-3 max-w-md text-xs text-muted">{t("budgetAWhy")}</p>
+            <div className="rounded-(--radius-card) border border-line bg-surface p-4 shadow-(--shadow-card)">
+              <BudgetBand
+                prices={SAMPLE_PRICES}
+                value={budgetA}
+                onChange={setBudgetA}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="data mb-1.5 text-xs uppercase tracking-wide text-muted">
+              {t("budgetB")}
+            </p>
+            <p className="mb-3 max-w-md text-xs text-muted">{t("budgetBWhy")}</p>
+            <div className="rounded-(--radius-card) border border-line bg-surface p-4 shadow-(--shadow-card)">
+              <BudgetCurve
+                prices={SAMPLE_PRICES}
+                value={budgetB}
+                onChange={setBudgetB}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 lg:max-w-3xl">
+          <p className="data mb-1.5 text-xs uppercase tracking-wide text-muted">
+            {t("budgetC")}
+          </p>
+          <p className="mb-3 max-w-md text-xs text-muted">{t("budgetCWhy")}</p>
+          <div className="rounded-(--radius-card) border border-line bg-surface p-4 shadow-(--shadow-card)">
+            <BudgetTiers
+              prices={SAMPLE_PRICES}
+              value={budgetC}
+              onChange={setBudgetC}
+            />
+          </div>
+        </div>
+
+      </section>
+
+      {/* Columns vs marks — why the band changes rendering below 8 homes */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("budgetCompare")}</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          {t("budgetCompareHint")}
+        </p>
+
+        <div className="mt-6 grid gap-8 lg:grid-cols-3">
+          {BUDGET_CASES.map(({ key, label, prices }) => (
+            <div key={key}>
+              <p className="data mb-3 text-xs uppercase tracking-wide text-muted">
+                {t(label)}
+              </p>
+              <div className="space-y-3">
+                {/* Same component, same prices, same cap — only the threshold
+                    differs, so any difference you see is the rendering. */}
+                <div className="rounded-(--radius-card) border border-line bg-surface p-4">
+                  <p className="data mb-2 text-[0.625rem] uppercase tracking-wide text-muted">
+                    {t("budgetCols")}
+                  </p>
+                  <BudgetBand
+                    prices={prices}
+                    denseFrom={1}
+                    value={caseCaps[key] ?? null}
+                    onChange={(v) => setCaseCaps((c) => ({ ...c, [key]: v }))}
+                  />
+                </div>
+                <div className="rounded-(--radius-card) border border-line bg-surface p-4">
+                  <p className="data mb-2 text-[0.625rem] uppercase tracking-wide text-muted">
+                    {t("budgetMarks")}
+                  </p>
+                  <BudgetBand
+                    prices={prices}
+                    denseFrom={99}
+                    value={caseCaps[key] ?? null}
+                    onChange={(v) => setCaseCaps((c) => ({ ...c, [key]: v }))}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

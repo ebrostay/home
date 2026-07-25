@@ -83,6 +83,19 @@
     "amenities": "Amenities",
     "sort": "Sort"
   },
+  "budget": {
+    "label": "Max budget",
+    "amount": "€{value}",
+    "upTo": "up to €{value}",
+    "noLimit": "No limit",
+    "median": "median",
+    "within": "{count} of {total, plural, one {# home} other {# homes}} within budget",
+    "addMore": "going to €{value} adds {count, plural, one {# home} other {# homes}}",
+    "allVisible": "that's every home",
+    "custom": "Other amount",
+    "eachMark": "Each mark is one home.",
+    "empty": "No homes match the other filters."
+  },
   "sort": {
     "best": "Best rated",
     "price": "Price: low to high",
@@ -297,7 +310,22 @@
     "dpSelected": "Selected",
     "dpNone": "no dates",
     "dpSplit": "Split popover (experiment)",
-    "dpSplitHint": "Two calendars in one popover: left = move in, right = move out. Doesn't close on pick, only on outside click."
+    "dpSplitHint": "Two calendars in one popover: left = move in, right = move out. Doesn't close on pick, only on outside click.",
+    "budget": "max budget",
+    "budgetHint": "Today's number field says nothing about the market: you can't tell whether €1,200 is generous or hopeless. Three ways to show the distribution, on sample data (26 homes).",
+    "budgetA": "A · price band",
+    "budgetAWhy": "A histogram by price step, median marked. Shows the shape of the market; past your ceiling it's closed water — the same diagonal hatch as a booked day. With few homes the columns give way to one mark per home.",
+    "budgetB": "B · reach curve",
+    "budgetBWhy": "Cumulative: how many homes a ceiling opens. The flat stretches are the finding — money spent there buys nothing.",
+    "budgetC": "C · suggested ceilings",
+    "budgetCWhy": "No dragging: three ceilings drawn from the prices themselves (p30 / p55 / p80), each with its count. Holds up on a phone and on a thin catalogue.",
+        "budgetCompare": "columns or marks",
+    "budgetCompareHint": "The same prices drawn both ways, at the same ceiling. Bucketing doesn't break on a small catalogue — it still draws. It just stops saying anything: bar height can only be 1 or 2, the bucket width implies an approximate price when we know the exact one, and the number of buckets is decided by the gap between cheapest and dearest, not by how many homes there are.",
+    "budgetCols": "columns",
+    "budgetMarks": "marks",
+    "budget_case1": "Today's 4 · 950 / 980 / 1,350 / 1,350",
+    "budget_case2": "4 homes priced close together",
+    "budget_case3": "12 homes"
   },
   "auth": {
     "signInWith": "Sign in with",

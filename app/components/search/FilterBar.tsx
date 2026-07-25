@@ -8,8 +8,9 @@ import { Chip } from "./Chip";
 import type { SearchQuery } from "./SearchHero";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
+import { BudgetBand } from "./BudgetBand";
 
 export const AMENITY_FILTERS = [
   "wifi",
@@ -53,6 +54,7 @@ export function FilterBar({
   onFiltersChange,
   applied,
   onClearStay,
+  prices,
   resultCount,
   loading,
   formatRange,
@@ -61,6 +63,7 @@ export function FilterBar({
   onFiltersChange: (f: Filters) => void;
   applied: SearchQuery | null;
   onClearStay: () => void;
+  prices: number[]; // every home the other filters allow — see BudgetBand
   resultCount: number;
   loading: boolean;
   formatRange: (q: SearchQuery) => string;
@@ -225,18 +228,14 @@ export function FilterBar({
             )}
           </Field>
 
-          <Field label={t("filters.budget")}>
-            {(id) => (
-              <Input
-                id={id}
-                type="number"
-                min={0}
-                placeholder={t("filters.anyBudget")}
-                value={filters.budget}
-                onChange={(e) => set({ budget: e.target.value })}
-              />
-            )}
-          </Field>
+          {/* The ceiling is set against the distribution of the homes the
+              other filters already allow — "1.200 €" means nothing until you
+              can see how much of the market sits under it. */}
+          <BudgetBand
+            prices={prices}
+            value={filters.budget ? Number(filters.budget) : null}
+            onChange={(v) => set({ budget: v === null ? "" : String(v) })}
+          />
 
           <fieldset>
             <legend className="text-xs font-semibold tracking-wide text-ink">

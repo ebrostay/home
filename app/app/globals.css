@@ -419,6 +419,52 @@
   }
 }
 
+/* Budget controls. The drawing IS the track: a native range input is laid over
+   the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
+   and touch come from the platform rather than a hand-rolled pointer handler.
+   Thumb width is mirrored in BudgetSlider.THUMB_PX — the ceiling line is
+   positioned with the same inset so handle and line never drift apart. */
+.budget-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+.budget-range::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.budget-range::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+.budget-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--brand);
+  border: 2px solid var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.budget-range::-moz-range-thumb {
+  width: 10px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--brand);
+  border: 2px solid var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* Past the ceiling: closed water — the booked-day diagonal, at a whisper. */
+.budget-out {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    color-mix(in oklab, var(--ink) 7%, transparent) 5px 6px
+  );
+}
+
 /* Month-band load animation — the one orchestrated moment. */
 @keyframes month-rise {
   from { opacity: 0; transform: translateY(4px); }

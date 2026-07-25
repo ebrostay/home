@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info, Mail, Minus, Plus } from "lucide-react";
+import { Info, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PropertyDetail } from "@/lib/api";
 import { stayFits } from "@/lib/availability";
@@ -44,8 +44,11 @@ export function BookingPanel({
   );
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Dates and length are one fact seen two ways: the stepper moves the
-  // departure date, and picking a range back-fills the length.
+  // Length is still what the panel bills on (whole months, docs/spec/05 §5.1),
+  // but the calendar is now the only thing that sets it: picking a range
+  // back-fills `months`, and the departure date is that many months on. The
+  // move-out cell therefore shows the billed date, which is the range the
+  // request message carries.
   const moveOut = addMonths(moveIn, months);
 
   const estimate = useMemo(
@@ -156,32 +159,6 @@ export function BookingPanel({
           )}
         </div>
 
-        {/* Length of stay */}
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="data text-[0.625rem] uppercase tracking-[0.12em] text-muted">
-            {t("stayLength")}
-          </span>
-          <span className="flex items-center gap-1">
-            <StepButton
-              onClick={() => setMonths((m) => Math.max(MIN_MONTHS, m - 1))}
-              disabled={months <= MIN_MONTHS}
-              label={t("oneFewer")}
-            >
-              <Minus size={15} strokeWidth={2.5} aria-hidden />
-            </StepButton>
-            <span className="data w-24 text-center text-sm font-semibold text-ink">
-              {t("monthCount", { count: months })}
-            </span>
-            <StepButton
-              onClick={() => setMonths((m) => Math.min(maxMonths, m + 1))}
-              disabled={months >= maxMonths}
-              label={t("oneMore")}
-            >
-              <Plus size={15} strokeWidth={2.5} aria-hidden />
-            </StepButton>
-          </span>
-        </div>
-
         {/* Cost breakdown */}
         <dl className="mt-5 border-t border-line text-sm">
           <Row label={t("stay")}>
@@ -289,30 +266,6 @@ function DateCell({
         {label}
       </span>
       <span className="data text-sm font-semibold text-ink">{value}</span>
-    </button>
-  );
-}
-
-function StepButton({
-  onClick,
-  disabled,
-  label,
-  children,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-(--radius-control) border border-line text-ink transition-colors duration-(--dur-standard) hover:border-line-strong disabled:opacity-35 disabled:hover:border-line"
-    >
-      {children}
     </button>
   );
 }

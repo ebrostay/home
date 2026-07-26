@@ -32,8 +32,8 @@ the `x-ms-client-principal` header (§3.4). The API never sees provider tokens.
 | Role | Granted by | May |
 | --- | --- | --- |
 | `anonymous` | (no session) | Browse/search published listings, view property pages incl. availability ranges and the estimate widget (CTAs gated), submit inquiries. |
-| `authenticated` | any successful sign-in (SWA built-in role) | Everything anonymous can, **plus**: submit booking requests; create/manage **own** listings as a host (draft → submit → resubmit → archive, availability, photos, AI assistant on own listings); view booking requests for own properties; view own profile. |
-| `admin` | **SWA role management invitation** (custom role) | Everything, plus: review queue (approve/reject), edit/archive **any** listing, view all booking requests and inquiries, list users, deactivate/reactivate users. |
+| `authenticated` | any successful sign-in (SWA built-in role) | Everything anonymous can, **plus**: submit booking requests; create/manage **own** listings as a host (draft → submit → resubmit → pause/reopen, availability, photos, AI assistant on own listings); view booking requests for own properties; view own profile. |
+| `admin` | **SWA role management invitation** (custom role) | Everything, plus: review queue (approve/reject), edit/pause **any** listing, view all booking requests and inquiries, list users, deactivate/reactivate users. |
 
 There is **no stored "host" role**: any authenticated user may create
 listings; "host" is simply the state of owning ≥1 property document

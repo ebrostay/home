@@ -10,7 +10,7 @@ public record HostAvailabilityRange(string Start, string End, string? Status, st
 
 public record HostProperty(
     string Id,
-    string Status, // draft | pending_review | published | rejected | archived
+    string Status, // draft | pending_review | published | rejected | paused
     string? ReviewNote,
     string Name,
     string? Address,

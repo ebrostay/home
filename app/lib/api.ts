@@ -60,7 +60,7 @@ export type PropertyStatus =
   | "pending_review"
   | "published"
   | "rejected"
-  | "archived";
+  | "paused";
 
 export type HostRange = PublicRange & { status: string | null; note: string | null };
 

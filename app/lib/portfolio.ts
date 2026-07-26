@@ -24,22 +24,20 @@ export const TABS = [
 
 export type Tab = (typeof TABS)[number];
 
-/** Stored lifecycle value (spec-v2 §2.2.1) → the owner-facing bucket.
- *  `archived` reads as PAUSED: §2.2.1 archiving is a takedown that keeps the
- *  listing, which is exactly what an owner means by pausing. */
+/** Stored lifecycle value (spec-v2 §2.2.1) → the owner-facing bucket. */
 const BUCKET: Record<PropertyStatus, Exclude<Tab, "all">> = {
   published: "live",
   rejected: "changes",
   pending_review: "review",
   draft: "draft",
-  archived: "paused",
+  paused: "paused",
 };
 
 export const bucketOf = (p: HostProperty) => BUCKET[p.status] ?? "draft";
 
 /** In review and paused listings are shown dimmed — neither is takeable today. */
 export const isDimmed = (p: HostProperty) =>
-  p.status === "pending_review" || p.status === "archived";
+  p.status === "pending_review" || p.status === "paused";
 
 /** A draft has no availability to sell and no price to compare, so it is
  *  excluded from every portfolio figure rather than counted as empty. */

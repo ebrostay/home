@@ -1,4 +1,4 @@
-# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-021)
+# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-024)
 
 > Target: branch `redesign/v2`, locked 2026-07-19 (product owner: Raphael).
 > Continues the v1 log ([docs/spec/11-decision-log.md](../spec/11-decision-log.md), ADR-001–010) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
@@ -23,6 +23,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
 | ADR-022 | Stay "up to 12 months" (calc: ≥31 & <365 days); billing monthly | ✅ locked |
 | ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
+| ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
 
 ---
 
@@ -119,8 +120,9 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
   loop. Login-gated booking gives every request an accountable identity.
 - **Consequences:**
   - Property gains the `draft → pending_review → published | rejected(note)
-    → archived` lifecycle with per-role transitions (§2.2.1); nothing is
-    public without an admin approval.
+    → paused` lifecycle with per-role transitions (§2.2.1); nothing is
+    public without an admin approval. (The terminal state was named
+    `archived` here until ADR-024 renamed it and made it reversible.)
   - `owner_leads` and the owner portal are 🗑️ not carried; payout details and
     guest info are 🔜 re-scoped for later (§2.1).
   - Review latency becomes a product metric; the queue must stay small (3
@@ -461,6 +463,37 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
     ever need their own words, that is a **separate** free-text "house rules"
     field, visibly theirs and passed through the admin review queue (§2.2.1) —
     not mixed into these cards.
+
+---
+
+## ADR-024 — Off-market listings are `paused`, not `archived`, and reopen without re-review
+
+- **Status:** ✅ locked 2026-07-26 (product owner: Raphael). **Amends
+  ADR-014**'s lifecycle (§2.2.1); the stored value changes `archived` →
+  `paused` and gains a `paused → published` "reopen" transition.
+- **Decision:** A listing an owner takes off the market is **`paused`**. It is
+  closed to new requests and absent from search, the listing and its history
+  are kept, and the owner can **reopen** it without going back through review.
+- **Rationale:** "Archived" describes what the database does; "paused"
+  describes what the owner did. In a portfolio of two to six homes nobody
+  retires a flat — they take it off the market for a season and put it back.
+  Naming the state after the record rather than the intent was quietly
+  pushing a reversible act into a terminal-sounding one, and an owner who
+  reads "archive" next to a home they still own will not click it.
+- **Consequences:**
+  - Reopening does **not** re-enter the review queue: the listing was approved
+    before it was paused and pausing changes nothing about its content.
+    **Editing** while paused follows the normal rule (§2.2.1) and returns the
+    listing to `pending_review`.
+  - There is now no terminal state. Nothing in v2 hard-deletes a listing —
+    consistent with §4.5's "no hard delete in v2 scope" for users.
+  - Visibility is unchanged: `paused` documents are private to their host and
+    admins, exactly as `archived` was. `status` remains the single source of
+    visibility.
+  - No data migration: no document has ever carried `archived`. Any writer
+    added later must use `paused`.
+  - Admin takedown keeps working — an admin pauses a listing; the word is
+    softer but the effect on visibility is identical.
 
 ---
 

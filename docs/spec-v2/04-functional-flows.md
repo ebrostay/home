@@ -126,10 +126,16 @@ closes the draft) are visible to staff via the admin request log.
 
 ## 4.4 Host flow ✅ (any authenticated user — ADR-014)
 
-**Dashboard** (`/{locale}/host/`): own listings with status badges
-(`draft`/`pending_review`/`published`/`rejected` + `reviewNote`/`archived`),
-availability management per listing, and the **booking-interest log** —
-`bookingRequests` for own properties (read-only; status is admin-triaged).
+**Dashboard** — "Manage Property", `/{locale}/host/` ✅ built: own listings
+with status badges (`draft`/`pending_review`/`published`/`rejected` +
+`reviewNote`/`paused`), a portfolio ledger, a pending-requests roll-up, and
+per-listing availability bands. Reads `GET /api/host/properties`. Every
+portfolio figure is derived from the availability data that draws the bands —
+never stored twice (`app/lib/portfolio.ts`).
+
+Availability management per listing and the **booking-interest log** —
+`bookingRequests` for own properties (read-only; status is admin-triaged) —
+live inside the per-property surface, which is 🔜 not built yet.
 
 **Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
 
@@ -160,7 +166,7 @@ listings — enforced in the functions (§3.5), not the UI.
 - **Review queue:** `pending_review` listings, oldest first; full detail view;
   **Approve** → `published`, **Reject** (note required) → `rejected`.
 - **All-properties management:** list/filter every listing in any status;
-  direct edit (no re-review, §2.2.1); archive/takedown.
+  direct edit (no re-review, §2.2.1); pause/takedown.
 - **Users:** list `profiles` (id, provider, name, created, flags);
   **deactivate/reactivate** (§3.7). No hard delete in v2 scope.
 - **Booking-request log viewer:** all `bookingRequests`, newest first, with

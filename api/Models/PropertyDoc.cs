@@ -21,6 +21,11 @@ public class PropertyDoc
     public string? ReviewNote { get; set; }
     public string? HostId { get; set; }
 
+    // Human-quotable listing reference (EBR-P-0141), shown to the owner and
+    // usable in support threads. Not the key — `Id` is. Nullable: listings
+    // created before references existed simply have none.
+    public string? Reference { get; set; }
+
     public string City { get; set; } = "zaragoza";
     public string Type { get; set; } = "apartment";
     public string Name { get; set; } = "";

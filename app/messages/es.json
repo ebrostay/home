@@ -107,7 +107,6 @@
     "row": {
       "noPhotos": "Todavía sin fotos",
       "addressUnset": "Dirección sin definir",
-      "specsUnset": "Habitaciones sin definir",
       "progress": "{done} de {total} secciones",
       "priceUnset": "Sin definir",
       "priceNote": "por 30 días · estimación",

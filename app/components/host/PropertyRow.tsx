@@ -13,6 +13,11 @@ import { bucketOf, isDimmed, monthsFor, type Tab } from "@/lib/portfolio";
 // report first and a launchpad second: what is this home doing, and what — if
 // anything — does it need from me.
 //
+// Split-row layout (design 1c): three zones — photo · identity · action rail —
+// each owning its own padding, with none on the article itself. That is what
+// lets the photo reach the top and bottom edges instead of floating inside a
+// padded card.
+//
 // Controls whose destination does not exist yet are rendered disabled rather
 // than hidden. A row that quietly loses its primary button in one state reads
 // as a different kind of row; a disabled one reads as "not yet", which is the
@@ -45,7 +50,6 @@ export function PropertyRow({
   now: Date;
 }) {
   const t = useTranslations("host");
-  const tl = useTranslations("listing");
   const bucket = bucketOf(p);
   const dim = isDimmed(p);
   const isDraft = p.status === "draft";
@@ -95,75 +99,88 @@ export function PropertyRow({
     return busy ? { text: t("row.occupied", { date: day(busy) }), tone: "quiet" } : null;
   }
 
-  // Two layouts, one DOM.
-  //   Wide   — photo | identity over band | money, photo and money spanning
-  //            both rows.
-  //   Narrow — photo beside the identity, then band, then money; the last two
-  //            span the full width.
-  // The photo stays a fixed column when stacked rather than becoming a
-  // full-bleed banner. Given an aspect ratio and the whole width it grew with
-  // the viewport — 450px of an 810px row just below the old breakpoint, which
-  // is exactly where an owner is trying to scan the list.
+  // Rendered twice — beside the title when the row stacks, in the rail when it
+  // does not — because the two layouts put it under different parents. One
+  // function, so the two can never drift. No aria-hidden needed: the copy the
+  // layout is not using is display:none, already out of the a11y tree.
+  const price = (hiddenClass: string, align: string) => (
+    <div className={`${hiddenClass} ${align}`}>
+      <p
+        className={`data text-[1.3125rem] font-semibold leading-none tracking-[-0.01em] ${
+          p.priceNumber > 0 ? "text-ink" : "text-muted"
+        }`}
+      >
+        {p.priceNumber > 0
+          ? `${formatEuro(p.priceNumber, locale)} €`
+          : t("row.priceUnset")}
+      </p>
+      <p className="mt-1.5 text-[0.71875rem] text-muted">
+        {p.priceNumber > 0 ? t("row.priceNote") : t("row.priceNoteUnset")}
+      </p>
+    </div>
+  );
+
   return (
     <article
-      className={`grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3 rounded-(--radius-card) border bg-surface p-4 shadow-(--shadow-card) transition-colors duration-(--dur-standard) hover:border-line-strong min-[42.5rem]:grid-cols-[7.5rem_minmax(0,1fr)_11.25rem] min-[42.5rem]:gap-x-5 min-[42.5rem]:gap-y-2.5 min-[64rem]:grid-cols-[9.75rem_minmax(0,1fr)_14.5rem] min-[64rem]:gap-x-[1.375rem] ${
+      className={`grid overflow-hidden rounded-(--radius-card) border bg-surface shadow-(--shadow-card) transition-colors duration-(--dur-standard) hover:border-line-strong min-[50rem]:grid-cols-[13.125rem_minmax(0,1fr)_14.25rem] ${
         bucket === "changes" ? "border-warn" : "border-line"
       }`}
     >
-      {/* Photo */}
-      <div
-        className={`relative aspect-[4/3] overflow-hidden rounded-(--radius-card) border border-line bg-surface-2 min-[42.5rem]:row-span-2 ${
-          dim ? "opacity-[0.72]" : ""
-        }`}
-      >
+      {/* Photo zone — the image is absolute so it fills the row's full height
+          whatever the identity zone does. */}
+      <div className="relative min-h-44 bg-surface-2">
         {p.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized
           <img
             src={p.coverUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${
+              dim ? "opacity-[0.72]" : ""
+            }`}
           />
         ) : (
-          <div className="absolute inset-2 flex flex-col items-center justify-center gap-1.5 rounded-(--radius-control) border border-dashed border-line-strong">
+          <div
+            className={`absolute inset-3 flex flex-col items-center justify-center gap-1.5 rounded-(--radius-control) border border-dashed border-line-strong ${
+              dim ? "opacity-[0.72]" : ""
+            }`}
+          >
             <Camera size={18} strokeWidth={2} className="text-muted" aria-hidden />
             <span className="text-[0.71875rem] text-muted">{t("row.noPhotos")}</span>
           </div>
         )}
+
+        {/* The state belongs to the home, so it sits on the home. The card
+            shadow is what keeps it legible over an arbitrary photo. */}
+        <span
+          className={`absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 shadow-(--shadow-card) ${PILL[bucket].chip}`}
+        >
+          <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${PILL[bucket].dot}`} />
+          <span className="data text-[0.625rem] font-semibold tracking-[0.08em]">
+            {t(`state.${bucket}` as "state.live")}
+          </span>
+        </span>
       </div>
 
-      {/* Identity and note */}
-      <div className="flex min-w-0 flex-col gap-[9px] min-[42.5rem]:col-start-2 min-[42.5rem]:row-start-1">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${PILL[bucket].chip}`}
-          >
-            <span
-              aria-hidden
-              className={`h-1.5 w-1.5 rounded-full ${PILL[bucket].dot}`}
-            />
-            <span className="data text-[0.625rem] font-semibold tracking-[0.08em]">
-              {t(`state.${bucket}` as "state.live")}
-            </span>
-          </span>
-        </div>
-
-        <div>
-          <h2 className="font-display text-[1.0625rem] font-bold leading-[1.15] tracking-[-0.015em] text-ink min-[42.5rem]:text-xl">
+      {/* Identity zone */}
+      <div className="flex min-w-0 flex-col gap-[9px] px-5 py-4">
+        <div className="flex min-w-0 items-baseline gap-2.5">
+          {/* Two lines when stacked, one in the wide row. Truncating to one
+              line on a phone collapsed "…3 - 1 IZQ" and "…3 - 2 IZQ" to the
+              same string — the ellipsis ate the only part that told two
+              listings in the same building apart. */}
+          <h2 className="line-clamp-2 min-w-0 font-display text-[1.1875rem] font-bold leading-[1.15] tracking-[-0.015em] text-ink min-[50rem]:line-clamp-1">
             {p.name}
           </h2>
-          <p className="mt-0.5 text-[0.8125rem] text-muted">
-            {p.address ?? t("row.addressUnset")}
-          </p>
+          {p.reference && (
+            <span className="data shrink-0 text-[0.6875rem] text-muted max-[50rem]:hidden">
+              {p.reference}
+            </span>
+          )}
+          {price("min-[50rem]:hidden", "ml-auto shrink-0 text-right")}
         </div>
 
-        <p className="data text-[0.78125rem] text-body">
-          {p.bedrooms > 0
-            ? tl("specs", {
-                bedrooms: p.bedrooms,
-                bathrooms: p.bathrooms,
-                size: p.sizeM2,
-              })
-            : t("row.specsUnset")}
+        <p className="truncate text-[0.8125rem] text-muted">
+          {p.address ?? t("row.addressUnset")}
         </p>
 
         {note && (
@@ -184,14 +201,11 @@ export function PropertyRow({
           </p>
         )}
 
-      </div>
-
-      {/* Availability — its own cell so that when the row stacks it gets the
-          full width instead of the 200-odd pixels left beside the thumbnail.
-          Twelve months need the room. */}
-      <div className="col-span-2 min-[42.5rem]:col-span-1 min-[42.5rem]:col-start-2 min-[42.5rem]:row-start-2">
+        {/* Pinned to the bottom so the bands line up across rows whether or not
+            the row above carried a note. Month labels are dropped when the row
+            stacks — the bars still read, the scale would not. */}
         {isDraft ? (
-          <div className="flex items-center gap-3">
+          <div className="mt-auto flex items-center gap-3 pt-2">
             <span className="h-1.5 max-w-[17.5rem] flex-1 overflow-hidden rounded-full bg-surface-2">
               <span
                 className="block h-full rounded-full bg-brand"
@@ -205,31 +219,22 @@ export function PropertyRow({
             </span>
           </div>
         ) : (
-          <div className={`min-[42.5rem]:max-w-[27.5rem] ${dim ? "opacity-50" : ""}`}>
+          <div
+            className={`mt-auto max-w-[27.5rem] pt-2 max-[50rem]:[&_.band-label]:hidden ${
+              dim ? "opacity-50" : ""
+            }`}
+          >
             <AvailabilityBand months={monthsFor(p, locale, now)} />
           </div>
         )}
       </div>
 
-      {/* Money and actions */}
-      <div className="col-span-2 flex flex-col gap-3 min-[42.5rem]:col-span-1 min-[42.5rem]:col-start-3 min-[42.5rem]:row-span-2 min-[42.5rem]:row-start-1 min-[42.5rem]:h-full min-[42.5rem]:items-end min-[42.5rem]:self-stretch">
-        <div className="flex items-baseline gap-2 min-[42.5rem]:block min-[42.5rem]:text-right">
-          <p
-            className={`data text-[1.375rem] font-semibold leading-none tracking-[-0.01em] ${
-              p.priceNumber > 0 ? "text-ink" : "text-muted"
-            }`}
-          >
-            {p.priceNumber > 0
-              ? `${formatEuro(p.priceNumber, locale)} €`
-              : t("row.priceUnset")}
-          </p>
-          <p className="text-xs text-muted min-[42.5rem]:mt-1.5">
-            {p.priceNumber > 0 ? t("row.priceNote") : t("row.priceNoteUnset")}
-          </p>
-        </div>
+      {/* Action rail */}
+      <div className="flex flex-col gap-3 border-line bg-surface p-4 max-[50rem]:border-t min-[50rem]:border-l">
+        {price("max-[50rem]:hidden", "")}
 
         {p.requestCount > 0 && (
-          <span className="flex items-center gap-1.5 self-start rounded-full border border-river bg-river-soft px-2.5 py-[5px] min-[42.5rem]:self-end">
+          <span className="flex items-center gap-1.5 self-start rounded-full border border-river bg-river-soft px-2.5 py-[5px]">
             <span className="data text-[0.6875rem] font-semibold text-river-deep">
               {p.requestCount}
             </span>
@@ -240,13 +245,13 @@ export function PropertyRow({
         )}
 
         {/* Stacked, the three controls share one line; in the wide row they
-            stack so the column stays narrow. */}
-        <div className="flex w-full flex-wrap gap-2 min-[42.5rem]:mt-auto min-[42.5rem]:flex-col">
+            stack so the rail stays narrow. */}
+        <div className="mt-auto flex w-full flex-wrap gap-2 min-[50rem]:flex-col">
           <button
             type="button"
             disabled
             title={soon}
-            className={`h-[38px] min-w-36 flex-1 rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 min-[42.5rem]:w-full min-[42.5rem]:flex-none ${
+            className={`h-[38px] min-w-36 flex-1 rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 min-[50rem]:w-full min-[50rem]:flex-none ${
               actions.quiet
                 ? "border border-line bg-surface-2 text-ink hover:bg-line"
                 : "bg-brand text-white hover:bg-brand-strong"
@@ -255,7 +260,7 @@ export function PropertyRow({
             {t(`actions.${actions.primary}` as "actions.overview")}
           </button>
 
-          <div className="flex flex-1 gap-2 min-[42.5rem]:w-full min-[42.5rem]:flex-none">
+          <div className="flex flex-1 gap-2 min-[50rem]:w-full min-[50rem]:flex-none">
             {actions.secondaryHref && p.status === "published" ? (
               <Link
                 href={{ pathname: "/property", query: { id: p.id } }}

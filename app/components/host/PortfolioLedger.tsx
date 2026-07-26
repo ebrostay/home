@@ -95,7 +95,12 @@ export function PortfolioLedger({
         <span>{t("rule", { month })}</span>
       </div>
 
-      <div className="-ml-5 grid grid-rows-[auto_auto_auto] gap-x-px bg-line [grid-template-columns:repeat(auto-fit,minmax(11.875rem,1fr))]">
+      {/* Column count is explicit rather than auto-fit: with four cells,
+          auto-fit settles on three at some widths and the leftover track has
+          no cell in it — which, since the hairlines are the parent's own
+          background showing through a 1px gap, paints as a grey block. 1 / 2 /
+          4 always divides evenly. */}
+      <div className="-ml-5 grid grid-cols-1 grid-rows-[auto_auto_auto] gap-x-px bg-line min-[30rem]:grid-cols-2 min-[64rem]:grid-cols-4">
         {cells.map((c) => (
           <div
             key={c.key}

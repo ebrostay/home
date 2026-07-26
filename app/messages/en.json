@@ -107,7 +107,6 @@
     "row": {
       "noPhotos": "No photos yet",
       "addressUnset": "Address not set yet",
-      "specsUnset": "Rooms not set yet",
       "progress": "{done} of {total} sections",
       "priceUnset": "Not set",
       "priceNote": "per 30 days · estimate",

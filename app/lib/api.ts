@@ -71,6 +71,8 @@ export type HostProperty = {
   id: string;
   status: PropertyStatus;
   reviewNote: string | null;
+  /** Human-quotable listing reference (EBR-P-0141); null on older listings. */
+  reference: string | null;
   name: string;
   address: string | null;
   area: Bilingual | null;

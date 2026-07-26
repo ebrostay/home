@@ -12,6 +12,7 @@ public record HostProperty(
     string Id,
     string Status, // draft | pending_review | published | rejected | paused
     string? ReviewNote,
+    string? Reference,
     string Name,
     string? Address,
     Bilingual? Area,
@@ -72,6 +73,7 @@ public static class HostProjection
             p.Id,
             p.Status,
             p.ReviewNote,
+            p.Reference,
             p.Name,
             p.Address,
             p.Area,

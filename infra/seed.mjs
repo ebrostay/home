@@ -33,6 +33,7 @@ const NOW = "2026-07-22T12:00:00Z";
 // (derived from its details copy).
 const extra = {
   pedro1: {
+    reference: "EBR-P-0101",
     address: "Pedro II el Católico 3, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 80, selfCheckin: false,
     stayTerms: ["cancellation"],
@@ -40,6 +41,7 @@ const extra = {
     photos: ["zaragoza-hero.webp"],
   },
   pedro2: {
+    reference: "EBR-P-0102",
     address: "Pedro II el Católico 3, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 82, selfCheckin: false,
     stayTerms: ["cancellation"],
@@ -47,6 +49,7 @@ const extra = {
     photos: ["zaragoza-hero.webp"],
   },
   movera0: {
+    reference: "EBR-P-0201",
     address: "Calle Movera 7, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 90, selfCheckin: true,
     utilitiesCapEur: 150,
@@ -59,6 +62,7 @@ const extra = {
     ],
   },
   movera1: {
+    reference: "EBR-P-0202",
     address: "Calle Movera 7, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 88, selfCheckin: true,
     utilitiesCapEur: 150,
@@ -78,6 +82,8 @@ function toDoc(p) {
     status: "published",
     reviewNote: null,
     hostId: HOST_ID,
+    // Grouped by building: 01xx Pedro II, 02xx Movera.
+    reference: x.reference ?? null,
 
     city: p.city ?? "zaragoza",
     type: p.type ?? "apartment",

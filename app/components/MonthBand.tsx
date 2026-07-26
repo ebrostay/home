@@ -119,11 +119,13 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
                   : undefined
               }
             />
-            <span className="data text-[0.5625rem] uppercase leading-none text-muted">
+            {/* band-label is a hook for callers that need the bars without the
+                scale — the portfolio row drops them when it stacks. */}
+            <span className="band-label data text-[0.5625rem] uppercase leading-none text-muted">
               {m.label}
             </span>
             {hasYearMarks && (
-              <span className="data text-[0.5rem] leading-none text-muted/70">
+              <span className="band-label data text-[0.5rem] leading-none text-muted/70">
                 {m.newYear !== undefined ? `’${m.newYear}` : " "}
               </span>
             )}

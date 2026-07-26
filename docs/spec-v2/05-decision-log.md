@@ -451,6 +451,16 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
     this ADR.
   - Seed data: `maxStayMonths` corrected 12 → 11 (12 calendar months is 365
     days on the nose, which ADR-022 disallows).
+  - **`stayTerms` is a controlled vocabulary, not free text** (confirmed
+    2026-07-26). The document holds only keys; a key renders only if it is in
+    `DECLARED` in `StayTerms.tsx` **and** has copy in both message files —
+    anything else is skipped silently. These cards read as Ebrostay's
+    contractual commitments, so a database field must never be able to
+    introduce wording that was not written and reviewed in both languages.
+    Adding a term is therefore a code + copy change, deliberately. If owners
+    ever need their own words, that is a **separate** free-text "house rules"
+    field, visibly theirs and passed through the admin review queue (§2.2.1) —
+    not mixed into these cards.
 
 ---
 

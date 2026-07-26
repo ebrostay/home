@@ -4,9 +4,8 @@
 > Continues the v1 log ([docs/spec/11-decision-log.md](../spec/11-decision-log.md), ADR-001–010) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
 
 v1 ADRs that remain in force in v2 unchanged: **ADR-001** (no online payment),
-**ADR-004** (commission 15% VAT incl., one-month cap), **ADR-005** (whole-month
-billing, end-exclusive, min 1 — the *billing* rounding; its *duration limits*
-are amended by ADR-022), **ADR-008** (three-state `billsPolicy`; the legacy
+**ADR-004** (commission 15% VAT incl., cap restated as 30 days' rent by
+ADR-023), **ADR-008** (three-state `billsPolicy`; the legacy
 boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entry.
 
 | ADR | Title | Status |
@@ -23,6 +22,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
 | ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
 | ADR-022 | Stay "up to 12 months" (calc: ≥31 & <365 days); billing monthly | ✅ locked |
+| ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
 
 ---
 
@@ -331,6 +331,9 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 
 ## ADR-022 — Stay duration ≥31 days & ≤12 months; billing stays monthly
 
+> ⚠️ **Point 4 (monthly billing) is superseded by ADR-023** (2026-07-26):
+> rent is pro-rated daily. Points 1–3 (the day-based duration limits) stand.
+
 - **Status:** ✅ locked 2026-07-22. Amends the duration limits of v1 ADR-005
   (which set an 11-month cap) in light of Spanish-law research
   ([07-legal-notes.md](07-legal-notes.md)).
@@ -376,6 +379,78 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
     temporality cause; don't chain >2 temporary contracts per guest (reform).
   - Open sub-decisions in the backlog: daily-proration switch + its day-count
     basis; per-property min/max vs. the global legal cap.
+
+---
+
+## ADR-023 — Rent is pro-rated daily at price÷30; rent collected per calendar month
+
+- **Status:** ✅ locked 2026-07-26 (product owner: Raphael). **Supersedes the
+  billing rule of v1 ADR-005** (whole-month, round-up, min 1) and **replaces
+  point 4 of ADR-022** ("billing stays monthly"). Amends **ADR-004**'s
+  commission cap wording. Closes the `[P][M]` billing-method item in
+  [../BACKLOG.md](../BACKLOG.md), including its open sub-decision on the
+  daily-rate basis. Duration limits (≥31 days, <365 days) are **unchanged**.
+- **Context:** whole-month billing rounds *up*, so 10 Jul → 11 Aug — a 32-day
+  stay — was billed as **two full months**. In a mid-term market where stays
+  are planned against a relocation date rather than a calendar month, that is a
+  visible unfairness and it is the single thing guests query most. ADR-022
+  deferred proration ("monthly until we need daily"); we now need daily. LAU
+  art. 17 makes monthly only a default, "salvo pacto en contrario", so daily
+  proration is freely contractible.
+- **Decision:**
+  1. **Daily rate = listed price ÷ 30, fixed.** The headline price is a price
+     for **thirty days**, not "a calendar month". Chosen over ÷actual-days
+     (which makes the same home cost €30.65/day in July and €33.93/day in
+     February) and over ×12÷365, because a visitor can divide by 30 in their
+     head and the rate never moves. **Accepted cost:** a 31-day calendar month
+     bills 31/30 of the headline price, and a 365-day year bills ~1.4% above
+     twelve headline months. The UI never says "per month" unqualified — the
+     booking panel reads "/ 30 days" with the daily rate beneath it.
+  2. **Rent = billed days × daily rate**, end-exclusive: 1 Sept → 1 Oct is
+     **30 days**, priced at exactly the headline figure.
+  3. **Commission = min(15% × rent, 30 days' rent)**. Since 30 × (price÷30) is
+     the listed price, the cap is numerically ADR-004's "one month's rent"
+     restated in days; intent and the discount line are unchanged. The cap now
+     binds from **~200 days** rather than "7 whole months".
+  4. **Collection is per CALENDAR month, not per 30-day block.** The first
+     instalment covers move-in → end of that month and is due **at move-in**,
+     together with the **deposit** and the Ebrostay service fee. Then one
+     instalment per calendar month; the last is a part-month. A guest may
+     pre-pay any number of months up front. Exact intervals are agreed before
+     move-in (there is no checkout to enforce them yet — see Consequences).
+  5. **Utilities are never in the instalments.** They are metered and settled
+     in a **final bill after move-out**, together with any documented damage;
+     the deposit is returned once that bill is settled. This is what
+     `billsPolicy: "capped"` has always meant, and the detail page now derives
+     its bills wording from that field instead of asserting a fixed "capped
+     utilities" line on every listing (ADR-008 unchanged).
+  6. **Rounding.** Money is settled to cents. Instalments round independently,
+     so the remainder is absorbed by the **last** instalment — the schedule
+     always sums to the quoted total.
+- **Rationale:** pays for nights actually stayed, removes the round-up
+  distortion that ADR-022 had to work around in its duration check, and keeps
+  one number (÷30) a guest can verify unaided. Calendar-month collection is
+  what the market and Spanish practice expect, and it is orthogonal to how the
+  rent is *computed*.
+- **Consequences:**
+  - `app/lib/pricing.ts`: `billedMonths()` **removed**; `dailyRate()`,
+    `stayDays()`, `paymentSchedule()` added; `Estimate.months` → `.days`+`.rate`.
+  - Booking panel: headline is "/ 30 days" + daily rate; the rent row reads
+    "N days × €X"; a **payment-schedule preview** lists the instalments and the
+    final bill. The WhatsApp/mailto request text quotes days, not months.
+  - **A 30-day stay is not bookable** — the ≥31-day legal floor (ADR-022)
+    stands. "30 days" is a *price basis*, never an offer. Any copy that implies
+    a bookable month must say 31 days.
+  - Not yet enforced anywhere: there is no checkout and no booking endpoint, so
+    the schedule is **a quotation, not a commitment**. Instalment capture,
+    prepayment choice and the final-bill flow land with the booking flow
+    (§4.3); the preview must stay in sync with it.
+  - `docs/spec/05-business-rules.md` §5.1.1–5.1.2 describe the v1 whole-month
+    behaviour and remain accurate **for v1** (still live on `main`); they are no
+    longer the v2 rule. CLAUDE.md points at that file — v2 pricing now follows
+    this ADR.
+  - Seed data: `maxStayMonths` corrected 12 → 11 (12 calendar months is 365
+    days on the nose, which ADR-022 disallows).
 
 ---
 

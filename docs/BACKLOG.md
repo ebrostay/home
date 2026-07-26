@@ -63,7 +63,8 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   triggers the two-contract/over-limit message. Fix by basing the over-limit
   trigger on **actual calendar duration** (does the stay reach 12 months?), not
   the rounded-up billed count. Small change to `pricing.ts`.
-- **[P][M]** **Billing method — decide whole-month vs. daily proration.** Legally
+- ~~**[P][M]** **Billing method — decide whole-month vs. daily proration.**~~
+  ✅ **Decided 2026-07-26 — ADR-023: daily proration, rate = price÷30.** Legally
   **free to choose** (LAU art. 17: monthly is only the default "salvo pacto en
   contrario"; no proration mandate or bar) and daily proration is common in the
   mid-term segment. Recommendation leaning to **pro-rate partial edges to a daily

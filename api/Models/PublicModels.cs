@@ -61,6 +61,7 @@ public record PropertyDetail(
     int? UtilitiesCapEur,
     int MinStayMonths,
     int MaxStayMonths,
+    string[] StayTerms,
     bool IsNew,
     bool Checked,
     bool DepositProtected,
@@ -105,7 +106,7 @@ public static class PublicProjection
             p.CouplesAllowed, p.SelfCheckin, p.VideoUrl,
             p.PriceNumber, p.DepositAmount, p.UpfrontRentEur,
             p.BillsPolicy, p.UtilitiesCapEur, p.MinStayMonths, p.MaxStayMonths,
-            p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
+            p.StayTerms, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
             p.Photos.OrderBy(ph => ph.SortOrder).ToArray(),
             BlockingRanges(p.Availability, now));
 }

@@ -1,11 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info, Mail } from "lucide-react";
+import { ChevronDown, Info, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PropertyDetail } from "@/lib/api";
 import { stayFits } from "@/lib/availability";
-import { addMonths, computeEstimate, formatEuro } from "@/lib/pricing";
+import {
+  addMonths,
+  computeEstimate,
+  dailyRate,
+  formatEuro,
+  paymentSchedule,
+} from "@/lib/pricing";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { SplitDateRangeField } from "@/components/ui/SplitDateRangeField";
 
@@ -45,9 +51,9 @@ export function BookingPanel({
   const [moveIn, setMoveIn] = useState(
     () => searched?.moveIn ?? firstSelectableDay(p),
   );
-  // The two dates are the state now; length is derived (computeEstimate rounds
-  // up to whole months, docs/spec/05 §5.1). Absent a searched stay, open on
-  // the listing's own minimum so the first estimate shown is one it accepts.
+  // The two dates are the state; everything billed is derived from the day
+  // count between them (ADR-023). Absent a searched stay, open on the listing's
+  // own minimum so the first estimate shown is one it accepts.
   const [moveOut, setMoveOut] = useState(
     () =>
       searched?.moveOut ??
@@ -77,11 +83,31 @@ export function BookingPanel({
 
   const blocked = !available || estimate.tooShort || estimate.tooLong;
 
+  const schedule = useMemo(
+    () =>
+      paymentSchedule(
+        moveIn,
+        moveOut,
+        p.priceNumber,
+        p.depositAmount,
+        estimate.commission,
+      ),
+    [moveIn, moveOut, p.priceNumber, p.depositAmount, estimate.commission],
+  );
+
+  // Instalment dates: day + month is enough inside a schedule whose year the
+  // stay row above already establishes.
+  const fmtDay = (iso: string) =>
+    new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
+      day: "numeric",
+      month: "short",
+    }).format(new Date(`${iso}T00:00:00`));
+
   const summary = t("requestSummary", {
     name: p.name,
     from: fmtDate(moveIn),
     to: fmtDate(moveOut),
-    months: estimate.months,
+    days: estimate.days,
     total: eur(estimate.total),
   });
   const emailBody = [
@@ -108,11 +134,17 @@ export function BookingPanel({
   return (
     <aside className="lg:sticky lg:top-[calc(var(--header-h)+20px)] lg:self-start">
       <div className="rounded-(--radius-card) border border-line bg-surface p-5 shadow-(--shadow-pop) sm:p-6">
+        {/* The headline is a 30-DAY price, and says so: rent is billed by the
+            day (ADR-023), so an unqualified "/ month" would be the one number
+            on the page that isn't what you pay. */}
         <p className="flex items-baseline gap-1.5">
           <span className="data text-[1.625rem] font-semibold text-ink">
             {eur(p.priceNumber)}
           </span>
-          <span className="text-sm text-muted">/ {t("month")}</span>
+          <span className="text-sm text-muted">/ {t("thirtyDays")}</span>
+        </p>
+        <p className="data mt-1 text-xs text-muted">
+          {t("perDay", { rate: eur(dailyRate(p.priceNumber)) })}
         </p>
 
         {/* Dates — the same split control the search bar uses, so arriving here
@@ -144,9 +176,9 @@ export function BookingPanel({
             </span>
           </Row>
           <Row
-            label={tc("months", {
-              count: estimate.months,
-              price: formatEuro(p.priceNumber, locale),
+            label={tc("days", {
+              count: estimate.days,
+              rate: formatEuro(estimate.rate, locale),
             })}
           >
             {eur(estimate.rent)}
@@ -167,6 +199,67 @@ export function BookingPanel({
             </dd>
           </div>
         </dl>
+
+        {/* When you pay it. Rent is billed by the day but COLLECTED by the
+            calendar month, so the first instalment is short and so is the last;
+            showing that up front is the point — it is the part of the model a
+            visitor cannot infer from a total. Hidden while the dates are
+            invalid, where a schedule would only dress up a number we are
+            already telling them not to trust. */}
+        {!blocked && schedule.length > 0 && (
+          <details className="group mt-4 rounded-(--radius-control) border border-line">
+            <summary className="flex cursor-pointer items-center justify-between gap-2 px-3.5 py-2.5 text-sm font-semibold text-ink">
+              {t("schedule.title")}
+              <ChevronDown
+                size={16}
+                strokeWidth={2}
+                className="shrink-0 text-muted transition-transform duration-(--dur-standard) group-open:rotate-180"
+                aria-hidden
+              />
+            </summary>
+            <div className="border-t border-line px-3.5 pb-3 pt-2.5">
+              <ol className="flex flex-col gap-2.5">
+                {schedule.map((i, n) => (
+                  <li key={i.from} className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block text-[0.8125rem] text-body">
+                        {n === 0
+                          ? t("schedule.atMoveIn")
+                          : t("schedule.onDate", { date: fmtDay(i.from) })}
+                      </span>
+                      <span className="data block text-[0.6875rem] text-muted">
+                        {t("schedule.covers", {
+                          days: i.days,
+                          from: fmtDay(i.from),
+                          to: fmtDay(i.to),
+                        })}
+                        {n === 0 && (i.deposit || i.commission)
+                          ? ` · ${t("schedule.plusUpfront")}`
+                          : ""}
+                      </span>
+                    </span>
+                    <span className="data shrink-0 text-sm font-semibold text-ink">
+                      {eur(i.total)}
+                    </span>
+                  </li>
+                ))}
+                <li className="flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
+                  <span className="min-w-0">
+                    <span className="block text-[0.8125rem] text-body">
+                      {t("schedule.atMoveOut")}
+                    </span>
+                    <span className="block text-[0.6875rem] leading-relaxed text-muted">
+                      {t("schedule.finalBill")}
+                    </span>
+                  </span>
+                </li>
+              </ol>
+              <p className="mt-3 text-[0.6875rem] leading-relaxed text-muted">
+                {t("schedule.note")}
+              </p>
+            </div>
+          </details>
+        )}
 
         {blocked && (
           <p className="mt-3 rounded-(--radius-control) bg-warn-soft p-3 text-sm text-warn">

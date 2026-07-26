@@ -28,12 +28,14 @@ const extra = {
   pedro1: {
     address: "Pedro II el Católico 3, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 80, selfCheckin: false,
+    stayTerms: ["cancellation"],
     beds: { es: "3 camas individuales", en: "3 single beds" },
     photos: ["zaragoza-hero.webp"],
   },
   pedro2: {
     address: "Pedro II el Católico 3, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 82, selfCheckin: false,
+    stayTerms: ["cancellation"],
     beds: { es: "2 camas dobles y 1 individual", en: "2 double beds and 1 single" },
     photos: ["zaragoza-hero.webp"],
   },
@@ -41,6 +43,7 @@ const extra = {
     address: "Calle Movera 7, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 90, selfCheckin: true,
     utilitiesCapEur: 150,
+    stayTerms: ["cancellation", "cleaning"],
     beds: { es: "3 dormitorios privados con cama doble", en: "3 private bedrooms with double beds" },
     photos: [
       "movera-second-hero.jpg", "movera-second-bedroom-1.jpg",
@@ -52,6 +55,7 @@ const extra = {
     address: "Calle Movera 7, Zaragoza",
     bedrooms: 3, bathrooms: 1, sizeM2: 88, selfCheckin: true,
     utilitiesCapEur: 150,
+    stayTerms: ["cancellation"],
     beds: { es: "3 dormitorios privados con cama doble", en: "3 private bedrooms with double beds" },
     photos: [
       "movera-first-hero.jpg", "movera-first-bedroom-1.jpg",
@@ -99,7 +103,12 @@ function toDoc(p) {
     billsPolicy: p.billsPolicy ?? "excluded",
     utilitiesCapEur: x.utilitiesCapEur ?? null,
     minStayMonths: 1,
-    maxStayMonths: 12,
+    // 11, not 12: ADR-022 caps a stay under 365 days, and 12 calendar months
+    // is 365 on the nose — the booking panel already refuses to offer it.
+    maxStayMonths: 11,
+    // Only the terms nothing else in the doc implies; bills and deposit terms
+    // are derived from billsPolicy / depositAmount (ADR-023).
+    stayTerms: x.stayTerms ?? [],
 
     isNew: !!p.isNew,
     checked: !!p.checked,

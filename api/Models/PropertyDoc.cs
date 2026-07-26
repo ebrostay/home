@@ -57,6 +57,13 @@ public class PropertyDoc
     public int MinStayMonths { get; set; } = 1;
     public int MaxStayMonths { get; set; } = 11;
 
+    // Which optional stay terms the OWNER has confirmed apply to this home
+    // (ADR-023). Terms the document already implies are NOT listed here —
+    // bills come from BillsPolicy/UtilitiesCapEur and the deposit term from
+    // DepositAmount, so a listing cannot promise one thing in its terms and
+    // another in its conditions table.
+    public string[] StayTerms { get; set; } = [];
+
     public bool IsNew { get; set; }
     public bool Checked { get; set; }
     public bool DepositProtected { get; set; }

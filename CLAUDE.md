@@ -37,9 +37,12 @@ and is the functional reference here.
   and auth-gated routes live in `app/public/staticwebapp.config.json`.
 - **Authorization is enforced in the C# functions** (read
   `x-ms-client-principal`), never only via SWA route rules or UI gates.
-- Business rules (pricing: whole-month billing, 15% commission capped at one
-  month, 11-month max) are specified in `docs/spec/05-business-rules.md` — v2
-  must match them exactly.
+- Business rules live in `docs/spec/05-business-rules.md` (v1, still live on
+  `main`) **as amended by the v2 decision log** `docs/spec-v2/05-decision-log.md`
+  — read the ADRs before touching pricing. Current v2 rules: rent **pro-rated
+  daily at price ÷ 30**, collected per calendar month (ADR-023, supersedes v1
+  whole-month billing); 15% commission capped at 30 days' rent (ADR-004 as
+  amended); stay **≥31 and <365 days** (ADR-022).
 - Secrets never in the client or repo: Functions app settings only.
 
 ## Skills & plugins

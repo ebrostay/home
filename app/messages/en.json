@@ -159,21 +159,35 @@
     "maxStay": "Maximum stay",
     "whereYouWillBe": "Where you'll be",
     "terms": {
-      "wholeMonth": {
-        "title": "Whole-month billing",
-        "body": "The stay is contracted and billed in whole months, with no part-month pro-rating."
+      "billing": {
+        "title": "Billed by the day",
+        "body": "Rent is pro-rated daily, so you pay for the nights you stay — no rounding up to a whole month. The headline price is 30 days."
+      },
+      "bills": {
+        "included": {
+          "title": "Bills included",
+          "body": "Water, power, gas and internet are included in the rent. Nothing to settle at the end."
+        },
+        "capped": {
+          "title": "Bills included up to {cap} €",
+          "body": "Water, power, gas and internet are included up to {cap} € a month. Anything above that is metered and settled in your final bill."
+        },
+        "excluded": {
+          "title": "Bills not included",
+          "body": "Water, power, gas and internet are contracted and paid by you, separately from the rent."
+        }
       },
       "deposit": {
-        "title": "Refundable deposit",
-        "body": "Returned at the end of the stay, less any documented damage."
-      },
-      "utilities": {
-        "title": "Capped utilities",
-        "body": "Utilities are included up to the cap set out in the conditions."
+        "title": "Deposit {amount} €",
+        "body": "Due when you move in, and returned after move-out once the final bill is settled, less any documented damage."
       },
       "cancellation": {
         "title": "Free cancellation",
         "body": "Cancel at no cost up to 48 hours before check-in."
+      },
+      "cleaning": {
+        "title": "Cleaning included",
+        "body": "Cleaning between stays is arranged and paid by us."
       }
     },
     "nearby": {
@@ -223,28 +237,40 @@
       "requestWhatsApp": "Request on WhatsApp",
       "requestEmail": "Request by email",
       "reassurance": "You won't be charged yet — the owner confirms the final price. Free cancellation up to 48h before check-in.",
-      "requestSummary": "{name} — {from} to {to} ({months, plural, one {# month} other {# months}}). Estimated total {total}.",
+      "requestSummary": "{name} — {from} to {to} ({days, plural, one {# day} other {# days}}). Estimated total {total}.",
       "emailSubject": "Booking request — {name}",
       "emailGreeting": "Hello Ebrostay,",
       "emailSignoff": "Thank you.",
       "home": "Home",
-      "tenantNames": "Name(s) on the booking"
+      "tenantNames": "Name(s) on the booking",
+      "thirtyDays": "30 days",
+      "perDay": "{rate} per day",
+      "schedule": {
+        "title": "When you pay",
+        "atMoveIn": "When you move in",
+        "onDate": "{date}",
+        "covers": "{days, plural, one {# day} other {# days}} · {from} – {to}",
+        "plusUpfront": "plus deposit and service",
+        "atMoveOut": "After you move out",
+        "finalBill": "Final bill: metered utilities and any damage, then your deposit comes back.",
+        "note": "Rent is charged per calendar month, so the first and last instalments are part-months. You can pay further months up front if you prefer — we agree the intervals before you move in."
+      }
     }
   },
   "estimate": {
     "title": "Price your stay",
     "hint": "Pick move-in and move-out in the calendar. Days with a diagonal line are taken.",
-    "months": "{count, plural, one {# month} other {# months}} × {price} €",
     "rent": "Rent",
     "commission": "Ebrostay service (15%, VAT incl.)",
-    "commissionCap": "One-month-cap discount",
+    "commissionCap": "30-day-cap discount",
     "deposit": "Deposit (refundable)",
     "total": "Estimated total",
     "disclaimer": "Indicative amount. The contract sets the final price; no online payment.",
     "tooLong": "Over 12 months changes the contract type — write to us and we’ll arrange it.",
     "cta": "Request to book",
     "ctaHint": "Available once signed in — coming very soon.",
-    "tooShort": "The minimum stay is 31 days. Extend the dates."
+    "tooShort": "The minimum stay is 31 days. Extend the dates.",
+    "days": "{count, plural, one {# day} other {# days}} × {rate} €"
   },
   "type": {
     "all": "All",
@@ -314,7 +340,7 @@
     "budgetBWhy": "Cumulative: how many homes a ceiling opens. The flat stretches are the finding — money spent there buys nothing.",
     "budgetC": "C · suggested ceilings",
     "budgetCWhy": "No dragging: three ceilings drawn from the prices themselves (p30 / p55 / p80), each with its count. Holds up on a phone and on a thin catalogue.",
-        "budgetCompare": "columns or marks",
+    "budgetCompare": "columns or marks",
     "budgetCompareHint": "The same prices drawn both ways, at the same ceiling. Bucketing doesn't break on a small catalogue — it still draws. It just stops saying anything: bar height can only be 1 or 2, the bucket width implies an approximate price when we know the exact one, and the number of buckets is decided by the gap between cheapest and dearest, not by how many homes there are.",
     "budgetCols": "columns",
     "budgetMarks": "marks",

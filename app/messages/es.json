@@ -159,21 +159,35 @@
     "maxStay": "Estancia máxima",
     "whereYouWillBe": "Dónde vas a estar",
     "terms": {
-      "wholeMonth": {
-        "title": "Facturación por meses completos",
-        "body": "La estancia se contrata y se factura por meses enteros, sin prorrateos."
+      "billing": {
+        "title": "Facturación por días",
+        "body": "El alquiler se prorratea a diario: pagas las noches que te quedas, sin redondear a un mes entero. El precio destacado son 30 días."
+      },
+      "bills": {
+        "included": {
+          "title": "Suministros incluidos",
+          "body": "Agua, luz, gas e internet van incluidos en el alquiler. No hay nada que liquidar al final."
+        },
+        "capped": {
+          "title": "Suministros incluidos hasta {cap} €",
+          "body": "Agua, luz, gas e internet están incluidos hasta {cap} € al mes. Lo que exceda se mide y se liquida en tu factura final."
+        },
+        "excluded": {
+          "title": "Suministros no incluidos",
+          "body": "Agua, luz, gas e internet los contratas y pagas tú, aparte del alquiler."
+        }
       },
       "deposit": {
-        "title": "Fianza reembolsable",
-        "body": "Se devuelve al final de la estancia, descontando solo los daños acreditados."
-      },
-      "utilities": {
-        "title": "Suministros con tope",
-        "body": "Los suministros están incluidos hasta el tope indicado en las condiciones."
+        "title": "Fianza {amount} €",
+        "body": "Se abona al entrar y se devuelve tras la salida, una vez liquidada la factura final y descontados los daños documentados."
       },
       "cancellation": {
         "title": "Cancelación gratuita",
-        "body": "Puedes cancelar sin coste hasta 48 h antes de la entrada."
+        "body": "Cancela sin coste hasta 48 horas antes de la entrada."
+      },
+      "cleaning": {
+        "title": "Limpieza incluida",
+        "body": "La limpieza entre estancias la gestionamos y pagamos nosotros."
       }
     },
     "nearby": {
@@ -223,28 +237,40 @@
       "requestWhatsApp": "Solicitar por WhatsApp",
       "requestEmail": "Solicitar por email",
       "reassurance": "Todavía no se te cobra nada — el propietario confirma el precio final. Cancelación gratuita hasta 48 h antes de la entrada.",
-      "requestSummary": "{name} — del {from} al {to} ({months, plural, one {# mes} other {# meses}}). Total estimado {total}.",
+      "requestSummary": "{name} — del {from} al {to} ({days, plural, one {# día} other {# días}}). Total estimado {total}.",
       "emailSubject": "Reserva — {name}",
       "emailGreeting": "Hola Ebrostay:",
       "emailSignoff": "Gracias.",
       "home": "Vivienda",
-      "tenantNames": "Nombre(s) de los inquilinos"
+      "tenantNames": "Nombre(s) de los inquilinos",
+      "thirtyDays": "30 días",
+      "perDay": "{rate} al día",
+      "schedule": {
+        "title": "Cuándo pagas",
+        "atMoveIn": "Al entrar",
+        "onDate": "{date}",
+        "covers": "{days, plural, one {# día} other {# días}} · {from} – {to}",
+        "plusUpfront": "más fianza y servicio",
+        "atMoveOut": "Tras la salida",
+        "finalBill": "Factura final: suministros medidos y posibles daños; después se devuelve la fianza.",
+        "note": "El alquiler se cobra por mes natural, así que el primer y el último plazo son parciales. Puedes adelantar más meses si lo prefieres: acordamos los plazos antes de la entrada."
+      }
     }
   },
   "estimate": {
     "title": "Calcula tu estancia",
     "hint": "Elige entrada y salida en el calendario. Los días con línea diagonal están ocupados.",
-    "months": "{count, plural, one {# mes} other {# meses}} × {price} €",
     "rent": "Alquiler",
     "commission": "Gestión Ebrostay (15 %, IVA incl.)",
-    "commissionCap": "Descuento por tope de un mes",
+    "commissionCap": "Descuento por tope de 30 días",
     "deposit": "Fianza (reembolsable)",
     "total": "Total estimado",
     "disclaimer": "Importe orientativo. El contrato fija el precio final; sin pago online.",
     "tooLong": "Más de 12 meses cambia el tipo de contrato — escríbenos y lo preparamos.",
     "cta": "Solicitar reserva",
     "ctaHint": "Disponible al iniciar sesión — muy pronto.",
-    "tooShort": "La estancia mínima es de 31 días. Alarga las fechas."
+    "tooShort": "La estancia mínima es de 31 días. Alarga las fechas.",
+    "days": "{count, plural, one {# día} other {# días}} × {rate} €"
   },
   "type": {
     "all": "Todos",
@@ -314,7 +340,7 @@
     "budgetBWhy": "Acumulado: cuántas viviendas ves según el techo. Los tramos planos son el hallazgo — ahí subir el presupuesto no compra nada.",
     "budgetC": "C · techos sugeridos",
     "budgetCWhy": "Sin arrastrar: tres techos que salen de los propios precios (p30 / p55 / p80), cada uno con su recuento. Aguanta en móvil y con poco catálogo.",
-        "budgetCompare": "columnas o marcas",
+    "budgetCompare": "columnas o marcas",
     "budgetCompareHint": "Los mismos precios dibujados de las dos maneras, con el mismo techo. Agrupar en tramos no se rompe con pocas viviendas — sigue dibujándose. Lo que pasa es que deja de decir nada: el alto solo puede valer 1 o 2, el ancho del tramo finge un precio aproximado que en realidad conocemos exacto, y el número de tramos lo decide la distancia entre el más barato y el más caro, no cuántas viviendas hay.",
     "budgetCols": "columnas",
     "budgetMarks": "marcas",

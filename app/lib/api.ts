@@ -47,6 +47,9 @@ export type PropertyDetail = Omit<PropertySummary, "coverUrl"> & {
   utilitiesCapEur: number | null;
   minStayMonths: number;
   maxStayMonths: number;
+  /** Optional terms the owner confirmed apply. Terms the listing already
+   *  implies (bills, deposit) are derived instead — see StayTerms.tsx. */
+  stayTerms: string[];
   photos: PropertyPhoto[];
 };
 

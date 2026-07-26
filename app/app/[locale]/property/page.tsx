@@ -5,15 +5,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  BedDouble,
-  CalendarCheck,
-  MapPin,
-  Receipt,
-  Share2,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
+import { MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ApiError, biText, fetchProperty, type PropertyDetail } from "@/lib/api";
@@ -33,6 +25,7 @@ import { ListingsMap } from "@/components/ListingsMap";
 import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
 import { Nearby } from "@/components/detail/Nearby";
+import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
 
 export default function PropertyPage() {
@@ -164,13 +157,6 @@ function DetailBody({
       ? ([[String(p.floorNumber), td("floor")]] as [string, string][])
       : []),
     [String(p.guests), td("sleeps")],
-  ];
-
-  const terms: { key: string; Icon: LucideIcon }[] = [
-    { key: "wholeMonth", Icon: CalendarCheck },
-    { key: "deposit", Icon: ShieldCheck },
-    { key: "utilities", Icon: Receipt },
-    { key: "cancellation", Icon: BedDouble },
   ];
 
   const conditions: [string, string][] = [
@@ -370,26 +356,7 @@ function DetailBody({
 
           {/* 5 — Stay terms */}
           <Section title={td("stayTerms")}>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {terms.map(({ key, Icon }) => (
-                <div key={key} className="flex gap-3">
-                  <Icon
-                    size={18}
-                    strokeWidth={2}
-                    className="mt-0.5 shrink-0 text-brand"
-                    aria-hidden
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-ink">
-                      {td(`terms.${key}.title`)}
-                    </p>
-                    <p className="mt-0.5 text-sm text-muted">
-                      {td(`terms.${key}.body`)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <StayTerms property={p} locale={locale} />
           </Section>
 
           {/* 6 — Conditions */}

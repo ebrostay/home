@@ -22,7 +22,6 @@ public record PropertySummary(
     int PriceNumber,
     string BillsPolicy,
     string[] Amenities,
-    double? Rating,
     bool IsNew,
     bool Checked,
     bool DepositProtected,
@@ -62,7 +61,6 @@ public record PropertyDetail(
     int? UtilitiesCapEur,
     int MinStayMonths,
     int MaxStayMonths,
-    double? Rating,
     bool IsNew,
     bool Checked,
     bool DepositProtected,
@@ -89,7 +87,7 @@ public static class PublicProjection
         => new(
             p.Id, p.City, p.Type, p.Name, p.Area, p.Lat, p.Lng,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2,
-            p.PriceNumber, p.BillsPolicy, p.Amenities, p.Rating, p.IsNew,
+            p.PriceNumber, p.BillsPolicy, p.Amenities, p.IsNew,
             p.Checked, p.DepositProtected, p.AvailableFrom,
             p.Photos
                 .Where(ph => !ph.IsFloorplan)
@@ -107,7 +105,7 @@ public static class PublicProjection
             p.CouplesAllowed, p.SelfCheckin, p.VideoUrl,
             p.PriceNumber, p.DepositAmount, p.UpfrontRentEur,
             p.BillsPolicy, p.UtilitiesCapEur, p.MinStayMonths, p.MaxStayMonths,
-            p.Rating, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
+            p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
             p.Photos.OrderBy(ph => ph.SortOrder).ToArray(),
             BlockingRanges(p.Availability, now));
 }

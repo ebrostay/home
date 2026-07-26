@@ -21,7 +21,6 @@ export type PropertySummary = {
   priceNumber: number;
   billsPolicy: "included" | "capped" | "excluded";
   amenities: string[];
-  rating: number | null;
   isNew: boolean;
   checked: boolean;
   depositProtected: boolean;

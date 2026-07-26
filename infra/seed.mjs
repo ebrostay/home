@@ -101,7 +101,6 @@ function toDoc(p) {
     minStayMonths: 1,
     maxStayMonths: 12,
 
-    rating: p.rating ?? null,
     isNew: !!p.isNew,
     checked: !!p.checked,
     depositProtected: !!p.depositProtected,

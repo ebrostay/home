@@ -38,9 +38,9 @@ export const defaultFilters: Filters = {
   type: "all",
   budget: "",
   amenities: [],
-  // Was "best" (by rating). With no ratings in the data that comparator fell
-  // through to its price tiebreak anyway, so price-ascending is the same order
-  // the list has actually been showing.
+  // Was "best" (by rating), dropped along with ratings themselves — with none
+  // in the data that comparator fell through to its price tiebreak anyway, so
+  // price-ascending is the order the list was already showing.
   sort: "price",
 };
 

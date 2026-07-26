@@ -57,7 +57,6 @@ public class PropertyDoc
     public int MinStayMonths { get; set; } = 1;
     public int MaxStayMonths { get; set; } = 11;
 
-    public double? Rating { get; set; }
     public bool IsNew { get; set; }
     public bool Checked { get; set; }
     public bool DepositProtected { get; set; }

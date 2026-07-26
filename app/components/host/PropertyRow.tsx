@@ -95,15 +95,24 @@ export function PropertyRow({
     return busy ? { text: t("row.occupied", { date: day(busy) }), tone: "quiet" } : null;
   }
 
+  // Two layouts, one DOM.
+  //   Wide   — photo | identity over band | money, photo and money spanning
+  //            both rows.
+  //   Narrow — photo beside the identity, then band, then money; the last two
+  //            span the full width.
+  // The photo stays a fixed column when stacked rather than becoming a
+  // full-bleed banner. Given an aspect ratio and the whole width it grew with
+  // the viewport — 450px of an 810px row just below the old breakpoint, which
+  // is exactly where an owner is trying to scan the list.
   return (
     <article
-      className={`grid items-start gap-[1.375rem] rounded-(--radius-card) border bg-surface p-4 shadow-(--shadow-card) transition-colors duration-(--dur-standard) hover:border-line-strong min-[56.25rem]:grid-cols-[9.75rem_minmax(0,1fr)_14.5rem] ${
+      className={`grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3 rounded-(--radius-card) border bg-surface p-4 shadow-(--shadow-card) transition-colors duration-(--dur-standard) hover:border-line-strong min-[42.5rem]:grid-cols-[7.5rem_minmax(0,1fr)_11.25rem] min-[42.5rem]:gap-x-5 min-[42.5rem]:gap-y-2.5 min-[64rem]:grid-cols-[9.75rem_minmax(0,1fr)_14.5rem] min-[64rem]:gap-x-[1.375rem] ${
         bucket === "changes" ? "border-warn" : "border-line"
       }`}
     >
       {/* Photo */}
       <div
-        className={`relative overflow-hidden rounded-(--radius-card) border border-line bg-surface-2 max-[56.25rem]:aspect-[16/9] min-[56.25rem]:aspect-[4/3] ${
+        className={`relative aspect-[4/3] overflow-hidden rounded-(--radius-card) border border-line bg-surface-2 min-[42.5rem]:row-span-2 ${
           dim ? "opacity-[0.72]" : ""
         }`}
       >
@@ -122,8 +131,8 @@ export function PropertyRow({
         )}
       </div>
 
-      {/* Identity, note, availability */}
-      <div className="flex min-w-0 flex-col gap-[9px]">
+      {/* Identity and note */}
+      <div className="flex min-w-0 flex-col gap-[9px] min-[42.5rem]:col-start-2 min-[42.5rem]:row-start-1">
         <div className="flex flex-wrap items-center gap-2.5">
           <span
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${PILL[bucket].chip}`}
@@ -139,7 +148,7 @@ export function PropertyRow({
         </div>
 
         <div>
-          <h2 className="font-display text-xl font-bold leading-[1.15] tracking-[-0.015em] text-ink">
+          <h2 className="font-display text-[1.0625rem] font-bold leading-[1.15] tracking-[-0.015em] text-ink min-[42.5rem]:text-xl">
             {p.name}
           </h2>
           <p className="mt-0.5 text-[0.8125rem] text-muted">
@@ -175,6 +184,12 @@ export function PropertyRow({
           </p>
         )}
 
+      </div>
+
+      {/* Availability — its own cell so that when the row stacks it gets the
+          full width instead of the 200-odd pixels left beside the thumbnail.
+          Twelve months need the room. */}
+      <div className="col-span-2 min-[42.5rem]:col-span-1 min-[42.5rem]:col-start-2 min-[42.5rem]:row-start-2">
         {isDraft ? (
           <div className="flex items-center gap-3">
             <span className="h-1.5 max-w-[17.5rem] flex-1 overflow-hidden rounded-full bg-surface-2">
@@ -190,15 +205,15 @@ export function PropertyRow({
             </span>
           </div>
         ) : (
-          <div className={`max-w-[27.5rem] ${dim ? "opacity-50" : ""}`}>
+          <div className={`min-[42.5rem]:max-w-[27.5rem] ${dim ? "opacity-50" : ""}`}>
             <AvailabilityBand months={monthsFor(p, locale, now)} />
           </div>
         )}
       </div>
 
       {/* Money and actions */}
-      <div className="flex h-full flex-col items-stretch gap-3 min-[56.25rem]:items-end">
-        <div className="min-[56.25rem]:text-right">
+      <div className="col-span-2 flex flex-col gap-3 min-[42.5rem]:col-span-1 min-[42.5rem]:col-start-3 min-[42.5rem]:row-span-2 min-[42.5rem]:row-start-1 min-[42.5rem]:h-full min-[42.5rem]:items-end min-[42.5rem]:self-stretch">
+        <div className="flex items-baseline gap-2 min-[42.5rem]:block min-[42.5rem]:text-right">
           <p
             className={`data text-[1.375rem] font-semibold leading-none tracking-[-0.01em] ${
               p.priceNumber > 0 ? "text-ink" : "text-muted"
@@ -208,13 +223,13 @@ export function PropertyRow({
               ? `${formatEuro(p.priceNumber, locale)} €`
               : t("row.priceUnset")}
           </p>
-          <p className="mt-1.5 text-xs text-muted">
+          <p className="text-xs text-muted min-[42.5rem]:mt-1.5">
             {p.priceNumber > 0 ? t("row.priceNote") : t("row.priceNoteUnset")}
           </p>
         </div>
 
         {p.requestCount > 0 && (
-          <span className="flex items-center gap-1.5 self-start rounded-full border border-river bg-river-soft px-2.5 py-[5px] min-[56.25rem]:self-end">
+          <span className="flex items-center gap-1.5 self-start rounded-full border border-river bg-river-soft px-2.5 py-[5px] min-[42.5rem]:self-end">
             <span className="data text-[0.6875rem] font-semibold text-river-deep">
               {p.requestCount}
             </span>
@@ -224,12 +239,14 @@ export function PropertyRow({
           </span>
         )}
 
-        <div className="flex w-full flex-col gap-2 min-[56.25rem]:mt-auto">
+        {/* Stacked, the three controls share one line; in the wide row they
+            stack so the column stays narrow. */}
+        <div className="flex w-full flex-wrap gap-2 min-[42.5rem]:mt-auto min-[42.5rem]:flex-col">
           <button
             type="button"
             disabled
             title={soon}
-            className={`h-[38px] w-full rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 ${
+            className={`h-[38px] min-w-36 flex-1 rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 min-[42.5rem]:w-full min-[42.5rem]:flex-none ${
               actions.quiet
                 ? "border border-line bg-surface-2 text-ink hover:bg-line"
                 : "bg-brand text-white hover:bg-brand-strong"
@@ -238,7 +255,7 @@ export function PropertyRow({
             {t(`actions.${actions.primary}` as "actions.overview")}
           </button>
 
-          <div className="flex gap-2">
+          <div className="flex flex-1 gap-2 min-[42.5rem]:w-full min-[42.5rem]:flex-none">
             {actions.secondaryHref && p.status === "published" ? (
               <Link
                 href={{ pathname: "/property", query: { id: p.id } }}

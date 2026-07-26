@@ -40,8 +40,105 @@
     "signIn": "Sign in",
     "pill": {
       "find": "Find a home",
-      "list": "List your property",
+      "list": "Manage Property",
       "how": "How it works"
+    }
+  },
+  "host": {
+    "eyebrow": "OWNER",
+    "title": "Manage Property",
+    "tagline": "Every home you have with Ebrostay. Prices are the estimate guests see — you confirm the final price on each request.",
+    "add": "Add property",
+    "loading": "Loading your homes…",
+    "error": "Your homes could not be loaded.",
+    "retry": "Retry",
+    "soon": "The listing editor is coming next.",
+    "signedOut": {
+      "title": "Sign in to manage your homes",
+      "body": "Your listings, requests and availability live behind your account."
+    },
+    "empty": {
+      "title": "No homes yet",
+      "body": "Start a draft in a few minutes. We review every listing before it goes live — usually within two working days."
+    },
+    "ledger": {
+      "rule": "PORTFOLIO · {month}",
+      "liveLabel": "LIVE LISTINGS",
+      "liveNote": "{total, plural, one {of # home} other {of # homes}} · {review, plural, =0 {none in review} other {# in review}}",
+      "occupancyLabel": "OCCUPANCY, NEXT 12 MONTHS",
+      "occupancyNote": "{booked} of {sellable} months booked",
+      "occupancyNoteEmpty": "nothing to let yet",
+      "vacancyLabel": "NEXT VACANCY",
+      "vacancyOpen": "OPEN NOW",
+      "vacancyOpenNote": "{count, plural, one {# home is} other {# homes are}} taking requests",
+      "vacancyDateNote": "{name} frees up on {date}",
+      "vacancyNone": "—",
+      "vacancyNoneNote": "add a home to see this",
+      "requestsLabel": "PENDING REQUESTS",
+      "requestsNote": "{days, plural, =0 {the oldest one came in today} one {the oldest one has been waiting # day} other {the oldest one has been waiting # days}}",
+      "requestsNoneNote": "nothing waiting on you"
+    },
+    "pending": {
+      "headline": "{count, plural, one {# booking request waiting} other {# booking requests waiting}}",
+      "explainer": "Accept or decline inside each property — the ledger updates when you do.",
+      "chip": "{count} · {name}"
+    },
+    "tabs": {
+      "all": "All",
+      "live": "Live",
+      "changes": "Changes",
+      "review": "In review",
+      "draft": "Drafts",
+      "paused": "Paused"
+    },
+    "legend": {
+      "title": "NEXT 12 MONTHS",
+      "open": "Open",
+      "partial": "Part booked",
+      "taken": "Taken"
+    },
+    "state": {
+      "live": "LIVE",
+      "review": "IN REVIEW",
+      "changes": "CHANGES REQUESTED",
+      "draft": "DRAFT",
+      "paused": "PAUSED"
+    },
+    "row": {
+      "noPhotos": "No photos yet",
+      "addressUnset": "Address not set yet",
+      "specsUnset": "Rooms not set yet",
+      "progress": "{done} of {total} sections",
+      "priceUnset": "Not set",
+      "priceNote": "per 30 days · estimate",
+      "priceNoteUnset": "add a monthly price",
+      "requests": "{count, plural, one {# request} other {# requests}}",
+      "occupied": "Occupied until {date}",
+      "submitted": "Submitted {date}. We reply within two working days — nothing to do until then.",
+      "changes": "The review team sent this back with comments.",
+      "draft": "Only you can see this. {left, plural, one {# section is} other {# sections are}} still empty.",
+      "draftComplete": "Only you can see this. Everything is filled in — submit it for review.",
+      "paused": "Closed to new requests — guests cannot find it in search."
+    },
+    "actions": {
+      "overview": "Property overview",
+      "viewAsGuest": "View as guest",
+      "viewSubmission": "View submission",
+      "withdraw": "Withdraw",
+      "fix": "Fix and resubmit",
+      "preview": "Preview",
+      "continue": "Continue draft",
+      "delete": "Delete",
+      "reopen": "Reopen",
+      "manage": "Manage",
+      "more": "More actions for {name}",
+      "seeComments": "See comments",
+      "seeRequest": "See request"
+    },
+    "prompt": {
+      "title": "Another home to fill?",
+      "body": "Start a draft in a few minutes. We review every listing before it goes live — usually within two working days.",
+      "cta": "Add property"
     }
   },
   "footer": {

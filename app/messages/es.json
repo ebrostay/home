@@ -40,8 +40,105 @@
     "signIn": "Entrar",
     "pill": {
       "find": "Buscar vivienda",
-      "list": "Publica tu vivienda",
+      "list": "Gestiona tu vivienda",
       "how": "Cómo funciona"
+    }
+  },
+  "host": {
+    "eyebrow": "PROPIETARIO",
+    "title": "Gestiona tu vivienda",
+    "tagline": "Todas tus viviendas en Ebrostay. Los precios son la estimación que ven los huéspedes: tú confirmas el precio final en cada solicitud.",
+    "add": "Añadir vivienda",
+    "loading": "Cargando tus viviendas…",
+    "error": "No se han podido cargar tus viviendas.",
+    "retry": "Reintentar",
+    "soon": "El editor de anuncios llega a continuación.",
+    "signedOut": {
+      "title": "Inicia sesión para gestionar tus viviendas",
+      "body": "Tus anuncios, solicitudes y disponibilidad están en tu cuenta."
+    },
+    "empty": {
+      "title": "Aún no tienes viviendas",
+      "body": "Empieza un borrador en unos minutos. Revisamos cada anuncio antes de publicarlo, normalmente en dos días laborables."
+    },
+    "ledger": {
+      "rule": "CARTERA · {month}",
+      "liveLabel": "ANUNCIOS PUBLICADOS",
+      "liveNote": "{total, plural, one {de # vivienda} other {de # viviendas}} · {review, plural, =0 {ninguna en revisión} other {# en revisión}}",
+      "occupancyLabel": "OCUPACIÓN, PRÓXIMOS 12 MESES",
+      "occupancyNote": "{booked} de {sellable} meses reservados",
+      "occupancyNoteEmpty": "aún no hay nada que alquilar",
+      "vacancyLabel": "PRÓXIMA VACANTE",
+      "vacancyOpen": "LIBRE YA",
+      "vacancyOpenNote": "{count, plural, one {# vivienda acepta solicitudes} other {# viviendas aceptan solicitudes}}",
+      "vacancyDateNote": "{name} queda libre el {date}",
+      "vacancyNone": "—",
+      "vacancyNoneNote": "añade una vivienda para verlo",
+      "requestsLabel": "SOLICITUDES PENDIENTES",
+      "requestsNote": "{days, plural, =0 {la más antigua ha llegado hoy} one {la más antigua lleva # día esperando} other {la más antigua lleva # días esperando}}",
+      "requestsNoneNote": "no hay nada esperándote"
+    },
+    "pending": {
+      "headline": "{count, plural, one {# solicitud de reserva esperando} other {# solicitudes de reserva esperando}}",
+      "explainer": "Acepta o rechaza dentro de cada vivienda: la cartera se actualiza cuando lo haces.",
+      "chip": "{count} · {name}"
+    },
+    "tabs": {
+      "all": "Todas",
+      "live": "Publicadas",
+      "changes": "Con cambios",
+      "review": "En revisión",
+      "draft": "Borradores",
+      "paused": "En pausa"
+    },
+    "legend": {
+      "title": "PRÓXIMOS 12 MESES",
+      "open": "Libre",
+      "partial": "Parcial",
+      "taken": "Ocupado"
+    },
+    "state": {
+      "live": "PUBLICADA",
+      "review": "EN REVISIÓN",
+      "changes": "CAMBIOS SOLICITADOS",
+      "draft": "BORRADOR",
+      "paused": "EN PAUSA"
+    },
+    "row": {
+      "noPhotos": "Todavía sin fotos",
+      "addressUnset": "Dirección sin definir",
+      "specsUnset": "Habitaciones sin definir",
+      "progress": "{done} de {total} secciones",
+      "priceUnset": "Sin definir",
+      "priceNote": "por 30 días · estimación",
+      "priceNoteUnset": "añade un precio mensual",
+      "requests": "{count, plural, one {# solicitud} other {# solicitudes}}",
+      "occupied": "Ocupada hasta el {date}",
+      "submitted": "Enviada el {date}. Respondemos en dos días laborables: no tienes que hacer nada hasta entonces.",
+      "changes": "El equipo de revisión la ha devuelto con comentarios.",
+      "draft": "Solo tú puedes verla. {left, plural, one {Queda # sección vacía} other {Quedan # secciones vacías}}.",
+      "draftComplete": "Solo tú puedes verla. Está todo completo: envíala a revisión.",
+      "paused": "Cerrada a nuevas solicitudes: los huéspedes no la encuentran en la búsqueda."
+    },
+    "actions": {
+      "overview": "Ver la vivienda",
+      "viewAsGuest": "Ver como huésped",
+      "viewSubmission": "Ver lo enviado",
+      "withdraw": "Retirar",
+      "fix": "Corregir y reenviar",
+      "preview": "Vista previa",
+      "continue": "Seguir el borrador",
+      "delete": "Eliminar",
+      "reopen": "Reabrir",
+      "manage": "Gestionar",
+      "more": "Más acciones para {name}",
+      "seeComments": "Ver comentarios",
+      "seeRequest": "Ver solicitud"
+    },
+    "prompt": {
+      "title": "¿Otra vivienda que llenar?",
+      "body": "Empieza un borrador en unos minutos. Revisamos cada anuncio antes de publicarlo, normalmente en dos días laborables.",
+      "cta": "Añadir vivienda"
     }
   },
   "footer": {

@@ -53,6 +53,42 @@ export type PropertyDetail = Omit<PropertySummary, "coverUrl"> & {
   photos: PropertyPhoto[];
 };
 
+// The five states a listing moves through (spec-v2 §2.2.1). Stored values, not
+// labels: the portfolio page maps them to owner-facing words in both locales.
+export type PropertyStatus =
+  | "draft"
+  | "pending_review"
+  | "published"
+  | "rejected"
+  | "archived";
+
+export type HostRange = PublicRange & { status: string | null; note: string | null };
+
+/** An owner's own listing (api/Models/HostModels.cs) — carries the things the
+ *  public projection strips: lifecycle status, the reviewer's note, and how
+ *  much of the listing is still empty. */
+export type HostProperty = {
+  id: string;
+  status: PropertyStatus;
+  reviewNote: string | null;
+  name: string;
+  address: string | null;
+  area: Bilingual | null;
+  bedrooms: number;
+  bathrooms: number;
+  sizeM2: number;
+  priceNumber: number;
+  coverUrl: string | null;
+  photoCount: number;
+  sectionsDone: number;
+  sectionsTotal: number;
+  requestCount: number;
+  oldestRequestAt: string | null;
+  availableFrom: string | null;
+  updatedAt: string | null;
+  availability: HostRange[];
+};
+
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 async function get<T>(path: string): Promise<T> {
@@ -70,6 +106,7 @@ export class ApiError extends Error {
 }
 
 export const fetchProperties = () => get<PropertySummary[]>("/properties");
+export const fetchHostProperties = () => get<HostProperty[]>("/host/properties");
 export const fetchProperty = (id: string) =>
   get<PropertyDetail>(`/properties/${encodeURIComponent(id)}`);
 

@@ -20,6 +20,13 @@ const sourcePath = process.argv[2] ?? new URL("./seed-source.json", import.meta.
 const source = JSON.parse(readFileSync(sourcePath, "utf8"));
 
 const BLOB = "https://ebrostayphotos.blob.core.windows.net/property-photos";
+
+// Who owns the seeded listings. The default is a placeholder that matches no
+// real principal, so the sample homes are public but belong to nobody. To see
+// them on the owner portfolio locally, re-seed with your own principal id —
+// the SWA emulator hashes provider+username into one, readable at /api/me:
+//   SEED_HOST_ID=$(curl -s localhost:4280/api/me | jq -r .userId) node infra/seed.mjs
+const HOST_ID = process.env.SEED_HOST_ID ?? "seed-host";
 const NOW = "2026-07-22T12:00:00Z";
 
 // Hand-tuned per-listing facts the v1 sample data doesn't carry explicitly
@@ -70,7 +77,7 @@ function toDoc(p) {
     id: p.id,
     status: "published",
     reviewNote: null,
-    hostId: "seed-host",
+    hostId: HOST_ID,
 
     city: p.city ?? "zaragoza",
     type: p.type ?? "apartment",

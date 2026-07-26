@@ -202,8 +202,7 @@ export function PropertyRow({
         )}
 
         {/* Pinned to the bottom so the bands line up across rows whether or not
-            the row above carried a note. Month labels are dropped when the row
-            stacks — the bars still read, the scale would not. */}
+            the row above carried a note. */}
         {isDraft ? (
           <div className="mt-auto flex items-center gap-3 pt-2">
             <span className="h-1.5 max-w-[17.5rem] flex-1 overflow-hidden rounded-full bg-surface-2">
@@ -220,9 +219,7 @@ export function PropertyRow({
           </div>
         ) : (
           <div
-            className={`mt-auto max-w-[27.5rem] pt-2 max-[50rem]:[&_.band-label]:hidden ${
-              dim ? "opacity-50" : ""
-            }`}
+            className={`mt-auto max-w-[27.5rem] pt-2 ${dim ? "opacity-50" : ""}`}
           >
             <AvailabilityBand months={monthsFor(p, locale, now)} />
           </div>

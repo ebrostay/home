@@ -785,8 +785,14 @@ the owner's payout honest and the tenant's total complete.
      what the register said.
 - **🔜 Requirement on the admin review queue** (§4.5, not built): when
   reviewing a listing that carries a `cadastralRef`, query the Catastro at that
-  moment and show the same comparison. Do not read a stored copy — there
-  isn't one, deliberately.
+  moment and show the comparison. Do not read a stored copy — there isn't one,
+  deliberately. §4.5 lists the four signals; the important one is **`luso`,
+  the register's use classification**, which the editor deliberately says
+  nothing about. A reference resolving to `Comercial` or
+  `Almacén-Estacionamiento` is probably not a home — but a legitimately
+  reclassified property exists, and warning its owner on every visit would
+  train them to ignore the panel. It is a reviewer's judgement, not a form
+  validation (product owner, 2026-07-28).
 - **🔜 Requirement on the create-a-listing wizard:** the cadastral reference
   should come *early and prominently*, not sit as an optional field near the
   end. It is the cheapest verification in the flow and it prefills the address,

@@ -233,6 +233,24 @@ listings — enforced in the functions (§3.5), not the UI.
 
 - **Review queue:** `pending_review` listings, oldest first; full detail view;
   **Approve** → `published`, **Reject** (note required) → `rejected`.
+  - **🔜 Catastro check (ADR-027).** When the listing carries a
+    `cadastralRef`, call the Catastro **at review time** and show what it says
+    beside what the owner claims. Nothing is stored — read a live answer, not
+    a copy, because the only copy would be one the client reported.
+    `app/lib/catastro.ts` already does the call and the parsing.
+
+    Four things to put in front of the reviewer:
+
+    | Signal | Source | Why it matters |
+    | --- | --- | --- |
+    | **Use** | `luso` | The strongest one, and the reviewer's job rather than the owner's (product owner, 2026-07-28). A reference resolving to `Comercial` or `Almacén-Estacionamiento` is probably not a home. Deliberately *not* warned about in the editor: a legitimately reclassified property would be nagged on every visit. |
+    | Built surface | `sfc` | A listing claiming much more than the register records is a claim worth reading. Note `sfc` includes a share of common areas, so it runs *above* what an owner measures inside — a small excess is normal, a large one is not. |
+    | Postcode | `dp` | Cheap contradiction check against the address. |
+    | Position | `Consulta_CPMRC` | The parcel centroid against the listing's pin. Far apart means the reference and the map disagree about which building this is. |
+
+    None of these is a rejection on its own. The register goes stale, and an
+    owner may simply be right — that is why the owner is never blocked from
+    saving them (ADR-027 decision 4b). They are what a reviewer looks at.
 - **All-properties management:** list/filter every listing in any status;
   direct edit (no re-review, §2.2.1); pause/takedown.
 - **Users:** list `profiles` (id, provider, name, created, flags);

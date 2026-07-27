@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { CalendarPlus, Lock, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { HostRange } from "@/lib/api";
+import type { HostRange, PublicRange } from "@/lib/api";
 import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
-import { monthStates } from "@/lib/availability";
+import { monthStates, turnaroundRanges, withTurnover } from "@/lib/availability";
 import { BAND_MONTHS, LIMITS, isoDay } from "@/lib/manage";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { AvailabilityCalendar } from "@/components/ui/AvailabilityCalendar";
@@ -57,6 +57,7 @@ export function AvailabilityEditor({
   blocks,
   holds = [],
   availableFrom,
+  turnoverDays,
   onChange,
   locale,
   now,
@@ -66,6 +67,9 @@ export function AvailabilityEditor({
    *  flow's job, and the API preserves them across a save regardless. */
   holds?: HostRange[];
   availableFrom: string | null;
+  /** Days shut after each stay (ADR-026). Live from the pricing form, so
+   *  changing it moves the calendar before anything is saved. */
+  turnoverDays: number;
   onChange: (blocks: HostRange[]) => void;
   locale: string;
   now: Date;
@@ -79,13 +83,18 @@ export function AvailabilityEditor({
   const [browse, setBrowse] = useState(() => startOfMonth(now));
 
   const all = [...blocks, ...holds];
-  const open = monthStates(all, availableFrom, locale, now, BAND_MONTHS).filter(
+  // What a guest would be shown: the blocks with their turnaround folded in.
+  // The band and the occupancy figure read THIS, so the owner's summary can
+  // never claim a month is freer than the search page will sell it as.
+  const sellable = withTurnover(all, turnoverDays);
+  const turnaround = turnaroundRanges(all, turnoverDays);
+  const open = monthStates(sellable, availableFrom, locale, now, BAND_MONTHS).filter(
     (m) => m.state === "open",
   ).length;
 
   // `end` is exclusive but a calendar selection is inclusive of its last day,
   // so every conversion in this component goes through these two lines.
-  const toMatcher = (r: HostRange) => ({
+  const toMatcher = (r: PublicRange) => ({
     from: day(r.start),
     to: day(addDays(r.end, -1)),
   });
@@ -102,6 +111,9 @@ export function AvailabilityEditor({
   // Two independent calendars can straddle a block neither of them let you
   // land on. Catching it here beats a round trip that comes back
   // `blocks_overlap` with the selection already gone.
+  // Checked against the RAW blocks, not the buffered ones: an owner closing
+  // the days right after a stay is closing days that are already shut, which is
+  // harmless and occasionally deliberate. Only a real double-booking is an error.
   const conflict =
     !!selection &&
     all.some((r) =>
@@ -112,7 +124,7 @@ export function AvailabilityEditor({
   // the calendar's current pair marked on it. Every month carries the flag,
   // not just the two — that is what tells the band it has a calendar to track.
   const shown = MONTHS_SHOWN.map((offset) => addMonthsTo(browse, offset));
-  const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS).map(
+  const band = monthStates(sellable, availableFrom, locale, now, BAND_MONTHS).map(
     (m, i) => {
       const month = new Date(now.getFullYear(), now.getMonth() + i, 1);
       return { ...m, inView: shown.some((s) => sameMonth(s, month)) };
@@ -126,7 +138,12 @@ export function AvailabilityEditor({
     onChange(
       [
         ...blocks,
-        { ...selection, status: "confirmed", note: note.trim() || null },
+        {
+          ...selection,
+          status: "confirmed",
+          note: note.trim() || null,
+          turnoverDaysOverride: null,
+        },
       ].sort((a, b) => a.start.localeCompare(b.start)),
     );
     setRange({});
@@ -160,6 +177,7 @@ export function AvailabilityEditor({
         month={browse}
         onMonthChange={setBrowse}
         booked={all.map(toMatcher)}
+        turnaround={turnaround.map(toMatcher)}
         navStart={addMonthsTo(startOfMonth(now), -12)}
         navEnd={addMonthsTo(startOfMonth(now), 24)}
       />
@@ -265,7 +283,9 @@ export function AvailabilityEditor({
               onChange={setRange}
               moveInLabel={t("from")}
               moveOutLabel={t("to")}
-              booked={all.map(toMatcher)}
+              // Both, so a tenant-facing closure and its turnaround are equally
+              // unpickable — the owner cannot open a window that is not there.
+              booked={[...all, ...turnaround].map(toMatcher)}
               // An owner's own block has no floor, no ceiling and no rule
               // against the past — this records the home, it does not sell it.
               minDays={0}
@@ -318,6 +338,7 @@ function Legend() {
     { key: "open", className: "bg-river" },
     { key: "partial", className: "" },
     { key: "booked", className: "bg-occupied" },
+    { key: "turnaround", className: "" },
   ] as const;
 
   return (
@@ -333,7 +354,14 @@ function Legend() {
                     background:
                       "linear-gradient(90deg, var(--occupied) 50%, var(--river) 50%)",
                   }
-                : undefined
+                : i.key === "turnaround"
+                  ? {
+                      // Same hatch as the calendar cell, so the swatch is the
+                      // key to the thing rather than an approximation of it.
+                      background:
+                        "repeating-linear-gradient(45deg, transparent 0 3px, color-mix(in oklab, var(--occupied) 28%, transparent) 3px 6px) var(--surface-2)",
+                    }
+                  : undefined
             }
           />
           {t(i.key)}

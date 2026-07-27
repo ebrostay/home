@@ -120,6 +120,7 @@ function toDoc(p) {
     // the seed should invent for them.
     cleaningBy: x.cleaningBy ?? "platform",
     cleaningFeeEur: x.cleaningFeeEur ?? null,
+    turnoverDays: x.turnoverDays ?? 3,
     minStayMonths: 1,
     // 11, not 12: ADR-022 caps a stay under 365 days, and 12 calendar months
     // is 365 on the nose — the booking panel already refuses to offer it.
@@ -142,6 +143,8 @@ function toDoc(p) {
     // v1 sample "unavailable" pairs → confirmed blocks, end exclusive
     availability: (p.unavailable ?? []).map(([start, end]) => ({
       start, end, status: "confirmed", note: null, holdExpiresAt: null,
+      // Admin-set per stay; null means "use the listing's turnoverDays".
+      turnoverDaysOverride: null,
     })),
 
     createdAt: NOW,

@@ -100,7 +100,7 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "minStayMonths": 1, "maxStayMonths": 11,   // hard cap 11 regardless
 
   // — turnover (ADR-026) —
-  "turnoverDays": 3,                  // 🔜 days shut after a stay for
+  "turnoverDays": 3,                  // ✅ days shut after a stay for
                                       //   inspection, meter readings, deep
                                       //   clean, repairs. Applied by the
                                       //   overlap predicate, never written as
@@ -203,7 +203,7 @@ Each entry: `{ start, end, status, holdExpiresAt?, note?, turnoverDaysOverride? 
                          OR (entry.status == "hold" AND entry.holdExpiresAt > now)
   ```
 
-- **Turnover buffer** 🔜 (ADR-026, not yet implemented). A home is not
+- **Turnover buffer** ✅ (ADR-026). A home is not
   relettable the day the keys come back: the inventory has to be checked, the
   meters read (ADR-023 settles utilities after move-out), and a stay measured
   in months needs a deep clean, not a turnover clean. Every blocking entry

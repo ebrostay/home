@@ -183,7 +183,8 @@
         "hold_conflict": "Someone is mid-booking on those dates. Try again once the hold expires.",
         "stale_write": "This home changed somewhere else while you were editing. Reload to see the current version.",
         "cleaning_by_invalid": "Pick who arranges the turnaround.",
-        "cleaning_fee_out_of_range": "Enter a turnaround fee of 1.000 € or less."
+        "cleaning_fee_out_of_range": "Enter a turnaround fee of 1.000 € or less.",
+        "turnover_out_of_range": "Choose a turnaround of 30 days or fewer."
       },
       "stays": {
         "label": "STAYS",
@@ -265,7 +266,12 @@
         "cleaningHint": {
           "platform": "We inspect, read the meters and deep-clean between stays, and charge the tenant for it. Nothing to organise, nothing in your payout.",
           "host": "You organise the clean and the inspection; we charge the tenant your fee at move-in and pass it to you in full."
-        }
+        },
+        "turnover": "Days closed after each stay",
+        "turnoverNone": "None",
+        "days": "{count, plural, one {# day} other {# days}}",
+        "turnoverHint": "{count, plural, one {# day} other {# days}} shut after every stay for the inspection, the meter readings and the deep clean. Guests cannot book into them.",
+        "turnoverHintNone": "Back-to-back stays. Only choose this if a home can be inspected, read and deep-cleaned the same day."
       },
       "availability": {
         "label": "AVAILABILITY · NEXT 12 MONTHS",
@@ -288,7 +294,8 @@
         "legend": {
           "open": "Open",
           "partial": "Part booked",
-          "booked": "Booked or closed"
+          "booked": "Booked or closed",
+          "turnaround": "Turnaround"
         },
         "badge": {
           "unsaved": "UNSAVED",

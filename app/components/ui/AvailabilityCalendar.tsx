@@ -29,6 +29,7 @@ export function AvailabilityCalendar({
   month,
   onMonthChange,
   booked = [],
+  turnaround = [],
   navStart,
   navEnd,
   numberOfMonths = 2,
@@ -38,6 +39,10 @@ export function AvailabilityCalendar({
   onMonthChange: (month: Date) => void;
   /** Days already taken — solid, and not presented as available. */
   booked?: Matcher[];
+  /** Days shut for the turnaround after a stay (ADR-026). Unavailable like a
+   *  booking, but drawn differently: an owner looking at a full month needs to
+   *  know which days are earning and which are the cost of the ones that did. */
+  turnaround?: Matcher[];
   navStart?: Date;
   navEnd?: Date;
   numberOfMonths?: number;
@@ -59,9 +64,11 @@ export function AvailabilityCalendar({
         startMonth={navStart}
         endMonth={navEnd}
         numberOfMonths={numberOfMonths}
-        disabled={booked}
-        modifiers={{ booked }}
-        modifiersClassNames={{ booked: "day-booked" }}
+        disabled={[...turnaround, ...booked]}
+        modifiers={{ turnaround, booked }}
+        // `booked` last: a day that is both — two stays back to back — is a
+        // booking first, and the CSS lets the later rule win.
+        modifiersClassNames={{ turnaround: "day-turnaround", booked: "day-booked" }}
       />
     </div>
   );

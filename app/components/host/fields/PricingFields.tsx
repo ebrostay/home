@@ -27,6 +27,10 @@ const MIN_STAY_CHOICES = [1, 2, 3, 6];
 /** Only used when an owner turns the cap on and has never set one. */
 const DEFAULT_CAP = 90;
 
+/** Turnaround windows worth offering. 0 is real — some owners clean same-day —
+ *  and 7 covers the case where repainting is likely. */
+const TURNOVER_CHOICES = [0, 1, 2, 3, 5, 7];
+
 export function PricingFields({
   value,
   onChange,
@@ -167,6 +171,27 @@ export function PricingFields({
         <p className="text-xs leading-[1.4] text-muted">
           {t(`cleaningHint.${value.cleaningBy}` as "cleaningHint.host")}
         </p>
+
+        <div className="mt-1 flex flex-col gap-2">
+          <span className="text-[0.8125rem] font-semibold text-ink">
+            {t("turnover")}
+          </span>
+          <ChipGroup<number>
+            name="turnoverDays"
+            label={t("turnover")}
+            value={value.turnoverDays}
+            onChange={(v) => set("turnoverDays", v)}
+            options={TURNOVER_CHOICES.map((d) => ({
+              value: d,
+              label: d === 0 ? t("turnoverNone") : t("days", { count: d }),
+            }))}
+          />
+          <p className="text-xs leading-[1.4] text-muted">
+            {value.turnoverDays === 0
+              ? t("turnoverHintNone")
+              : t("turnoverHint", { count: value.turnoverDays })}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2.5">

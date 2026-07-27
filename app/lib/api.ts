@@ -65,7 +65,13 @@ export type PropertyStatus =
   | "rejected"
   | "paused";
 
-export type HostRange = PublicRange & { status: string | null; note: string | null };
+export type HostRange = PublicRange & {
+  status: string | null;
+  note: string | null;
+  /** Admin-set, for a stay whose turnaround cannot be staffed in the listing's
+   *  usual window. Null means "use the listing's turnoverDays". */
+  turnoverDaysOverride: number | null;
+};
 
 /** An owner's own listing (api/Models/HostModels.cs) — carries the things the
  *  public projection strips: lifecycle status, the reviewer's note, and how
@@ -109,6 +115,8 @@ export type HostPricing = {
   utilitiesCapEur: number | null;
   minStayMonths: number;
   maxStayMonths: number;
+  /** Days shut after every stay for inspection, meters and the deep clean. */
+  turnoverDays: number;
   cleaningBy: CleaningBy;
   /** Set only when the owner does the turnaround themselves. */
   cleaningFeeEur: number | null;

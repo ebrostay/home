@@ -328,6 +328,9 @@ function ManageContent() {
         blocks={blocks}
         holds={holds}
         availableFrom={property.availableFrom}
+        // From the FORM, not the saved value: raising the turnaround should
+        // shut the extra days on the calendar before you commit to it.
+        turnoverDays={pricing.turnoverDays}
         onChange={(next) => {
           setBlocks(next);
           setBlocksSave(blocksDirty(next, property.availability) ? "dirty" : "clean");
@@ -362,6 +365,7 @@ const toValue = (d: HostPropertyDetail): PricingValue => ({
   minStayMonths: d.pricing.minStayMonths,
   cleaningBy: d.pricing.cleaningBy,
   cleaningFeeEur: d.pricing.cleaningFeeEur,
+  turnoverDays: d.pricing.turnoverDays,
 });
 
 /** "OCT 2026" for a single month, "OCT–NOV 2026" for a run. */

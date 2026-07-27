@@ -258,6 +258,7 @@ export const LIMITS = {
   maxDeposit: 100_000,
   maxCap: 2_000,
   maxCleaningFee: 1_000,
+  maxTurnoverDays: 30,
   maxBlocks: 60,
   maxNote: 120,
 } as const;
@@ -278,7 +279,8 @@ export function pricingDirty(a: HostPricing, b: HostPricing): boolean {
     (a.utilitiesCapEur ?? 0) !== (b.utilitiesCapEur ?? 0) ||
     a.minStayMonths !== b.minStayMonths ||
     a.cleaningBy !== b.cleaningBy ||
-    (a.cleaningFeeEur ?? 0) !== (b.cleaningFeeEur ?? 0)
+    (a.cleaningFeeEur ?? 0) !== (b.cleaningFeeEur ?? 0) ||
+    a.turnoverDays !== b.turnoverDays
   );
 }
 

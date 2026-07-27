@@ -25,7 +25,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
 | ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
 | ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
-| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked; fee ✅ built, buffer 🔜 |
+| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked & built |
 
 ---
 
@@ -546,8 +546,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 
 ## ADR-026 — Turnover days between stays, and who is paid for the clean
 
-- **Status:** ✅ locked 2026-07-27 (product owner: Raphael). Decision 2 (the
-  cleaning fee) is ✅ **built**; Decision 1 (`turnoverDays`) is 🔜 outstanding.
+- **Status:** ✅ locked and ✅ **built** 2026-07-27 (product owner: Raphael).
   **Extends ADR-023** (which already settles utilities after
   move-out) and the availability rules of §2.2.3.
 - **Context.** v2 has been modelling a stay as a half-open range and nothing
@@ -616,30 +615,43 @@ the owner's payout honest and the tenant's total complete.
 
 ### Consequences — outstanding work
 
-- ✅ **Data model (§2.2):** `cleaningBy` + `cleaningFeeEur` on the property,
-  both defaulted so existing documents stay valid. 🔜 still to add:
-  `turnoverDays`, and `turnoverDaysOverride` on the availability entry
-  (§2.2.3).
+- ✅ **Data model (§2.2):** `cleaningBy`, `cleaningFeeEur` and `turnoverDays`
+  on the property; `turnoverDaysOverride` on the availability entry (§2.2.3).
+  All defaulted, so documents written before this change stay valid and pick
+  up a 3-day turnaround automatically.
 - ✅ **The platform fee** lives in the `PLATFORM_CLEANING_FEE_EUR` app setting
   (`api/Services/PlatformSettings.cs`, placeholder 120 €) and is resolved
   server-side: the public projection returns one already-resolved
   `cleaningFeeEur`, so a visitor is quoted a number and never learns who
   arranges the clean.
-- **The overlap predicate (§2.2.3)** grows the buffer. It is used by the client
-  grid filter, the client estimate check, the server booking validation and the
-  server block-write validation — the point of having one is that this is one
-  change, and all four must land together or v1's bound-mismatch bug returns.
+- ✅ **The buffer lives in the public projection** (`BlockingRanges`), not at
+  each consumer. The search grid, the detail calendar, the estimate conflict
+  check and the band all read that one list, so they cannot disagree about
+  whether a home is free the day after a stay — and a guest is given dates, not
+  reasons. The owner's projection stays RAW and the editor derives the
+  turnaround client-side (`lib/availability.ts`), because the blocks it is
+  drawing include ones not yet saved.
+- ✅ **Owner writes preserve the override.** The availability payload replaces
+  the owner's blocks wholesale, so an unchanged block carries its admin-set
+  override back in, matched on its dates. A block whose dates moved is a
+  different stay whose staffing was never agreed, and correctly loses it.
 - ✅ **Pricing (`lib/pricing.ts`):** a `cleaningFee` term in `Estimate` and on
   the payment schedule's first instalment, excluded from the commission base.
   🔜 when the booking endpoint is built,
   `bookingRequests.clientEstimate`/`serverEstimate` must carry the field so the
   parity tripwire (§4.3) covers it.
-- ✅ **Owner UI:** `cleaningBy` and the fee in the pricing fieldset; the payout
-  preview shows the fee as income only when the owner arranges the clean, and
-  as "we arrange it" otherwise — Ebrostay's fee is Ebrostay's, and showing it
-  in their payout would be inventing income. 🔜 turnaround as a fourth
-  band/calendar state with its own legend entry, `turnoverDays` in the
-  fieldset, and turnover days in the payout preview as unsold inventory.
+- ✅ **Owner UI:** `cleaningBy`, the fee and `turnoverDays` in the pricing
+  fieldset; the payout preview shows the fee as income only when the owner
+  arranges the clean, and as "we arrange it" otherwise — Ebrostay's fee is
+  Ebrostay's, and showing it in their payout would be inventing income.
+  Turnaround is its own hatched state on the day calendar with a legend entry,
+  distinct from a booking: an owner looking at a full month needs to know which
+  days earned and which were the cost of the ones that did. The band counts it
+  as taken rather than gaining a fourth state — a 3-day window never fills a
+  month, and "partial" already says so.
+- 🔜 **Admin UI for the per-stay override.** The field and its enforcement
+  exist; the control does not, so today it is set by hand.
+- 🔜 **Turnover days in the payout preview** as unsold inventory.
 - **Admin UI:** the per-stay override.
 - **Commercial note worth carrying forward:** the buffer is unsold inventory
   and it scales against short stays — 3 days costs ~1.6% of a six-month stay

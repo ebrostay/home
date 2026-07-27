@@ -1,6 +1,42 @@
 import type { MonthAvailability, MonthState } from "@/components/MonthBand";
-import type { PublicRange } from "@/lib/api";
-import { rangesOverlap } from "@/lib/pricing";
+import type { HostRange, PublicRange } from "@/lib/api";
+import { addDays, rangesOverlap } from "@/lib/pricing";
+
+// A home is not relettable the day the keys come back: the inventory has to be
+// checked, the meters read, and a stay measured in months needs a deep clean
+// (ADR-026). Every blocking range therefore closes the `turnoverDays` after it.
+//
+// The public API applies this server-side, so guests, search and the estimate
+// all receive ranges with the buffer already folded in. This exists for the
+// OWNER's editor alone, where the blocks being displayed include ones the owner
+// has just added and not yet saved — the server has never seen them, so the
+// same rule has to be available on this side too. Same arithmetic, one place.
+
+export function turnoverOf(r: HostRange, listingDays: number): number {
+  return Math.max(0, r.turnoverDaysOverride ?? listingDays);
+}
+
+/** Blocking ranges with the buffer folded in — what a guest would be shown. */
+export function withTurnover(
+  ranges: HostRange[],
+  listingDays: number,
+): PublicRange[] {
+  return ranges.map((r) => ({
+    start: r.start,
+    end: addDays(r.end, turnoverOf(r, listingDays)),
+  }));
+}
+
+/** Just the turnaround windows: [end, end + turnover). Empty when a range has
+ *  no buffer, so a listing with turnoverDays 0 produces nothing to draw. */
+export function turnaroundRanges(
+  ranges: HostRange[],
+  listingDays: number,
+): PublicRange[] {
+  return ranges
+    .map((r) => ({ start: r.end, end: addDays(r.end, turnoverOf(r, listingDays)) }))
+    .filter((r) => r.end > r.start);
+}
 
 // Derive the card band's 12 upcoming month states from public availability
 // ranges (+ availableFrom, which blocks everything before it).

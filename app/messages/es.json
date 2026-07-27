@@ -183,7 +183,8 @@
         "hold_conflict": "Alguien está reservando esas fechas ahora mismo. Inténtalo cuando caduque la reserva temporal.",
         "stale_write": "Esta vivienda ha cambiado en otro sitio mientras editabas. Recarga para ver la versión actual.",
         "cleaning_by_invalid": "Elige quién organiza la preparación.",
-        "cleaning_fee_out_of_range": "Escribe un importe de preparación de 1.000 € o menos."
+        "cleaning_fee_out_of_range": "Escribe un importe de preparación de 1.000 € o menos.",
+        "turnover_out_of_range": "Elige una preparación de 30 días o menos."
       },
       "stays": {
         "label": "ESTANCIAS",
@@ -265,7 +266,12 @@
         "cleaningHint": {
           "platform": "Revisamos la vivienda, leemos los contadores y hacemos limpieza a fondo entre estancias, y se lo cobramos al inquilino. Ni lo organizas ni sale de tu cobro.",
           "host": "Tú organizas la limpieza y la revisión; le cobramos tu importe al inquilino a la entrada y te lo pasamos íntegro."
-        }
+        },
+        "turnover": "Días cerrados tras cada estancia",
+        "turnoverNone": "Ninguno",
+        "days": "{count, plural, one {# día} other {# días}}",
+        "turnoverHint": "{count, plural, one {# día} other {# días}} cerrados tras cada estancia para la revisión, la lectura de contadores y la limpieza a fondo. Los inquilinos no pueden reservarlos.",
+        "turnoverHintNone": "Estancias seguidas. Elígelo solo si la vivienda se puede revisar, leer y limpiar a fondo el mismo día."
       },
       "availability": {
         "label": "DISPONIBILIDAD · PRÓXIMOS 12 MESES",
@@ -288,7 +294,8 @@
         "legend": {
           "open": "Libre",
           "partial": "Parcialmente reservado",
-          "booked": "Reservado o cerrado"
+          "booked": "Reservado o cerrado",
+          "turnaround": "Preparación"
         },
         "badge": {
           "unsaved": "SIN GUARDAR",

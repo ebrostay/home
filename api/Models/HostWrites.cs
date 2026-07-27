@@ -19,7 +19,8 @@ public record PricingUpdate(
     int? UtilitiesCapEur,
     int MinStayMonths,
     string? CleaningBy,
-    int? CleaningFeeEur);
+    int? CleaningFeeEur,
+    int? TurnoverDays);
 
 /// One owner-authored block. `end` is EXCLUSIVE (§2.2.3). No status field:
 /// everything the owner writes here is `confirmed` — holds belong to the
@@ -38,6 +39,9 @@ public static class HostValidation
     public const int MaxDeposit = 100_000;
     public const int MaxCap = 2_000;
     public const int MaxCleaningFee = 1_000;
+    /// A month of turnaround is not a turnaround, it is a listing that should
+    /// be paused instead.
+    public const int MaxTurnoverDays = 30;
     private const int MaxNoteLength = 120;
 
     private static readonly string[] BillsPolicies = ["included", "capped", "excluded"];
@@ -66,6 +70,8 @@ public static class HostValidation
         // platform's rate is policy, and a listing cannot quote its own.
         if (cleaning == "host" && u.CleaningFeeEur is not (>= 0 and <= MaxCleaningFee))
             return "cleaning_fee_out_of_range";
+
+        if (u.TurnoverDays is < 0 or > MaxTurnoverDays) return "turnover_out_of_range";
 
         return null;
     }

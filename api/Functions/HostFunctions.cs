@@ -131,6 +131,7 @@ public class HostFunctions(
         // Same rule as the bills cap: an amount only survives while the
         // policy it belongs to does.
         doc.CleaningFeeEur = doc.CleaningBy == "host" ? update.CleaningFeeEur : null;
+        doc.TurnoverDays = update.TurnoverDays ?? PropertyDoc.DefaultTurnoverDays;
 
         return await SaveAsync(doc, etag, () => new OkObjectResult(HostProjection.ToPricing(doc, platform.CleaningFeeEur)));
     }
@@ -169,12 +170,25 @@ public class HostFunctions(
             .. holds,
             .. update.Blocks.Select(b => new AvailabilityRange(
                 b.Start!, b.End!, "confirmed",
-                string.IsNullOrWhiteSpace(b.Note) ? null : b.Note.Trim(), null)),
+                string.IsNullOrWhiteSpace(b.Note) ? null : b.Note.Trim(), null,
+                // Preserved, not accepted from the client: the per-stay
+                // override is the admin's, and an owner saving their calendar
+                // must not be able to set or silently drop one.
+                OverrideFor(doc, b.Start!, b.End!))),
         ];
 
         return await SaveAsync(doc, etag, () => new OkObjectResult(
             HostProjection.ToHostProperty(doc, now, 0, null).Availability));
     }
+
+    // The owner's payload replaces their blocks wholesale, so an unchanged
+    // block has to carry its admin-set override back in by hand. Matched on the
+    // dates: a block with the same span IS the same block, and one whose dates
+    // moved is a different stay whose staffing was never agreed.
+    private static int? OverrideFor(PropertyDoc doc, string start, string end) =>
+        doc.Availability
+            .FirstOrDefault(r => r.Start == start && r.End == end && r.Status != "hold")
+            ?.TurnoverDaysOverride;
 
     private static bool HoldAlive(AvailabilityRange r, DateTimeOffset now) =>
         r.HoldExpiresAt is not null &&

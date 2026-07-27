@@ -6,7 +6,13 @@ namespace Ebrostay.Api.Models;
 // exists to show. It is still a projection, not the raw document: `hostId`
 // never travels back to a client that already proved who it is.
 
-public record HostAvailabilityRange(string Start, string End, string? Status, string? Note);
+/// RAW, unlike the public shape: the owner gets the block as stored plus the
+/// per-stay override, and the client derives the turnaround window from the
+/// listing's TurnoverDays. Folding the buffer in here would leave the owner
+/// unable to tell a booking from the days after it — and unable to edit the
+/// block without editing the buffer with it.
+public record HostAvailabilityRange(
+    string Start, string End, string? Status, string? Note, int? TurnoverDaysOverride);
 
 public record HostProperty(
     string Id,
@@ -49,6 +55,7 @@ public record HostPricing(
     int? UtilitiesCapEur,
     int MinStayMonths,
     int MaxStayMonths,
+    int TurnoverDays,
     string CleaningBy, // host | platform
     int? CleaningFeeEur,
     /// What Ebrostay charges when it does the turnaround. Read-only here —
@@ -136,7 +143,8 @@ public static class HostProjection
             p.UpdatedAt,
             p.Availability
                 .Where(r => Blocks(r, now))
-                .Select(r => new HostAvailabilityRange(r.Start, r.End, r.Status, r.Note))
+                .Select(r => new HostAvailabilityRange(
+                    r.Start, r.End, r.Status, r.Note, r.TurnoverDaysOverride))
                 .OrderBy(r => r.Start, StringComparer.Ordinal)
                 .ToArray());
 
@@ -147,6 +155,7 @@ public static class HostProjection
         p.UtilitiesCapEur,
         p.MinStayMonths,
         p.MaxStayMonths,
+        p.TurnoverDays,
         p.CleaningBy,
         p.CleaningFeeEur,
         platformFee);

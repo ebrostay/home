@@ -12,7 +12,10 @@ public record AvailabilityRange(
     string End, // exclusive
     string? Status,
     string? Note,
-    string? HoldExpiresAt);
+    string? HoldExpiresAt,
+    /// Admin-set, for the stay whose turnaround cannot be staffed in the
+    /// listing's usual window. Null means "use the listing's TurnoverDays".
+    int? TurnoverDaysOverride = null);
 
 public class PropertyDoc
 {
@@ -70,6 +73,14 @@ public class PropertyDoc
     //                app settings so it can be repriced without a migration.
     public string CleaningBy { get; set; } = "platform";
     public int? CleaningFeeEur { get; set; }
+
+    // Days shut after every stay so that work can happen. DERIVED into the
+    // overlap predicate, never written to Availability: a stored buffer is a
+    // second copy of a rule and goes stale the moment the rule or the stay
+    // moves (§2.2.3).
+    public int TurnoverDays { get; set; } = DefaultTurnoverDays;
+
+    public const int DefaultTurnoverDays = 3;
 
     // Which optional stay terms the OWNER has confirmed apply to this home
     // (ADR-023). Terms the document already implies are NOT listed here —

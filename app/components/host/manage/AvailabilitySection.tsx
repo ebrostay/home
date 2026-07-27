@@ -15,6 +15,7 @@ export function AvailabilitySection({
   blocks,
   holds,
   availableFrom,
+  turnoverDays,
   onChange,
   state,
   errorText,
@@ -26,6 +27,7 @@ export function AvailabilitySection({
   blocks: HostRange[];
   holds: HostRange[];
   availableFrom: string | null;
+  turnoverDays: number;
   onChange: (blocks: HostRange[]) => void;
   state: SaveState;
   /** Already localized by the page — one code→copy map, not one per section. */
@@ -57,6 +59,7 @@ export function AvailabilitySection({
         blocks={blocks}
         holds={holds}
         availableFrom={availableFrom}
+        turnoverDays={turnoverDays}
         onChange={onChange}
         locale={locale}
         now={now}

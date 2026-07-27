@@ -461,6 +461,22 @@
   box-shadow: var(--shadow-pop);
 }
 
+/* Where the geocoder thinks the address is, shown beside the pin the owner
+   placed by hand. River, not brand: everywhere else in the product river means
+   "this is information, not your setting" — the Manage cross-link, the English
+   panel, the upload note — so the suggestion reads as a proposal without
+   needing a legend. The dash says "not committed yet", and it goes on the
+   40px halo rather than the 18px dot: at that diameter a dashed 3px border
+   renders as four spikes and the pin reads as a starburst. */
+.map-marker-suggested {
+  background: color-mix(in oklab, var(--river-deep) 16%, transparent);
+  outline: 1.5px dashed var(--river-deep);
+  outline-offset: -1.5px;
+}
+.map-marker-suggested::after {
+  background: var(--river-deep);
+}
+
 /* Budget controls. The drawing IS the track: a native range input is laid over
    the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
    and touch come from the platform rather than a hand-rolled pointer handler.

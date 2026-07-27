@@ -405,7 +405,21 @@
         "area": "Zona",
         "areaPlaceholder": "Casco Histórico",
         "mapLabel": "Ubicación de la vivienda en el mapa",
-        "mapCaption": "Arrastra el punto para corregirlo"
+        "mapCaption": "Arrastra el punto para corregirlo",
+        "streetHint": "Escribe la calle y el número; buscamos el resto.",
+        "searching": "Buscando la dirección…",
+        "noMatch": "No hemos encontrado esa dirección. Coloca el punto a mano.",
+        "lookupFailed": "No hemos podido buscar la dirección. Rellena los campos a mano.",
+        "matches": "{count, plural, one {# COINCIDENCIA} other {# COINCIDENCIAS}}",
+        "useThis": "Usar este",
+        "conflict": {
+          "postcode": "OpenStreetMap dice que el código postal es {value}.",
+          "area": "OpenStreetMap llama a esta zona {value}."
+        },
+        "suggestedPin": "Punto propuesto a partir de la dirección",
+        "pinSuggestion": "La dirección apunta a {distance} de tu punto.",
+        "movePinHere": "Mover el punto aquí",
+        "keepMine": "Dejar el mío"
       },
       "photos": {
         "intro": "El orden es lo que ve el huésped: la primera foto que no sea un plano es la portada.",

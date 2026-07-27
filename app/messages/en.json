@@ -405,7 +405,21 @@
         "area": "Area",
         "areaPlaceholder": "Old Town",
         "mapLabel": "The home's location on the map",
-        "mapCaption": "Drag the pin to correct it"
+        "mapCaption": "Drag the pin to correct it",
+        "streetHint": "Type the street and number; we look up the rest.",
+        "searching": "Looking up the address…",
+        "noMatch": "We could not find that address. Place the pin by hand.",
+        "lookupFailed": "The address lookup did not answer. Fill the fields in by hand.",
+        "matches": "{count, plural, one {# MATCH} other {# MATCHES}}",
+        "useThis": "Use this",
+        "conflict": {
+          "postcode": "OpenStreetMap says the postcode is {value}.",
+          "area": "OpenStreetMap calls this area {value}."
+        },
+        "suggestedPin": "Pin suggested from the address",
+        "pinSuggestion": "The address points {distance} from your pin.",
+        "movePinHere": "Move the pin here",
+        "keepMine": "Keep mine"
       },
       "photos": {
         "intro": "The order is what a guest sees: the first photo that is not a floor plan is the cover.",

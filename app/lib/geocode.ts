@@ -17,6 +17,8 @@
 // at this volume it would save a handful of requests.
 // ============================================================
 
+import { createThrottle, sleep } from "@/lib/throttle";
+
 /** Everything we are willing to believe from one Nominatim hit. */
 export type GeoCandidate = {
   /** Nominatim's own id, used to de-duplicate across the loosening attempts. */
@@ -74,33 +76,16 @@ const STREET_WORDS =
 
 /** Nominatim asks for at most one request a second. This is the whole of our
  *  compliance with it, so it is enforced here rather than at each call site. */
-let lastCallAt = 0;
-const MIN_GAP_MS = 1_100;
+const claimSlot = createThrottle(1_100);
 
 async function throttled(url: string, signal?: AbortSignal): Promise<NominatimHit[]> {
-  const wait = Math.max(0, lastCallAt + MIN_GAP_MS - Date.now());
+  const wait = claimSlot();
   if (wait > 0) await sleep(wait, signal);
-  lastCallAt = Date.now();
 
   const res = await fetch(url, { headers: { Accept: "application/json" }, signal });
   if (!res.ok) throw new Error(`nominatim ${res.status}`);
   return (await res.json()) as NominatimHit[];
 }
-
-/** Abortable sleep: a debounced field fires often, and a queued request whose
- *  query is already stale must not hold the next one's slot. */
-const sleep = (ms: number, signal?: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    const id = setTimeout(resolve, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(id);
-        reject(new DOMException("Aborted", "AbortError"));
-      },
-      { once: true },
-    );
-  });
 
 /**
  * Resolve a typed address to candidates, best first.

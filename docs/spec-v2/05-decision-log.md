@@ -734,6 +734,13 @@ the owner's payout honest and the tenant's total complete.
     one automatically, so client-direct is the *lower-risk* option here — a
     Function would have to remember. Observed to fail intermittently under
     rapid use, so the fallback copy is not decoration.
+  - **Rate limiting is ours to choose.** The Catastro publishes no figure, so
+    `lib/throttle.ts` applies the same one request a second Nominatim asks
+    for — a free government service we would rather not be blocked from. Each
+    host gets its own budget; one implementation, two instances. The slot is
+    reserved *before* the wait, not after: the obvious version spaces
+    sequential calls and lets concurrent ones fire together, which is the only
+    case that matters.
   - **Coordinates give the 14-character PARCEL**, not the 20-character unit: a
     point identifies a building, and a building holds many flats. The owner
     still supplies the six characters that name theirs.

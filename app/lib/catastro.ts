@@ -26,6 +26,8 @@
 // the answer.
 // ============================================================
 
+import { createThrottle, sleep } from "@/lib/throttle";
+
 const CALLEJERO =
   "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx";
 const COORDENADAS =
@@ -62,33 +64,20 @@ export type CadastreResult =
    *  typed by hand. */
   | { kind: "error" };
 
-// Same rule as the geocoder: one request a second, enforced in one place
-// rather than at each call site.
-let lastCallAt = 0;
-const MIN_GAP_MS = 1_100;
+// The Catastro publishes no rate limit, so this figure is ours, not theirs:
+// the same one request a second Nominatim asks for, applied to a free
+// government service we would rather not be blocked from. Its own state, not
+// shared with the geocoder — two hosts, two budgets.
+const claimSlot = createThrottle(1_100);
 
 async function ask(url: string, signal?: AbortSignal): Promise<Document> {
-  const wait = Math.max(0, lastCallAt + MIN_GAP_MS - Date.now());
+  const wait = claimSlot();
   if (wait > 0) await sleep(wait, signal);
-  lastCallAt = Date.now();
 
   const res = await fetch(url, { headers: { Accept: "application/xml" }, signal });
   if (!res.ok) throw new Error(`catastro ${res.status}`);
   return new DOMParser().parseFromString(await res.text(), "application/xml");
 }
-
-const sleep = (ms: number, signal?: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    const id = setTimeout(resolve, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(id);
-        reject(new DOMException("Aborted", "AbortError"));
-      },
-      { once: true },
-    );
-  });
 
 const text = (doc: Document | Element, tag: string): string | null => {
   const el = doc.getElementsByTagName(tag)[0];

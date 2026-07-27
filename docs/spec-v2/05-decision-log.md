@@ -788,6 +788,14 @@ the owner's payout honest and the tenant's total complete.
     help because it needs a number that already exists. So the two outcomes are
     separate results and the "here are the ones that do exist" heading is never
     shown over an empty list.
+  - **Street-type codes are written out; floor and door codes are not.** The
+    two look like the same decision and are not. `CL`/`AV`/`DS` are
+    administrative codes nobody writes by hand — a Spaniard writes "C/ Movera"
+    — and the chip list is where the owner is *choosing between types* rather
+    than recognising their own, so they render as "Calle", "Avenida",
+    "Diseminado", with an unmapped code falling through to itself. They stay in
+    **Spanish in both locales**: "Calle Movera" is what the deed, the IBI
+    receipt and the post say, and "Movera Street" exists nowhere.
   - **Floor and door codes are passed through, not translated.** The Catastro
     publishes no table for them, and real data returns `S1`, `BJ` and `-1`
     alongside `01`. A list whose whole job is recognition is the wrong place to

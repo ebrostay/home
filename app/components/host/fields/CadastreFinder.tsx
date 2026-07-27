@@ -8,6 +8,7 @@ import {
   preferredStreet,
   searchStreets,
   seedSearch,
+  streetLabel,
   unitsAt,
   type CadastreStreet,
   type CadastreUnit,
@@ -233,7 +234,7 @@ function Finder({
                   : "border-line bg-surface text-body hover:border-river-deep"
               }`}
             >
-              {s.type} {s.name}
+              {streetLabel(s)}
             </button>
           ))}
         </div>

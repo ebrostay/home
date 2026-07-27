@@ -418,6 +418,51 @@ export function seedSearch(address: string): {
 }
 
 /**
+ * The `Sigla` written out.
+ *
+ * `CL`, `AV`, `PS` are the register's administrative codes, not how anyone
+ * writes an address — a Spaniard writes "C/ Movera" or "Avda. Goya". `CL` and
+ * `AV` decode on sight; `DS`, `PJ` and `RC` do not, and the chip list is the
+ * one place the owner is choosing between types rather than recognising their
+ * own.
+ *
+ * Left in Spanish in both locales, deliberately. "Calle Movera" is the string
+ * on the owner's deed, their IBI receipt and their post; "Movera Street"
+ * exists nowhere and would be a name we invented for a real place.
+ *
+ * An unmapped code falls through to itself rather than being guessed at — the
+ * Catastro's full list runs well past these.
+ */
+const SIGLA_NAME: Record<string, string> = {
+  CL: "Calle",
+  AV: "Avenida",
+  PS: "Paseo",
+  PZ: "Plaza",
+  CM: "Camino",
+  CR: "Carretera",
+  RD: "Ronda",
+  VI: "Vía",
+  TR: "Travesía",
+  GL: "Glorieta",
+  PJ: "Pasaje",
+  RC: "Rincón",
+  BO: "Barrio",
+  UR: "Urbanización",
+  PQ: "Parque",
+  PG: "Polígono",
+  GR: "Grupo",
+  LG: "Lugar",
+  // Not a street at all: rural buildings with a number and no road to be on,
+  // which is common around the villages Zaragoza absorbed — and therefore
+  // common in exactly the searches this panel runs.
+  DS: "Diseminado",
+};
+
+/** "Calle Movera", from `CL` + `MOVERA`. */
+export const streetLabel = (s: CadastreStreet) =>
+  `${SIGLA_NAME[s.type] ?? s.type} ${s.name}`;
+
+/**
  * The one street to select on the owner's behalf, or null to let them choose.
  *
  * A name alone is rarely enough — Zaragoza has a Barrio Movera, a Calle

@@ -79,32 +79,30 @@ export type MonthAvailability = {
   label: string; // 3-letter month label, localized by the caller (Intl short)
   state: MonthState;
   newYear?: number; // 2-digit year — set on the first month of a new year
-  /** Set only where the band sits beside a picker (the availability editor):
-   *  the months a pending day-range touches. Green is "selected/yours"
-   *  system-wide, so the wash says which months the selection is about to
-   *  take — the bar keeps its own colour, because what a month IS and what
-   *  you are about to do to it are two different facts. */
-  selected?: boolean;
+  /** Set only where the band sits above a calendar (the availability editor):
+   *  the months that calendar is currently showing. The band then reads as a
+   *  map of where you are in the year — the bar keeps its own colour, because
+   *  what a month IS and which month you are looking at are two different
+   *  facts. Purely a visual tie between two adjacent controls: the calendar
+   *  announces its own months, so this adds nothing to the band's alt text. */
+  inView?: boolean;
 };
 
 export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
   const t = useTranslations("monthBand");
   const hasYearMarks = months.some((m) => m.newYear !== undefined);
-  // Only pad the columns where a selection can exist, so every other band in
-  // the product (cards, portfolio rows, detail page) renders exactly as before.
-  const selectable = months.some((m) => m.selected !== undefined);
-  const chosen = months.filter((m) => m.selected).length;
+  // Only pad the columns where a calendar can point at them, so every other
+  // band in the product (cards, portfolio rows, detail page) is untouched.
+  const tracking = months.some((m) => m.inView !== undefined);
 
   return (
     <div
       role="img"
-      aria-label={
-        t("availabilityAlt", {
-          open: months.filter((m) => m.state === "open").length,
-          partial: months.filter((m) => m.state === "partial").length,
-          total: months.length,
-        }) + (chosen > 0 ? ` — ${t("selectedAlt", { count: chosen })}` : "")
-      }
+      aria-label={t("availabilityAlt", {
+        open: months.filter((m) => m.state === "open").length,
+        partial: months.filter((m) => m.state === "partial").length,
+        total: months.length,
+      })}
       className="flex gap-0.5"
     >
       {months.map((m, i) => (
@@ -115,8 +113,8 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
           )}
           <div
             className={`flex flex-1 flex-col items-center gap-1 ${
-              selectable ? "rounded-sm px-1 py-1 transition-colors duration-(--dur-standard)" : ""
-            } ${m.selected ? "bg-brand-soft" : ""}`}
+              tracking ? "rounded-sm px-1 py-1 transition-colors duration-(--dur-standard)" : ""
+            } ${m.inView ? "bg-brand-soft" : ""}`}
           >
             <div
               className={`h-1.5 w-full rounded-full ${
@@ -137,7 +135,7 @@ export function AvailabilityBand({ months }: { months: MonthAvailability[] }) {
             />
             <span
               className={`data text-[0.5625rem] uppercase leading-none ${
-                m.selected ? "text-brand-strong" : "text-muted"
+                m.inView ? "text-brand-strong" : "text-muted"
               }`}
             >
               {m.label}

@@ -291,7 +291,9 @@
         "from": "From",
         "to": "To",
         "pickFromFirst": "Pick the From date first.",
-        "days": "{count, plural, one {# day} other {# days}}"
+        "days": "{count, plural, one {# day} other {# days}}",
+        "calendarLabel": "Availability calendar",
+        "browseHint": "Two months at a time — the band above marks where you are."
       },
       "billing": {
         "label": "BILLING & PAYOUTS",
@@ -348,8 +350,7 @@
   "monthBand": {
     "stayLength": "Stay length",
     "monthCount": "{count, plural, one {# month} other {# months}}",
-    "availabilityAlt": "{open} of {total} months free, {partial} partially booked",
-    "selectedAlt": "{count, plural, one {# month selected} other {# months selected}}"
+    "availabilityAlt": "{open} of {total} months free, {partial} partially booked"
   },
   "listing": {
     "verified": "Verified",

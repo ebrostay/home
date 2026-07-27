@@ -291,7 +291,9 @@
         "from": "Desde",
         "to": "Hasta",
         "pickFromFirst": "Elige antes la fecha de inicio.",
-        "days": "{count, plural, one {# día} other {# días}}"
+        "days": "{count, plural, one {# día} other {# días}}",
+        "calendarLabel": "Calendario de disponibilidad",
+        "browseHint": "Dos meses a la vez; la banda de arriba marca dónde estás."
       },
       "billing": {
         "label": "COBROS Y PAGOS",
@@ -348,8 +350,7 @@
   "monthBand": {
     "stayLength": "Duración de la estancia",
     "monthCount": "{count, plural, one {# mes} other {# meses}}",
-    "availabilityAlt": "{open} de {total} meses libres, {partial} parcialmente ocupados",
-    "selectedAlt": "{count, plural, one {# mes seleccionado} other {# meses seleccionados}}"
+    "availabilityAlt": "{open} de {total} meses libres, {partial} parcialmente ocupados"
   },
   "listing": {
     "verified": "Verificada",

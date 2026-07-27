@@ -8,8 +8,13 @@ import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
 import { monthStates } from "@/lib/availability";
 import { BAND_MONTHS, LIMITS, isoDay } from "@/lib/manage";
 import { AvailabilityBand } from "@/components/MonthBand";
+import { AvailabilityCalendar } from "@/components/ui/AvailabilityCalendar";
 import { SplitDateRangeField } from "@/components/ui/SplitDateRangeField";
-import type { SplitRange } from "@/components/ui/SplitRangeCalendars";
+import {
+  addMonths as addMonthsTo,
+  startOfMonth,
+  type SplitRange,
+} from "@/components/ui/SplitRangeCalendars";
 import { Button } from "@/components/ui/Button";
 
 // The owner's calendar, in two halves that answer two different questions.
@@ -22,9 +27,15 @@ import { Button } from "@/components/ui/Button";
 // is what the prototype's strip did and why it could not represent a stay that
 // runs from the 12th to the 9th.
 //
-// Below it, the CLOSED-DATES list: what is actually on this home's calendar,
-// as dates rather than a summary. Overview and list together answer "what is
-// this home doing" — one read-only block, with no controls in the middle of it.
+// Under it the CALENDAR, read-only, two months at a time with month
+// dropdowns — the day-level truth the band summarises, and the way to walk
+// through the year. The band highlights the pair the calendar is showing, so
+// the two are one control in two resolutions rather than two pictures of the
+// same year that never refer to each other.
+//
+// Then the CLOSED-DATES list: the ranges themselves, as dates. Band, calendar
+// and list together answer "what is this home doing" — one read-only block,
+// with no controls in the middle of it.
 //
 // Closing dates is then a separate one-line action at the foot of the section,
 // using the SAME field as the search bar: two cells that open the split
@@ -63,6 +74,9 @@ export function AvailabilityEditor({
   const [range, setRange] = useState<SplitRange>({});
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
+  // Which pair the read-only calendar is showing. Lazy init: `now` is captured
+  // with the page's data so the prerendered HTML has no clock in it.
+  const [browse, setBrowse] = useState(() => startOfMonth(now));
 
   const all = [...blocks, ...holds];
   const open = monthStates(all, availableFrom, locale, now, BAND_MONTHS).filter(
@@ -76,16 +90,14 @@ export function AvailabilityEditor({
     to: day(addDays(r.end, -1)),
   });
   // Half-open on the way in, like everything else in the system: the owner
-  // picks the LAST closed day, storage wants the first free one. The end falls
-  // back to the start so the band lights up on the first pick rather than
-  // waiting for the second — mid-selection is when feedback is worth something.
-  const preview = range.moveIn
-    ? {
-        start: isoDay(range.moveIn),
-        end: addDays(isoDay(range.moveOut ?? range.moveIn), 1),
-      }
-    : null;
-  const selection = range.moveIn && range.moveOut ? preview : null;
+  // picks the LAST closed day, storage wants the first free one.
+  const selection =
+    range.moveIn && range.moveOut
+      ? {
+          start: isoDay(range.moveIn),
+          end: addDays(isoDay(range.moveOut), 1),
+        }
+      : null;
 
   // Two independent calendars can straddle a block neither of them let you
   // land on. Catching it here beats a round trip that comes back
@@ -97,21 +109,14 @@ export function AvailabilityEditor({
     );
 
   // The band is the summary of the same twelve months the ledger reads, with
-  // the pending selection painted on top. Marking every month rather than only
-  // the chosen ones is what tells the band it is in a selectable context.
+  // the calendar's current pair marked on it. Every month carries the flag,
+  // not just the two — that is what tells the band it has a calendar to track.
+  const shown = MONTHS_SHOWN.map((offset) => addMonthsTo(browse, offset));
   const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS).map(
-    (m, i) =>
-      preview
-        ? {
-            ...m,
-            selected: rangesOverlap(
-              isoDay(new Date(now.getFullYear(), now.getMonth() + i, 1)),
-              isoDay(new Date(now.getFullYear(), now.getMonth() + i + 1, 1)),
-              preview.start,
-              preview.end,
-            ),
-          }
-        : m,
+    (m, i) => {
+      const month = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      return { ...m, inView: shown.some((s) => sameMonth(s, month)) };
+    },
   );
 
   const full = blocks.length >= LIMITS.maxBlocks;
@@ -147,6 +152,18 @@ export function AvailabilityEditor({
         <AvailabilityBand months={band} />
         <Legend />
       </div>
+
+      {/* Read-only: the day-level truth behind the band, and the way to walk
+          through the year. Closing dates happens at the foot of the section. */}
+      <AvailabilityCalendar
+        label={t("calendarLabel")}
+        month={browse}
+        onMonthChange={setBrowse}
+        booked={all.map(toMatcher)}
+        navStart={addMonthsTo(startOfMonth(now), -12)}
+        navEnd={addMonthsTo(startOfMonth(now), 24)}
+      />
+      <p className="-mt-3 text-xs text-muted">{t("browseHint")}</p>
 
       <div className="flex flex-col gap-2">
         <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
@@ -325,6 +342,14 @@ function Legend() {
     </ul>
   );
 }
+
+/** The calendar shows two months; the band marks both. */
+const MONTHS_SHOWN = [0, 1];
+
+// Compared as real dates rather than month numbers: browse + 1 from December
+// is month 12 of the same year, which matches nothing.
+const sameMonth = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
 const keyOf = (r: HostRange) => `${r.start}|${r.end}`;
 

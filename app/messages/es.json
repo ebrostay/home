@@ -450,6 +450,7 @@
         "finderBadNumber": "Esa calle no tiene ese número en el Catastro. Repásalo.",
         "finderNoUnits": "El Catastro no tiene ningún inmueble en esa dirección.",
         "finderUnits": "{count, plural, one {# inmueble en esa dirección. Elige el tuyo.} other {# inmuebles en esa dirección. Elige el tuyo.}}",
+        "finderPostcode": "El Catastro sitúa esa dirección en el {theirs} y tu anuncio dice {ours}. Comprueba que has elegido la calle correcta.",
         "finderUnitsNote": "La lista incluye garajes, trasteros y locales: el Catastro no dice aquí para qué es cada uno. Al elegir uno lo comprobamos y verás su uso, su superficie y su año.",
         "finderBlock": "Bloque {value}",
         "finderStair": "Escalera {value}",

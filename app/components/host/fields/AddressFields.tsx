@@ -338,7 +338,11 @@ export function AddressFields({
           the reference field — everything that follows from one is the
           panel's job, which keeps a single answer to "what does the Catastro
           say about this listing" however the reference got there. */}
-      <CadastreFinder address={address} onPick={(ref) => set("cadastralRef", ref)} />
+      <CadastreFinder
+        address={address}
+        postcode={value.postcode ?? ""}
+        onPick={(ref) => set("cadastralRef", ref)}
+      />
 
       {/* The register's own answer about that reference. Sits under the field
           it belongs to, above the map, because two of the three things it can

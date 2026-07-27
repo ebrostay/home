@@ -209,6 +209,55 @@ export type CadastreUnit = {
   stair: string | null;
   floor: string | null;
   door: string | null;
+  /** The register's postcode for this address. Not shown, but it is what
+   *  catches a plausible wrong street — same name, different district. */
+  postcode: string | null;
+};
+
+/** Accents and case are noise when comparing a typed name with a stored one:
+ *  the service ignores both, so this has to as well. */
+export const plainName = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * The street-type word an owner writes, as the Catastro's `Sigla`.
+ *
+ * Every one of these was read back off the live service rather than guessed —
+ * Paseo Sagasta is `PS SAGASTA`, Ronda Hispanidad is `RD HISPANIDAD`. A word
+ * that is missing or mapped wrong costs nothing: it only ever breaks a tie
+ * between streets that already share a name, so the owner picks instead.
+ */
+const SIGLA: Record<string, string> = {
+  calle: "CL",
+  "c/": "CL",
+  "c.": "CL",
+  avenida: "AV",
+  avda: "AV",
+  "avda.": "AV",
+  av: "AV",
+  "av.": "AV",
+  paseo: "PS",
+  po: "PS",
+  "po.": "PS",
+  plaza: "PZ",
+  pza: "PZ",
+  "pza.": "PZ",
+  pl: "PZ",
+  "pl.": "PZ",
+  camino: "CM",
+  ronda: "RD",
+  carretera: "CR",
+  ctra: "CR",
+  "ctra.": "CR",
+  via: "VI",
+  "vía": "VI",
+  travesia: "TR",
+  "travesía": "TR",
 };
 
 export type CadastreUnits =
@@ -314,12 +363,16 @@ export async function unitsAt(
         .join("");
       if (ref.length !== 20) return null;
       const inside = el.getElementsByTagName("loint")[0];
+      const urban = el.getElementsByTagName("lourb")[0];
       return {
         ref,
         block: inside ? text(inside, "bq") : null,
         stair: inside ? text(inside, "es") : null,
         floor: inside ? text(inside, "pt") : null,
         door: inside ? text(inside, "pu") : null,
+        // Read from `lourb`, not the document: `dp` sits beside the address,
+        // and scoping it to this property is what keeps it this property's.
+        postcode: urban ? text(urban, "dp") : null,
       };
     })
     .filter((u): u is CadastreUnit => u !== null);
@@ -332,14 +385,23 @@ export async function unitsAt(
  * typed. A guess, never an answer — the owner sees it in an editable field
  * and the register's list is what settles it.
  */
-export function seedSearch(address: string): { street: string; number: string } {
+export function seedSearch(address: string): {
+  street: string;
+  number: string;
+  /** The `Sigla` the owner's own street-type word implies, when it maps to one
+   *  the Catastro uses. The search box cannot carry it — the register indexes
+   *  names, not "Calle Movera" — so it is kept here instead of thrown away. */
+  type: string | null;
+} {
   // The tail after the first comma is the owner's floor and door, which is
   // exactly what the Catastro does not file a street under.
   const head = address.split(",")[0] ?? "";
   const number = head.match(/\d{1,4}/)?.[0] ?? "";
+  const named = head.slice(0, number ? head.indexOf(number) : undefined);
 
-  const street = head
-    .slice(0, number ? head.indexOf(number) : undefined)
+  const word = named.match(STREET_WORDS)?.[0]?.toLowerCase().trim() ?? "";
+
+  const street = named
     .replace(STREET_WORDS, " ")
     // Leading articles only. "Camino de las Torres" → "Torres", which the
     // register answers; but "Virgen de Movera" keeps its middle "de", because
@@ -348,8 +410,52 @@ export function seedSearch(address: string): { street: string; number: string } 
     .replace(/\s+/g, " ")
     .trim();
 
-  return { street: street.slice(0, MAX_STREET_QUERY), number };
+  return {
+    street: street.slice(0, MAX_STREET_QUERY),
+    number,
+    type: SIGLA[word] ?? null,
+  };
 }
+
+/**
+ * The one street to select on the owner's behalf, or null to let them choose.
+ *
+ * A name alone is rarely enough — Zaragoza has a Barrio Movera, a Calle
+ * Movera and a Diseminado Movera — which is where the street-type word the
+ * owner already typed earns its keep: "Calle Movera 7" names exactly one of
+ * the three. The type only ever breaks a tie between streets whose names
+ * match what was typed *exactly*, so a stale or wrong one cannot conjure a
+ * match out of a different street; it just fails to help.
+ */
+export function preferredStreet(
+  list: CadastreStreet[],
+  query: string,
+  type: string | null,
+): CadastreStreet | null {
+  if (list.length === 1) return list[0];
+
+  const wanted = plainName(query);
+  const exact = list.filter((s) => plainName(s.name) === wanted);
+  if (exact.length === 1) return exact[0];
+
+  if (type) {
+    const typed = exact.filter((s) => s.type === type);
+    if (typed.length === 1) return typed[0];
+  }
+
+  return null;
+}
+
+/** Exact name matches first, the register's own order preserved inside each
+ *  group. Searching "Movera" should not bury Movera under Movera Santa
+ *  Isabel — and `sort` is stable, so nothing else moves. */
+export const byNameMatch = (list: CadastreStreet[], query: string) => {
+  const wanted = plainName(query);
+  return [...list].sort(
+    (a, b) =>
+      Number(plainName(b.name) === wanted) - Number(plainName(a.name) === wanted),
+  );
+};
 
 /** The parcel reference at a point, for the reverse direction: an owner who
  *  has placed the pin but cannot find their IBI receipt. 14 characters — the

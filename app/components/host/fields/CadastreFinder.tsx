@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
+  byNameMatch,
+  preferredStreet,
   searchStreets,
   seedSearch,
   unitsAt,
@@ -36,9 +38,14 @@ const keyOf = (s: CadastreStreet) => `${s.type}|${s.name}`;
 
 export function CadastreFinder({
   address,
+  postcode,
   onPick,
 }: {
   address: string;
+  /** The listing's postcode. Not a search key — the services do not take one —
+   *  but it is what catches the plausible wrong answer: the same street name
+   *  in a different district. */
+  postcode: string;
   /** Fired with the 20-character reference. The panel below does the rest —
    *  it already knows how to ask the register what the reference describes. */
   onPick: (ref: string) => void;
@@ -65,6 +72,7 @@ export function CadastreFinder({
   return (
     <Finder
       address={address}
+      postcode={postcode}
       onPick={(ref) => {
         onPick(ref);
         setOpen(false);
@@ -76,16 +84,21 @@ export function CadastreFinder({
 
 function Finder({
   address,
+  postcode,
   onPick,
   onClose,
 }: {
   address: string;
+  postcode: string;
   onPick: (ref: string) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("host.edit.address");
 
-  const seed = seedSearch(address);
+  // Read once. The address behind it can go on being edited while the search
+  // is open, and a box that rewrote itself under the owner's cursor would be
+  // worse than one that started from a slightly older guess.
+  const [seed] = useState(() => seedSearch(address));
   const [query, setQuery] = useState(seed.street);
   const [number, setNumber] = useState(seed.number);
 
@@ -105,12 +118,16 @@ function Finder({
     const timer = setTimeout(() => {
       searchStreets(q, controller.signal).then((list) => {
         if (controller.signal.aborted) return;
-        setStreets(list);
+        setStreets(byNameMatch(list, q));
         setSearched(q);
-        // One match is not a choice. Anything else is the owner's to make —
-        // guessing between an avenue and a square of the same name is how a
-        // listing ends up carrying somebody else's flat.
-        setPicked(list.length === 1 ? keyOf(list[0]) : null);
+        // The owner has already said "Calle Movera 7" once, so being asked to
+        // choose between Barrio, Calle and Diseminado Movera is being asked
+        // twice. `preferredStreet` selects only where the answer is not a
+        // guess; everything else stays the owner's to make, because picking
+        // between an avenue and a square of the same name is how a listing
+        // ends up carrying somebody else's flat.
+        const best = preferredStreet(list, q, seed.type);
+        setPicked(best ? keyOf(best) : null);
       });
     }, DEBOUNCE_MS);
 
@@ -118,7 +135,7 @@ function Finder({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, searchable]);
+  }, [q, searchable, seed.type]);
 
   const street = streets.find((s) => keyOf(s) === picked) ?? null;
   const num = number.trim();
@@ -149,6 +166,13 @@ function Finder({
   const result = answer?.for === question ? answer.result : null;
   const searching = searchable && searched !== q;
   const looking = question !== null && result === null;
+
+  // Every flat at one number shares a postcode, so the first one that has it
+  // speaks for the address.
+  const ours = postcode.trim();
+  const theirs =
+    result?.kind === "units" ? (result.units.find((u) => u.postcode)?.postcode ?? null) : null;
+  const mismatch = ours && theirs && theirs !== ours ? { ours, theirs } : null;
 
   return (
     <div className="flex flex-col gap-3.5 rounded-(--radius-control) border border-line-strong bg-surface-2 p-3.5">
@@ -249,6 +273,23 @@ function Finder({
 
       {result?.kind === "units" && (
         <div className="flex flex-col gap-2">
+          {/* The register's postcode for the address it just found, against
+              the one on the listing. It is not a search key — neither service
+              takes one — but it is the only thing that catches the answer
+              that looks right and is not: Zaragoza has several streets called
+              Movera, in different districts, and every one of them will
+              cheerfully return a list of flats. */}
+          {mismatch && (
+            <p className="flex items-start gap-2.5 rounded-(--radius-control) border border-warn bg-warn-soft px-3.5 py-2.5 text-[0.8125rem] text-ink">
+              <TriangleAlert
+                size={15}
+                strokeWidth={2}
+                className="mt-0.5 shrink-0 text-warn"
+                aria-hidden
+              />
+              {t("finderPostcode", { theirs: mismatch.theirs, ours: mismatch.ours })}
+            </p>
+          )}
           <p className="text-[0.8125rem] text-ink">
             {t("finderUnits", { count: result.units.length })}
           </p>

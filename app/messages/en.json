@@ -450,6 +450,7 @@
         "finderBadNumber": "That street has no such number in the Catastro. Check it.",
         "finderNoUnits": "The Catastro has no property at that address.",
         "finderUnits": "{count, plural, one {# property at that address. Pick yours.} other {# properties at that address. Pick yours.}}",
+        "finderPostcode": "The Catastro puts that address in {theirs}; your listing says {ours}. Check you picked the right street.",
         "finderUnitsNote": "The list includes garages, storerooms and shops — the Catastro does not say here what each one is for. Pick one and we check it: you will see its use, its size and its year.",
         "finderBlock": "Block {value}",
         "finderStair": "Stair {value}",

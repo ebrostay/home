@@ -763,6 +763,22 @@ the owner's payout honest and the tenant's total complete.
       not.
     Every attempt to turn typed text into a query is therefore a way to be
     confidently wrong. The address only seeds the box.
+  - **But the typed street-type word is kept and used.** It cannot go in the
+    search box — the register indexes names, not "Calle Movera" — so it is
+    held aside and used to break a tie: Zaragoza has a Barrio Movera, a Calle
+    Movera and a Diseminado Movera, and "Calle Movera 7" already names one of
+    them. The word only decides between candidates whose names match what was
+    typed **exactly**, so a wrong or stale mapping cannot conjure a match out
+    of a different street — it just fails to help. Every word→`Sigla` mapping
+    was read back off the live service (`PS SAGASTA`, `RD HISPANIDAD`), not
+    guessed.
+  - **The postcode is the cross-check, not a search key.** Neither service
+    takes one, but `Consulta_DNPLOC` returns `dp` per property, so the
+    register's postcode is compared against the listing's and a difference is
+    shown. This is the only thing that catches the answer that looks right and
+    is not — every Movera in Zaragoza will cheerfully return a list of flats,
+    and only the postcode says which district they are in. It warns; it never
+    blocks, because the listing's own postcode may be the wrong one.
   - **One match returns a different document.** Several properties come back as
     an `<lrcdnp>` list, exactly one as a whole `<bico>` record. Both shapes are
     parsed.

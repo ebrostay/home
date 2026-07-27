@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BadgeCheck, Loader2, TriangleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { HostListing } from "@/lib/api";
 import { cadastreChecksum } from "@/lib/listing";
 import { lookupCadastre, type CadastreRecord } from "@/lib/catastro";
@@ -53,6 +53,7 @@ export function CadastrePanel({
   onPinMoved: () => void;
 }) {
   const t = useTranslations("host.edit.address");
+  const locale = useLocale();
   const [result, setResult] = useState<State>({ kind: "idle", ref: "" });
 
   const ref = (value.cadastralRef ?? "").trim().toUpperCase();
@@ -173,7 +174,7 @@ export function CadastrePanel({
   if (r.lat !== null && r.lng !== null && pinIsManual && distance > SAME_PLACE_M) {
     differences.push({
       key: "pin",
-      label: t("cadastreDiffPin", { distance: formatDistance(distance, "es") }),
+      label: t("cadastreDiffPin", { distance: formatDistance(distance, locale) }),
       apply: () => {
         onChange({ ...value, lat: r.lat!, lng: r.lng! });
         onPinMoved();

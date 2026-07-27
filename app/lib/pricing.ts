@@ -20,7 +20,8 @@ export function dailyRate(priceNumber: number): number {
   return priceNumber / DAYS_PER_BILLED_MONTH;
 }
 
-// Nights, end-exclusive: 1 Sept → 1 Oct is 30 days. Both dates are plain ISO
+// Occupied days, end-exclusive: 1 Sept → 1 Oct is 30 days. The end date is the
+// day the keys come back — the tenant does not pay for it. Both dates are ISO
 // days, so UTC arithmetic keeps this immune to DST.
 export function stayDays(start: string, end: string): number {
   const at = (iso: string) => {

@@ -177,7 +177,7 @@
         "min_stay_out_of_range": "The shortest stay has to fit inside the platform maximum.",
         "too_many_blocks": "That is more blocks than one calendar can hold. Remove a few first.",
         "date_invalid": "One of those dates was not readable. Pick the range again.",
-        "date_range_empty": "A block needs to cover at least one night.",
+        "date_range_empty": "A closed range has to cover at least one day.",
         "note_too_long": "Keep the note under 120 characters.",
         "blocks_overlap": "Two of your blocks cover the same dates.",
         "hold_conflict": "Someone is mid-booking on those dates. Try again once the hold expires.",
@@ -257,9 +257,9 @@
         "label": "AVAILABILITY · NEXT 12 MONTHS",
         "bandIntro": "The band summarises the next twelve months. Pick exact dates on the calendar below — a stay rarely starts on the 1st.",
         "monthsOpen": "{count, plural, =0 {FULL} one {# MONTH OPEN} other {# MONTHS OPEN}}",
-        "pickLabel": "PICK THE DATES TO CLOSE",
-        "selectPrompt": "Pick a start and an end date on the calendar.",
-        "selected": "{range} · {days, plural, one {# night} other {# nights}}",
+        "pickLabel": "CLOSE DATES FOR YOURSELF",
+        "selectPrompt": "Pick the first and last day you want closed.",
+        "selected": "{range} · {days, plural, one {# day} other {# days}}",
         "notePlaceholder": "What is it for? (optional)",
         "noteLabel": "Note for this block",
         "block": "Close these dates",
@@ -267,7 +267,6 @@
         "blocksLabel": "{count, plural, =0 {CLOSED DATES} other {CLOSED DATES · #}}",
         "noBlocks": "Nothing is closed. The home is open for the whole year.",
         "held": "Held by a booking",
-        "nights": "{count, plural, one {# night} other {# nights}}",
         "remove": "Remove the block from {range}",
         "removeConfirm": "Remove it",
         "cancel": "Keep it",
@@ -288,10 +287,11 @@
         "save": "Save calendar",
         "saving": "Saving…",
         "savedLabel": "Saved",
-        "firstNight": "First night closed",
-        "lastNight": "Last night closed",
-        "pickFirstNight": "Pick the first night first.",
-        "conflict": "That span crosses dates that are already closed. Pick a range that clears them."
+        "conflict": "That span crosses dates that are already closed. Pick a range that clears them.",
+        "from": "From",
+        "to": "To",
+        "pickFromFirst": "Pick the From date first.",
+        "days": "{count, plural, one {# day} other {# days}}"
       },
       "billing": {
         "label": "BILLING & PAYOUTS",
@@ -318,7 +318,7 @@
         "requestsLabel": "BOOKING REQUESTS",
         "requestsNote": "We answered all of them.",
         "staysLabel": "STAYS BOOKED",
-        "staysNote": "{nights, plural, one {# night} other {# nights}} filled",
+        "staysNote": "{days, plural, one {# day} other {# days}} filled",
         "averageLabel": "AVERAGE STAY",
         "averageValue": "{days} d",
         "averageNote": "Across the stays on the books.",
@@ -449,7 +449,7 @@
     "terms": {
       "billing": {
         "title": "Billed by the day",
-        "body": "Rent is pro-rated daily, so you pay for the nights you stay — no rounding up to a whole month. The headline price is 30 days."
+        "body": "Rent is pro-rated daily, so you pay for the days you stay — no rounding up to a whole month. The headline price is 30 days."
       },
       "bills": {
         "included": {

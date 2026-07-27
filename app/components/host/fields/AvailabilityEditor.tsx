@@ -8,10 +8,8 @@ import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
 import { monthStates } from "@/lib/availability";
 import { BAND_MONTHS, LIMITS, isoDay } from "@/lib/manage";
 import { AvailabilityBand } from "@/components/MonthBand";
-import {
-  SplitRangeCalendars,
-  type SplitRange,
-} from "@/components/ui/SplitRangeCalendars";
+import { SplitDateRangeField } from "@/components/ui/SplitDateRangeField";
+import type { SplitRange } from "@/components/ui/SplitRangeCalendars";
 import { Button } from "@/components/ui/Button";
 
 // The owner's calendar, in two halves that answer two different questions.
@@ -24,21 +22,21 @@ import { Button } from "@/components/ui/Button";
 // is what the prototype's strip did and why it could not represent a stay that
 // runs from the 12th to the 9th.
 //
-// The CALENDAR answers "which days". Days are what the model stores (§2.2.3:
-// half-open ranges, `end` exclusive) and what a stay actually occupies.
+// Below it, the CLOSED-DATES list: what is actually on this home's calendar,
+// as dates rather than a summary. Overview and list together answer "what is
+// this home doing" — one read-only block, with no controls in the middle of it.
 //
-// It is the same split two-calendar control the search bar and the booking
-// panel use (SplitRangeCalendars) — inline rather than in a popover, since
-// here the calendar is the section rather than one field among four. Two
-// independent calendars beat a linked range view for this job: closing a week
-// next April is two quick navigations instead of nine clicks on one arrow.
+// Closing dates is then a separate one-line action at the foot of the section,
+// using the SAME field as the search bar: two cells that open the split
+// calendars in a popover. An owner is also a visitor, and a second full-size
+// calendar embedded in a page that already shows a twelve-month band was two
+// pictures of the same year.
 //
-// None of the guest constraints come with it. A tenant's stay is legally
-// 31–364 days; an owner closing their own flat for a weekend answers to
-// nobody, so `minDays` is 0, there is no ceiling, and past dates stay
-// selectable for recording history. The one thing that has to be re-checked
-// here is overlap: independent calendars stop you landing on a closed day but
-// not spanning one, so a crossing selection is caught below rather than
+// None of the guest constraints come with the field. A tenant's stay is
+// legally 31–364 days and cannot start in the past; an owner closing their own
+// flat for a weekend answers to nobody. The one thing that must be re-checked
+// here is overlap: two independent calendars stop you landing on a closed day
+// but not spanning one, so a crossing selection is caught below rather than
 // bounced by the API.
 //
 // Controlled: blocks in, blocks out. The wizard composes this with an empty
@@ -78,10 +76,9 @@ export function AvailabilityEditor({
     to: day(addDays(r.end, -1)),
   });
   // Half-open on the way in, like everything else in the system: the owner
-  // picks the LAST closed night, storage wants the first free day. The end
-  // falls back to the start so the band lights up on the first click rather
-  // than waiting for the second — mid-selection is when feedback is worth
-  // something.
+  // picks the LAST closed day, storage wants the first free one. The end falls
+  // back to the start so the band lights up on the first pick rather than
+  // waiting for the second — mid-selection is when feedback is worth something.
   const preview = range.moveIn
     ? {
         start: isoDay(range.moveIn),
@@ -95,23 +92,26 @@ export function AvailabilityEditor({
   // `blocks_overlap` with the selection already gone.
   const conflict =
     !!selection &&
-    all.some((r) => rangesOverlap(selection.start, selection.end, r.start, r.end));
+    all.some((r) =>
+      rangesOverlap(selection.start, selection.end, r.start, r.end),
+    );
 
   // The band is the summary of the same twelve months the ledger reads, with
   // the pending selection painted on top. Marking every month rather than only
   // the chosen ones is what tells the band it is in a selectable context.
-  const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS).map((m, i) =>
-    preview
-      ? {
-          ...m,
-          selected: rangesOverlap(
-            isoDay(new Date(now.getFullYear(), now.getMonth() + i, 1)),
-            isoDay(new Date(now.getFullYear(), now.getMonth() + i + 1, 1)),
-            preview.start,
-            preview.end,
-          ),
-        }
-      : m,
+  const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS).map(
+    (m, i) =>
+      preview
+        ? {
+            ...m,
+            selected: rangesOverlap(
+              isoDay(new Date(now.getFullYear(), now.getMonth() + i, 1)),
+              isoDay(new Date(now.getFullYear(), now.getMonth() + i + 1, 1)),
+              preview.start,
+              preview.end,
+            ),
+          }
+        : m,
   );
 
   const full = blocks.length >= LIMITS.maxBlocks;
@@ -119,9 +119,10 @@ export function AvailabilityEditor({
   const add = () => {
     if (!selection || full || conflict) return;
     onChange(
-      [...blocks, { ...selection, status: "confirmed", note: note.trim() || null }].sort(
-        (a, b) => a.start.localeCompare(b.start),
-      ),
+      [
+        ...blocks,
+        { ...selection, status: "confirmed", note: note.trim() || null },
+      ].sort((a, b) => a.start.localeCompare(b.start)),
     );
     setRange({});
     setNote("");
@@ -136,7 +137,9 @@ export function AvailabilityEditor({
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-[0.84375rem] leading-[1.5] text-body">{t("bandIntro")}</p>
+          <p className="text-[0.84375rem] leading-[1.5] text-body">
+            {t("bandIntro")}
+          </p>
           <span className="data shrink-0 text-[0.65625rem] tracking-[0.08em] text-brand-strong">
             {t("monthsOpen", { count: open })}
           </span>
@@ -145,129 +148,148 @@ export function AvailabilityEditor({
         <Legend />
       </div>
 
-      <div className="grid gap-5 min-[62rem]:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="flex flex-col gap-3">
-          <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
-            {t("pickLabel")}
+      <div className="flex flex-col gap-2">
+        <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
+          {t("blocksLabel", { count: blocks.length + holds.length })}
+        </p>
+
+        {all.length === 0 ? (
+          <p className="rounded-(--radius-control) border border-dashed border-line-strong px-4 py-6 text-center text-[0.8125rem] text-muted">
+            {t("noBlocks")}
           </p>
-          <SplitRangeCalendars
-            value={range}
-            onChange={setRange}
-            startLabel={t("firstNight")}
-            endLabel={t("lastNight")}
-            booked={all.map(toMatcher)}
-            // An owner's own block has no floor and no ceiling, and may sit in
-            // the past — this is a record of the home, not a bookable stay.
-            minDays={0}
-            pickStartHint={t("pickFirstNight")}
-          />
+        ) : (
+          <ul className="flex flex-col">
+            {holds.map((h, i) => (
+              <li
+                key={`hold-${i}`}
+                className="flex items-center gap-3 border-b border-line py-2.5"
+              >
+                <Lock
+                  size={14}
+                  strokeWidth={2}
+                  className="shrink-0 text-muted"
+                  aria-hidden
+                />
+                <span className="data min-w-0 flex-1 truncate text-[0.8125rem] text-muted">
+                  {rangeLabel(h.start, h.end, locale)}
+                </span>
+                <span className="shrink-0 text-xs text-muted">{t("held")}</span>
+              </li>
+            ))}
 
-          <div className="flex flex-col gap-2 rounded-(--radius-control) border border-line bg-surface-2 p-3">
-            <p className={`text-[0.8125rem] ${conflict ? "text-warn" : "text-body"}`}>
-              {conflict
-                ? t("conflict")
-                : selection
-                  ? t("selected", {
-                      range: rangeLabel(selection.start, selection.end, locale),
-                      days: stayDays(selection.start, selection.end),
-                    })
-                  : t("selectPrompt")}
-            </p>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value.slice(0, LIMITS.maxNote))}
-              placeholder={t("notePlaceholder")}
-              aria-label={t("noteLabel")}
-              className="h-9 rounded-(--radius-control) border border-line-strong bg-surface px-3 text-[0.8125rem] text-ink outline-none transition-colors duration-(--dur-standard) placeholder:text-muted focus:border-brand"
-            />
-            <Button
-              onClick={add}
-              disabled={!selection || full || conflict}
-              title={full ? t("full") : undefined}
-              className="h-[38px] self-start gap-2 text-[0.8125rem]"
-            >
-              <CalendarPlus size={15} strokeWidth={2} aria-hidden />
-              {t("block")}
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
-            {t("blocksLabel", { count: blocks.length + holds.length })}
-          </p>
-
-          {all.length === 0 ? (
-            <p className="rounded-(--radius-control) border border-dashed border-line-strong px-4 py-6 text-center text-[0.8125rem] text-muted">
-              {t("noBlocks")}
-            </p>
-          ) : (
-            <ul className="flex flex-col">
-              {holds.map((h, i) => (
-                <li
-                  key={`hold-${i}`}
-                  className="flex items-center gap-3 border-b border-line py-2.5"
-                >
-                  <Lock size={14} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
-                  <span className="data min-w-0 flex-1 truncate text-[0.8125rem] text-muted">
-                    {rangeLabel(h.start, h.end, locale)}
+            {blocks.map((b, i) => (
+              <li
+                key={`${b.start}-${b.end}-${i}`}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2.5"
+              >
+                <span className="data text-[0.8125rem] text-ink">
+                  {rangeLabel(b.start, b.end, locale)}
+                </span>
+                <span className="data text-xs text-muted">
+                  {t("days", { count: stayDays(b.start, b.end) })}
+                </span>
+                {b.note && (
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted">
+                    {b.note}
                   </span>
-                  <span className="shrink-0 text-xs text-muted">{t("held")}</span>
-                </li>
-              ))}
-
-              {blocks.map((b, i) => (
-                <li
-                  key={`${b.start}-${b.end}-${i}`}
-                  className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2.5"
-                >
-                  <span className="data text-[0.8125rem] text-ink">
-                    {rangeLabel(b.start, b.end, locale)}
-                  </span>
-                  <span className="data text-xs text-muted">
-                    {t("nights", { count: stayDays(b.start, b.end) })}
-                  </span>
-                  {b.note && (
-                    <span className="min-w-0 flex-1 truncate text-xs text-muted">{b.note}</span>
-                  )}
-                  {/* Two-step, because there is no undo and no stay record:
+                )}
+                {/* Two-step, because there is no undo and no stay record:
                       a block may be the only trace of an accepted stay. */}
-                  {confirming === keyOf(b) ? (
-                    <span className="ml-auto flex shrink-0 items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => remove(b)}
-                        className="text-xs font-semibold text-danger underline"
-                      >
-                        {t("removeConfirm")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(null)}
-                        className="text-xs text-muted underline"
-                      >
-                        {t("cancel")}
-                      </button>
-                    </span>
-                  ) : (
+                {confirming === keyOf(b) ? (
+                  <span className="ml-auto flex shrink-0 items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setConfirming(keyOf(b))}
-                      aria-label={t("remove", {
-                        range: rangeLabel(b.start, b.end, locale),
-                      })}
-                      className="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-(--radius-control) text-muted transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-ink"
+                      onClick={() => remove(b)}
+                      className="text-xs font-semibold text-danger underline"
                     >
-                      <X size={14} strokeWidth={2.2} aria-hidden />
+                      {t("removeConfirm")}
                     </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirming(null)}
+                      className="text-xs text-muted underline"
+                    >
+                      {t("cancel")}
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(keyOf(b))}
+                    aria-label={t("remove", {
+                      range: rangeLabel(b.start, b.end, locale),
+                    })}
+                    className="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-(--radius-control) text-muted transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-ink"
+                  >
+                    <X size={14} strokeWidth={2.2} aria-hidden />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-          <p className="text-xs leading-[1.45] text-muted">{t("blocksNote")}</p>
+        <p className="text-xs leading-[1.45] text-muted">{t("blocksNote")}</p>
+      </div>
+
+      {/* Closing dates is one line, not a second calendar. The overview above
+          answers "what is this home doing"; this answers "shut these days",
+          and it borrows the search bar's field so the same two-calendar
+          popover serves both — an owner is also a visitor. */}
+      <div className="flex flex-col gap-2 rounded-(--radius-control) border border-line bg-surface-2 p-3">
+        <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
+          {t("pickLabel")}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-[17rem] flex-1">
+            <SplitDateRangeField
+              value={range}
+              onChange={setRange}
+              moveInLabel={t("from")}
+              moveOutLabel={t("to")}
+              booked={all.map(toMatcher)}
+              // An owner's own block has no floor, no ceiling and no rule
+              // against the past — this records the home, it does not sell it.
+              minDays={0}
+              maxDays={undefined}
+              allowPast
+              captionLayout="label"
+              pickStartHint={t("pickFromFirst")}
+            />
+          </div>
+
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, LIMITS.maxNote))}
+            placeholder={t("notePlaceholder")}
+            aria-label={t("noteLabel")}
+            className="h-[46px] min-w-[12rem] flex-1 rounded-(--radius-control) border border-line bg-surface px-3 text-[0.8125rem] text-ink outline-none transition-colors duration-(--dur-standard) placeholder:text-muted focus:border-brand"
+          />
+
+          <Button
+            onClick={add}
+            disabled={!selection || full || conflict}
+            title={full ? t("full") : undefined}
+            className="h-[46px] shrink-0 gap-2 text-[0.8125rem]"
+          >
+            <CalendarPlus size={15} strokeWidth={2} aria-hidden />
+            {t("block")}
+          </Button>
         </div>
+
+        <p
+          className={`text-[0.8125rem] ${conflict ? "text-warn" : "text-muted"}`}
+        >
+          {conflict
+            ? t("conflict")
+            : selection
+              ? t("selected", {
+                  range: rangeLabel(selection.start, selection.end, locale),
+                  days: stayDays(selection.start, selection.end),
+                })
+              : t("selectPrompt")}
+        </p>
       </div>
     </div>
   );

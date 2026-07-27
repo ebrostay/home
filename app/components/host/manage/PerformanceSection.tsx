@@ -27,9 +27,9 @@ export function PerformanceSection({
   const t = useTranslations("host.manage.performance");
 
   const booked = stays.filter((s) => s.status !== "completed");
-  const nights = booked.reduce((sum, s) => sum + s.days, 0);
+  const days = booked.reduce((sum, s) => sum + s.days, 0);
   // One source for both, so the two tiles cannot disagree about the same stays.
-  const average = booked.length > 0 ? nights / booked.length : null;
+  const average = booked.length > 0 ? days / booked.length : null;
 
   const tiles = [
     {
@@ -43,7 +43,7 @@ export function PerformanceSection({
       key: "stays",
       value: String(booked.length),
       label: t("staysLabel"),
-      note: t("staysNote", { nights }),
+      note: t("staysNote", { days }),
       tone: "text-ink",
     },
     {

@@ -14,15 +14,15 @@ import {
 } from "./SplitRangeCalendars";
 
 // ============================================================
-// The guest-facing date field: two trigger cells that open the split
-// calendars in a popover. Selection does NOT close the popover (only an
-// outside click does), so a visitor can adjust both ends without reopening.
+// A date-range field: two trigger cells that open the split calendars in a
+// popover. Selection does NOT close the popover (only an outside click
+// does), so either end can be adjusted without reopening.
 //
-// The calendars themselves live in SplitRangeCalendars — shared with the
-// owner's availability editor, which renders them inline and without these
-// constraints. What stays HERE is everything specific to a tenant booking a
-// stay: the legal 31-day floor, the under-a-year ceiling, no dates in the
-// past, and the move-in / move-out vocabulary.
+// The defaults are the guest's stay rules — the legal 31-day floor, the
+// under-a-year ceiling, nothing in the past — because that is what the search
+// bar and the booking panel need and neither should have to restate it. The
+// owner's availability editor passes its own: closing your own flat for a
+// weekend has no floor, no ceiling, and may well be in the past.
 //
 // The 31-day floor matches the Spanish-law minimum in lib/pricing.ts
 // (MIN_STAY_DAYS) — a "temporary" stay is no shorter than 31 days.
@@ -43,6 +43,12 @@ export function SplitDateRangeField({
   align = "start",
   booked = [],
   maxMoveOut,
+  minDays = MIN_STAY_DAYS,
+  maxDays = MAX_OFFSET_DAYS,
+  minDate,
+  allowPast = false,
+  captionLayout = "dropdown",
+  pickStartHint,
 }: {
   value: SplitRange;
   onChange: (next: SplitRange) => void;
@@ -65,6 +71,16 @@ export function SplitDateRangeField({
   // A ceiling tighter than the legal one — the listing's own max stay. The
   // caller computes the date because months are not a fixed number of days.
   maxMoveOut?: Date;
+  // The stay rules. Defaults are the tenant's; the owner's own blocks pass
+  // minDays 0 and no ceiling, because a weekend closure is nobody's business.
+  minDays?: number;
+  maxDays?: number;
+  minDate?: Date;
+  /** Lets the range start before today — for recording history, not booking. */
+  allowPast?: boolean;
+  captionLayout?: "label" | "dropdown";
+  /** Shown under the right calendar until a start date is picked. */
+  pickStartHint?: string;
 }) {
   const locale = useLocale();
   const t = useTranslations("search.datePicker");
@@ -74,9 +90,10 @@ export function SplitDateRangeField({
 
   // Bound the month/year dropdowns to a useful window: this month through 18
   // months out (a stay tops out just under a year, so its end is always in
-  // range). Also stops the arrows wandering into the past.
-  const navStart = startOfMonth(startOfToday());
-  const navEnd = addMonths(navStart, 18);
+  // range). Also stops the arrows wandering into the past. A field that
+  // allows the past has no useful window, so it gets none.
+  const navStart = allowPast ? undefined : startOfMonth(startOfToday());
+  const navEnd = navStart ? addMonths(navStart, 18) : undefined;
 
   const fmt = (d?: Date) =>
     d
@@ -87,7 +104,7 @@ export function SplitDateRangeField({
         }).format(d)
       : placeholder;
 
-  const error = rangeError(value, MIN_STAY_DAYS, MAX_OFFSET_DAYS);
+  const error = rangeError(value, minDays, maxDays);
   const toggle = () => setOpen((o) => !o);
   const hero = variant === "hero";
 
@@ -154,14 +171,14 @@ export function SplitDateRangeField({
               startLabel={moveInLabel}
               endLabel={moveOutLabel}
               booked={booked}
-              minDays={MIN_STAY_DAYS}
-              maxDays={MAX_OFFSET_DAYS}
+              minDays={minDays}
+              maxDays={maxDays}
               maxEnd={maxMoveOut}
-              minDate={startOfToday()}
+              minDate={allowPast ? minDate : (minDate ?? startOfToday())}
               navStart={navStart}
               navEnd={navEnd}
-              captionLayout="dropdown"
-              pickStartHint={t("pickMoveInFirst")}
+              captionLayout={captionLayout}
+              pickStartHint={pickStartHint ?? t("pickMoveInFirst")}
             />
 
             {error && (

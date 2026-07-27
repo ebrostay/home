@@ -177,7 +177,7 @@
         "min_stay_out_of_range": "La estancia mínima tiene que caber dentro del máximo de la plataforma.",
         "too_many_blocks": "Son más bloqueos de los que cabe en un calendario. Quita algunos primero.",
         "date_invalid": "Una de esas fechas no se ha entendido. Vuelve a elegir el rango.",
-        "date_range_empty": "Un bloqueo tiene que cubrir al menos una noche.",
+        "date_range_empty": "Un periodo cerrado tiene que cubrir al menos un día.",
         "note_too_long": "La nota no puede pasar de 120 caracteres.",
         "blocks_overlap": "Dos de tus bloqueos cubren las mismas fechas.",
         "hold_conflict": "Alguien está reservando esas fechas ahora mismo. Inténtalo cuando caduque la reserva temporal.",
@@ -257,9 +257,9 @@
         "label": "DISPONIBILIDAD · PRÓXIMOS 12 MESES",
         "bandIntro": "La banda resume los próximos doce meses. Elige las fechas exactas en el calendario de abajo: una estancia casi nunca empieza el día 1.",
         "monthsOpen": "{count, plural, =0 {COMPLETO} one {# MES LIBRE} other {# MESES LIBRES}}",
-        "pickLabel": "ELIGE LAS FECHAS QUE QUIERES CERRAR",
-        "selectPrompt": "Elige una fecha de inicio y otra de fin en el calendario.",
-        "selected": "{range} · {days, plural, one {# noche} other {# noches}}",
+        "pickLabel": "CIERRA FECHAS PARA TI",
+        "selectPrompt": "Elige el primer y el último día que quieres cerrar.",
+        "selected": "{range} · {days, plural, one {# día} other {# días}}",
         "notePlaceholder": "¿Para qué es? (opcional)",
         "noteLabel": "Nota de este bloqueo",
         "block": "Cerrar estas fechas",
@@ -267,7 +267,6 @@
         "blocksLabel": "{count, plural, =0 {FECHAS CERRADAS} other {FECHAS CERRADAS · #}}",
         "noBlocks": "No hay nada cerrado. La vivienda está libre todo el año.",
         "held": "Reserva en curso",
-        "nights": "{count, plural, one {# noche} other {# noches}}",
         "remove": "Quitar el bloqueo del {range}",
         "removeConfirm": "Quitarlo",
         "cancel": "Dejarlo",
@@ -288,10 +287,11 @@
         "save": "Guardar calendario",
         "saving": "Guardando…",
         "savedLabel": "Guardado",
-        "firstNight": "Primera noche cerrada",
-        "lastNight": "Última noche cerrada",
-        "pickFirstNight": "Elige antes la primera noche.",
-        "conflict": "Ese periodo cruza fechas ya cerradas. Elige un rango que las evite."
+        "conflict": "Ese periodo cruza fechas ya cerradas. Elige un rango que las evite.",
+        "from": "Desde",
+        "to": "Hasta",
+        "pickFromFirst": "Elige antes la fecha de inicio.",
+        "days": "{count, plural, one {# día} other {# días}}"
       },
       "billing": {
         "label": "COBROS Y PAGOS",
@@ -318,7 +318,7 @@
         "requestsLabel": "SOLICITUDES",
         "requestsNote": "Las respondimos todas.",
         "staysLabel": "ESTANCIAS RESERVADAS",
-        "staysNote": "{nights, plural, one {# noche} other {# noches}} ocupadas",
+        "staysNote": "{days, plural, one {# día} other {# días}} ocupados",
         "averageLabel": "ESTANCIA MEDIA",
         "averageValue": "{days} d",
         "averageNote": "Sobre las estancias en cartera.",
@@ -449,7 +449,7 @@
     "terms": {
       "billing": {
         "title": "Facturación por días",
-        "body": "El alquiler se prorratea a diario: pagas las noches que te quedas, sin redondear a un mes entero. El precio destacado son 30 días."
+        "body": "El alquiler se prorratea a diario: pagas los días que te quedas, sin redondear a un mes entero. El precio destacado son 30 días."
       },
       "bills": {
         "included": {

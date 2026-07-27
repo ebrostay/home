@@ -287,7 +287,11 @@
         "discard": "Discard",
         "save": "Save calendar",
         "saving": "Saving…",
-        "savedLabel": "Saved"
+        "savedLabel": "Saved",
+        "firstNight": "First night closed",
+        "lastNight": "Last night closed",
+        "pickFirstNight": "Pick the first night first.",
+        "conflict": "That span crosses dates that are already closed. Pick a range that clears them."
       },
       "billing": {
         "label": "BILLING & PAYOUTS",
@@ -697,7 +701,7 @@
       }
     },
     "datePicker": {
-      "tooShort": "Stay must be at least 28 days.",
+      "tooShort": "A stay has to be at least 31 days.",
       "tooLong": "Stay must be under a year (fewer than 365 days).",
       "pickMoveInFirst": "Pick a move-in date first."
     }

@@ -287,7 +287,11 @@
         "discard": "Descartar",
         "save": "Guardar calendario",
         "saving": "Guardando…",
-        "savedLabel": "Guardado"
+        "savedLabel": "Guardado",
+        "firstNight": "Primera noche cerrada",
+        "lastNight": "Última noche cerrada",
+        "pickFirstNight": "Elige antes la primera noche.",
+        "conflict": "Ese periodo cruza fechas ya cerradas. Elige un rango que las evite."
       },
       "billing": {
         "label": "COBROS Y PAGOS",
@@ -697,7 +701,7 @@
       }
     },
     "datePicker": {
-      "tooShort": "La estancia debe durar al menos 28 días.",
+      "tooShort": "La estancia debe durar al menos 31 días.",
       "tooLong": "La estancia debe ser inferior a un año (menos de 365 días).",
       "pickMoveInFirst": "Elige primero la fecha de entrada."
     }

@@ -8,7 +8,10 @@ import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
 import { monthStates } from "@/lib/availability";
 import { BAND_MONTHS, LIMITS, isoDay } from "@/lib/manage";
 import { AvailabilityBand } from "@/components/MonthBand";
-import { DateRangePicker, type DateRange } from "@/components/ui/DateRangePicker";
+import {
+  SplitRangeCalendars,
+  type SplitRange,
+} from "@/components/ui/SplitRangeCalendars";
 import { Button } from "@/components/ui/Button";
 
 // The owner's calendar, in two halves that answer two different questions.
@@ -23,6 +26,20 @@ import { Button } from "@/components/ui/Button";
 //
 // The CALENDAR answers "which days". Days are what the model stores (§2.2.3:
 // half-open ranges, `end` exclusive) and what a stay actually occupies.
+//
+// It is the same split two-calendar control the search bar and the booking
+// panel use (SplitRangeCalendars) — inline rather than in a popover, since
+// here the calendar is the section rather than one field among four. Two
+// independent calendars beat a linked range view for this job: closing a week
+// next April is two quick navigations instead of nine clicks on one arrow.
+//
+// None of the guest constraints come with it. A tenant's stay is legally
+// 31–364 days; an owner closing their own flat for a weekend answers to
+// nobody, so `minDays` is 0, there is no ceiling, and past dates stay
+// selectable for recording history. The one thing that has to be re-checked
+// here is overlap: independent calendars stop you landing on a closed day but
+// not spanning one, so a crossing selection is caught below rather than
+// bounced by the API.
 //
 // Controlled: blocks in, blocks out. The wizard composes this with an empty
 // list and gets a working calendar for a home that does not exist yet.
@@ -45,7 +62,7 @@ export function AvailabilityEditor({
   now: Date;
 }) {
   const t = useTranslations("host.manage.availability");
-  const [range, setRange] = useState<DateRange | undefined>();
+  const [range, setRange] = useState<SplitRange>({});
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
 
@@ -60,13 +77,25 @@ export function AvailabilityEditor({
     from: day(r.start),
     to: day(addDays(r.end, -1)),
   });
-  // Half-open, like everything else in the system. `to` falls back to `from`
-  // so the band lights up on the first click rather than waiting for the
-  // second — mid-selection is exactly when the feedback is worth something.
-  const preview = range?.from
-    ? { start: isoDay(range.from), end: addDays(isoDay(range.to ?? range.from), 1) }
+  // Half-open on the way in, like everything else in the system: the owner
+  // picks the LAST closed night, storage wants the first free day. The end
+  // falls back to the start so the band lights up on the first click rather
+  // than waiting for the second — mid-selection is when feedback is worth
+  // something.
+  const preview = range.moveIn
+    ? {
+        start: isoDay(range.moveIn),
+        end: addDays(isoDay(range.moveOut ?? range.moveIn), 1),
+      }
     : null;
-  const selection = range?.from && range.to ? preview : null;
+  const selection = range.moveIn && range.moveOut ? preview : null;
+
+  // Two independent calendars can straddle a block neither of them let you
+  // land on. Catching it here beats a round trip that comes back
+  // `blocks_overlap` with the selection already gone.
+  const conflict =
+    !!selection &&
+    all.some((r) => rangesOverlap(selection.start, selection.end, r.start, r.end));
 
   // The band is the summary of the same twelve months the ledger reads, with
   // the pending selection painted on top. Marking every month rather than only
@@ -88,13 +117,13 @@ export function AvailabilityEditor({
   const full = blocks.length >= LIMITS.maxBlocks;
 
   const add = () => {
-    if (!selection || full) return;
+    if (!selection || full || conflict) return;
     onChange(
       [...blocks, { ...selection, status: "confirmed", note: note.trim() || null }].sort(
         (a, b) => a.start.localeCompare(b.start),
       ),
     );
-    setRange(undefined);
+    setRange({});
     setNote("");
   };
 
@@ -121,20 +150,28 @@ export function AvailabilityEditor({
           <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
             {t("pickLabel")}
           </p>
-          <DateRangePicker
+          <SplitRangeCalendars
             value={range}
             onChange={setRange}
+            startLabel={t("firstNight")}
+            endLabel={t("lastNight")}
             booked={all.map(toMatcher)}
+            // An owner's own block has no floor and no ceiling, and may sit in
+            // the past — this is a record of the home, not a bookable stay.
+            minDays={0}
+            pickStartHint={t("pickFirstNight")}
           />
 
           <div className="flex flex-col gap-2 rounded-(--radius-control) border border-line bg-surface-2 p-3">
-            <p className="text-[0.8125rem] text-body">
-              {selection
-                ? t("selected", {
-                    range: rangeLabel(selection.start, selection.end, locale),
-                    days: stayDays(selection.start, selection.end),
-                  })
-                : t("selectPrompt")}
+            <p className={`text-[0.8125rem] ${conflict ? "text-warn" : "text-body"}`}>
+              {conflict
+                ? t("conflict")
+                : selection
+                  ? t("selected", {
+                      range: rangeLabel(selection.start, selection.end, locale),
+                      days: stayDays(selection.start, selection.end),
+                    })
+                  : t("selectPrompt")}
             </p>
             <input
               value={note}
@@ -145,7 +182,7 @@ export function AvailabilityEditor({
             />
             <Button
               onClick={add}
-              disabled={!selection || full}
+              disabled={!selection || full || conflict}
               title={full ? t("full") : undefined}
               className="h-[38px] self-start gap-2 text-[0.8125rem]"
             >

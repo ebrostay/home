@@ -399,7 +399,7 @@
         "postcode": "Postcode",
         "postcodeInvalid": "A Spanish postcode is five digits.",
         "cadastre": "Cadastral reference",
-        "cadastreHint": "Stored exactly as you type it. We do not check it against the Catastro yet.",
+        "cadastreHint": "We check it against the Catastro as you type.",
         "cadastreInvalid": "A cadastral reference is 14 to 20 letters and digits.",
         "optional": "optional",
         "area": "Area",
@@ -425,7 +425,17 @@
         "cadastreInfoWhere": "It is printed on your IBI receipt, which is the quickest place to look. It is also on the deed, or you can search for it by address at the Catastro's electronic office.",
         "cadastreInfoWhy": "\"Calle Movera 7\" covers several flats; the cadastral reference covers only yours. It lets the contract name the home without ambiguity, and lets us check that the ownership paperwork belongs to this listing.",
         "cadastreInfoLink": "Look it up at the Catastro",
-        "cadastreChecksum": "The last two letters do not match the rest. Check it was copied correctly."
+        "cadastreChecksum": "The last two letters do not match the rest. Check it was copied correctly.",
+        "cadastreLooking": "Checking the Catastro…",
+        "cadastreFound": "ACCORDING TO THE CATASTRO",
+        "cadastreNotFound": "The Catastro has no property with that reference. Check it over.",
+        "cadastreUnreachable": "The Catastro is not answering right now. You can fill the details in by hand.",
+        "cadastreSize": "{value} m²",
+        "cadastreYear": "built {year}",
+        "cadastreDiffPostcode": "The Catastro says the postcode is {value}.",
+        "cadastreDiffSize": "The Catastro records {value} m² built.",
+        "cadastreDiffPin": "The Catastro puts the building {distance} from your pin.",
+        "cadastreDiffNote": "You can leave your figures as they are — Catastro records go out of date often. We will look at this when we approve the listing."
       },
       "photos": {
         "intro": "The order is what a guest sees: the first photo that is not a floor plan is the cover.",

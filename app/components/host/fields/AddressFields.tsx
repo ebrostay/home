@@ -13,6 +13,7 @@ import {
   metresBetween,
   type GeoCandidate,
 } from "@/lib/geocode";
+import { CadastrePanel } from "./CadastrePanel";
 import { LocationPicker } from "./LocationPicker";
 import { TextField } from "./TextField";
 
@@ -330,6 +331,17 @@ export function AddressFields({
           />
         </div>
       </div>
+
+      {/* The register's own answer about that reference. Sits under the field
+          it belongs to, above the map, because two of the three things it can
+          disagree about are on the map or in Basics — the owner should read
+          the disagreement before they go looking for the values. */}
+      <CadastrePanel
+        value={value}
+        onChange={onChange}
+        pinIsManual={pinIsManual}
+        onPinMoved={() => setPinIsManual(false)}
+      />
 
       <div className="flex flex-col gap-2.5">
         <LocationPicker

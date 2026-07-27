@@ -399,7 +399,7 @@
         "postcode": "Código postal",
         "postcodeInvalid": "Un código postal español tiene cinco cifras.",
         "cadastre": "Referencia catastral",
-        "cadastreHint": "La guardamos tal cual la escribes. Todavía no la comprobamos contra el Catastro.",
+        "cadastreHint": "La comprobamos con el Catastro mientras escribes.",
         "cadastreInvalid": "Una referencia catastral tiene entre 14 y 20 letras y números.",
         "optional": "opcional",
         "area": "Zona",
@@ -425,7 +425,17 @@
         "cadastreInfoWhere": "La tienes impresa en el recibo del IBI, que es lo más rápido. También aparece en la escritura, o puedes buscarla por dirección en la Sede Electrónica del Catastro.",
         "cadastreInfoWhy": "«Calle Movera 7» vale para varios pisos; la referencia catastral solo para el tuyo. Con ella el contrato identifica la vivienda sin ambigüedad y podemos comprobar que la documentación de propiedad corresponde a este anuncio.",
         "cadastreInfoLink": "Buscar en la Sede Electrónica del Catastro",
-        "cadastreChecksum": "Las dos últimas letras no cuadran con el resto. Repasa que esté bien copiada."
+        "cadastreChecksum": "Las dos últimas letras no cuadran con el resto. Repasa que esté bien copiada.",
+        "cadastreLooking": "Consultando el Catastro…",
+        "cadastreFound": "SEGÚN EL CATASTRO",
+        "cadastreNotFound": "El Catastro no tiene ningún inmueble con esa referencia. Repásala.",
+        "cadastreUnreachable": "El Catastro no responde ahora mismo. Puedes seguir rellenando los datos a mano.",
+        "cadastreSize": "{value} m²",
+        "cadastreYear": "construido en {year}",
+        "cadastreDiffPostcode": "El Catastro dice que el código postal es {value}.",
+        "cadastreDiffSize": "El Catastro registra {value} m² construidos.",
+        "cadastreDiffPin": "El Catastro sitúa el edificio a {distance} de tu punto.",
+        "cadastreDiffNote": "Puedes dejar tus datos como están: el Catastro se queda desactualizado a menudo. Lo revisaremos al aprobar el anuncio."
       },
       "photos": {
         "intro": "El orden es lo que ve el huésped: la primera foto que no sea un plano es la portada.",

@@ -717,9 +717,28 @@ the owner's payout honest and the tenant's total complete.
 
 - `postcode` (5 digits, validated), `cadastralRef` (stored as typed,
   uppercased), `copyEnApproved` (bool).
-- **No `MATCHED` badge**, contrary to the handoff: nothing checks the
-  reference against the Catastro, and a badge would claim a verification that
-  never ran. It lights up when there is an integration behind it.
+- **The Catastro IS queried**, which supersedes this decision's first draft.
+  Its free *datos no protegidos* services are public, keyless and answer with
+  permissive CORS, so the editor calls them client-direct exactly like
+  Nominatim (§1.1). A 20-character reference that passes the checksum is
+  looked up live and the panel reports the register's own answer: address,
+  postcode, built surface, use and year, plus the parcel centroid from a
+  second call.
+  - **Still no `MATCHED` badge.** The panel says "according to the Catastro"
+    and shows what it said. "Verified" would be read as "we verified this
+    listing", which is a much larger claim than "this reference names a real
+    property" — and the register answers about the property, never about who
+    owns it. Ownership stays with the documents.
+  - **A `User-Agent` is mandatory.** Without one every endpoint, including its
+    own WSDL, returns `400 No se puede procesar su petición`. A browser sends
+    one automatically, so client-direct is the *lower-risk* option here — a
+    Function would have to remember. Observed to fail intermittently under
+    rapid use, so the fallback copy is not decoration.
+  - **Coordinates give the 14-character PARCEL**, not the 20-character unit: a
+    point identifies a building, and a building holds many flats. The owner
+    still supplies the six characters that name theirs.
+  - Euskadi and Navarra keep their own foral cadastres and are absent from
+    these services, so "not found" never proves a reference wrong.
 - **The check digits ARE verified**, which is a different claim and worth
   making. The last two characters of a 20-character urban reference are a
   checksum over the other eighteen, so a mistyped one is caught in the browser
@@ -740,6 +759,39 @@ the owner's payout honest and the tenant's total complete.
   translation with an approval gate; the gate ships, the translation does not.
   ADR-020 keeps DeepSeek for the editor assistant, so the translate button
   drops into the same panel later with no redesign.
+
+### Decision 4b — The owner keeps the last word; the disagreement is what review sees
+
+- **A Catastro value is filled in only where the field is empty.** Anything the
+  owner has already written is *offered* against, never replaced — the same
+  rule the geocoder follows. Nothing is locked.
+- **Because the register is often stale.** A reform nobody declared, a surface
+  measured to a different boundary, a change of use still working through:
+  the Catastro being authoritative about the *record* does not make it right
+  about the *home*. An owner who says 94 m² against a register that says 78 may
+  simply be correct.
+- **So the discrepancy is the deliverable, not a nuisance.** A listing whose
+  surface area disagrees with the register is exactly the kind of claim review
+  exists to look at, so the differences stay on screen for the owner and go on
+  to the reviewer.
+- **Nothing from the Catastro is stored.** The listing keeps `cadastralRef` —
+  the *question* — and both the editor and, later, the review queue ask the
+  register live. Two reasons, and the second is the stronger:
+  1. A stored answer is a second copy of a fact somebody else maintains, stale
+     from the moment it is written — the failure this codebase has already
+     paid for in portfolio occupancy and payout rows.
+  2. The client is what reports it. A stored snapshot would be a claim the
+     owner could forge, and a reviewer would be reading the owner's word for
+     what the register said.
+- **🔜 Requirement on the admin review queue** (§4.5, not built): when
+  reviewing a listing that carries a `cadastralRef`, query the Catastro at that
+  moment and show the same comparison. Do not read a stored copy — there
+  isn't one, deliberately.
+- **🔜 Requirement on the create-a-listing wizard:** the cadastral reference
+  should come *early and prominently*, not sit as an optional field near the
+  end. It is the cheapest verification in the flow and it prefills the address,
+  postcode, surface area and pin — asking for it first makes the rest of the
+  wizard shorter. `CadastrePanel` is self-contained for exactly this.
 
 ### Decision 5 — What the handoff asks for that has no model, and is not faked
 

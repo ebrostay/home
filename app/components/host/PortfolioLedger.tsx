@@ -2,16 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import type { PortfolioStats } from "@/lib/portfolio";
+import { LedgerStrip, type LedgerCell } from "@/components/host/LedgerStrip";
 
-// The ledger strip: four figures that describe the whole portfolio.
-//
-// The subgrid is load-bearing. Labels wrap to different heights ("OCCUPANCY,
-// NEXT 12 MONTHS" is two lines where "NEXT VACANCY" is one), and sharing grid
-// rows is what keeps all four values on one baseline. The 1px column gap is
-// not a gap — it is the parent's --line background showing through, which is
-// what draws the vertical hairlines between cells.
-
-type Cell = { key: string; label: string; value: string; tone: string; note: string };
+// The ledger strip: four figures that describe the whole portfolio. The strip
+// itself is shared with the Manage page — see LedgerStrip for why the subgrid
+// and the 1px gap are load-bearing.
 
 export function PortfolioLedger({
   stats,
@@ -37,7 +32,7 @@ export function PortfolioLedger({
 
   const vacancy = stats.nextVacancy;
 
-  const cells: Cell[] = [
+  const cells: LedgerCell[] = [
     {
       key: "live",
       label: t("liveLabel"),
@@ -95,34 +90,7 @@ export function PortfolioLedger({
         <span>{t("rule", { month })}</span>
       </div>
 
-      {/* Column count is explicit rather than auto-fit: with four cells,
-          auto-fit settles on three at some widths and the leftover track has
-          no cell in it — which, since the hairlines are the parent's own
-          background showing through a 1px gap, paints as a grey block. 1 / 2 /
-          4 always divides evenly. */}
-      <div className="-ml-5 grid grid-cols-1 grid-rows-[auto_auto_auto] gap-x-px bg-line min-[30rem]:grid-cols-2 min-[64rem]:grid-cols-4">
-        {cells.map((c) => (
-          <div
-            key={c.key}
-            /* py rather than a row gap: once auto-fit collapses to one column
-               the cells stack, and a row gap would fall between a cell's own
-               label, value and note as well as between cells. */
-            className="row-span-3 grid grid-rows-subgrid content-start gap-y-1.5 bg-surface px-5 py-2.5"
-          >
-            <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">
-              {c.label}
-            </span>
-            <span
-              className={`data text-[1.625rem] font-semibold leading-[1.1] tracking-[-0.01em] ${c.tone}`}
-            >
-              {c.value}
-            </span>
-            <span className="text-[0.78125rem] leading-[1.4] text-muted">
-              {c.note}
-            </span>
-          </div>
-        ))}
-      </div>
+      <LedgerStrip cells={cells} />
     </section>
   );
 }

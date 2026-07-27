@@ -12,7 +12,8 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 | `POST /api/inquiries` | anon | Contact inquiry (§2.5). |
 | `GET /api/me` | auth | Profile bootstrap/fetch (§3.6). |
 | `POST /api/booking-requests` | auth | Log-then-draft booking flow (§4.3). |
-| `GET/POST /api/host/properties` · `GET/PUT /api/host/properties/{id}` | auth (own) | Host listings CRUD (drafts, edits, availability). |
+| `GET/POST /api/host/properties` · `GET/PUT /api/host/properties/{id}` | auth (own) | Host listings CRUD — **content** edits, which re-enter review (§2.2.1). |
+| `PUT /api/host/properties/{id}/pricing` · `…/availability` | auth (own) | **Operational** edits — apply live, `status` untouched (ADR-025). |
 | `POST /api/host/properties/{id}/submit` | auth (own) | draft/rejected → `pending_review`. |
 | `POST /api/host/properties/{id}/photos` · `DELETE …/photos/{n}` | auth (own) | Photo upload/delete via Blob (§4.4). |
 | `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings. |
@@ -133,9 +134,34 @@ per-listing availability bands. Reads `GET /api/host/properties`. Every
 portfolio figure is derived from the availability data that draws the bands —
 never stored twice (`app/lib/portfolio.ts`).
 
-Availability management per listing and the **booking-interest log** —
-`bookingRequests` for own properties (read-only; status is admin-triaged) —
-live inside the per-property surface, which is 🔜 not built yet.
+**Manage property** — `/{locale}/host/manage?id=` ✅ built: the per-listing
+working view. Reads `GET /api/host/properties/{id}`, which returns the owner
+projection, the pricing block, and the **booking-interest log** for that
+listing (`bookingRequests`, read-only — status is admin-triaged, and the log is
+projected **without `userId`/`userName`**: Ebrostay owns every tenant
+conversation, so the owner surface has no tenant identity to leak). Five
+sections behind a sticky scroll-spy nav:
+
+| Section | Source | State |
+| --- | --- | --- |
+| Stays | `confirmed` availability blocks; length in days and rent derived per ADR-022/023 | ✅ real, thin — see below |
+| Pricing | `PUT …/pricing`; payout preview from `lib/pricing.ts` | ✅ live-editing |
+| Availability | `PUT …/availability`; day calendar + the 12-month band | ✅ live-editing |
+| Billing & payouts | `paymentSchedule()` over confirmed blocks | ✅ derived, read-only |
+| Performance | request log (real); views 🔜 no source | ⚠️ partial |
+
+Two figures on this page have no data model behind them yet and are shown as
+honest empty states rather than invented: **views/analytics** (no read API —
+Umami is write-only from the client) and a **stay record**. A confirmed stay is
+currently just an availability range with a free-text `note` (§4.5), so the
+Stays table can derive dates, length and rent but has no stay reference, no
+stay type, and no *agreed* rent distinct from the live price. Owner payouts are
+likewise still 🔜 (§2.1): the billing table derives what the pricing rules
+already fix and the payout account is shown disabled.
+
+**Commission on this page follows ADR-004 as amended, not a flat monthly
+deduction:** 15% of rent, capped at 30 days' rent, charged **once on the first
+instalment** (`paymentSchedule()`). Later monthly payouts are rent in full.
 
 **Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
 
@@ -151,8 +177,9 @@ live inside the per-property surface, which is 🔜 not built yet.
    cache headers, and appends `{url, isFloorplan, sortOrder}` (§2.6). Reorder,
    floor-plan flag, and delete are editor actions on the embedded array.
 4. Submit → `pending_review` (validation: required fields in both locales,
-   ≥1 photo). Editing a **published** listing also returns it to
-   `pending_review` (§2.2.1; refinement OD-5).
+   ≥1 photo). A **content** edit of a published listing also returns it to
+   `pending_review` (§2.2.1; refinement OD-5). Operational edits made from
+   Manage do not — ADR-025.
 5. Admin approves → `published` (public) or rejects with a note → `rejected`;
    host edits and resubmits.
 

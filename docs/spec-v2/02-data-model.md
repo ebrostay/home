@@ -129,7 +129,7 @@ availability shape is date ranges only (`{start, end}` pairs), never user
 identifiers or notes. This resolves v1's `availability_blocks.user_id`/`note`
 world-readability leak **by design** (v1 open decision #1, docs/spec/11).
 
-### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024)
+### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025)
 
 ```
 draft ──submit──▶ pending_review ──approve──▶ published ──pause──▶ paused
@@ -145,7 +145,7 @@ draft ──submit──▶ pending_review ──approve──▶ published ─�
 | `pending_review` → `published` | **admin only** | Approve. Clears `reviewNote`. |
 | `pending_review` → `rejected` | **admin only** | Reject **with a `reviewNote`** (shown to the host). |
 | `rejected` → `pending_review` | host (own) | Edit + resubmit. |
-| `published` → `pending_review` | host (own), on **any edit** | Edited listings re-enter the review queue and are **not public** until re-approved (locked decision: "new/edited listings … only go public after approval"). Keeping the prior version live during review is an open refinement (OD-5, §5). |
+| `published` → `pending_review` | host (own), on any **content** edit | Edited listings re-enter the review queue and are **not public** until re-approved (locked decision: "new/edited listings … only go public after approval"). **Operational** edits — price, deposit, bills policy + cap, `minStayMonths`, and the availability calendar — do **not** trigger this and leave `status` untouched (ADR-025). Keeping the prior version live during a content review is an open refinement (OD-5, §5). |
 | any → `paused` | host (own) or admin | Closed to new requests and invisible in search; the listing and its history are kept. Admin may also pause as a takedown. |
 | `paused` → `published` | host (own) or admin | "Reopen". No re-review: the listing was already approved and paused changes nothing about it. An **edit** while paused follows the normal rule and goes back to `pending_review`. |
 | any → any | **admin** | Admins may edit any listing directly without re-review (the reviewer needs no reviewer). |

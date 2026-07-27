@@ -244,21 +244,38 @@ export function PropertyRow({
         {/* Stacked, the three controls share one line; in the wide row they
             stack so the rail stays narrow. */}
         <div className="mt-auto flex w-full flex-wrap gap-2 min-[50rem]:flex-col">
-          <button
-            type="button"
-            disabled
-            title={soon}
-            className={`h-[38px] min-w-36 flex-1 rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 min-[50rem]:w-full min-[50rem]:flex-none ${
+          {(() => {
+            const primaryClass = `h-[38px] min-w-36 flex-1 rounded-(--radius-control) text-[0.8125rem] font-semibold transition-colors duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 min-[50rem]:w-full min-[50rem]:flex-none ${
               actions.quiet
                 ? "border border-line bg-surface-2 text-ink hover:bg-line"
                 : "bg-brand text-white hover:bg-brand-strong"
-            }`}
-          >
-            {t(`actions.${actions.primary}` as "actions.overview")}
-          </button>
+            }`;
+            const label = t(`actions.${actions.primary}` as "actions.overview");
+            // Live listings have somewhere to go; the rest keep the same button
+            // shape, disabled, so a row does not change silhouette by state.
+            return actions.primaryManage ? (
+              <Link
+                href={{ pathname: "/host/manage", query: { id: p.id } }}
+                className={`${primaryClass} flex items-center justify-center`}
+              >
+                {label}
+              </Link>
+            ) : (
+              <button type="button" disabled title={soon} className={primaryClass}>
+                {label}
+              </button>
+            );
+          })()}
 
           <div className="flex flex-1 gap-2 min-[50rem]:w-full min-[50rem]:flex-none">
-            {actions.secondaryHref && p.status === "published" ? (
+            {actions.secondaryManage ? (
+              <Link
+                href={{ pathname: "/host/manage", query: { id: p.id } }}
+                className="flex h-9 flex-1 items-center justify-center rounded-(--radius-control) border border-line bg-surface text-[0.8125rem] font-medium text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2"
+              >
+                {t(`actions.${actions.secondary}` as "actions.overview")}
+              </Link>
+            ) : actions.secondaryHref && p.status === "published" ? (
               <Link
                 href={{ pathname: "/property", query: { id: p.id } }}
                 className="flex h-9 flex-1 items-center justify-center rounded-(--radius-control) border border-line bg-surface text-[0.8125rem] font-medium text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2"
@@ -295,13 +312,28 @@ export function PropertyRow({
 // the primary action always route somewhere different.
 const ACTIONS: Record<
   Bucket,
-  { primary: string; secondary: string; quiet?: boolean; secondaryHref?: boolean }
+  {
+    primary: string;
+    secondary: string;
+    quiet?: boolean;
+    secondaryHref?: boolean;
+    primaryManage?: boolean;
+    secondaryManage?: boolean;
+  }
 > = {
-  live: { primary: "overview", secondary: "viewAsGuest", secondaryHref: true },
+  live: {
+    primary: "overview",
+    secondary: "viewAsGuest",
+    secondaryHref: true,
+    primaryManage: true,
+  },
   // The one quiet primary: nothing to do while review has the listing, so the
   // button must not look like the moment's action. It never hovers to brand.
   review: { primary: "viewSubmission", secondary: "withdraw", quiet: true },
   changes: { primary: "fix", secondary: "preview" },
   draft: { primary: "continue", secondary: "delete" },
-  paused: { primary: "reopen", secondary: "manage" },
+  // Reopening is a mutation that does not exist yet, so the route into Manage
+  // is the secondary — a paused home still has a calendar and a price worth
+  // reading, and the owner should be able to get to them.
+  paused: { primary: "reopen", secondary: "manage", secondaryManage: true },
 };

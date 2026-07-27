@@ -32,6 +32,42 @@ public record HostProperty(
     string? UpdatedAt,
     HostAvailabilityRange[] Availability);
 
+// ---------------------------------------------------------------------------
+// The single-listing surface ("Manage property", spec-v2 §4.4). The portfolio
+// row answers "what is this home doing"; this answers "is it priced right, is
+// it full, and what is owed" — so it carries the pricing block and the
+// booking-interest log that the list projection has no use for.
+// ---------------------------------------------------------------------------
+
+/// The six fields the owner may edit from Manage. Separated from the rest of
+/// the document because ADR-025 hangs off exactly this boundary: these apply
+/// immediately and keep a listing published, everything else re-enters review.
+public record HostPricing(
+    int PriceNumber,
+    int? DepositAmount,
+    string BillsPolicy, // included | capped | excluded
+    int? UtilitiesCapEur,
+    int MinStayMonths,
+    int MaxStayMonths);
+
+/// One logged booking request. Deliberately narrower than the stored document:
+/// `userId` and `userName` are NOT projected. Ebrostay owns the tenant
+/// relationship (§4.3 — the owner never contacts anyone), so the owner surface
+/// has no use for a tenant identity and should not be able to leak one.
+public record HostRequestRow(
+    string Id,
+    string? StartDate,
+    string? EndDate,
+    int Months,
+    string Status, // new | contacted | confirmed | declined
+    string? Channel,
+    string? CreatedAt);
+
+public record HostPropertyDetail(
+    HostProperty Property,
+    HostPricing Pricing,
+    HostRequestRow[] Requests);
+
 public static class HostProjection
 {
     // The eleven things a listing needs before it can be submitted (§4.4:
@@ -98,4 +134,12 @@ public static class HostProjection
                 .Select(r => new HostAvailabilityRange(r.Start, r.End, r.Status, r.Note))
                 .OrderBy(r => r.Start, StringComparer.Ordinal)
                 .ToArray());
+
+    public static HostPricing ToPricing(PropertyDoc p) => new(
+        p.PriceNumber,
+        p.DepositAmount,
+        p.BillsPolicy,
+        p.UtilitiesCapEur,
+        p.MinStayMonths,
+        p.MaxStayMonths);
 }

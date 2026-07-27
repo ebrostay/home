@@ -24,6 +24,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-022 | Stay "up to 12 months" (calc: ≥31 & <365 days); billing monthly | ✅ locked |
 | ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
 | ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
+| ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
 
 ---
 
@@ -494,6 +495,51 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
     added later must use `paused`.
   - Admin takedown keeps working — an admin pauses a listing; the word is
     softer but the effect on visibility is identical.
+
+---
+
+## ADR-025 — Pricing and availability edits apply live; only content edits re-review
+
+- **Status:** ✅ locked 2026-07-27 (product owner: Raphael). **Amends
+  ADR-014** and the `published → pending_review` row of §2.2.1, which until now
+  sent *any* edit of a published listing back to the review queue.
+- **Decision:** Edits split by kind, not by page:
+  - **Operational** — `priceNumber`, `depositAmount`, `billsPolicy`,
+    `utilitiesCapEur`, `minStayMonths`, and the availability calendar. These
+    **apply immediately** and leave `status` untouched. A published home stays
+    published and stays in search.
+  - **Content** — everything else: name, address, coordinates, bilingual copy,
+    capacity, amenities, photos, stay terms. Unchanged rule: editing a
+    published listing returns it to `pending_review` and it is not public
+    until re-approved.
+- **Rationale:** The two edits are different acts. Review exists to check what
+  a listing *claims* — that the copy is honest, the photos are of this home,
+  the address is real. A number has nothing to review: an owner who drops the
+  rent by 50 € is not making a new claim, and a reviewer approving it is
+  rubber-stamping. Meanwhile the cost of the old rule was severe and backwards
+  — adjusting a price or closing a week in the calendar would pull the home out
+  of public search for as long as the queue took, so the owner's incentive was
+  to leave a wrong price up. An availability block is worse still: the block
+  exists *because* those dates are taken, and hiding the listing does not
+  un-take them.
+- **Consequences:**
+  - Enforced structurally, not by a runtime diff: `PUT /api/host/properties/{id}/pricing`
+    and `…/availability` accept payloads that cannot express a content or
+    status change (`api/Models/HostWrites.cs`). The content editor keeps the
+    generic `PUT /api/host/properties/{id}` and the re-review rule.
+  - Price changes are **not retroactive.** A confirmed stay keeps the rent it
+    was agreed at; the new price applies to new requests only. Payout rows are
+    therefore never recomputed from the live price field (§4.4).
+  - Availability writes replace the owner's `confirmed` blocks and preserve
+    unexpired `hold` entries untouched — a hold belongs to the booking flow,
+    and saving a calendar must not release one. Overlap validation and ETag
+    optimistic concurrency are unchanged (§2.2.3).
+  - A draft or rejected listing does not become published by saving a price:
+    `status` is simply never assigned on these paths.
+  - Abuse surface considered and accepted: an owner could bait-and-switch a
+    price after approval. Mitigation is the audit trail (`updatedAt` moves) and
+    admin visibility, not a review gate — the same trade every marketplace
+    makes on operational fields.
 
 ---
 

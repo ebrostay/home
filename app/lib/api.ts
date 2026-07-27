@@ -91,6 +91,42 @@ export type HostProperty = {
   availability: HostRange[];
 };
 
+export type BillsPolicy = "included" | "capped" | "excluded";
+
+/** The six fields Manage may edit. They apply live and never change `status`
+ *  (ADR-025) — which is why they travel as their own object, not as a partial
+ *  listing. `maxStayMonths` is read-only here: the platform sets the ceiling. */
+export type HostPricing = {
+  priceNumber: number;
+  depositAmount: number | null;
+  billsPolicy: BillsPolicy;
+  utilitiesCapEur: number | null;
+  minStayMonths: number;
+  maxStayMonths: number;
+};
+
+/** A logged booking request, as the owner is allowed to see it. No tenant
+ *  identity: Ebrostay owns every tenant conversation (spec-v2 §4.3). */
+export type HostRequestRow = {
+  id: string;
+  startDate: string | null;
+  endDate: string | null;
+  months: number;
+  status: "new" | "contacted" | "confirmed" | "declined";
+  channel: string | null;
+  createdAt: string | null;
+};
+
+export type HostPropertyDetail = {
+  property: HostProperty;
+  pricing: HostPricing;
+  requests: HostRequestRow[];
+};
+
+/** What the owner may write to the calendar. Everything here is stored
+ *  `confirmed`; holds belong to the booking flow and survive a save. */
+export type AvailabilityWrite = { start: string; end: string; note: string | null };
+
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 async function get<T>(path: string): Promise<T> {
@@ -101,9 +137,33 @@ async function get<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function put<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}/api${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as T;
+}
+
+// The API answers a rejected write with a stable `error` code, never prose —
+// the copy for it lives in the message files, in both locales.
+async function errorCode(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.json()) as { error?: string };
+    return body.error;
+  } catch {
+    return undefined;
+  }
+}
+
 export class ApiError extends Error {
-  constructor(public status: number) {
-    super(`API ${status}`);
+  constructor(
+    public status: number,
+    public code?: string,
+  ) {
+    super(`API ${status}${code ? ` ${code}` : ""}`);
   }
 }
 
@@ -111,6 +171,19 @@ export const fetchProperties = () => get<PropertySummary[]>("/properties");
 export const fetchHostProperties = () => get<HostProperty[]>("/host/properties");
 export const fetchProperty = (id: string) =>
   get<PropertyDetail>(`/properties/${encodeURIComponent(id)}`);
+
+export const fetchHostProperty = (id: string) =>
+  get<HostPropertyDetail>(`/host/properties/${encodeURIComponent(id)}`);
+
+export const saveHostPricing = (
+  id: string,
+  pricing: Omit<HostPricing, "maxStayMonths">,
+) => put<HostPricing>(`/host/properties/${encodeURIComponent(id)}/pricing`, pricing);
+
+export const saveHostAvailability = (id: string, blocks: AvailabilityWrite[]) =>
+  put<HostRange[]>(`/host/properties/${encodeURIComponent(id)}/availability`, {
+    blocks,
+  });
 
 export const biText = (b: Bilingual | null | undefined, locale: string) =>
   (locale === "en" ? b?.en ?? b?.es : b?.es ?? b?.en) ?? "";

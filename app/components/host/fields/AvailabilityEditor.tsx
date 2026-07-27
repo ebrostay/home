@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CalendarPlus, Lock, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HostRange } from "@/lib/api";
-import { addDays, stayDays } from "@/lib/pricing";
+import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
 import { monthStates } from "@/lib/availability";
 import { BAND_MONTHS, LIMITS, isoDay } from "@/lib/manage";
 import { AvailabilityBand } from "@/components/MonthBand";
@@ -50,8 +50,9 @@ export function AvailabilityEditor({
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const all = [...blocks, ...holds];
-  const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS);
-  const open = band.filter((m) => m.state === "open").length;
+  const open = monthStates(all, availableFrom, locale, now, BAND_MONTHS).filter(
+    (m) => m.state === "open",
+  ).length;
 
   // `end` is exclusive but a calendar selection is inclusive of its last day,
   // so every conversion in this component goes through these two lines.
@@ -59,10 +60,30 @@ export function AvailabilityEditor({
     from: day(r.start),
     to: day(addDays(r.end, -1)),
   });
-  const selection =
-    range?.from && range.to
-      ? { start: isoDay(range.from), end: addDays(isoDay(range.to), 1) }
-      : null;
+  // Half-open, like everything else in the system. `to` falls back to `from`
+  // so the band lights up on the first click rather than waiting for the
+  // second — mid-selection is exactly when the feedback is worth something.
+  const preview = range?.from
+    ? { start: isoDay(range.from), end: addDays(isoDay(range.to ?? range.from), 1) }
+    : null;
+  const selection = range?.from && range.to ? preview : null;
+
+  // The band is the summary of the same twelve months the ledger reads, with
+  // the pending selection painted on top. Marking every month rather than only
+  // the chosen ones is what tells the band it is in a selectable context.
+  const band = monthStates(all, availableFrom, locale, now, BAND_MONTHS).map((m, i) =>
+    preview
+      ? {
+          ...m,
+          selected: rangesOverlap(
+            isoDay(new Date(now.getFullYear(), now.getMonth() + i, 1)),
+            isoDay(new Date(now.getFullYear(), now.getMonth() + i + 1, 1)),
+            preview.start,
+            preview.end,
+          ),
+        }
+      : m,
+  );
 
   const full = blocks.length >= LIMITS.maxBlocks;
 

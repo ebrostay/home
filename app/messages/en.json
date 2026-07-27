@@ -344,7 +344,8 @@
   "monthBand": {
     "stayLength": "Stay length",
     "monthCount": "{count, plural, one {# month} other {# months}}",
-    "availabilityAlt": "{open} of {total} months free, {partial} partially booked"
+    "availabilityAlt": "{open} of {total} months free, {partial} partially booked",
+    "selectedAlt": "{count, plural, one {# month selected} other {# months selected}}"
   },
   "listing": {
     "verified": "Verified",

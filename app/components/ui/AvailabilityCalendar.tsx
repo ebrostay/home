@@ -14,9 +14,16 @@ import "react-day-picker/style.css";
 // band becomes a map of where you are, instead of two controls showing the
 // same year and never referring to each other.
 //
-// Days stay focusable rather than disabled wholesale. Marking every day
-// disabled to enforce read-only would grey the calendar out and destroy the
-// one thing it exists to show; a click that does nothing is the cheaper price.
+// `mode="single"` with a permanently empty selection is doing real work, and
+// dropping it breaks the calendar silently. Without a mode, react-day-picker
+// renders each day as bare text in a cell — no `.rdp-day_button` — and every
+// themed rule in globals.css (booked days, today, hover, disabled) targets
+// that button. The result looks like a working calendar with no bookings on
+// it, which is the worst way to be wrong. Selection stays impossible because
+// `selected` is fixed at undefined and onSelect does nothing.
+
+// Controlled at undefined: a click can never land anywhere.
+const NO_SELECTION = () => {};
 
 export function AvailabilityCalendar({
   month,
@@ -42,6 +49,9 @@ export function AvailabilityCalendar({
   return (
     <div role="group" aria-label={label}>
       <DayPicker
+        mode="single"
+        selected={undefined}
+        onSelect={NO_SELECTION}
         locale={locale === "es" ? es : enGB}
         captionLayout="dropdown"
         month={month}

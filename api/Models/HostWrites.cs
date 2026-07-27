@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Ebrostay.Api.Models;
 
@@ -29,6 +30,50 @@ public record AvailabilityWrite(string? Start, string? End, string? Note);
 
 public record AvailabilityUpdate(AvailabilityWrite[]? Blocks);
 
+public record BilingualWrite(string? Es, string? En);
+
+/// A photo the owner is keeping. There is no `url` the owner can invent: the
+/// validator rejects any URL not already on the document, so this payload can
+/// reorder, re-flag and drop photos but never introduce one. Uploading is a
+/// separate, still-unbuilt path (ADR-019, ADR-027).
+public record PhotoWrite(string? Url, bool IsFloorplan);
+
+/// The content half of a listing (ADR-025). Everything here is a claim about
+/// the home, so saving it sends an approved listing back to the queue — which
+/// is the whole reason it is a different payload from PricingUpdate rather
+/// than a wider one. Note what it cannot express: no `status`, no `hostId`,
+/// no price, no availability. The boundary is structural.
+public record DetailsUpdate(
+    string? Name,
+    string? Type,
+    string? Address,
+    string? Postcode,
+    string? CadastralRef,
+    double Lat,
+    double Lng,
+    BilingualWrite? Area,
+    BilingualWrite? Copy,
+    bool CopyEnApproved,
+    BilingualWrite? Details,
+    BilingualWrite? Beds,
+    int Guests,
+    int Bedrooms,
+    int Bathrooms,
+    int SizeM2,
+    int? FloorNumber,
+    string? EnergyRating,
+    string[]? Amenities,
+    bool PetsAllowed,
+    bool SmokingAllowed,
+    bool CouplesAllowed,
+    bool SelfCheckin,
+    PhotoWrite[]? Photos);
+
+/// The only status move an owner may make on their own (ADR-024): closing a
+/// listing to new requests, and reopening it. Publishing is an admin act and
+/// is not expressible here.
+public record StatusUpdate(string? Status);
+
 public static class HostValidation
 {
     /// A listing carries a small, bounded calendar (§2.2.3 "tens, not
@@ -44,8 +89,29 @@ public static class HostValidation
     public const int MaxTurnoverDays = 30;
     private const int MaxNoteLength = 120;
 
+    public const int MaxNameLength = 120;
+    public const int MaxAddressLength = 200;
+    public const int MaxAreaLength = 120;
+    public const int MaxCopyLength = 4_000;
+    public const int MaxDetailsLength = 2_000;
+    public const int MaxBedsLength = 400;
+    public const int MaxAmenities = 40;
+    public const int MaxPhotos = 40;
+    public const int MaxGuests = 32;
+    public const int MaxRooms = 20;
+    public const int MaxSizeM2 = 2_000;
+    /// Sótano 2 up to a tower's 60th. Wider than Zaragoza needs, narrow enough
+    /// that a typo of 500 is caught.
+    public const int MinFloor = -2;
+    public const int MaxFloor = 60;
+
     private static readonly string[] BillsPolicies = ["included", "capped", "excluded"];
     private static readonly string[] CleaningParties = ["host", "platform"];
+    private static readonly string[] PropertyTypes = ["apartment", "room", "home"];
+    private static readonly string[] EnergyRatings = ["A", "B", "C", "D", "E", "F", "G"];
+    /// The only status an owner may set themselves. `published` is reachable
+    /// only through Reopen below, and only from `paused` (ADR-024).
+    private static readonly string[] OwnerStatuses = ["paused", "published"];
 
     /// Returns an error code, or null when the payload is applicable. Codes are
     /// stable strings the client maps to bilingual copy — never prose.
@@ -75,6 +141,91 @@ public static class HostValidation
 
         return null;
     }
+
+    /// The content payload. Same contract as CheckPricing: a stable code, or
+    /// null when the payload is applicable.
+    ///
+    /// `doc` is passed in because one rule cannot be checked from the payload
+    /// alone — see the photo loop.
+    public static string? CheckDetails(DetailsUpdate u, PropertyDoc doc)
+    {
+        var name = u.Name?.Trim();
+        if (string.IsNullOrEmpty(name)) return "name_required";
+        if (name.Length > MaxNameLength) return "name_too_long";
+
+        if (!PropertyTypes.Contains(u.Type ?? "")) return "type_invalid";
+
+        if (u.Address is { Length: > MaxAddressLength }) return "address_too_long";
+        // Optional, but a postcode that is present has one shape in Spain.
+        if (!string.IsNullOrWhiteSpace(u.Postcode) &&
+            !Regex.IsMatch(u.Postcode.Trim(), "^[0-9]{5}$")) return "postcode_invalid";
+        if (!string.IsNullOrWhiteSpace(u.CadastralRef) &&
+            !Regex.IsMatch(u.CadastralRef.Trim(), "^[A-Za-z0-9]{14,20}$"))
+            return "cadastre_invalid";
+
+        // A pin at 0,0 is in the Gulf of Guinea, and every listing carrying it
+        // would cluster there on the map.
+        if (u.Lat is < -90 or > 90 || u.Lng is < -180 or > 180) return "coords_invalid";
+
+        if (u.Guests is < 0 or > MaxGuests ||
+            u.Bedrooms is < 0 or > MaxRooms ||
+            u.Bathrooms is < 0 or > MaxRooms ||
+            u.SizeM2 is < 0 or > MaxSizeM2) return "capacity_out_of_range";
+        if (u.FloorNumber is < MinFloor or > MaxFloor) return "floor_out_of_range";
+
+        if (!string.IsNullOrWhiteSpace(u.EnergyRating) &&
+            !EnergyRatings.Contains(u.EnergyRating.Trim().ToUpperInvariant()))
+            return "energy_invalid";
+
+        if (TooLong(u.Area, MaxAreaLength) ||
+            TooLong(u.Copy, MaxCopyLength) ||
+            TooLong(u.Details, MaxDetailsLength) ||
+            TooLong(u.Beds, MaxBedsLength)) return "text_too_long";
+
+        var amenities = u.Amenities ?? [];
+        if (amenities.Length > MaxAmenities) return "too_many_amenities";
+        // The vocabulary itself lives with the translations, not here — the
+        // server only insists on the shape, so shipping a new amenity never
+        // needs an API deploy, and a free-text string never reaches the
+        // public projection.
+        if (amenities.Any(a => !Regex.IsMatch(a ?? "", "^[a-z0-9-]{1,32}$")))
+            return "amenity_invalid";
+        if (amenities.Distinct(StringComparer.Ordinal).Count() != amenities.Length)
+            return "amenity_duplicate";
+
+        var photos = u.Photos ?? [];
+        if (photos.Length > MaxPhotos) return "too_many_photos";
+        var known = doc.Photos.Select(p => p.Url).ToHashSet(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in photos)
+        {
+            // The load-bearing one. This payload is how a listing's gallery is
+            // reordered and trimmed, and every URL in it renders in a public
+            // <img>. Accepting an arbitrary URL would let an owner point their
+            // listing at any host on the internet — so a photo must already be
+            // on the document. New photos arrive by upload, which is a
+            // different path and does not exist yet (ADR-019).
+            if (p.Url is null || !known.Contains(p.Url)) return "photo_unknown";
+            if (!seen.Add(p.Url)) return "photo_duplicate";
+        }
+
+        return null;
+    }
+
+    /// Owners close and reopen; only an admin publishes. Reopening is allowed
+    /// from `paused` alone — a draft that could publish itself would be a
+    /// listing that never met a reviewer.
+    public static string? CheckStatus(string? next, string current)
+    {
+        if (!OwnerStatuses.Contains(next ?? "")) return "status_invalid";
+        if (next == "published" && current != "paused") return "status_not_allowed";
+        if (next == "paused" && current is not ("published" or "paused"))
+            return "status_not_allowed";
+        return null;
+    }
+
+    private static bool TooLong(BilingualWrite? b, int max) =>
+        b?.Es is { } es && es.Length > max || b?.En is { } en && en.Length > max;
 
     /// Blocks must be well-formed, non-overlapping among themselves, and must
     /// not collide with a hold the booking flow is still holding. The overlap

@@ -35,6 +35,7 @@ const extra = {
   pedro1: {
     reference: "EBR-P-0101",
     address: "Pedro II el Católico 3, Zaragoza",
+    postcode: "50009",
     bedrooms: 3, bathrooms: 1, sizeM2: 80, selfCheckin: false,
     stayTerms: ["cancellation"],
     beds: { es: "3 camas individuales", en: "3 single beds" },
@@ -43,6 +44,7 @@ const extra = {
   pedro2: {
     reference: "EBR-P-0102",
     address: "Pedro II el Católico 3, Zaragoza",
+    postcode: "50009",
     bedrooms: 3, bathrooms: 1, sizeM2: 82, selfCheckin: false,
     stayTerms: ["cancellation"],
     beds: { es: "2 camas dobles y 1 individual", en: "2 double beds and 1 single" },
@@ -51,6 +53,7 @@ const extra = {
   movera0: {
     reference: "EBR-P-0201",
     address: "Calle Movera 7, Zaragoza",
+    postcode: "50194",
     bedrooms: 3, bathrooms: 1, sizeM2: 90, selfCheckin: true,
     utilitiesCapEur: 150,
     stayTerms: ["cancellation", "cleaning"],
@@ -64,6 +67,7 @@ const extra = {
   movera1: {
     reference: "EBR-P-0202",
     address: "Calle Movera 7, Zaragoza",
+    postcode: "50194",
     bedrooms: 3, bathrooms: 1, sizeM2: 88, selfCheckin: true,
     utilitiesCapEur: 150,
     stayTerms: ["cancellation"],
@@ -90,11 +94,18 @@ function toDoc(p) {
     name: p.name?.es ?? p.id,
     addressKey: p.addressKey ?? null,
     address: x.address ?? null,
+    postcode: x.postcode ?? null,
+    // Left null on purpose: a made-up Catastro reference in seed data is the
+    // kind of plausible-looking value that survives into a screenshot.
+    cadastralRef: null,
     lat: p.lat, lng: p.lng,
 
     area: p.area, copy: p.copy, details: p.details,
     beds: x.beds ?? null,
     priceNote: null,
+    // The v1 English copy was published and read for two years, so it is
+    // approved by every meaning of the word (ADR-027).
+    copyEnApproved: true,
 
     guests: p.guests ?? 4,
     bedrooms: x.bedrooms ?? 3,

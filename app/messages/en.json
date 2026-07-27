@@ -352,6 +352,169 @@
         "viewsEmpty": "We are not counting views yet. When we are, the last twelve weeks will show here.",
         "tip": "Homes with every room photographed get about a third more requests. Add any that are missing in the listing details."
       }
+    },
+    "edit": {
+      "eyebrow": "EDIT LISTING · {reference}",
+      "eyebrowNoRef": "EDIT LISTING",
+      "untitled": "Untitled listing",
+      "noAddress": "No address yet",
+      "goToManage": "Manage",
+      "crossLink": "This page holds what rarely changes. Price, the calendar, requests and payouts live in Manage.",
+      "photoCount": "{count, plural, =0 {NO PHOTOS} one {# PHOTO} other {# PHOTOS}}",
+      "bilingualFigure": "{done} OF {total} IN BOTH LANGUAGES",
+      "amenityFigure": "{done} OF {total} SELECTED",
+      "pricingPointer": "Price, the shortest stay you accept and the turnaround between stays are set in <link>Manage</link>.",
+      "nav": {
+        "label": "SECTIONS",
+        "basics": "Basics",
+        "address": "Address & cadastre",
+        "photos": "Photos",
+        "description": "Description",
+        "amenities": "What the home offers",
+        "terms": "Rules & terms"
+      },
+      "ledger": {
+        "photos": "PHOTOS",
+        "floorplans": "FLOOR PLANS",
+        "bilingual": "IN BOTH LANGUAGES",
+        "amenities": "WHAT IT OFFERS"
+      },
+      "basics": {
+        "name": "Listing title",
+        "nameHint": "Say what it is and where. It is the first thing read in search.",
+        "type": "Property type",
+        "size": "Floor area",
+        "bedrooms": "Bedrooms",
+        "bathrooms": "Bathrooms",
+        "guests": "Sleeps",
+        "floor": "Floor",
+        "energy": "Energy certificate",
+        "energyNone": "Not set",
+        "energyHint": "Required by law for any let in Spain. Leave it unset until you have it."
+      },
+      "address": {
+        "locked": "The address is shown to guests who book. Changing it sends the listing back for review.",
+        "street": "Street address",
+        "streetPlaceholder": "Street, number and door",
+        "postcode": "Postcode",
+        "postcodeInvalid": "A Spanish postcode is five digits.",
+        "cadastre": "Cadastral reference",
+        "cadastreHint": "Stored exactly as you type it. We do not check it against the Catastro yet.",
+        "cadastreInvalid": "A cadastral reference is 14 to 20 letters and digits.",
+        "optional": "optional",
+        "area": "Area",
+        "areaPlaceholder": "Old Town",
+        "mapLabel": "The home's location on the map",
+        "mapCaption": "Drag the pin to correct it"
+      },
+      "photos": {
+        "intro": "The order is what a guest sees: the first photo that is not a floor plan is the cover.",
+        "none": "This listing has no photos yet.",
+        "cover": "COVER",
+        "planBadge": "PLAN",
+        "photoAlt": "Photo {n}",
+        "moveEarlier": "Move photo {n} earlier",
+        "moveLater": "Move photo {n} later",
+        "togglePlan": "Mark photo {n} as a floor plan",
+        "remove": "Remove photo {n}",
+        "uploadSoon": "Uploading new photos is not available yet. Send them to us and we will add them."
+      },
+      "description": {
+        "about": "About this home",
+        "aboutTagEs": "ES · YOU WRITE THIS ONE",
+        "aboutHint": "Say what living here for months is like: the light, the neighbourhood, the commute.",
+        "enApproved": "EN · APPROVED BY YOU",
+        "enPending": "EN · NOT APPROVED",
+        "enApprovedHint": "Shown to English-speaking guests",
+        "enPendingHint": "Needs your approval",
+        "approveButton": "Approve the English",
+        "approvedButton": "Approved",
+        "details": "Details",
+        "detailsHint": "The specifics: appliances, heating, what is in the building.",
+        "beds": "Beds",
+        "bedsPlaceholder": "2 double beds and 1 single",
+        "bedsHint": "How many beds, and of what kind."
+      },
+      "amenities": {
+        "intro": "Tick what the home has. This is what guests filter search by.",
+        "petsNote": "Pets? That is a house rule, just below under Rules & terms."
+      },
+      "terms": {
+        "policyHeading": "SET BY EBROSTAY FOR EVERY STAY",
+        "policyStay": "Stay length",
+        "policyStayValue": "{days} days – {months} months",
+        "policyCancel": "Tenant cancellation",
+        "policyCancelValue": "48 h before",
+        "rule": {
+          "smoking": "Smoking",
+          "pets": "Pets",
+          "couples": "Couples",
+          "selfCheckin": "Self check-in"
+        },
+        "on": {
+          "smoking": "Allowed",
+          "pets": "Allowed",
+          "couples": "Allowed",
+          "selfCheckin": "Available"
+        },
+        "off": {
+          "smoking": "Not allowed",
+          "pets": "Not allowed",
+          "couples": "Not allowed",
+          "selfCheckin": "Not available"
+        }
+      },
+      "danger": {
+        "title": "Take this listing off Ebrostay",
+        "titlePaused": "This listing is paused",
+        "body": "Pausing hides it from search and keeps all your data. Confirmed stays are unaffected.",
+        "bodyPaused": "It is out of search and taking no requests. Reopening puts it back exactly as it was — no second review.",
+        "bodyNotLive": "This listing is not published yet, so there is nothing to pause.",
+        "pause": "Pause listing",
+        "reopen": "Reopen listing"
+      },
+      "save": {
+        "unsaved": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+        "savedJustNow": "All changes saved · just now",
+        "noChanges": "No unsaved changes",
+        "save": "Save changes",
+        "saved": "Saved",
+        "saving": "Saving…",
+        "discard": "Discard",
+        "reviewNote": "Saving sends the listing back for review. It leaves search until we approve it.",
+        "liveNote": "These changes take effect as soon as you save.",
+        "blocker": {
+          "noPhotos": "No photos yet",
+          "noAddress": "The address is missing",
+          "noAmenities": "Nothing ticked under what the home offers",
+          "missingTranslation": "{count, plural, one {# field is untranslated} other {# fields are untranslated}}",
+          "enNotApproved": "The English description needs your approval"
+        }
+      },
+      "error": {
+        "generic": "That did not save. Try again in a moment.",
+        "bad_request": "Something in the form was not readable. Reload the page and try again.",
+        "name_required": "The listing needs a title.",
+        "name_too_long": "Keep the title under 120 characters.",
+        "type_invalid": "Pick one of the property types.",
+        "address_too_long": "Keep the address under 200 characters.",
+        "postcode_invalid": "A Spanish postcode is five digits.",
+        "cadastre_invalid": "A cadastral reference is 14 to 20 letters and digits.",
+        "coords_invalid": "That map position is not valid. Place the pin again.",
+        "capacity_out_of_range": "Check the floor area, bedrooms, bathrooms and sleeps.",
+        "floor_out_of_range": "Enter a floor between -2 and 60.",
+        "energy_invalid": "An energy certificate runs from A to G.",
+        "text_too_long": "One of the texts is too long. Trim it a little.",
+        "too_many_amenities": "That is more amenities than one listing takes.",
+        "amenity_invalid": "One of the amenities was not recognised. Reload the page.",
+        "amenity_duplicate": "The same amenity is ticked twice.",
+        "too_many_photos": "A listing takes 40 photos at most.",
+        "photo_unknown": "One of those photos is no longer on the listing. Reload to see the current ones.",
+        "photo_duplicate": "The same photo appears twice.",
+        "status_invalid": "From here you can only pause or reopen the listing.",
+        "status_not_allowed": "This listing cannot be paused or reopened in its current state.",
+        "stale_write": "This home changed somewhere else while you were editing. Reload to see the current version."
+      }
     }
   },
   "footer": {
@@ -419,7 +582,13 @@
     "parking": "Parking",
     "heating": "Heating",
     "kitchen": "Equipped kitchen",
-    "terrace": "Terrace"
+    "terrace": "Terrace",
+    "furnished": "Furnished",
+    "dryer": "Dryer",
+    "dishwasher": "Dishwasher",
+    "tv": "TV",
+    "storage": "Storage room",
+    "concierge": "Concierge"
   },
   "detail": {
     "back": "Back to homes",

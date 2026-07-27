@@ -352,6 +352,169 @@
         "viewsEmpty": "Todavía no contamos las visitas. Cuando lo hagamos, aquí verás las últimas doce semanas.",
         "tip": "Las viviendas con todas las habitaciones fotografiadas reciben alrededor de un tercio más de solicitudes. Añade las que falten en la ficha."
       }
+    },
+    "edit": {
+      "eyebrow": "EDITAR ANUNCIO · {reference}",
+      "eyebrowNoRef": "EDITAR ANUNCIO",
+      "untitled": "Anuncio sin título",
+      "noAddress": "Todavía sin dirección",
+      "goToManage": "Gestionar",
+      "crossLink": "Esta página guarda lo que casi nunca cambia. El precio, el calendario, las solicitudes y los cobros están en Gestionar.",
+      "photoCount": "{count, plural, =0 {SIN FOTOS} one {# FOTO} other {# FOTOS}}",
+      "bilingualFigure": "{done} DE {total} EN LOS DOS IDIOMAS",
+      "amenityFigure": "{done} DE {total} SELECCIONADOS",
+      "pricingPointer": "El precio, la estancia mínima y la preparación entre estancias se ajustan en <link>Gestionar</link>.",
+      "nav": {
+        "label": "SECCIONES",
+        "basics": "Lo básico",
+        "address": "Dirección y catastro",
+        "photos": "Fotos",
+        "description": "Descripción",
+        "amenities": "Equipamiento",
+        "terms": "Normas y condiciones"
+      },
+      "ledger": {
+        "photos": "FOTOS",
+        "floorplans": "PLANOS",
+        "bilingual": "EN LOS DOS IDIOMAS",
+        "amenities": "EQUIPAMIENTO"
+      },
+      "basics": {
+        "name": "Título del anuncio",
+        "nameHint": "Di qué es y dónde está. Es lo primero que se lee en el buscador.",
+        "type": "Tipo de vivienda",
+        "size": "Superficie",
+        "bedrooms": "Dormitorios",
+        "bathrooms": "Baños",
+        "guests": "Plazas",
+        "floor": "Planta",
+        "energy": "Certificado energético",
+        "energyNone": "Sin indicar",
+        "energyHint": "Obligatorio para alquilar en España. Si aún no lo tienes, déjalo sin indicar."
+      },
+      "address": {
+        "locked": "La dirección se muestra a los huéspedes que reservan. Si la cambias, el anuncio vuelve a revisión.",
+        "street": "Dirección",
+        "streetPlaceholder": "Calle, número y puerta",
+        "postcode": "Código postal",
+        "postcodeInvalid": "Un código postal español tiene cinco cifras.",
+        "cadastre": "Referencia catastral",
+        "cadastreHint": "La guardamos tal cual la escribes. Todavía no la comprobamos contra el Catastro.",
+        "cadastreInvalid": "Una referencia catastral tiene entre 14 y 20 letras y números.",
+        "optional": "opcional",
+        "area": "Zona",
+        "areaPlaceholder": "Casco Histórico",
+        "mapLabel": "Ubicación de la vivienda en el mapa",
+        "mapCaption": "Arrastra el punto para corregirlo"
+      },
+      "photos": {
+        "intro": "El orden es lo que ve el huésped: la primera foto que no sea un plano es la portada.",
+        "none": "Todavía no hay fotos en este anuncio.",
+        "cover": "PORTADA",
+        "planBadge": "PLANO",
+        "photoAlt": "Foto {n}",
+        "moveEarlier": "Adelantar la foto {n}",
+        "moveLater": "Atrasar la foto {n}",
+        "togglePlan": "Marcar la foto {n} como plano",
+        "remove": "Quitar la foto {n}",
+        "uploadSoon": "Subir fotos nuevas todavía no está disponible. Escríbenos y las añadimos por ti."
+      },
+      "description": {
+        "about": "Sobre esta vivienda",
+        "aboutTagEs": "ES · LA ESCRIBES TÚ",
+        "aboutHint": "Cuenta cómo se vive aquí durante meses: la luz, el barrio, el trayecto al trabajo.",
+        "enApproved": "EN · APROBADO POR TI",
+        "enPending": "EN · SIN APROBAR",
+        "enApprovedHint": "Se muestra a los huéspedes que navegan en inglés",
+        "enPendingHint": "Falta tu aprobación",
+        "approveButton": "Aprobar el inglés",
+        "approvedButton": "Aprobado",
+        "details": "Detalles",
+        "detailsHint": "Lo concreto: electrodomésticos, calefacción, qué hay en el edificio.",
+        "beds": "Camas",
+        "bedsPlaceholder": "2 camas dobles y 1 individual",
+        "bedsHint": "Cuántas camas y de qué tipo."
+      },
+      "amenities": {
+        "intro": "Marca lo que tiene la vivienda. Es con esto con lo que se filtra en el buscador.",
+        "petsNote": "¿Mascotas? Eso es una norma de la casa, justo debajo, en Normas y condiciones."
+      },
+      "terms": {
+        "policyHeading": "LO FIJA EBROSTAY PARA TODAS LAS ESTANCIAS",
+        "policyStay": "Duración de la estancia",
+        "policyStayValue": "{days} días – {months} meses",
+        "policyCancel": "Cancelación del inquilino",
+        "policyCancelValue": "48 h antes",
+        "rule": {
+          "smoking": "Fumar",
+          "pets": "Mascotas",
+          "couples": "Parejas",
+          "selfCheckin": "Entrada autónoma"
+        },
+        "on": {
+          "smoking": "Permitido",
+          "pets": "Permitidas",
+          "couples": "Permitidas",
+          "selfCheckin": "Disponible"
+        },
+        "off": {
+          "smoking": "No permitido",
+          "pets": "No permitidas",
+          "couples": "No permitidas",
+          "selfCheckin": "No disponible"
+        }
+      },
+      "danger": {
+        "title": "Retirar este anuncio de Ebrostay",
+        "titlePaused": "Este anuncio está pausado",
+        "body": "Al pausarlo desaparece del buscador y conservas todos tus datos. Las estancias confirmadas siguen igual.",
+        "bodyPaused": "No aparece en el buscador y no recibe solicitudes. Al reabrirlo vuelve tal cual estaba: no pasa por revisión otra vez.",
+        "bodyNotLive": "Este anuncio todavía no está publicado, así que no hay nada que pausar.",
+        "pause": "Pausar el anuncio",
+        "reopen": "Reabrir el anuncio"
+      },
+      "save": {
+        "unsaved": "{count, plural, one {# cambio sin guardar} other {# cambios sin guardar}}",
+        "savedJustNow": "Todo guardado · ahora mismo",
+        "noChanges": "Sin cambios sin guardar",
+        "save": "Guardar cambios",
+        "saved": "Guardado",
+        "saving": "Guardando…",
+        "discard": "Descartar",
+        "reviewNote": "Al guardar, el anuncio vuelve a revisión y deja de verse en el buscador hasta que lo aprobemos.",
+        "liveNote": "Los cambios se aplican en cuanto guardas.",
+        "blocker": {
+          "noPhotos": "Todavía no hay ninguna foto",
+          "noAddress": "Falta la dirección",
+          "noAmenities": "No has marcado nada del equipamiento",
+          "missingTranslation": "{count, plural, one {# campo sin traducir} other {# campos sin traducir}}",
+          "enNotApproved": "Falta aprobar la descripción en inglés"
+        }
+      },
+      "error": {
+        "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",
+        "bad_request": "Algo del formulario no se ha entendido. Recarga la página e inténtalo otra vez.",
+        "name_required": "El anuncio necesita un título.",
+        "name_too_long": "El título no puede pasar de 120 caracteres.",
+        "type_invalid": "Elige uno de los tipos de vivienda.",
+        "address_too_long": "La dirección no puede pasar de 200 caracteres.",
+        "postcode_invalid": "Un código postal español tiene cinco cifras.",
+        "cadastre_invalid": "Una referencia catastral tiene entre 14 y 20 letras y números.",
+        "coords_invalid": "Ese punto del mapa no es válido. Vuelve a colocarlo.",
+        "capacity_out_of_range": "Revisa la superficie, los dormitorios, los baños y las plazas.",
+        "floor_out_of_range": "Escribe una planta entre -2 y 60.",
+        "energy_invalid": "El certificado energético va de la A a la G.",
+        "text_too_long": "Uno de los textos es demasiado largo. Recórtalo un poco.",
+        "too_many_amenities": "Son más elementos de equipamiento de los que admite un anuncio.",
+        "amenity_invalid": "No hemos reconocido uno de los elementos del equipamiento. Recarga la página.",
+        "amenity_duplicate": "Has marcado dos veces el mismo elemento del equipamiento.",
+        "too_many_photos": "Un anuncio admite 40 fotos como máximo.",
+        "photo_unknown": "Una de esas fotos ya no está en el anuncio. Recarga para ver las actuales.",
+        "photo_duplicate": "La misma foto aparece dos veces.",
+        "status_invalid": "Desde aquí solo puedes pausar o reabrir el anuncio.",
+        "status_not_allowed": "Este anuncio no se puede pausar ni reabrir en su estado actual.",
+        "stale_write": "Esta vivienda ha cambiado en otro sitio mientras editabas. Recarga para ver la versión actual."
+      }
     }
   },
   "footer": {
@@ -419,7 +582,13 @@
     "parking": "Parking",
     "heating": "Calefacción",
     "kitchen": "Cocina equipada",
-    "terrace": "Terraza"
+    "terrace": "Terraza",
+    "furnished": "Amueblado",
+    "dryer": "Secadora",
+    "dishwasher": "Lavavajillas",
+    "tv": "TV",
+    "storage": "Trastero",
+    "concierge": "Portero"
   },
   "detail": {
     "back": "Volver a las viviendas",

@@ -124,6 +124,48 @@ export type HostPricing = {
   platformCleaningFeeEur: number;
 };
 
+export type HostPhoto = {
+  url: string;
+  isFloorplan: boolean;
+  /** Server-assigned. The editor sends position as array order instead, so a
+   *  gap or a repeat in this number can never reorder the gallery. */
+  sortOrder: number;
+};
+
+/** The content half of a listing — what the editor edits, and what re-enters
+ *  review when saved (ADR-025/ADR-027). Kept apart from `HostPricing` for
+ *  exactly that reason: saving one of these changes `status`, saving one of
+ *  those does not. */
+export type HostListing = {
+  name: string;
+  type: string;
+  address: string | null;
+  postcode: string | null;
+  /** As typed. Nothing verifies it against the Catastro, so nothing may
+   *  render a "matched" badge beside it. */
+  cadastralRef: string | null;
+  lat: number;
+  lng: number;
+  area: Bilingual | null;
+  copy: Bilingual | null;
+  /** The owner stands behind the English description. Only `copy` is gated. */
+  copyEnApproved: boolean;
+  details: Bilingual | null;
+  beds: Bilingual | null;
+  guests: number;
+  bedrooms: number;
+  bathrooms: number;
+  sizeM2: number;
+  floorNumber: number | null;
+  energyRating: string | null;
+  amenities: string[];
+  petsAllowed: boolean;
+  smokingAllowed: boolean;
+  couplesAllowed: boolean;
+  selfCheckin: boolean;
+  photos: HostPhoto[];
+};
+
 /** A logged booking request, as the owner is allowed to see it. No tenant
  *  identity: Ebrostay owns every tenant conversation (spec-v2 §4.3). */
 export type HostRequestRow = {
@@ -139,7 +181,16 @@ export type HostRequestRow = {
 export type HostPropertyDetail = {
   property: HostProperty;
   pricing: HostPricing;
+  listing: HostListing;
   requests: HostRequestRow[];
+};
+
+/** What a content save answers with. The property row travels back because the
+ *  save may have moved `status` to `pending_review` — and the page has a status
+ *  pill on screen still claiming it did not. */
+export type HostListingSaved = {
+  property: HostProperty;
+  listing: HostListing;
 };
 
 /** What the owner may write to the calendar. Everything here is stored
@@ -198,6 +249,14 @@ export const saveHostPricing = (
   id: string,
   pricing: Omit<HostPricing, "maxStayMonths" | "platformCleaningFeeEur">,
 ) => put<HostPricing>(`/host/properties/${encodeURIComponent(id)}/pricing`, pricing);
+
+export const saveHostListing = (id: string, listing: HostListing) =>
+  put<HostListingSaved>(`/host/properties/${encodeURIComponent(id)}`, listing);
+
+/** Pause or reopen. The API accepts nothing else here — publishing is an admin
+ *  act, and `paused → published` is the only reopen (ADR-024). */
+export const saveHostStatus = (id: string, status: "paused" | "published") =>
+  put<HostProperty>(`/host/properties/${encodeURIComponent(id)}/status`, { status });
 
 export const saveHostAvailability = (id: string, blocks: AvailabilityWrite[]) =>
   put<HostRange[]>(`/host/properties/${encodeURIComponent(id)}/availability`, {

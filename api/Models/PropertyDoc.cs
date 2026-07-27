@@ -34,6 +34,14 @@ public class PropertyDoc
     public string Name { get; set; } = "";
     public string? AddressKey { get; set; }
     public string? Address { get; set; }
+    public string? Postcode { get; set; }
+
+    // The Catastro reference, stored exactly as the owner typed it. Nothing
+    // checks it against the Catastro yet, which is why no surface renders a
+    // "matched" badge next to it (ADR-027) — a badge would claim a
+    // verification that never ran.
+    public string? CadastralRef { get; set; }
+
     public double Lat { get; set; }
     public double Lng { get; set; }
 
@@ -42,6 +50,13 @@ public class PropertyDoc
     public Bilingual? Details { get; set; }
     public Bilingual? Beds { get; set; }
     public Bilingual? PriceNote { get; set; }
+
+    // The owner has read the English description and stands behind it
+    // (ADR-027). Only `Copy` carries the gate: it is the one paragraph a
+    // guest reads as the owner's own voice, and the only one long enough for
+    // a bad translation to mislead. Area, details and beds are short labels
+    // whose meaning survives a literal rendering.
+    public bool CopyEnApproved { get; set; }
 
     public int Guests { get; set; }
     public int Bedrooms { get; set; }

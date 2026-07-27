@@ -92,7 +92,116 @@ public class HostFunctions(
             HostProjection.ToHostProperty(doc!, DateTimeOffset.UtcNow, requests.Count(
                 r => r.Status == "new"), null),
             HostProjection.ToPricing(doc!, platform.CleaningFeeEur),
+            HostProjection.ToListing(doc!),
             requests));
+    }
+
+    // The listing editor (spec-v2 §4.4). The other side of the ADR-025 split:
+    // everything here is a claim about the home, so an approved listing goes
+    // back in the review queue when it is saved.
+    [Function("HostDetailsUpdate")]
+    public async Task<IActionResult> UpdateDetails(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "host/properties/{id}")]
+        HttpRequest req,
+        string id)
+    {
+        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        if (error is not null) return error;
+
+        var update = await ReadJsonAsync<DetailsUpdate>(req);
+        if (update is null) return BadRequest("bad_request");
+
+        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        if (loadError is not null) return loadError;
+
+        var invalid = HostValidation.CheckDetails(update, doc!);
+        if (invalid is not null) return BadRequest(invalid);
+
+        doc!.Name = update.Name!.Trim();
+        doc.Type = update.Type!;
+        doc.Address = Clean(update.Address);
+        doc.Postcode = Clean(update.Postcode);
+        doc.CadastralRef = Clean(update.CadastralRef)?.ToUpperInvariant();
+        doc.Lat = update.Lat;
+        doc.Lng = update.Lng;
+        doc.Area = ToBilingual(update.Area);
+        doc.Copy = ToBilingual(update.Copy);
+        doc.CopyEnApproved = update.CopyEnApproved;
+        doc.Details = ToBilingual(update.Details);
+        doc.Beds = ToBilingual(update.Beds);
+        doc.Guests = update.Guests;
+        doc.Bedrooms = update.Bedrooms;
+        doc.Bathrooms = update.Bathrooms;
+        doc.SizeM2 = update.SizeM2;
+        doc.FloorNumber = update.FloorNumber;
+        doc.EnergyRating = Clean(update.EnergyRating)?.ToUpperInvariant();
+        doc.Amenities = update.Amenities ?? [];
+        doc.PetsAllowed = update.PetsAllowed;
+        doc.SmokingAllowed = update.SmokingAllowed;
+        doc.CouplesAllowed = update.CouplesAllowed;
+        doc.SelfCheckin = update.SelfCheckin;
+        // Position comes from the array's order, not from a number the client
+        // sends: an index the client owns can arrive with gaps or repeats, and
+        // the gallery would silently reorder itself.
+        doc.Photos =
+        [
+            .. (update.Photos ?? []).Select((p, i) =>
+                new PropertyPhoto(p.Url!, p.IsFloorplan, i)),
+        ];
+
+        // §2.2.1: an approved listing re-enters the queue and leaves public
+        // search until a reviewer sees it again. A draft stays a draft and a
+        // rejected listing stays rejected — resubmitting is its own act, not
+        // a side effect of typing.
+        if (doc.Status is "published" or "paused")
+        {
+            doc.Status = "pending_review";
+            doc.ReviewNote = null;
+        }
+
+        return await SaveAsync(doc, etag, () => new OkObjectResult(
+            new HostListingSaved(
+                HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null),
+                HostProjection.ToListing(doc))));
+    }
+
+    // Close the listing to new requests, or reopen it. ADR-024: reopening is
+    // not a re-review — the listing was approved and pausing changed nothing
+    // about what it claims.
+    [Function("HostStatusUpdate")]
+    public async Task<IActionResult> UpdateStatus(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "host/properties/{id}/status")]
+        HttpRequest req,
+        string id)
+    {
+        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        if (error is not null) return error;
+
+        var update = await ReadJsonAsync<StatusUpdate>(req);
+        if (update is null) return BadRequest("bad_request");
+
+        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        if (loadError is not null) return loadError;
+
+        var invalid = HostValidation.CheckStatus(update.Status, doc!.Status);
+        if (invalid is not null) return BadRequest(invalid);
+
+        doc.Status = update.Status!;
+
+        return await SaveAsync(doc, etag, () => new OkObjectResult(
+            HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null)));
+    }
+
+    private static string? Clean(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // An empty string is not a translation. Storing one would let a listing
+    // count as bilingual while showing a blank paragraph in English.
+    private static Bilingual? ToBilingual(BilingualWrite? b)
+    {
+        var es = Clean(b?.Es);
+        var en = Clean(b?.En);
+        return es is null && en is null ? null : new Bilingual(es, en);
     }
 
     // ADR-025: price, deposit, bills and the stay floor apply immediately —

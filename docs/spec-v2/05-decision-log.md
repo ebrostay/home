@@ -663,6 +663,152 @@ the owner's payout honest and the tenant's total complete.
 
 ---
 
+## ADR-027 — The listing editor: one diff, one save, and what it deliberately cannot do
+
+- **Status:** ✅ locked and ✅ **built** 2026-07-27 (product owner: Raphael).
+  **Implements** the content half of ADR-025 and the `published → pending_review`
+  row of §2.2.1. Design handoff: `design_handoff_property_edit`.
+- **Context.** ADR-025 split owner editing by the *kind* of change: operational
+  edits apply live, content edits re-enter review. Manage shipped the
+  operational half. This is the other half — the page an owner opens once or
+  twice a year to correct what the listing *claims*. The handoff also supplies
+  a create-a-listing wizard sharing the same fields, so the controls are built
+  page-agnostic from the start rather than extracted later.
+
+### Decision 1 — One payload, one diff, one save bar
+
+- The whole page is a single `PUT /api/host/properties/{id}` carrying the
+  content half of the document. Manage saves per section; the editor does not.
+- Rationale: on Manage each section is a **separate decision** with its own
+  consequence — a price change and a calendar change are unrelated acts, and
+  pairing them under one button would make an owner think about both to do
+  either. Here every field feeds one review, and the owner's real question
+  before saving is *"what goes back to the queue?"* — a question only a
+  whole-page diff can answer.
+- Consequence: exactly one `changedSections()` deep-compare against the saved
+  baseline (`lib/listing.ts`), and every downstream signal reads it — the
+  rail's discs, the save-bar chips, the count, the review note, the save
+  button. Duplicating that comparison is how the rail and the chips start
+  disagreeing about what changed.
+
+### Decision 2 — The re-review rule is applied server-side, from status alone
+
+- `published` and `paused` → `pending_review` on save, `reviewNote` cleared.
+  `draft`, `pending_review` and `rejected` are left untouched: resubmitting a
+  rejected listing is an explicit act, not a side effect of typing in it.
+- The client *predicts* this in the save bar ("the listing goes back to
+  review") but never decides it. A UI that computed the transition would be a
+  second copy of §2.2.1.
+
+### Decision 3 — Photos may be reordered, re-flagged and dropped; never added
+
+- The payload's photo list is validated against the URLs **already on the
+  document**. Anything else is `photo_unknown`.
+- This is a security rule, not tidiness: every URL in that list renders in a
+  public `<img>` on the listing page, so a payload that accepted arbitrary
+  URLs would let an owner point their listing at any host on the internet.
+- Position comes from the array's order, not from a client-supplied index —
+  an index the client owns arrives with gaps and repeats, and the gallery
+  reorders itself silently.
+- Adding photos needs the API-mediated upload of ADR-019, which is **not
+  built**. Until it is, the section manages the photos a listing already has.
+
+### Decision 4 — New fields: postcode, cadastral reference, English approval
+
+- `postcode` (5 digits, validated), `cadastralRef` (stored as typed,
+  uppercased), `copyEnApproved` (bool).
+- **No `MATCHED` badge**, contrary to the handoff: nothing checks the
+  reference against the Catastro, and a badge would claim a verification that
+  never ran. It lights up when there is an integration behind it.
+- **No tourist-licence field.** The handoff offers one; Ebrostay lets
+  *mid-term* homes, so a *vivienda de uso turístico* licence is the wrong
+  instrument and asking for it would suggest the wrong product.
+- `copyEnApproved` gates **only** the description. It is the one paragraph
+  read as the owner's own voice and the only one long enough for a bad
+  translation to mislead; area, details and beds are short labels.
+- **The owner writes both languages.** The handoff promises machine
+  translation with an approval gate; the gate ships, the translation does not.
+  ADR-020 keeps DeepSeek for the editor assistant, so the translate button
+  drops into the same panel later with no redesign.
+
+### Decision 5 — What the handoff asks for that has no model, and is not faked
+
+Each of these is a subsystem, not a control. Shipping the UI without the model
+behind it would show an owner a state nothing maintains.
+
+- **Rooms & levels, photo→room tagging, floor-plan pins.** No room entity, no
+  per-photo room tag, no pin coordinates. The handoff's completeness ledger
+  (`WITHOUT A ROOM`, `ROOMS PINNED`) is built on them, so the ledger reports
+  what does exist instead: photo count, the API's own section-completeness
+  count (the same list that gates submit-for-review, so the bar and the gate
+  cannot drift), and how many bilingual pairs are complete in both languages.
+- **Legal & verification documents.** 🔜 See below — this one has a shape
+  worth recording.
+- **"Notice to leave · 30 días".** The handoff renders it as settled platform
+  policy. **No ADR decides it**, so the read-only policy block shows what *is*
+  decided — the ADR-022 stay window and the 48-hour cancellation — and the
+  notice period waits for a decision rather than being invented in a UI.
+
+### 🔜 Document upload — the input for a future decision
+
+Not built, and deliberately not stubbed: a checklist an owner can tick but
+nobody verifies would show `UPLOADED` next to a file that does not exist. The
+handoff's five rows are recorded here as the requirement:
+
+| Document | Note from the handoff |
+| --- | --- |
+| Photo ID or NIE | Both sides, of the owner named on the deed |
+| Proof of ownership | Nota simple, deed, or latest IBI receipt |
+| Cadastral reference | Matches the address |
+| Energy certificate | Required by law for any let in Spain |
+| IBAN for payouts | Must belong to the owner or their company |
+
+What a decision here has to settle:
+
+- **Storage.** These are identity, ownership and banking documents. They
+  **cannot** go in the `property-photos` container, which is public-read by
+  ADR-019 — anyone with the URL reads it. They need a private container with
+  short-lived, server-issued access, and a retention rule.
+- **Who verifies.** `UPLOADED` is the owner's claim; `VERIFIED` is a decision
+  someone at Ebrostay makes. That is a second admin surface, alongside the
+  listing review queue.
+- **Where the IBAN lives.** It is payout data about the *host*, not a fact
+  about the *property* — on a portfolio of six homes it should be entered once,
+  which puts it on the profile rather than in this list.
+- **Legal basis and retention** under GDPR for holding ID scans at all
+  (§07-legal-notes), including how long after a host leaves.
+
+### Consequences
+
+- ✅ `PUT /api/host/properties/{id}` (`DetailsUpdate`), `PUT …/status`
+  (`StatusUpdate`, ADR-024 pause/reopen), the `HostListing` projection, and
+  `HostValidation.CheckDetails`. Neither payload can express a price, a
+  calendar or an arbitrary status — the ADR-025 boundary stays structural.
+- ✅ Every section body is a controlled `value` / `onChange` component under
+  `components/host/fields/`, page-agnostic, so the create-a-listing wizard
+  composes the same controls into steps without a second implementation.
+- ✅ The amenity vocabulary gains six keys from the handoff (`furnished`,
+  `dryer`, `dishwasher`, `tv`, `storage`, `concierge`). The handoff's
+  seventeenth chip, *Se admiten mascotas*, is **not** an amenity — it is
+  `petsAllowed`, and listing it twice lets one listing answer it both ways.
+- ✅ Deleting a listing is not in this build. The handoff itself asks for a
+  typed confirmation; a listing carries stay history, and "keep the data,
+  close the listing" is what `paused` is for (ADR-024).
+- ✅ **§2.2.1's `any → paused` row narrowed to `published → paused`.** Read
+  together with `paused → published` ("reopen, no re-review"), the old pair let
+  an owner pause a `draft` and reopen it into `published` — self-publishing a
+  listing no reviewer ever saw. Owners now pause only what is live; admins keep
+  the any → any row. Reopening from a remembered prior status would need a
+  `pausedFrom` field, and there is no use for one yet.
+- 🔜 The `cleaning` entry in `stayTerms` now contradicts ADR-026 — it promises
+  the clean is arranged *and paid* by Ebrostay, while the tenant is charged a
+  named cleaning fee. It is derivable from `cleaningBy`/`cleaningFeeEur` and
+  should stop being a declared per-listing term. Likewise `cancellation`: the
+  editor presents it as platform-wide policy, which is what it is, so carrying
+  it per listing lets one home silently opt out of a company promise.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

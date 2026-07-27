@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import type { SectionKey } from "@/lib/manage";
 
-// Every section on Manage wears the same shell: a ledger rule naming it, and
+// Every section in the owner portal wears the same shell: a ledger rule naming
+// it, and
 // an optional status figure on the rule's right. The rule takes the remaining
 // width so the figure sits hard against the card edge whatever the label says.
 //
@@ -15,7 +15,8 @@ export function SectionCard({
   figureTone = "text-muted",
   children,
 }: {
-  id: SectionKey;
+  /** Anchors the section at `#sec-{id}` — both pages' navigation jumps here. */
+  id: string;
   label: string;
   figure?: string;
   figureTone?: string;

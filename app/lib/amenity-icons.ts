@@ -1,10 +1,16 @@
 import {
+  Archive,
   ArrowUpDown,
+  BellRing,
   Car,
   ChefHat,
+  Fan,
   Flame,
   Laptop,
+  Sofa,
   Trees,
+  Tv,
+  UtensilsCrossed,
   WashingMachine,
   Wifi,
   Wind,
@@ -30,4 +36,36 @@ export const AMENITY_ICONS: Record<string, LucideIcon> = {
   lift: ArrowUpDown,
   washer: WashingMachine,
   parking: Car,
+  furnished: Sofa,
+  dryer: Fan,
+  dishwasher: UtensilsCrossed,
+  tv: Tv,
+  storage: Archive,
+  concierge: BellRing,
 };
+
+// The vocabulary an owner may choose from, in the order the picker offers it:
+// what a corporate tenant checks first, then the appliances, then the extras.
+// The API validates the SHAPE of an amenity key, never this list — so adding
+// one here plus its two translations is the whole change, with no API deploy.
+//
+// Deliberately NOT here: "pets allowed". The handoff offers it as a chip, but
+// it is `petsAllowed` on the document and a rule in the editor. As an amenity
+// too, one listing could answer it both ways.
+export const AMENITY_KEYS = [
+  "wifi",
+  "furnished",
+  "heating",
+  "ac",
+  "kitchen",
+  "washer",
+  "dryer",
+  "dishwasher",
+  "lift",
+  "desk",
+  "tv",
+  "terrace",
+  "parking",
+  "storage",
+  "concierge",
+] as const;

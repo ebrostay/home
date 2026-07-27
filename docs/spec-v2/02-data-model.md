@@ -70,6 +70,10 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "name": "Pedro II el Católico 3 - 1 IZQ",
   "addressKey": "pedro",              // map-pin grouping key
   "address": "Pedro II el Católico 3, Zaragoza",
+  "postcode": "50009",                // ✅ 5 digits, validated (ADR-027)
+  "cadastralRef": null,               // ✅ as typed; nothing verifies it against
+                                      //   the Catastro, so no surface claims a
+                                      //   match (ADR-027)
   "lat": 41.65393, "lng": -0.90783,
 
   // — bilingual copy —
@@ -78,6 +82,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "details": { "es": "…", "en": "…" },
   "beds":    { "es": "…", "en": "…" },
   "priceNote": { "es": "…", "en": "…" },   // optional
+  "copyEnApproved": true,             // ✅ the owner stands behind the English
+                                      //   description. Only `copy` is gated —
+                                      //   the rest are short labels (ADR-027)
 
   // — capacity & attributes —
   "guests": 4, "bedrooms": 3, "bathrooms": 1, "sizeM2": 75,
@@ -158,7 +165,7 @@ draft ──submit──▶ pending_review ──approve──▶ published ─�
 | `pending_review` → `rejected` | **admin only** | Reject **with a `reviewNote`** (shown to the host). |
 | `rejected` → `pending_review` | host (own) | Edit + resubmit. |
 | `published` → `pending_review` | host (own), on any **content** edit | Edited listings re-enter the review queue and are **not public** until re-approved (locked decision: "new/edited listings … only go public after approval"). **Operational** edits — price, deposit, bills policy + cap, `minStayMonths`, and the availability calendar — do **not** trigger this and leave `status` untouched (ADR-025). Keeping the prior version live during a content review is an open refinement (OD-5, §5). |
-| any → `paused` | host (own) or admin | Closed to new requests and invisible in search; the listing and its history are kept. Admin may also pause as a takedown. |
+| `published` → `paused` | host (own) or admin | Closed to new requests and invisible in search; the listing and its history are kept. Admin may also pause as a takedown. **Narrowed from "any → `paused`" (ADR-027):** paired with the reopen row below, pausing a `draft` and then reopening it would publish a listing no reviewer ever saw. Admins keep the any → any row. |
 | `paused` → `published` | host (own) or admin | "Reopen". No re-review: the listing was already approved and paused changes nothing about it. An **edit** while paused follows the normal rule and goes back to `pending_review`. |
 | any → any | **admin** | Admins may edit any listing directly without re-review (the reviewer needs no reviewer). |
 

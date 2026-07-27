@@ -1,15 +1,18 @@
 "use client";
 
-import { ChevronLeft, Eye, MoreHorizontal, Pencil } from "lucide-react";
+import { BarChart3, ChevronLeft, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { HostProperty } from "@/lib/api";
 import { bucketOf } from "@/lib/portfolio";
 
 // Where am I, whose home is this, and how do I get out. Sticky under the global
-// header so those three answers survive a long scroll — this page is tall
+// header so those three answers survive a long scroll — these pages are tall
 // enough that an owner can lose track of which of their listings they are
 // editing, and the price they are about to change belongs to a specific home.
+//
+// Shared by both halves of the owner portal, which is what makes the pair feel
+// like one place: the only difference is which way the cross-link points.
 
 const PILL: Record<string, { chip: string; dot: string }> = {
   live: { chip: "bg-brand-soft text-brand-strong", dot: "bg-brand" },
@@ -19,7 +22,15 @@ const PILL: Record<string, { chip: string; dot: string }> = {
   paused: { chip: "bg-surface-2 text-body", dot: "bg-occupied" },
 };
 
-export function ContextBar({ property }: { property: HostProperty }) {
+export function ContextBar({
+  property,
+  current,
+}: {
+  property: HostProperty;
+  /** Which half of the portal we are on. Decides which way the cross-link
+   *  points — never render a link back to the page you are already on. */
+  current: "manage" | "edit";
+}) {
   const t = useTranslations("host");
   const bucket = bucketOf(property);
   const soon = t("soon");
@@ -71,11 +82,22 @@ export function ContextBar({ property }: { property: HostProperty }) {
         {/* The other half of the owner portal. Manage is visited weekly; the
             listing details are visited twice a year — the cross-link is how an
             owner gets from one habit to the other. */}
-        <BarButton
-          icon={<Pencil size={14} strokeWidth={2} aria-hidden />}
-          label={t("manage.editListing")}
-          title={soon}
-        />
+        <Link
+          href={{
+            pathname: current === "manage" ? "/host/edit" : "/host/manage",
+            query: { id: property.id },
+          }}
+          className={BAR_BUTTON}
+        >
+          {current === "manage" ? (
+            <Pencil size={14} strokeWidth={2} aria-hidden />
+          ) : (
+            <BarChart3 size={14} strokeWidth={2} aria-hidden />
+          )}
+          <span className="max-[40rem]:sr-only">
+            {t(current === "manage" ? "manage.editListing" : "edit.goToManage")}
+          </span>
+        </Link>
 
         <button
           type="button"

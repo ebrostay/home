@@ -62,6 +62,41 @@ public record HostPricing(
     /// the owner needs to see the alternative to their own number, not set it.
     int PlatformCleaningFeeEur);
 
+/// One photo as the editor sees it. `SortOrder` travels so the owner's list
+/// and the guest's gallery are demonstrably the same order; the editor sends
+/// position back implicitly, as the order of the array.
+public record HostPhoto(string Url, bool IsFloorplan, int SortOrder);
+
+/// Everything the listing editor edits — the half of the document that changes
+/// once or twice a year, and the half whose change is a new claim about the
+/// home (ADR-025). Kept apart from HostPricing for exactly that reason: saving
+/// one of these re-enters review, saving one of those does not.
+public record HostListing(
+    string Name,
+    string Type, // apartment | room | home
+    string? Address,
+    string? Postcode,
+    string? CadastralRef,
+    double Lat,
+    double Lng,
+    Bilingual? Area,
+    Bilingual? Copy,
+    bool CopyEnApproved,
+    Bilingual? Details,
+    Bilingual? Beds,
+    int Guests,
+    int Bedrooms,
+    int Bathrooms,
+    int SizeM2,
+    int? FloorNumber,
+    string? EnergyRating,
+    string[] Amenities,
+    bool PetsAllowed,
+    bool SmokingAllowed,
+    bool CouplesAllowed,
+    bool SelfCheckin,
+    HostPhoto[] Photos);
+
 /// One logged booking request. Deliberately narrower than the stored document:
 /// `userId` and `userName` are NOT projected. Ebrostay owns the tenant
 /// relationship (§4.3 — the owner never contacts anyone), so the owner surface
@@ -78,7 +113,14 @@ public record HostRequestRow(
 public record HostPropertyDetail(
     HostProperty Property,
     HostPricing Pricing,
+    HostListing Listing,
     HostRequestRow[] Requests);
+
+/// What a content save answers with. The listing, so the editor can rebase its
+/// baseline, and the property row, because a save may have moved `status` back
+/// to `pending_review` and the page has a status pill on screen saying it did
+/// not.
+public record HostListingSaved(HostProperty Property, HostListing Listing);
 
 public static class HostProjection
 {
@@ -147,6 +189,37 @@ public static class HostProjection
                     r.Start, r.End, r.Status, r.Note, r.TurnoverDaysOverride))
                 .OrderBy(r => r.Start, StringComparer.Ordinal)
                 .ToArray());
+
+    public static HostListing ToListing(PropertyDoc p) => new(
+        p.Name,
+        p.Type,
+        p.Address,
+        p.Postcode,
+        p.CadastralRef,
+        p.Lat,
+        p.Lng,
+        p.Area,
+        p.Copy,
+        p.CopyEnApproved,
+        p.Details,
+        p.Beds,
+        p.Guests,
+        p.Bedrooms,
+        p.Bathrooms,
+        p.SizeM2,
+        p.FloorNumber,
+        p.EnergyRating,
+        p.Amenities,
+        p.PetsAllowed,
+        p.SmokingAllowed,
+        p.CouplesAllowed,
+        p.SelfCheckin,
+        // Sorted here so the editor never has to: the gallery is an ordered
+        // thing, and two surfaces sorting it independently is how the cover
+        // photo ends up differing between them.
+        [.. p.Photos
+            .OrderBy(ph => ph.SortOrder)
+            .Select(ph => new HostPhoto(ph.Url, ph.IsFloorplan, ph.SortOrder))]);
 
     public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(
         p.PriceNumber,

@@ -14,6 +14,7 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 | `POST /api/booking-requests` | auth | Log-then-draft booking flow (§4.3). |
 | `GET/POST /api/host/properties` · `GET/PUT /api/host/properties/{id}` | auth (own) | Host listings CRUD — **content** edits, which re-enter review (§2.2.1). |
 | `PUT /api/host/properties/{id}/pricing` · `…/availability` | auth (own) | **Operational** edits — apply live, `status` untouched (ADR-025). |
+| `PUT /api/host/properties/{id}/status` | auth (own) | Pause / reopen only (ADR-024). Publishing stays an admin act. |
 | `POST /api/host/properties/{id}/submit` | auth (own) | draft/rejected → `pending_review`. |
 | `POST /api/host/properties/{id}/photos` · `DELETE …/photos/{n}` | auth (own) | Photo upload/delete via Blob (§4.4). |
 | `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings. |
@@ -169,10 +170,39 @@ that is short-let language, and Ebrostay lets homes by the month under an
 which is exactly what the exclusive `end` already encodes: the tenant does not
 pay for their move-out day.
 
-**🔜 Turnover (ADR-026, not yet implemented):** the availability section will
-gain a fourth **turnaround** state for the `turnoverDays` after each stay, and
-the pricing fieldset will gain `turnoverDays`, `cleaningBy` and the host's
-cleaning fee. Until then the owner must close those dates by hand.
+**Turnover (ADR-026) ✅ built:** the availability section draws a **turnaround**
+state for the `turnoverDays` after each stay — hatched, distinct from a
+booking, so the owner can see which days earned and which were the cost of the
+ones that did. The pricing fieldset carries `turnoverDays`, `cleaningBy` and
+the host's cleaning fee. The buffer is applied once, in the public projection,
+never stored as a block.
+
+**Edit listing** — `/{locale}/host/edit?id=` ✅ built (ADR-027): the other half
+of the owner portal, and the content half of the ADR-025 split. Reads the same
+`GET /api/host/properties/{id}`, writes `PUT /api/host/properties/{id}`.
+Nine sections down a sticky rail, saved by **one** whole-page diff:
+
+| Section | Source | State |
+| --- | --- | --- |
+| Basics | `name`, `type`, capacity, `sizeM2`, `floorNumber` | ✅ editable |
+| Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; no Catastro match, no licence field |
+| Rooms & levels | — | ❌ no room entity (ADR-027) |
+| Photos | embedded `photos[]` — reorder, cover, floor-plan flag, remove | ⚠️ no upload (ADR-019 🔜) |
+| Floor plan | `isFloorplan` photos | ⚠️ flag only; no pins |
+| Description | `copy`/`details`/`beds` bilingual + `copyEnApproved` | ✅ editable; owner writes both languages |
+| Amenities | `amenities[]` | ✅ editable |
+| Rules & terms | `petsAllowed`, `smokingAllowed`, `couplesAllowed`, `selfCheckin` | ✅ editable; policy block read-only |
+| Legal | — | ❌ no document model (ADR-027 🔜) |
+
+The rail reports **edit status, not scroll position** — three states (edited,
+needs attention, resting) — which is why it carries no scroll spy while
+Manage's tab bar does: the two pages are navigated for different reasons. Both
+pages read one derived diff (`lib/listing.ts`); the save bar's chips, count,
+review note and button state are all the same comparison.
+
+The **danger zone** offers pause/reopen via `PUT …/status` (ADR-024, no
+re-review on reopen). Deleting a listing is not offered: a listing carries stay
+history, and "keep the data, close the listing" is what `paused` means.
 
 **Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
 

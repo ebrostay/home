@@ -249,7 +249,7 @@ function ManageContent() {
       className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24"
       style={{ "--manage-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
     >
-      <ContextBar property={property} />
+      <ContextBar property={property} current="manage" />
 
       <header className="flex flex-wrap items-start gap-5 pt-1">
         {property.coverUrl && (

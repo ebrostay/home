@@ -1,0 +1,386 @@
+"use client";
+
+// Edit listing — the owner's twice-a-year view.
+// URL: /{locale}/host/edit?id={slug}, matching the query-param model the rest
+// of the product uses (static export has no dynamic segments).
+//
+// The other half of the split Manage started (ADR-025/ADR-027): Manage holds
+// what an owner touches weekly and applies live; this holds what the listing
+// CLAIMS, and saving it sends an approved listing back to the review queue.
+//
+// One diff drives the entire page. `changedSections()` runs once per render
+// and everything reads its result — the rail's discs, the save bar's chips,
+// the count, the review note, whether Save is live. Six section-level dirty
+// flags would be six chances for the rail and the chips to disagree.
+
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Info } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import {
+  ApiError,
+  biText,
+  fetchHostProperty,
+  saveHostListing,
+  saveHostStatus,
+  type HostListing,
+  type HostPropertyDetail,
+} from "@/lib/api";
+import {
+  SECTIONS,
+  attentionOf,
+  blockersOf,
+  changedSections,
+  completenessOf,
+  goesBackToReview,
+  type SectionKey,
+} from "@/lib/listing";
+import { ContextBar } from "@/components/host/manage/ContextBar";
+import { SectionCard } from "@/components/host/manage/SectionCard";
+import { SectionRail } from "@/components/host/edit/SectionRail";
+import { SaveBar, type SaveState } from "@/components/host/edit/SaveBar";
+import { DangerZone } from "@/components/host/edit/DangerZone";
+import { BasicsFields } from "@/components/host/fields/BasicsFields";
+import { AddressFields } from "@/components/host/fields/AddressFields";
+import { PhotoManager } from "@/components/host/fields/PhotoManager";
+import { DescriptionFields } from "@/components/host/fields/DescriptionFields";
+import { AmenityPicker } from "@/components/host/fields/AmenityPicker";
+import { RulesFields } from "@/components/host/fields/RulesFields";
+import { Button } from "@/components/ui/Button";
+
+type State =
+  | { kind: "loading" }
+  | { kind: "signedOut" }
+  | { kind: "missing" }
+  | { kind: "error" }
+  | { kind: "ready"; detail: HostPropertyDetail };
+
+export default function EditPage() {
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <EditContent />
+    </Suspense>
+  );
+}
+
+function EditContent() {
+  const t = useTranslations("host");
+  const te = useTranslations("host.edit");
+  const locale = useLocale();
+  const id = useSearchParams().get("id") ?? "";
+
+  const [loaded, setState] = useState<State>({ kind: "loading" });
+  const state: State = id ? loaded : { kind: "missing" };
+  // The working copy. The saved baseline stays in `state.detail.listing`, so
+  // the diff is always against what the server last confirmed — not against
+  // whatever the form held a moment ago.
+  const [listing, setListing] = useState<HostListing | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>("clean");
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    // No id is not a load failure, it is a fact about the URL — so it is
+    // derived below rather than written into state from an effect.
+    if (!id) return;
+    let cancelled = false;
+
+    fetchHostProperty(id)
+      .then((detail) => {
+        if (cancelled) return;
+        setState({ kind: "ready", detail });
+        setListing(detail.listing);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const status = err instanceof ApiError ? err.status : 0;
+        setState({
+          kind: status === 401 ? "signedOut" : status === 404 ? "missing" : "error",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const message = useCallback(
+    (err: unknown) => {
+      const code = err instanceof ApiError ? (err.code ?? "generic") : "generic";
+      // Unknown codes fall back rather than rendering a raw key at the owner.
+      return te.has(`error.${code}`)
+        ? te(`error.${code}` as "error.generic")
+        : te("error.generic");
+    },
+    [te],
+  );
+
+  const detail = state.kind === "ready" ? state.detail : null;
+
+  const diff = useMemo(() => {
+    if (!detail || !listing) return null;
+    const changed = changedSections(listing, detail.listing);
+    return {
+      changed,
+      edited: new Set(changed),
+      attention: attentionOf(listing),
+      blockers: blockersOf(listing),
+      stats: completenessOf(listing),
+      reviewable:
+        goesBackToReview(changed) &&
+        // The prediction only applies where the server actually moves the
+        // status. A draft stays a draft however much you change in it.
+        (detail.property.status === "published" || detail.property.status === "paused"),
+    };
+  }, [detail, listing]);
+
+  if (state.kind === "loading") return <Skeleton />;
+  if (state.kind !== "ready" || !detail || !listing || !diff) {
+    return (
+      <Notice
+        title={t(state.kind === "signedOut" ? "signedOut.title" : "manage.notFound")}
+        body={
+          state.kind === "signedOut" ? t("signedOut.body") : t("manage.notFoundBody")
+        }
+      />
+    );
+  }
+
+  const property = detail.property;
+
+  const save = async () => {
+    setSaveState("saving");
+    try {
+      const next = await saveHostListing(property.id, listing);
+      setState({
+        ...state,
+        detail: { ...detail, property: next.property, listing: next.listing },
+      });
+      setListing(next.listing);
+      setSaveState("saved");
+      setError(undefined);
+    } catch (err) {
+      setError(message(err));
+      setSaveState("error");
+    }
+  };
+
+  const setStatus = async (next: "paused" | "published") => {
+    setStatusBusy(true);
+    try {
+      const updated = await saveHostStatus(property.id, next);
+      setState({ ...state, detail: { ...detail, property: updated } });
+      setError(undefined);
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setStatusBusy(false);
+    }
+  };
+
+  const labels = Object.fromEntries(
+    SECTIONS.map((key) => [key, te(`nav.${key}` as "nav.basics")]),
+  ) as Record<SectionKey, string>;
+
+  const stats = diff.stats;
+  const cells = [
+    { key: "photos", value: String(stats.photos), label: te("ledger.photos"), warn: stats.photos === 0 },
+    // Never amber. A floor plan is worth having and worth counting, but plenty
+    // of homes will never have one — and this is the only place it would ever
+    // be raised, so an amber here would be a permanent complaint about
+    // something nothing else treats as a problem.
+    { key: "plans", value: String(stats.floorplans), label: te("ledger.floorplans"), warn: false },
+    {
+      key: "bilingual",
+      value: `${stats.bilingual} / ${stats.bilingualTotal}`,
+      label: te("ledger.bilingual"),
+      warn: stats.bilingual < stats.bilingualTotal,
+    },
+    {
+      key: "amenities",
+      value: `${stats.amenities} / ${stats.amenitiesTotal}`,
+      label: te("ledger.amenities"),
+      warn: stats.amenities === 0,
+    },
+  ];
+
+  return (
+    // 8rem of bottom padding clears the fixed save bar; without it the danger
+    // zone is permanently half-covered at the end of the page.
+    <main className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-32">
+      <ContextBar property={property} current="edit" />
+
+      <header className="flex flex-wrap items-end justify-between gap-7 pt-1">
+        <div className="min-w-[16rem] flex-1">
+          <p className="data text-[0.6875rem] tracking-[0.12em] text-muted">
+            {property.reference
+              ? te("eyebrow", { reference: property.reference })
+              : te("eyebrowNoRef")}
+          </p>
+          {/* Bound to the live title field, so editing Basics retitles the
+              page — the clearest possible confirmation that the change landed
+              somewhere real. */}
+          <h1 className="mt-1.5 font-display text-[2.125rem] font-bold leading-[1.05] tracking-[-0.015em] text-ink">
+            {listing.name || te("untitled")}
+          </h1>
+          <p className="mt-2 text-[0.90625rem] leading-normal text-body">
+            {[listing.address, biText(listing.area, locale)].filter(Boolean).join(" · ") ||
+              te("noAddress")}
+          </p>
+        </div>
+
+        {/* Not money, unlike Manage's ledger: these four are the things an
+            owner can fix on this page that decide whether the listing is any
+            good. All live — a completeness figure that only moves on save is
+            a figure nobody trusts. */}
+        <dl className="m-0 flex flex-wrap gap-6">
+          {cells.map((c) => (
+            <div key={c.key} className="flex flex-col gap-0.5">
+              <dd
+                className={`data m-0 whitespace-nowrap text-lg font-semibold ${
+                  c.warn ? "text-warn" : "text-ink"
+                }`}
+              >
+                {c.value}
+              </dd>
+              <dt className="data whitespace-nowrap text-[0.625rem] tracking-[0.1em] text-muted">
+                {c.label}
+              </dt>
+            </div>
+          ))}
+        </dl>
+      </header>
+
+      <div className="grid items-start gap-9 min-[56rem]:grid-cols-[13rem_minmax(0,1fr)]">
+        <SectionRail
+          labels={labels}
+          edited={diff.edited}
+          attention={diff.attention}
+          ariaLabel={te("nav.label")}
+        />
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex flex-wrap items-center gap-3 rounded-(--radius-card) border border-river bg-river-soft px-4 py-3.5">
+            <Info size={16} strokeWidth={2} className="shrink-0 text-river-deep" aria-hidden />
+            <p className="min-w-[12rem] flex-1 text-[0.8125rem] text-ink">
+              {te("crossLink")}
+            </p>
+            <Link
+              href={{ pathname: "/host/manage", query: { id: property.id } }}
+              className="flex h-8 items-center rounded-(--radius-control) border border-river-deep bg-surface px-3 text-[0.78125rem] font-semibold text-river-deep transition-colors duration-(--dur-standard) hover:bg-river-soft"
+            >
+              {te("goToManage")}
+            </Link>
+          </div>
+
+          <SectionCard id="basics" label={te("nav.basics")}>
+            <BasicsFields value={listing} onChange={setListing} />
+          </SectionCard>
+
+          <SectionCard id="address" label={te("nav.address")}>
+            <AddressFields value={listing} onChange={setListing} />
+          </SectionCard>
+
+          <SectionCard
+            id="photos"
+            label={te("nav.photos")}
+            figure={te("photoCount", { count: stats.photos })}
+          >
+            <PhotoManager value={listing} onChange={setListing} />
+          </SectionCard>
+
+          <SectionCard
+            id="description"
+            label={te("nav.description")}
+            figure={te("bilingualFigure", {
+              done: stats.bilingual,
+              total: stats.bilingualTotal,
+            })}
+            figureTone={
+              stats.bilingual === stats.bilingualTotal ? "text-brand-strong" : "text-warn"
+            }
+          >
+            <DescriptionFields value={listing} onChange={setListing} />
+          </SectionCard>
+
+          <SectionCard
+            id="amenities"
+            label={te("nav.amenities")}
+            figure={te("amenityFigure", {
+              done: stats.amenities,
+              total: stats.amenitiesTotal,
+            })}
+          >
+            <AmenityPicker value={listing} onChange={setListing} />
+          </SectionCard>
+
+          <SectionCard id="terms" label={te("nav.terms")}>
+            <RulesFields
+              value={listing}
+              onChange={setListing}
+              manageHref={te.rich("pricingPointer", {
+                link: (chunks) => (
+                  <Link
+                    href={{ pathname: "/host/manage", query: { id: property.id } }}
+                    className="font-semibold text-brand-strong underline underline-offset-2"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            />
+          </SectionCard>
+
+          <DangerZone
+            status={property.status}
+            busy={statusBusy}
+            onPause={() => setStatus("paused")}
+            onReopen={() => setStatus("published")}
+          />
+        </div>
+      </div>
+
+      <SaveBar
+        changed={diff.changed}
+        labels={labels}
+        blockers={diff.blockers}
+        state={saveState}
+        reviewable={diff.reviewable}
+        errorText={error}
+        onSave={save}
+        onDiscard={() => {
+          setListing(detail.listing);
+          setSaveState("clean");
+          setError(undefined);
+        }}
+      />
+    </main>
+  );
+}
+
+function Skeleton() {
+  return (
+    <main className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24 pt-6">
+      <div className="skeleton h-14 rounded-(--radius-card)" />
+      <div className="skeleton h-20 rounded-(--radius-card)" />
+      <div className="skeleton h-64 rounded-(--radius-card)" />
+      <div className="skeleton h-64 rounded-(--radius-card)" />
+    </main>
+  );
+}
+
+function Notice({ title, body }: { title: string; body: string }) {
+  const t = useTranslations("host");
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-24">
+      <section className="flex flex-col items-start gap-3 rounded-(--radius-card) border border-line bg-surface px-6 py-10 shadow-(--shadow-card)">
+        <h1 className="font-display text-lg font-semibold text-ink">{title}</h1>
+        <p className="max-w-[60ch] text-sm text-body">{body}</p>
+        <Button variant="secondary" onClick={() => window.history.back()}>
+          {t("manage.back")}
+        </Button>
+      </section>
+    </main>
+  );
+}

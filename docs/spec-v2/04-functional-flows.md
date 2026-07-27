@@ -185,7 +185,7 @@ Nine sections down a sticky rail, saved by **one** whole-page diff:
 | Section | Source | State |
 | --- | --- | --- |
 | Basics | `name`, `type`, capacity, `sizeM2`, `floorNumber` | ✅ editable |
-| Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; no Catastro match, no licence field |
+| Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; Catastro queried live both ways — reference → record, and address → reference for an owner without their IBI receipt. No `MATCHED` badge, no licence field (ADR-027) |
 | Rooms & levels | — | ❌ no room entity (ADR-027) |
 | Photos | embedded `photos[]` — reorder, cover, floor-plan flag, remove | ⚠️ no upload (ADR-019 🔜) |
 | Floor plan | `isFloorplan` photos | ⚠️ flag only; no pins |

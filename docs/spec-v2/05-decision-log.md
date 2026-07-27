@@ -746,6 +746,40 @@ the owner's payout honest and the tenant's total complete.
     still supplies the six characters that name theirs.
   - Euskadi and Navarra keep their own foral cadastres and are absent from
     these services, so "not found" never proves a reference wrong.
+- **The register is also asked the other way round: address → reference.** For
+  the owner without the IBI receipt to hand, `ConsultaVia` lists the streets of
+  Zaragoza and `Consulta_DNPLOC` lists every property at a number, each with
+  its full 20 characters and its floor and door. The owner picks their flat
+  from the register's own list; the reference lands in the field and the panel
+  above resolves it like any other. Two requests, behind the same throttle.
+  - **It is a search the owner drives, not a derivation from the address**, and
+    that is forced by the service:
+    - The street-type prefix is **mandatory** — a request without a `Sigla`
+      fails — and unguessable: *César Augusto* is both an avenue and a square
+      in Zaragoza.
+    - The name must be the register's own. Case and accents are ignored, but
+      the Catastro **inverts articles and surnames**: *Camino de las Torres*
+      is filed as `TORRES, DE LAS`, which `TORRES` finds and `LAS TORRES` does
+      not.
+    Every attempt to turn typed text into a query is therefore a way to be
+    confidently wrong. The address only seeds the box.
+  - **One match returns a different document.** Several properties come back as
+    an `<lrcdnp>` list, exactly one as a whole `<bico>` record. Both shapes are
+    parsed.
+  - **"No such number" sometimes carries the street's real numbers and
+    sometimes carries nothing** — Alfonso I answers 5 with `1, 2, 3, 4, 6, 7,
+    10`, Movera answers 999 with an empty response, and `ConsultaNumero` is no
+    help because it needs a number that already exists. So the two outcomes are
+    separate results and the "here are the ones that do exist" heading is never
+    shown over an empty list.
+  - **Floor and door codes are passed through, not translated.** The Catastro
+    publishes no table for them, and real data returns `S1`, `BJ` and `-1`
+    alongside `01`. A list whose whole job is recognition is the wrong place to
+    invent a vocabulary — an owner reads their own door.
+  - **The list cannot be filtered to homes.** `Consulta_DNPLOC` does not return
+    `luso`, so garages, storerooms and shops appear beside the flats. The note
+    under the list says so, and picking one surfaces its use in the panel
+    above, which is where a garage gives itself away.
 - **The check digits ARE verified**, which is a different claim and worth
   making. The last two characters of a 20-character urban reference are a
   checksum over the other eighteen, so a mistyped one is caught in the browser

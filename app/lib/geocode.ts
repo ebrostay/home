@@ -70,8 +70,12 @@ const CITY = "Zaragoza";
 const REGION = `${CITY}, España`;
 
 /** Street-type words OSM often wants dropped: it stores "Movera", not
- *  "Calle Movera", and a literal search for the latter can miss. */
-const STREET_WORDS =
+ *  "Calle Movera", and a literal search for the latter can miss.
+ *
+ *  Exported because it is Spanish address vocabulary, not a fact about
+ *  Nominatim — the Catastro's street index needs the same words removed, and
+ *  two copies of this list would drift. */
+export const STREET_WORDS =
   /\b(calle|c\/|c\.|avenida|avda\.?|av\.?|paseo|po\.?|plaza|pza\.?|pl\.?|camino|ronda|via|vía|travesia|travesía|carretera|ctra\.?)\b/gi;
 
 /** Nominatim asks for at most one request a second. This is the whole of our

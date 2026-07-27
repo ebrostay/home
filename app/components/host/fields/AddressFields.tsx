@@ -13,6 +13,7 @@ import {
   metresBetween,
   type GeoCandidate,
 } from "@/lib/geocode";
+import { CadastreFinder } from "./CadastreFinder";
 import { CadastrePanel } from "./CadastrePanel";
 import { LocationPicker } from "./LocationPicker";
 import { TextField } from "./TextField";
@@ -331,6 +332,13 @@ export function AddressFields({
           />
         </div>
       </div>
+
+      {/* The way in for an owner who does not have the IBI receipt to hand:
+          the same register, asked the other way round. It only ever writes
+          the reference field — everything that follows from one is the
+          panel's job, which keeps a single answer to "what does the Catastro
+          say about this listing" however the reference got there. */}
+      <CadastreFinder address={address} onPick={(ref) => set("cadastralRef", ref)} />
 
       {/* The register's own answer about that reference. Sits under the field
           it belongs to, above the map, because two of the three things it can

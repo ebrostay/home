@@ -62,6 +62,15 @@ public class PropertyDoc
     public int MinStayMonths { get; set; } = 1;
     public int MaxStayMonths { get; set; } = 11;
 
+    // Turnover (ADR-026). A stay measured in months ends in an inspection, a
+    // meter reading and a deep clean — not a housekeeping pass between two
+    // hotel nights. Who does that work decides where the fee comes from:
+    //   "host"     — the owner arranges it and sets CleaningFeeEur.
+    //   "platform" — Ebrostay arranges it at the platform rate, which lives in
+    //                app settings so it can be repriced without a migration.
+    public string CleaningBy { get; set; } = "platform";
+    public int? CleaningFeeEur { get; set; }
+
     // Which optional stay terms the OWNER has confirmed apply to this home
     // (ADR-023). Terms the document already implies are NOT listed here —
     // bills come from BillsPolicy/UtilitiesCapEur and the deposit term from

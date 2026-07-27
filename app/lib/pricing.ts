@@ -58,6 +58,9 @@ export type Estimate = {
   commission: number; // capped at 30 days' rent (ADR-004 as amended), VAT incl.
   commissionDiscount: number; // the visible saving when the cap bites
   deposit: number;
+  /** One-off turnover charge (ADR-026). A pass-through, so it is NOT part of
+   *  the commission base and never enters the daily rate. */
+  cleaningFee: number;
   total: number;
   tooShort: boolean; // < 31 days — below the legal temporary floor (ADR-022)
   tooLong: boolean; // >= 365 days — a year or more flips the regime (ADR-022)
@@ -68,16 +71,21 @@ export function computeEstimate(
   end: string,
   priceNumber: number,
   depositAmount: number | null,
+  cleaningFeeEur: number = 0,
 ): Estimate {
   const days = stayDays(start, end);
   const rate = dailyRate(priceNumber);
   const rent = euros(days * rate);
+  // Commission is charged on RENT alone. The deposit is the tenant's own money
+  // and the cleaning fee is a cost passed through at face value — taking a cut
+  // of either would be charging a fee on somebody else's money.
   const rawCommission = COMMISSION_RATE * rent;
   // The cap is 30 days of rent, which IS the headline monthly price
   // (30 × price/30). Same intent as ADR-004, restated in days.
   const commission = euros(Math.min(rawCommission, priceNumber));
   const commissionDiscount = euros(Math.max(0, euros(rawCommission) - commission));
   const deposit = depositAmount ?? 0;
+  const cleaningFee = Math.max(0, cleaningFeeEur);
   return {
     days,
     rate,
@@ -85,7 +93,8 @@ export function computeEstimate(
     commission,
     commissionDiscount,
     deposit,
-    total: euros(rent + commission + deposit),
+    cleaningFee,
+    total: euros(rent + commission + deposit + cleaningFee),
     tooShort: end < addDays(start, MIN_STAY_DAYS), // < 31 days
     tooLong: end >= addDays(start, MAX_STAY_DAYS), // >= 365 days (not < a year)
   };
@@ -108,6 +117,10 @@ export type Instalment = {
   /** Only on the first: due alongside the first rent. */
   deposit?: number;
   commission?: number;
+  /** Also first-instalment only. Charged at move-in rather than taken from the
+   *  deposit at move-out (ADR-026): the turnaround is a known, routine cost,
+   *  and deducting it from the deposit makes it read as a penalty for damage. */
+  cleaningFee?: number;
   total: number;
 };
 
@@ -122,6 +135,7 @@ export function paymentSchedule(
   priceNumber: number,
   depositAmount: number | null,
   commission: number,
+  cleaningFeeEur: number = 0,
 ): Instalment[] {
   const rate = dailyRate(priceNumber);
   const out: Instalment[] = [];
@@ -133,12 +147,13 @@ export function paymentSchedule(
     const first = out.length === 0;
     const deposit = first ? (depositAmount ?? 0) : 0;
     const fee = first ? commission : 0;
+    const cleaning = first ? Math.max(0, cleaningFeeEur) : 0;
     out.push({
       from: cursor,
       to,
       days,
       rent: euros(days * rate),
-      ...(first ? { deposit, commission: fee } : {}),
+      ...(first ? { deposit, commission: fee, cleaningFee: cleaning } : {}),
       total: 0, // filled below, once the rounding is settled
     });
     cursor = to;
@@ -155,7 +170,9 @@ export function paymentSchedule(
   last.rent = euros(last.rent + (whole - parts));
 
   for (const i of out) {
-    i.total = euros(i.rent + (i.deposit ?? 0) + (i.commission ?? 0));
+    i.total = euros(
+      i.rent + (i.deposit ?? 0) + (i.commission ?? 0) + (i.cleaningFee ?? 0),
+    );
   }
   return out;
 }

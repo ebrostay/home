@@ -48,7 +48,12 @@ public record HostPricing(
     string BillsPolicy, // included | capped | excluded
     int? UtilitiesCapEur,
     int MinStayMonths,
-    int MaxStayMonths);
+    int MaxStayMonths,
+    string CleaningBy, // host | platform
+    int? CleaningFeeEur,
+    /// What Ebrostay charges when it does the turnaround. Read-only here —
+    /// the owner needs to see the alternative to their own number, not set it.
+    int PlatformCleaningFeeEur);
 
 /// One logged booking request. Deliberately narrower than the stored document:
 /// `userId` and `userName` are NOT projected. Ebrostay owns the tenant
@@ -135,11 +140,14 @@ public static class HostProjection
                 .OrderBy(r => r.Start, StringComparer.Ordinal)
                 .ToArray());
 
-    public static HostPricing ToPricing(PropertyDoc p) => new(
+    public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(
         p.PriceNumber,
         p.DepositAmount,
         p.BillsPolicy,
         p.UtilitiesCapEur,
         p.MinStayMonths,
-        p.MaxStayMonths);
+        p.MaxStayMonths,
+        p.CleaningBy,
+        p.CleaningFeeEur,
+        platformFee);
 }

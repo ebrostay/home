@@ -300,7 +300,14 @@ function ManageContent() {
         onChange={(next) => {
           setPricing(next);
           setPricingSave(
-            pricingDirty({ ...next, maxStayMonths: detail.pricing.maxStayMonths }, detail.pricing)
+            pricingDirty(
+              {
+                ...next,
+                maxStayMonths: detail.pricing.maxStayMonths,
+                platformCleaningFeeEur: detail.pricing.platformCleaningFeeEur,
+              },
+              detail.pricing,
+            )
               ? "dirty"
               : "clean",
           );
@@ -353,6 +360,8 @@ const toValue = (d: HostPropertyDetail): PricingValue => ({
   billsPolicy: d.pricing.billsPolicy,
   utilitiesCapEur: d.pricing.utilitiesCapEur,
   minStayMonths: d.pricing.minStayMonths,
+  cleaningBy: d.pricing.cleaningBy,
+  cleaningFeeEur: d.pricing.cleaningFeeEur,
 });
 
 /** "OCT 2026" for a single month, "OCT–NOV 2026" for a run. */

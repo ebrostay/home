@@ -61,6 +61,11 @@ public record PropertyDetail(
     int? UtilitiesCapEur,
     int MinStayMonths,
     int MaxStayMonths,
+    /// One-off turnover charge at move-in, already RESOLVED from the listing's
+    /// `cleaningBy` and the platform rate (ADR-026). A visitor is quoted a
+    /// number; who arranges the clean is not their concern and not their
+    /// business to know.
+    int CleaningFeeEur,
     string[] StayTerms,
     bool IsNew,
     bool Checked,
@@ -71,6 +76,12 @@ public record PropertyDetail(
 
 public static class PublicProjection
 {
+    /// The fee a stay actually carries. One place, because the owner's page,
+    /// the visitor's estimate and (later) the booking recompute must never
+    /// disagree about it.
+    public static int CleaningFee(PropertyDoc p, int platformFee) =>
+        p.CleaningBy == "host" ? (p.CleaningFeeEur ?? 0) : platformFee;
+
     // A range blocks when it is a real block or an unexpired hold.
     public static PublicRange[] BlockingRanges(
         IEnumerable<AvailabilityRange> ranges, DateTimeOffset now)
@@ -97,7 +108,7 @@ public static class PublicProjection
                 .FirstOrDefault(),
             BlockingRanges(p.Availability, now));
 
-    public static PropertyDetail ToDetail(PropertyDoc p, DateTimeOffset now)
+    public static PropertyDetail ToDetail(PropertyDoc p, DateTimeOffset now, int platformFee)
         => new(
             p.Id, p.City, p.Type, p.Name, p.Address, p.Lat, p.Lng,
             p.Area, p.Copy, p.Details, p.Beds, p.PriceNote,
@@ -106,6 +117,7 @@ public static class PublicProjection
             p.CouplesAllowed, p.SelfCheckin, p.VideoUrl,
             p.PriceNumber, p.DepositAmount, p.UpfrontRentEur,
             p.BillsPolicy, p.UtilitiesCapEur, p.MinStayMonths, p.MaxStayMonths,
+            CleaningFee(p, platformFee),
             p.StayTerms, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
             p.Photos.OrderBy(ph => ph.SortOrder).ToArray(),
             BlockingRanges(p.Availability, now));

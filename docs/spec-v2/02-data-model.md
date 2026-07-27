@@ -99,14 +99,16 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "utilitiesCapEur": null,
   "minStayMonths": 1, "maxStayMonths": 11,   // hard cap 11 regardless
 
-  // — turnover (ADR-026) 🔜 not yet implemented —
-  "turnoverDays": 3,                  // days shut after a stay for inspection,
-                                      //   meter readings, deep clean, repairs.
-                                      //   Applied by the overlap predicate,
-                                      //   never written as a block (§2.2.3)
-  "cleaningBy": "platform",           // host | platform — who arranges it
-  "cleaningFeeEur": null,             // set only when cleaningBy == "host";
-                                      //   the platform fee is a platform
+  // — turnover (ADR-026) —
+  "turnoverDays": 3,                  // 🔜 days shut after a stay for
+                                      //   inspection, meter readings, deep
+                                      //   clean, repairs. Applied by the
+                                      //   overlap predicate, never written as
+                                      //   a block (§2.2.3)
+  "cleaningBy": "platform",           // ✅ host | platform — who arranges it
+  "cleaningFeeEur": null,             // ✅ set only when cleaningBy == "host";
+                                      //   the platform rate is the
+                                      //   PLATFORM_CLEANING_FEE_EUR app
                                       //   setting, not a listing field
 
   // — badges / flags —

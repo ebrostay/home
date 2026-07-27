@@ -47,6 +47,9 @@ export type PropertyDetail = Omit<PropertySummary, "coverUrl"> & {
   utilitiesCapEur: number | null;
   minStayMonths: number;
   maxStayMonths: number;
+  /** One-off turnover charge at move-in, already resolved from the listing's
+   *  cleaning arrangement and the platform rate (ADR-026). */
+  cleaningFeeEur: number;
   /** Optional terms the owner confirmed apply. Terms the listing already
    *  implies (bills, deposit) are derived instead — see StayTerms.tsx. */
   stayTerms: string[];
@@ -93,9 +96,12 @@ export type HostProperty = {
 
 export type BillsPolicy = "included" | "capped" | "excluded";
 
-/** The six fields Manage may edit. They apply live and never change `status`
+export type CleaningBy = "host" | "platform";
+
+/** The fields Manage may edit. They apply live and never change `status`
  *  (ADR-025) — which is why they travel as their own object, not as a partial
- *  listing. `maxStayMonths` is read-only here: the platform sets the ceiling. */
+ *  listing. `maxStayMonths` and `platformCleaningFeeEur` are read-only here:
+ *  both are platform policy, not this listing's to set. */
 export type HostPricing = {
   priceNumber: number;
   depositAmount: number | null;
@@ -103,6 +109,11 @@ export type HostPricing = {
   utilitiesCapEur: number | null;
   minStayMonths: number;
   maxStayMonths: number;
+  cleaningBy: CleaningBy;
+  /** Set only when the owner does the turnaround themselves. */
+  cleaningFeeEur: number | null;
+  /** What Ebrostay charges instead. Read-only — policy, not a listing field. */
+  platformCleaningFeeEur: number;
 };
 
 /** A logged booking request, as the owner is allowed to see it. No tenant
@@ -177,7 +188,7 @@ export const fetchHostProperty = (id: string) =>
 
 export const saveHostPricing = (
   id: string,
-  pricing: Omit<HostPricing, "maxStayMonths">,
+  pricing: Omit<HostPricing, "maxStayMonths" | "platformCleaningFeeEur">,
 ) => put<HostPricing>(`/host/properties/${encodeURIComponent(id)}/pricing`, pricing);
 
 export const saveHostAvailability = (id: string, blocks: AvailabilityWrite[]) =>

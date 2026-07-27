@@ -64,8 +64,15 @@ export function BookingPanel({
   );
 
   const estimate = useMemo(
-    () => computeEstimate(moveIn, moveOut, p.priceNumber, p.depositAmount),
-    [moveIn, moveOut, p.priceNumber, p.depositAmount],
+    () =>
+      computeEstimate(
+        moveIn,
+        moveOut,
+        p.priceNumber,
+        p.depositAmount,
+        p.cleaningFeeEur,
+      ),
+    [moveIn, moveOut, p.priceNumber, p.depositAmount, p.cleaningFeeEur],
   );
 
   const available = useMemo(
@@ -91,8 +98,16 @@ export function BookingPanel({
         p.priceNumber,
         p.depositAmount,
         estimate.commission,
+        p.cleaningFeeEur,
       ),
-    [moveIn, moveOut, p.priceNumber, p.depositAmount, estimate.commission],
+    [
+      moveIn,
+      moveOut,
+      p.priceNumber,
+      p.depositAmount,
+      estimate.commission,
+      p.cleaningFeeEur,
+    ],
   );
 
   // Instalment dates: day + month is enough inside a schedule whose year the
@@ -119,6 +134,9 @@ export function BookingPanel({
     `${tc("rent")}: ${eur(estimate.rent)}`,
     `${t("commission")}: ${eur(estimate.commission)}`,
     `${tc("deposit")}: ${eur(estimate.deposit)}`,
+    ...(estimate.cleaningFee > 0
+      ? [`${t("cleaningFee")}: ${eur(estimate.cleaningFee)}`]
+      : []),
     `${tc("total")}: ${eur(estimate.total)}`,
     "",
     `${t("tenantNames")}: `,
@@ -190,6 +208,9 @@ export function BookingPanel({
             </Row>
           )}
           <Row label={t("depositRefundable")}>{eur(estimate.deposit)}</Row>
+          {estimate.cleaningFee > 0 && (
+            <Row label={t("cleaningFee")}>{eur(estimate.cleaningFee)}</Row>
+          )}
           <div className="flex items-baseline justify-between gap-4 border-t border-line py-3">
             <dt className="text-[1.0625rem] font-semibold text-ink">
               {tc("total")}

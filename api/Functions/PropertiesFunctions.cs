@@ -1,4 +1,5 @@
 using Ebrostay.Api.Models;
+using Ebrostay.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
@@ -7,7 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Ebrostay.Api.Functions;
 
-public class PropertiesFunctions(Database database, ILogger<PropertiesFunctions> logger)
+public class PropertiesFunctions(
+    Database database,
+    PlatformSettings platform,
+    ILogger<PropertiesFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
 
@@ -51,7 +55,8 @@ public class PropertiesFunctions(Database database, ILogger<PropertiesFunctions>
                 return new NotFoundResult(); // non-public states are invisible here
 
             return new OkObjectResult(
-                PublicProjection.ToDetail(doc, DateTimeOffset.UtcNow));
+                PublicProjection.ToDetail(
+                    doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur));
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {

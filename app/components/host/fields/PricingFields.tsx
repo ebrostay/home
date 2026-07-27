@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { BillsPolicy, HostPricing } from "@/lib/api";
+import type { BillsPolicy, CleaningBy, HostPricing } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
 import { LIMITS, priceVerdict, type PriceBand } from "@/lib/manage";
 import { MoneyField } from "./MoneyField";
@@ -18,7 +18,7 @@ import { ChipGroup } from "./ChipGroup";
 // booking math (lib/pricing.ts), so shipping the control would price stays the
 // booking panel cannot quote. It returns with a pricing ADR, not before.
 
-export type PricingValue = Omit<HostPricing, "maxStayMonths">;
+export type PricingValue = Omit<HostPricing, "maxStayMonths" | "platformCleaningFeeEur">;
 
 /** The stay floors offered. Not a free number: 1, 2, 3 and 6 months are the
  *  choices a corporate let actually turns on, and a free field invites 7. */
@@ -32,6 +32,7 @@ export function PricingFields({
   onChange,
   band,
   maxStayMonths,
+  platformCleaningFeeEur,
   locale,
 }: {
   value: PricingValue;
@@ -39,6 +40,8 @@ export function PricingFields({
   /** What comparable published homes charge, or null when there are too few. */
   band?: PriceBand | null;
   maxStayMonths: number;
+  /** Policy, shown so the owner can see what they are opting out of. */
+  platformCleaningFeeEur: number;
   locale: string;
 }) {
   const t = useTranslations("host.manage.pricing");
@@ -118,6 +121,52 @@ export function PricingFields({
           max={LIMITS.maxDeposit}
           hint={t("depositHint")}
         />
+      </div>
+
+      {/* A stay measured in months ends in a deep clean, an inspection and a
+          meter reading — a real cost that until now came silently out of the
+          deposit or the owner's margin (ADR-026). Naming it is the point. */}
+      <div className="flex flex-col gap-2.5">
+        <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">
+          {t("cleaning")}
+        </span>
+        <div className="grid items-start gap-3.5 min-[34rem]:grid-cols-2">
+          <Segmented<CleaningBy>
+            name="cleaningBy"
+            label={t("cleaning")}
+            value={value.cleaningBy}
+            onChange={(by) =>
+              onChange({
+                ...value,
+                cleaningBy: by,
+                cleaningFeeEur: by === "host" ? (value.cleaningFeeEur ?? 0) : null,
+              })
+            }
+            options={[
+              { value: "platform", label: t("cleaningPlatform") },
+              { value: "host", label: t("cleaningHost") },
+            ]}
+          />
+          {value.cleaningBy === "host" ? (
+            <MoneyField
+              compact
+              label={t("cleaningFee")}
+              unit={t("cleaningUnit")}
+              value={value.cleaningFeeEur ?? 0}
+              onChange={(v) => set("cleaningFeeEur", v)}
+              max={LIMITS.maxCleaningFee}
+            />
+          ) : (
+            <p className="data self-center text-[0.8125rem] text-muted">
+              {t("cleaningPlatformFee", {
+                amount: formatEuro(platformCleaningFeeEur, locale),
+              })}
+            </p>
+          )}
+        </div>
+        <p className="text-xs leading-[1.4] text-muted">
+          {t(`cleaningHint.${value.cleaningBy}` as "cleaningHint.host")}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2.5">

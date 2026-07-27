@@ -25,7 +25,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
 | ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
 | ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
-| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked, 🔜 unimplemented |
+| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked; fee ✅ built, buffer 🔜 |
 
 ---
 
@@ -546,9 +546,9 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 
 ## ADR-026 — Turnover days between stays, and who is paid for the clean
 
-- **Status:** ✅ locked 2026-07-27 (product owner: Raphael). 🔜 **Not yet
-  implemented** — this ADR is the design; the code changes in §Consequences
-  are outstanding. **Extends ADR-023** (which already settles utilities after
+- **Status:** ✅ locked 2026-07-27 (product owner: Raphael). Decision 2 (the
+  cleaning fee) is ✅ **built**; Decision 1 (`turnoverDays`) is 🔜 outstanding.
+  **Extends ADR-023** (which already settles utilities after
   move-out) and the availability rules of §2.2.3.
 - **Context.** v2 has been modelling a stay as a half-open range and nothing
   else, which quietly assumes a home is relettable the moment the keys come
@@ -616,20 +616,30 @@ the owner's payout honest and the tenant's total complete.
 
 ### Consequences — outstanding work
 
-- **Data model (§2.2):** `turnoverDays` on the property; `cleaningBy` +
-  `cleaningFeeEur`; `turnoverDaysOverride` on the availability entry (§2.2.3).
-  All nullable, all defaulted — existing documents stay valid.
+- ✅ **Data model (§2.2):** `cleaningBy` + `cleaningFeeEur` on the property,
+  both defaulted so existing documents stay valid. 🔜 still to add:
+  `turnoverDays`, and `turnoverDaysOverride` on the availability entry
+  (§2.2.3).
+- ✅ **The platform fee** lives in the `PLATFORM_CLEANING_FEE_EUR` app setting
+  (`api/Services/PlatformSettings.cs`, placeholder 120 €) and is resolved
+  server-side: the public projection returns one already-resolved
+  `cleaningFeeEur`, so a visitor is quoted a number and never learns who
+  arranges the clean.
 - **The overlap predicate (§2.2.3)** grows the buffer. It is used by the client
   grid filter, the client estimate check, the server booking validation and the
   server block-write validation — the point of having one is that this is one
   change, and all four must land together or v1's bound-mismatch bug returns.
-- **Pricing (`lib/pricing.ts` + the C# recompute):** a `cleaningFee` term in
-  `Estimate` and in the payment schedule's first instalment; excluded from the
-  commission base. `bookingRequests.clientEstimate`/`serverEstimate` gain the
-  field, so the parity tripwire (§4.3) covers it.
-- **Owner UI:** turnaround as a fourth band/calendar state with its own legend
-  entry; `turnoverDays`, `cleaningBy` and the fee in the pricing fieldset;
-  turnover days shown in the payout preview as unsold inventory.
+- ✅ **Pricing (`lib/pricing.ts`):** a `cleaningFee` term in `Estimate` and on
+  the payment schedule's first instalment, excluded from the commission base.
+  🔜 when the booking endpoint is built,
+  `bookingRequests.clientEstimate`/`serverEstimate` must carry the field so the
+  parity tripwire (§4.3) covers it.
+- ✅ **Owner UI:** `cleaningBy` and the fee in the pricing fieldset; the payout
+  preview shows the fee as income only when the owner arranges the clean, and
+  as "we arrange it" otherwise — Ebrostay's fee is Ebrostay's, and showing it
+  in their payout would be inventing income. 🔜 turnaround as a fourth
+  band/calendar state with its own legend entry, `turnoverDays` in the
+  fieldset, and turnover days in the payout preview as unsold inventory.
 - **Admin UI:** the per-stay override.
 - **Commercial note worth carrying forward:** the buffer is unsold inventory
   and it scales against short stays — 3 days costs ~1.6% of a six-month stay

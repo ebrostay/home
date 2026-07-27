@@ -40,7 +40,11 @@ export function PricingSection({
   locale: string;
 }) {
   const t = useTranslations("host.manage.pricing");
-  const preview = pricingPreview(value.priceNumber);
+  const preview = pricingPreview(
+    value.priceNumber,
+    value.cleaningBy,
+    value.cleaningFeeEur,
+  );
   const dirty = state === "dirty" || state === "error";
 
   const figure =
@@ -64,6 +68,7 @@ export function PricingSection({
         onChange={onChange}
         band={band}
         maxStayMonths={saved.maxStayMonths}
+        platformCleaningFeeEur={saved.platformCleaningFeeEur}
         locale={locale}
       />
 
@@ -81,6 +86,17 @@ export function PricingSection({
           label={t("breakdown.utilitiesLabel")}
           value={t(`breakdown.utilities.${value.billsPolicy}` as "breakdown.utilities.capped")}
           muted
+        />
+        {/* Money only when the OWNER does the turnaround. Ebrostay's fee is
+            Ebrostay's, so their payout shows the arrangement, not an amount. */}
+        <Row
+          label={t("breakdown.cleaningLabel")}
+          value={
+            preview.cleaning > 0
+              ? `+${formatEuro(preview.cleaning, locale)} €`
+              : t("breakdown.cleaningPlatform")
+          }
+          muted={preview.cleaning === 0}
         />
         <div className="mt-1 border-t border-line pt-2.5">
           <Row

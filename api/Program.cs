@@ -42,5 +42,6 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<Ebrostay.Api.Services.ProfileService>();
+builder.Services.AddSingleton<Ebrostay.Api.Services.PlatformSettings>();
 
 builder.Build().Run();

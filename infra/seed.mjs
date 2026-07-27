@@ -115,6 +115,11 @@ function toDoc(p) {
     upfrontRentEur: p.priceNumber,
     billsPolicy: p.billsPolicy ?? "excluded",
     utilitiesCapEur: x.utilitiesCapEur ?? null,
+    // ADR-026. Everything starts on the platform arrangement: a real owner
+    // opting to clean their own flat is a decision they make, not a default
+    // the seed should invent for them.
+    cleaningBy: x.cleaningBy ?? "platform",
+    cleaningFeeEur: x.cleaningFeeEur ?? null,
     minStayMonths: 1,
     // 11, not 12: ADR-022 caps a stay under 365 days, and 12 calendar months
     // is 365 on the nose — the booking panel already refuses to offer it.

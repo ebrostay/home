@@ -17,7 +17,9 @@ public record PricingUpdate(
     int? DepositAmount,
     string? BillsPolicy,
     int? UtilitiesCapEur,
-    int MinStayMonths);
+    int MinStayMonths,
+    string? CleaningBy,
+    int? CleaningFeeEur);
 
 /// One owner-authored block. `end` is EXCLUSIVE (§2.2.3). No status field:
 /// everything the owner writes here is `confirmed` — holds belong to the
@@ -35,9 +37,11 @@ public static class HostValidation
     public const int MaxPrice = 50_000;
     public const int MaxDeposit = 100_000;
     public const int MaxCap = 2_000;
+    public const int MaxCleaningFee = 1_000;
     private const int MaxNoteLength = 120;
 
     private static readonly string[] BillsPolicies = ["included", "capped", "excluded"];
+    private static readonly string[] CleaningParties = ["host", "platform"];
 
     /// Returns an error code, or null when the payload is applicable. Codes are
     /// stable strings the client maps to bilingual copy — never prose.
@@ -55,6 +59,13 @@ public static class HostValidation
 
         if (u.MinStayMonths < 1 || u.MinStayMonths > maxStayMonths)
             return "min_stay_out_of_range";
+
+        var cleaning = u.CleaningBy ?? "platform";
+        if (!CleaningParties.Contains(cleaning)) return "cleaning_by_invalid";
+        // Only meaningful when the owner is the one doing the turnaround. The
+        // platform's rate is policy, and a listing cannot quote its own.
+        if (cleaning == "host" && u.CleaningFeeEur is not (>= 0 and <= MaxCleaningFee))
+            return "cleaning_fee_out_of_range";
 
         return null;
     }

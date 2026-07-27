@@ -16,6 +16,7 @@ namespace Ebrostay.Api.Functions;
 public class HostFunctions(
     Database database,
     ProfileService profiles,
+    PlatformSettings platform,
     ILogger<HostFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -90,7 +91,7 @@ public class HostFunctions(
         return new OkObjectResult(new HostPropertyDetail(
             HostProjection.ToHostProperty(doc!, DateTimeOffset.UtcNow, requests.Count(
                 r => r.Status == "new"), null),
-            HostProjection.ToPricing(doc!),
+            HostProjection.ToPricing(doc!, platform.CleaningFeeEur),
             requests));
     }
 
@@ -126,8 +127,12 @@ public class HostFunctions(
         // one forward would show a ceiling on a listing that has none.
         doc.UtilitiesCapEur = doc.BillsPolicy == "capped" ? update.UtilitiesCapEur : null;
         doc.MinStayMonths = update.MinStayMonths;
+        doc.CleaningBy = update.CleaningBy ?? "platform";
+        // Same rule as the bills cap: an amount only survives while the
+        // policy it belongs to does.
+        doc.CleaningFeeEur = doc.CleaningBy == "host" ? update.CleaningFeeEur : null;
 
-        return await SaveAsync(doc, etag, () => new OkObjectResult(HostProjection.ToPricing(doc)));
+        return await SaveAsync(doc, etag, () => new OkObjectResult(HostProjection.ToPricing(doc, platform.CleaningFeeEur)));
     }
 
     // The owner's calendar. The payload replaces every `confirmed` block and

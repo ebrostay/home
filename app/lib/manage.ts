@@ -1,4 +1,5 @@
 import type {
+  CleaningBy,
   HostPricing,
   HostProperty,
   HostRange,
@@ -190,19 +191,30 @@ export type PricingPreview = {
   rent: number;
   /** One-off, on the first instalment of a stay. */
   commission: number;
-  /** Rent less the one-off commission — the first month. */
+  /** The turnaround charge the owner RECEIVES — zero when Ebrostay does the
+   *  clean, because then the fee is ours and never reaches their payout. */
+  cleaning: number;
+  /** Rent less the one-off commission, plus any cleaning the owner collects. */
   firstMonth: number;
   /** Every month after: the commission is already paid. */
   laterMonths: number;
 };
 
 /** Priced over a nominal 30-day month, which IS the headline price (ADR-023). */
-export function pricingPreview(price: number): PricingPreview {
+export function pricingPreview(
+  price: number,
+  cleaningBy: CleaningBy = "platform",
+  cleaningFeeEur: number | null = null,
+): PricingPreview {
   const commission = round(Math.min(COMMISSION_RATE * price, price));
+  // Only the owner's own arrangement pays the owner. Ebrostay's fee is
+  // Ebrostay's; showing it in their payout would be inventing income.
+  const cleaning = cleaningBy === "host" ? Math.max(0, cleaningFeeEur ?? 0) : 0;
   return {
     rent: price,
     commission,
-    firstMonth: round(price - commission),
+    cleaning,
+    firstMonth: round(price - commission + cleaning),
     laterMonths: price,
   };
 }
@@ -245,6 +257,7 @@ export const LIMITS = {
   maxPrice: 50_000,
   maxDeposit: 100_000,
   maxCap: 2_000,
+  maxCleaningFee: 1_000,
   maxBlocks: 60,
   maxNote: 120,
 } as const;
@@ -263,7 +276,9 @@ export function pricingDirty(a: HostPricing, b: HostPricing): boolean {
     (a.depositAmount ?? 0) !== (b.depositAmount ?? 0) ||
     a.billsPolicy !== b.billsPolicy ||
     (a.utilitiesCapEur ?? 0) !== (b.utilitiesCapEur ?? 0) ||
-    a.minStayMonths !== b.minStayMonths
+    a.minStayMonths !== b.minStayMonths ||
+    a.cleaningBy !== b.cleaningBy ||
+    (a.cleaningFeeEur ?? 0) !== (b.cleaningFeeEur ?? 0)
   );
 }
 

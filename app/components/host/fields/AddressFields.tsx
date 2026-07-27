@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Lock, MapPin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Bilingual, HostListing } from "@/lib/api";
-import { LIMITS, cadastreValid, postcodeValid } from "@/lib/listing";
+import { LIMITS, cadastreChecksum, cadastreValid, postcodeValid } from "@/lib/listing";
+import { InfoPopover } from "@/components/ui/InfoPopover";
 import {
   SAME_PLACE_M,
   formatDistance,
@@ -273,13 +274,41 @@ export function AddressFields({
         <TextField
           label={t("cadastre")}
           tag={t("optional")}
+          info={
+            <InfoPopover label={t("cadastreWhat")} title={t("cadastreWhat")}>
+              <p>{t("cadastreInfoWhat")}</p>
+              <p>{t("cadastreInfoWhere")}</p>
+              <p>{t("cadastreInfoWhy")}</p>
+              <a
+                href="https://www.sedecatastro.gob.es/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-river-deep underline underline-offset-2"
+              >
+                {t("cadastreInfoLink")}
+              </a>
+            </InfoPopover>
+          }
           value={value.cadastralRef ?? ""}
           onChange={(v) => set("cadastralRef", v.trim() === "" ? null : v.toUpperCase())}
           maxLength={20}
           mono
-          placeholder="4721903XM7147S0001WK"
+          // The handoff's example is invented — its check digits do not match
+          // the rest of it — so the placeholder shows the same shape with the
+          // digits corrected. A worked example our own checker would reject is
+          // the wrong thing to teach the format with.
+          placeholder="4721903XM7147S0001BT"
           hint={t("cadastreHint")}
           error={cadastreValid(value.cadastralRef ?? "") ? undefined : t("cadastreInvalid")}
+          // A warning, never an error. The check digits are only defined for
+          // urban references on the common cadastre — a rural one, or a
+          // property in Euskadi or Navarra, is checked by other rules, and
+          // rejecting a valid reference is worse than accepting a typo.
+          warning={
+            cadastreChecksum(value.cadastralRef ?? "") === false
+              ? t("cadastreChecksum")
+              : undefined
+          }
         />
         {/* The neighbourhood, and the one address-side field a guest reads in
             their own language — "Casco Histórico" / "Old Town". */}

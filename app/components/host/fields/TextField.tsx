@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 // The plain text input the listing editor is mostly made of. Controlled, no
 // internal state, no validation of its own — the page owns the value, and
@@ -13,9 +13,11 @@ import { useId } from "react";
 export function TextField({
   label,
   tag,
+  info,
   value,
   onChange,
   hint,
+  warning,
   error,
   placeholder,
   maxLength,
@@ -24,9 +26,16 @@ export function TextField({
 }: {
   label: string;
   tag?: string;
+  /** Sits after the label — an InfoPopover, for a field that needs explaining
+   *  rather than merely hinting. */
+  info?: ReactNode;
   value: string;
   onChange: (value: string) => void;
   hint?: string;
+  /** Something is probably wrong but the value is still accepted. Distinct
+   *  from `error` on purpose: a checksum we cannot apply to every valid
+   *  reference must not be allowed to block one. */
+  warning?: string;
   /** Replaces the hint while set — one message per field, and the one that
    *  matters is always the problem. */
   error?: string;
@@ -36,13 +45,18 @@ export function TextField({
   inputMode?: "text" | "numeric";
 }) {
   const id = useId();
-  const describedBy = hint || error ? `${id}-note` : undefined;
+  const note = error ?? warning ?? hint;
+  const describedBy = note ? `${id}-note` : undefined;
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-[0.8125rem] font-semibold text-ink">
+      <label
+        htmlFor={id}
+        className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink"
+      >
         {label}
-        {tag && <span className="data ml-1.5 font-normal text-muted">{tag}</span>}
+        {tag && <span className="data font-normal text-muted">{tag}</span>}
+        {info}
       </label>
       <input
         id={id}
@@ -58,12 +72,14 @@ export function TextField({
           error ? "border-warn" : "border-line-strong"
         } ${mono ? "data" : ""}`}
       />
-      {(error || hint) && (
+      {note && (
         <p
           id={describedBy}
-          className={`text-xs leading-[1.4] ${error ? "text-warn" : "text-muted"}`}
+          className={`text-xs leading-[1.4] ${
+            error || warning ? "text-warn" : "text-muted"
+          }`}
         >
-          {error ?? hint}
+          {note}
         </p>
       )}
     </div>

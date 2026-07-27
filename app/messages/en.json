@@ -419,7 +419,13 @@
         "suggestedPin": "Pin suggested from the address",
         "pinSuggestion": "The address points {distance} from your pin.",
         "movePinHere": "Move the pin here",
-        "keepMine": "Keep mine"
+        "keepMine": "Keep mine",
+        "cadastreWhat": "What is a cadastral reference?",
+        "cadastreInfoWhat": "The identifier the Catastro gives every property in Spain: 20 letters and digits. The four before the last two pick out the individual home inside the building.",
+        "cadastreInfoWhere": "It is printed on your IBI receipt, which is the quickest place to look. It is also on the deed, or you can search for it by address at the Catastro's electronic office.",
+        "cadastreInfoWhy": "\"Calle Movera 7\" covers several flats; the cadastral reference covers only yours. It lets the contract name the home without ambiguity, and lets us check that the ownership paperwork belongs to this listing.",
+        "cadastreInfoLink": "Look it up at the Catastro",
+        "cadastreChecksum": "The last two letters do not match the rest. Check it was copied correctly."
       },
       "photos": {
         "intro": "The order is what a guest sees: the first photo that is not a floor plan is the cover.",

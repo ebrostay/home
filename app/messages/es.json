@@ -419,7 +419,13 @@
         "suggestedPin": "Punto propuesto a partir de la dirección",
         "pinSuggestion": "La dirección apunta a {distance} de tu punto.",
         "movePinHere": "Mover el punto aquí",
-        "keepMine": "Dejar el mío"
+        "keepMine": "Dejar el mío",
+        "cadastreWhat": "¿Qué es la referencia catastral?",
+        "cadastreInfoWhat": "Es el identificador que el Catastro asigna a cada inmueble de España: 20 letras y números. Los cuatro anteriores a los dos últimos señalan la vivienda concreta dentro del edificio.",
+        "cadastreInfoWhere": "La tienes impresa en el recibo del IBI, que es lo más rápido. También aparece en la escritura, o puedes buscarla por dirección en la Sede Electrónica del Catastro.",
+        "cadastreInfoWhy": "«Calle Movera 7» vale para varios pisos; la referencia catastral solo para el tuyo. Con ella el contrato identifica la vivienda sin ambigüedad y podemos comprobar que la documentación de propiedad corresponde a este anuncio.",
+        "cadastreInfoLink": "Buscar en la Sede Electrónica del Catastro",
+        "cadastreChecksum": "Las dos últimas letras no cuadran con el resto. Repasa que esté bien copiada."
       },
       "photos": {
         "intro": "El orden es lo que ve el huésped: la primera foto que no sea un plano es la portada.",

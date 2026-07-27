@@ -720,6 +720,16 @@ the owner's payout honest and the tenant's total complete.
 - **No `MATCHED` badge**, contrary to the handoff: nothing checks the
   reference against the Catastro, and a badge would claim a verification that
   never ran. It lights up when there is an integration behind it.
+- **The check digits ARE verified**, which is a different claim and worth
+  making. The last two characters of a 20-character urban reference are a
+  checksum over the other eighteen, so a mistyped one is caught in the browser
+  with no API call (`lib/listing.ts`, verified against the published algorithm
+  and two real references). It proves the string is well-formed, never that
+  the property exists — so it is a **warning, not a rejection**, and is not
+  enforced server-side: rural references and the foral cadastres of Euskadi
+  and Navarra are checked by other rules, and refusing a valid reference is
+  worse than accepting a typo. Note the handoff's own example,
+  `4721903XM7147S0001WK`, fails it — its check digits should be `BT`.
 - **No tourist-licence field.** The handoff offers one; Ebrostay lets
   *mid-term* homes, so a *vivienda de uso turístico* licence is the wrong
   instrument and asking for it would suggest the wrong product.

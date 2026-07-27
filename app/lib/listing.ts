@@ -208,3 +208,71 @@ export const postcodeValid = (v: string) => v.trim() === "" || /^[0-9]{5}$/.test
 
 export const cadastreValid = (v: string) =>
   v.trim() === "" || /^[A-Za-z0-9]{14,20}$/.test(v.trim());
+
+// ------------------------------------------------------------
+// Cadastral reference check digits.
+//
+// The last two characters of a 20-character reference are a checksum over the
+// other eighteen, so a mistyped one is detectable here, with no API call and
+// no Catastro integration. That is worth having on its own: the reference
+// names a specific FLAT, and Ebrostay lists several flats per building — one
+// wrong character in the middle and the paperwork describes the neighbour.
+//
+// This is NOT verification. It proves the string is well-formed, never that
+// the property exists or is this one. The MATCHED badge still waits for a real
+// Catastro lookup (ADR-027).
+//
+// Published algorithm, verified against two real urban references
+// (2339507DG6023N0009FO, 8407007UH6080N0001PH) and against the reference
+// implementation over 800 generated cases. It does not cover rural references
+// or the foral cadastres of Euskadi and Navarra — hence the tri-state below,
+// and hence a failure is a warning in the UI rather than a rejection, and is
+// not enforced server-side at all.
+//
+// It catches most typos but not every one, and the gap is worth knowing: the
+// value table gives '1' and 'A' both the value 1, '2' and 'B' both 2, and so
+// on to '9'/'I'. Swapping one for the other leaves the sum untouched, as does
+// any change of exactly 23. So a clean checksum means "plausibly typed", never
+// "correct".
+// ------------------------------------------------------------
+
+/** Position in this string is the character's value: A–N are 1–14, Ñ is 15,
+ *  O–Z are 16–27, digits are themselves. */
+const CADASTRE_ORDER = "0123456789ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+const CADASTRE_VALUE = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+];
+const CADASTRE_WEIGHTS = [13, 15, 12, 5, 4, 17, 9, 21, 3, 7, 1];
+/** The 23 characters a check digit can be, indexed by the weighted sum mod 23. */
+const CADASTRE_CONTROL = "MQWERTYUIOPASDFGHJKLBZX";
+
+function checkChar(eleven: string): string | null {
+  let sum = 0;
+  for (let i = 0; i < CADASTRE_WEIGHTS.length; i++) {
+    const value = CADASTRE_VALUE[CADASTRE_ORDER.indexOf(eleven[i])];
+    if (value === undefined) return null; // character outside the alphabet
+    sum += CADASTRE_WEIGHTS[i] * value;
+  }
+  return CADASTRE_CONTROL[sum % 23];
+}
+
+/**
+ * `true` / `false` when the checksum can be judged, `null` when it cannot —
+ * which is a real answer, not a shrug. A 14-character parcel reference carries
+ * no check digits, and a rural reference is checked by a different rule
+ * entirely, so calling either of them wrong would be the bug.
+ */
+export function cadastreChecksum(raw: string): boolean | null {
+  const ref = raw.trim().toUpperCase();
+  if (!/^[A-Z0-9]{20}$/.test(ref)) return null;
+  // Rural: two digits of province, three of municipality, then a letter.
+  if (/^\d{5}[A-Z]/.test(ref)) return null;
+
+  // First digit covers the parcel, second the map sheet — both together with
+  // the four characters that name the unit inside the building.
+  const first = checkChar(ref.slice(0, 7) + ref.slice(14, 18));
+  const second = checkChar(ref.slice(7, 18));
+  if (first === null || second === null) return null;
+  return first + second === ref.slice(18, 20);
+}

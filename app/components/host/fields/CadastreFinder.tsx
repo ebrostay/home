@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Search, TriangleAlert, X } from "lucide-react";
+import { Loader2, RotateCw, Search, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   byNameMatch,
@@ -104,30 +104,45 @@ function Finder({
   const [number, setNumber] = useState(seed.number);
 
   const [streets, setStreets] = useState<CadastreStreet[]>([]);
-  const [searched, setSearched] = useState<string | null>(null);
+  const [searched, setSearched] = useState<{ for: string; failed: boolean } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   // Keyed by the question it answers, so a stale reply never gets read as an
   // answer about the street and number now on screen.
   const [answer, setAnswer] = useState<{ for: string; result: CadastreUnits } | null>(null);
 
+  // Bumped by the retry buttons. `lib/catastro.ts` already retries once on its
+  // own, so reaching a button means two attempts have failed and the third is
+  // a decision, not a reflex. It is part of each lookup's key, so a retry
+  // clears the failure it is retrying rather than leaving the error on screen
+  // beside a spinner.
+  const [again, setAgain] = useState(0);
+
   const q = query.trim();
   const searchable = q.length >= 3;
+
+  // The retry count is part of the question, not just a trigger for it. Keyed
+  // on the query alone, a retry would leave the previous failure on screen
+  // until the new answer replaced it — the owner would press the button and
+  // watch nothing happen.
+  const asked = `${q}|${again}`;
 
   useEffect(() => {
     if (!searchable) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      searchStreets(q, controller.signal).then((list) => {
+      searchStreets(q, controller.signal).then((found) => {
         if (controller.signal.aborted) return;
-        setStreets(byNameMatch(list, q));
-        setSearched(q);
+        setSearched({ for: asked, failed: found.kind === "error" });
+        if (found.kind === "error") return;
+
+        setStreets(byNameMatch(found.streets, q));
         // The owner has already said "Calle Movera 7" once, so being asked to
         // choose between Barrio, Calle and Diseminado Movera is being asked
         // twice. `preferredStreet` selects only where the answer is not a
         // guess; everything else stays the owner's to make, because picking
         // between an avenue and a square of the same name is how a listing
         // ends up carrying somebody else's flat.
-        const best = preferredStreet(list, q, seed.type);
+        const best = preferredStreet(found.streets, q, seed.type);
         setPicked(best ? keyOf(best) : null);
       });
     }, DEBOUNCE_MS);
@@ -136,11 +151,11 @@ function Finder({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, searchable, seed.type]);
+  }, [q, asked, searchable, seed.type]);
 
   const street = streets.find((s) => keyOf(s) === picked) ?? null;
   const num = number.trim();
-  const question = street && /^\d{1,4}$/.test(num) ? `${picked}|${num}` : null;
+  const question = street && /^\d{1,4}$/.test(num) ? `${picked}|${num}|${again}` : null;
 
   useEffect(() => {
     if (!street || !question) return;
@@ -156,16 +171,19 @@ function Finder({
       controller.abort();
     };
     // `street` is derived from `picked` and `streets`; `question` moves with
-    // it and with the number, which is the whole of what makes this a new
-    // question worth asking.
+    // it, with the number and with the retry count, which together are the
+    // whole of what makes this a new question worth asking.
   }, [street, num, question]);
+
+  const retry = () => setAgain((n) => n + 1);
 
   // Everything below is derived from those two answers. A result that names a
   // different question is not an answer to this one — it is the previous
   // lookup still on screen, which here would mean offering the flats of the
   // wrong building.
   const result = answer?.for === question ? answer.result : null;
-  const searching = searchable && searched !== q;
+  const done = searched?.for === asked;
+  const searching = searchable && !done;
   const looking = question !== null && result === null;
 
   // Every flat at one number shares a postcode, so the first one that has it
@@ -215,8 +233,14 @@ function Finder({
 
       {/* The register's own streets. Its spelling is the only one the number
           lookup accepts, so this list is not a convenience — it is how the
-          query gets written at all. */}
-      {!searching && searchable && searched === q && streets.length === 0 && (
+          query gets written at all.
+
+          "No street is called that" and "the register did not answer" used to
+          be the same empty list here, which meant a dropped request told the
+          owner their street does not exist. They are now separate answers. */}
+      {done && searched.failed && <Unreachable onRetry={retry} label={t("retry")} />}
+
+      {done && !searched.failed && searchable && streets.length === 0 && (
         <p className="text-[0.8125rem] leading-[1.5] text-body">{t("finderNoStreet")}</p>
       )}
 
@@ -268,9 +292,7 @@ function Finder({
         <p className="text-[0.8125rem] text-body">{t("finderNoUnits")}</p>
       )}
 
-      {result?.kind === "error" && (
-        <p className="text-[0.8125rem] text-body">{t("cadastreUnreachable")}</p>
-      )}
+      {result?.kind === "error" && <Unreachable onRetry={retry} label={t("retry")} />}
 
       {result?.kind === "units" && (
         <div className="flex flex-col gap-2">
@@ -326,6 +348,26 @@ function Waiting({ label }: { label: string }) {
     <p className="flex items-center gap-2 text-xs text-muted" role="status">
       <Loader2 size={13} strokeWidth={2.2} className="animate-spin" aria-hidden />
       {label}
+    </p>
+  );
+}
+
+/** The service dropped the request twice. Asking again is one button rather
+ *  than the retype-and-retype-back the panel used to leave people doing. */
+function Unreachable({ onRetry, label }: { onRetry: () => void; label: string }) {
+  const t = useTranslations("host.edit.address");
+  return (
+    <p className="flex flex-wrap items-center gap-2.5 rounded-(--radius-control) border border-warn bg-warn-soft px-3.5 py-2.5 text-[0.8125rem] text-ink">
+      <TriangleAlert size={15} strokeWidth={2} className="shrink-0 text-warn" aria-hidden />
+      <span className="min-w-[10rem] flex-1">{t("cadastreUnreachable")}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="flex items-center gap-1.5 rounded-(--radius-control) border border-line-strong bg-surface px-2.5 py-1 text-xs font-semibold text-ink transition-colors duration-(--dur-standard) hover:border-ink"
+      >
+        <RotateCw size={12} strokeWidth={2.4} aria-hidden />
+        {label}
+      </button>
     </p>
   );
 }

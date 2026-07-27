@@ -430,6 +430,7 @@
         "cadastreFound": "ACCORDING TO THE CATASTRO",
         "cadastreNotFound": "The Catastro has no property with that reference. Check it over.",
         "cadastreUnreachable": "The Catastro is not answering right now. You can fill the details in by hand.",
+        "retry": "Try again",
         "cadastreSize": "{value} m²",
         "cadastreYear": "built {year}",
         "cadastreDiffPostcode": "The Catastro says the postcode is {value}.",

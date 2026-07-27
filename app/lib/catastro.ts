@@ -71,14 +71,56 @@ export type CadastreResult =
 // shared with the geocoder — two hosts, two budgets.
 const claimSlot = createThrottle(1_100);
 
+/** The wait before the one automatic retry. The service fails briefly and
+ *  often enough that a first failure says very little — long enough that a
+ *  struggling service is not being hammered, short enough that the owner is
+ *  still looking at the panel when the answer lands. */
+const RETRY_MS = 2_000;
+
+class HttpError extends Error {
+  constructor(readonly status: number) {
+    super(`catastro ${status}`);
+  }
+}
+
+/**
+ * Ask once, and once more if the first attempt failed in a way that might not
+ * repeat.
+ *
+ * The Catastro drops requests intermittently — a bare `TypeError: Failed to
+ * fetch`, no pattern to it — and the honest response to a single failure is to
+ * ask again rather than to tell the owner their reference is unknown. What is
+ * NOT retried is a refusal: a 4xx is the service answering, and asking the
+ * same question again will get the same answer.
+ */
 async function ask(url: string, signal?: AbortSignal): Promise<Document> {
+  try {
+    return await attempt(url, signal);
+  } catch (err) {
+    if (signal?.aborted || !worthRetrying(err)) throw err;
+    await sleep(RETRY_MS, signal);
+    return attempt(url, signal);
+  }
+}
+
+async function attempt(url: string, signal?: AbortSignal): Promise<Document> {
   const wait = claimSlot();
   if (wait > 0) await sleep(wait, signal);
 
   const res = await fetch(url, { headers: { Accept: "application/xml" }, signal });
-  if (!res.ok) throw new Error(`catastro ${res.status}`);
+  if (!res.ok) throw new HttpError(res.status);
   return new DOMParser().parseFromString(await res.text(), "application/xml");
 }
+
+const worthRetrying = (err: unknown) => {
+  // The caller gave up; asking again would be answering a question nobody is
+  // still waiting for, and it would hold a throttle slot to do it.
+  if (err instanceof DOMException && err.name === "AbortError") return false;
+  // A refusal is an answer. Only a server-side fault is worth repeating.
+  if (err instanceof HttpError) return err.status >= 500;
+  // Everything left is the network failing to complete the request at all.
+  return true;
+};
 
 const text = (doc: Document | Element, tag: string): string | null => {
   const el = doc.getElementsByTagName(tag)[0];
@@ -277,6 +319,12 @@ export type CadastreUnits =
   | { kind: "none" }
   | { kind: "error" };
 
+/** "No street is called that" and "the register did not answer" are opposite
+ *  things to tell an owner, so they are not both an empty list. */
+export type CadastreStreets =
+  | { kind: "streets"; streets: CadastreStreet[] }
+  | { kind: "error" };
+
 /**
  * Streets of Zaragoza whose name matches what was typed.
  *
@@ -288,9 +336,9 @@ export type CadastreUnits =
 export async function searchStreets(
   query: string,
   signal?: AbortSignal,
-): Promise<CadastreStreet[]> {
+): Promise<CadastreStreets> {
   const q = query.trim().slice(0, MAX_STREET_QUERY);
-  if (q.length < 3) return [];
+  if (q.length < 3) return { kind: "streets", streets: [] };
 
   let doc: Document;
   try {
@@ -300,12 +348,14 @@ export async function searchStreets(
       signal,
     );
   } catch {
-    return [];
+    return { kind: "error" };
   }
 
-  return [...doc.getElementsByTagName("calle")]
+  const streets = [...doc.getElementsByTagName("calle")]
     .map((el) => ({ type: text(el, "tv"), name: text(el, "nv") }))
     .filter((s): s is CadastreStreet => s.type !== null && s.name !== null);
+
+  return { kind: "streets", streets };
 }
 
 /** Every property at one street number. */

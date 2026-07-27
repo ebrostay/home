@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BadgeCheck, Loader2, TriangleAlert } from "lucide-react";
+import { BadgeCheck, Loader2, RotateCw, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { HostListing } from "@/lib/api";
 import { cadastreChecksum } from "@/lib/listing";
@@ -55,6 +55,12 @@ export function CadastrePanel({
   const t = useTranslations("host.edit.address");
   const locale = useLocale();
   const [result, setResult] = useState<State>({ kind: "idle", ref: "" });
+  // Bumped by the retry button. `lib/catastro.ts` retries once by itself, so
+  // the button only appears after two failures — at which point asking again
+  // is a decision. Before this existed the only way to retry was to retype a
+  // character of the reference and undo it, which is a thing people were
+  // actually doing.
+  const [again, setAgain] = useState(0);
 
   const ref = (value.cadastralRef ?? "").trim().toUpperCase();
   // Only ask about a reference that could exist. A checksum failure means the
@@ -92,7 +98,7 @@ export function CadastrePanel({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [ref, askable]);
+  }, [ref, askable, again]);
 
   /** Take what is missing; never replace what is there. */
   const fillGaps = (r: CadastreRecord) => {
@@ -141,9 +147,27 @@ export function CadastrePanel({
 
   if (state.kind === "notFound" || state.kind === "error") {
     return (
-      <p className="flex items-center gap-2.5 rounded-(--radius-control) border border-warn bg-warn-soft px-3.5 py-2.5 text-[0.8125rem] text-ink">
+      <p className="flex flex-wrap items-center gap-2.5 rounded-(--radius-control) border border-warn bg-warn-soft px-3.5 py-2.5 text-[0.8125rem] text-ink">
         <TriangleAlert size={15} strokeWidth={2} className="shrink-0 text-warn" aria-hidden />
-        {t(state.kind === "notFound" ? "cadastreNotFound" : "cadastreUnreachable")}
+        <span className="min-w-[10rem] flex-1">
+          {t(state.kind === "notFound" ? "cadastreNotFound" : "cadastreUnreachable")}
+        </span>
+        {/* Only when the service failed. A reference the register genuinely
+            does not have will not start existing on the second ask, and a
+            button there would suggest otherwise. */}
+        {state.kind === "error" && (
+          <button
+            type="button"
+            onClick={() => {
+              setResult({ kind: "looking", ref });
+              setAgain((n) => n + 1);
+            }}
+            className="flex items-center gap-1.5 rounded-(--radius-control) border border-line-strong bg-surface px-2.5 py-1 text-xs font-semibold text-ink transition-colors duration-(--dur-standard) hover:border-ink"
+          >
+            <RotateCw size={12} strokeWidth={2.4} aria-hidden />
+            {t("retry")}
+          </button>
+        )}
       </p>
     );
   }

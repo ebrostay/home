@@ -734,6 +734,15 @@ the owner's payout honest and the tenant's total complete.
     one automatically, so client-direct is the *lower-risk* option here — a
     Function would have to remember. Observed to fail intermittently under
     rapid use, so the fallback copy is not decoration.
+  - **One automatic retry after 2 s, then a button.** The service drops
+    requests with a bare `TypeError: Failed to fetch` and no pattern, so a
+    single failure says very little and the honest response is to ask again.
+    What is *not* retried is a refusal: a 4xx is the service answering, and an
+    aborted request is nobody waiting. After two failures the panel offers
+    "try again" rather than leaving the owner to nudge a field back and forth
+    to force a re-query, which is what people were actually doing. The retry
+    count is part of each lookup's key, so pressing it clears the failure it is
+    retrying instead of leaving an error on screen beside a spinner.
   - **Rate limiting is ours to choose.** The Catastro publishes no figure, so
     `lib/throttle.ts` applies the same one request a second Nominatim asks
     for — a free government service we would rather not be blocked from. Each

@@ -430,6 +430,7 @@
         "cadastreFound": "SEGÚN EL CATASTRO",
         "cadastreNotFound": "El Catastro no tiene ningún inmueble con esa referencia. Repásala.",
         "cadastreUnreachable": "El Catastro no responde ahora mismo. Puedes seguir rellenando los datos a mano.",
+        "retry": "Reintentar",
         "cadastreSize": "{value} m²",
         "cadastreYear": "construido en {year}",
         "cadastreDiffPostcode": "El Catastro dice que el código postal es {value}.",

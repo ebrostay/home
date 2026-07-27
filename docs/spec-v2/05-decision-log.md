@@ -25,6 +25,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
 | ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
 | ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
+| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked, 🔜 unimplemented |
 
 ---
 
@@ -540,6 +541,103 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
     price after approval. Mitigation is the audit trail (`updatedAt` moves) and
     admin visibility, not a review gate — the same trade every marketplace
     makes on operational fields.
+
+---
+
+## ADR-026 — Turnover days between stays, and who is paid for the clean
+
+- **Status:** ✅ locked 2026-07-27 (product owner: Raphael). 🔜 **Not yet
+  implemented** — this ADR is the design; the code changes in §Consequences
+  are outstanding. **Extends ADR-023** (which already settles utilities after
+  move-out) and the availability rules of §2.2.3.
+- **Context.** v2 has been modelling a stay as a half-open range and nothing
+  else, which quietly assumes a home is relettable the moment the keys come
+  back. It is not. Ebrostay lets homes for **months**, so a turnover is not a
+  housekeeping task between two hotel nights — it is an inspection against the
+  inventory, a meter reading (which ADR-023's final bill depends on), a deep
+  clean rather than a turnover clean, and whatever repairs six months of
+  occupancy produced. Industry practice for mid-term lets is a **2–5 day**
+  gap, and a week where repainting is likely; a deep clean of an 80–90 m²
+  three-bed alone runs 8–12 person-hours against 2–3 for a short let. Today
+  search would happily offer a move-in on the morning the previous tenant
+  moves out.
+
+  This also corrects a vocabulary error: v2 briefly counted stays in
+  **nights**, which is short-let language. The unit here is **days of
+  occupancy**, and the boundary event is the return of the keys. Spanish
+  practice for an *arrendamiento de temporada* is entrada/salida, never
+  "noches".
+
+### Decision 1 — `turnoverDays`, derived and overridable
+
+- A listing carries **`turnoverDays`** (integer, owner-settable, platform
+  default **3**). The days immediately following any *blocking* entry are
+  treated as unavailable.
+- The buffer is **derived, not stored**: it is applied inside the single
+  overlap predicate of §2.2.3, so nothing on the calendar duplicates a rule
+  and changing the number takes effect everywhere at once.
+- A **per-stay override** — `turnoverDaysOverride` on the availability entry —
+  extends the buffer for one stay when operations cannot get a cleaning team
+  into the slot. Admin-set from the admin panel; the owner sees the effect,
+  not the control. Absent means "use the listing's number".
+- The buffer is shown to the owner as its own calendar state (**turnaround**),
+  distinct from booked and from a block they closed themselves, so nobody
+  wonders why those days are shut. It is invisible to guests: to a visitor
+  those days are simply unavailable, and *why* a home is unavailable is not
+  their business.
+- The buffer never extends past a range the owner has already closed by hand,
+  and two adjacent stays produce one buffer, not two.
+
+**Rationale for deriving rather than auto-blocking:** an auto-created block is
+stored data that restates a rule, and it goes stale the moment the rule or the
+stay changes — the classic two-numbers-for-one-fact failure this codebase has
+already paid for twice (portfolio occupancy, payout rows). One predicate, one
+number.
+
+### Decision 2 — a cleaning fee with two sources
+
+- A listing carries **`cleaningBy`**: `"host"` | `"platform"`.
+  - `"host"` — the owner arranges the clean and sets **`cleaningFeeEur`**.
+  - `"platform"` — Ebrostay arranges it, and the fee is the **platform
+    default**, not owner-settable. Stored as a platform setting, not on the
+    listing, so it can be repriced without touching every document.
+- The fee is a **pass-through, not rent**: it is **not** commissionable, and it
+  does not enter the daily pro-rate. It appears in the estimate as its own
+  line, the way the deposit does.
+- It is charged **once per stay**, at move-in alongside the deposit and the
+  service fee — not deducted from the deposit at move-out. Deducting from the
+  deposit makes a routine, known cost look like a penalty for damage, and
+  invites the dispute that the deposit exists to avoid.
+
+**Rationale:** the cost is real either way — a deep clean after a six-month
+stay is not absorbed by goodwill. Today it is silently coming out of either the
+deposit or the owner's margin, and neither is stated to anyone. Naming it makes
+the owner's payout honest and the tenant's total complete.
+
+### Consequences — outstanding work
+
+- **Data model (§2.2):** `turnoverDays` on the property; `cleaningBy` +
+  `cleaningFeeEur`; `turnoverDaysOverride` on the availability entry (§2.2.3).
+  All nullable, all defaulted — existing documents stay valid.
+- **The overlap predicate (§2.2.3)** grows the buffer. It is used by the client
+  grid filter, the client estimate check, the server booking validation and the
+  server block-write validation — the point of having one is that this is one
+  change, and all four must land together or v1's bound-mismatch bug returns.
+- **Pricing (`lib/pricing.ts` + the C# recompute):** a `cleaningFee` term in
+  `Estimate` and in the payment schedule's first instalment; excluded from the
+  commission base. `bookingRequests.clientEstimate`/`serverEstimate` gain the
+  field, so the parity tripwire (§4.3) covers it.
+- **Owner UI:** turnaround as a fourth band/calendar state with its own legend
+  entry; `turnoverDays`, `cleaningBy` and the fee in the pricing fieldset;
+  turnover days shown in the payout preview as unsold inventory.
+- **Admin UI:** the per-stay override.
+- **Commercial note worth carrying forward:** the buffer is unsold inventory
+  and it scales against short stays — 3 days costs ~1.6% of a six-month stay
+  and ~10% of repeated one-month stays. That is an argument for setting
+  `minStayMonths` from turnover economics rather than from the 31-day legal
+  floor alone (ADR-022), and it is the owner's call per listing.
+- **Not decided here:** whether Ebrostay's platform cleaning fee varies by size
+  or by stay length. Flat to start; revisit with real cost data.
 
 ---
 

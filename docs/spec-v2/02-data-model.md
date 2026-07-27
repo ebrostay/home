@@ -99,6 +99,16 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "utilitiesCapEur": null,
   "minStayMonths": 1, "maxStayMonths": 11,   // hard cap 11 regardless
 
+  // — turnover (ADR-026) 🔜 not yet implemented —
+  "turnoverDays": 3,                  // days shut after a stay for inspection,
+                                      //   meter readings, deep clean, repairs.
+                                      //   Applied by the overlap predicate,
+                                      //   never written as a block (§2.2.3)
+  "cleaningBy": "platform",           // host | platform — who arranges it
+  "cleaningFeeEur": null,             // set only when cleaningBy == "host";
+                                      //   the platform fee is a platform
+                                      //   setting, not a listing field
+
   // — badges / flags —
   "rating": 4.8, "isNew": false, "checked": true, "depositProtected": true,
   "availableFrom": "2026-07-01",
@@ -167,7 +177,7 @@ Upload pipeline (validation, compression, 1-year cache headers): §4.4 of
 
 ### 2.2.3 Embedded availability ✅ — and why embedded
 
-Each entry: `{ start, end, status, holdExpiresAt?, note? }`.
+Each entry: `{ start, end, status, holdExpiresAt?, note?, turnoverDaysOverride? }`.
 
 - **`end` is EXCLUSIVE** (checkout day). ⚠️ This is a deliberate change from
   v1, where `availability_blocks.end_date` was *inclusive* and three different
@@ -190,6 +200,24 @@ Each entry: `{ start, end, status, holdExpiresAt?, note? }`.
   blocking(entry, now) = entry.status == "confirmed"
                          OR (entry.status == "hold" AND entry.holdExpiresAt > now)
   ```
+
+- **Turnover buffer** 🔜 (ADR-026, not yet implemented). A home is not
+  relettable the day the keys come back: the inventory has to be checked, the
+  meters read (ADR-023 settles utilities after move-out), and a stay measured
+  in months needs a deep clean, not a turnover clean. Every blocking entry
+  therefore shuts the `turnoverDays` that follow it:
+
+  ```
+  turnover(entry, property) = entry.turnoverDaysOverride ?? property.turnoverDays
+  effectiveEnd(entry, property) = entry.end + turnover(entry, property) days
+  ```
+
+  The buffer is **derived inside the predicate**, never written to
+  `availability` — a stored buffer would be a second copy of a rule and would
+  go stale the moment either the rule or the stay moved. `turnoverDaysOverride`
+  is admin-set, for when operations cannot get a cleaning team into the slot.
+  Owners see the buffer as a distinct **turnaround** state; guests just see
+  dates that are unavailable.
 
 - `note` is host/admin-internal and is stripped from all public responses
   (§2.2 public projection).

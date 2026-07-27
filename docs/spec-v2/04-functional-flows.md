@@ -163,6 +163,17 @@ already fix and the payout account is shown disabled.
 deduction:** 15% of rent, capped at 30 days' rent, charged **once on the first
 instalment** (`paymentSchedule()`). Later monthly payouts are rent in full.
 
+**Vocabulary:** stays are measured in **days of occupancy**, never "nights" —
+that is short-let language, and Ebrostay lets homes by the month under an
+*arrendamiento de temporada*. The boundary event is the return of the keys,
+which is exactly what the exclusive `end` already encodes: the tenant does not
+pay for their move-out day.
+
+**🔜 Turnover (ADR-026, not yet implemented):** the availability section will
+gain a fourth **turnaround** state for the `turnoverDays` after each stay, and
+the pricing fieldset will gain `turnoverDays`, `cleaningBy` and the host's
+cleaning fee. Until then the owner must close those dates by hand.
+
 **Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
 
 1. Create listing → `draft` (owner = caller).

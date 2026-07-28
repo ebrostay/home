@@ -251,6 +251,26 @@ listings — enforced in the functions (§3.5), not the UI.
     None of these is a rejection on its own. The register goes stale, and an
     owner may simply be right — that is why the owner is never blocked from
     saving them (ADR-027 decision 4b). They are what a reviewer looks at.
+  - **🔜 Photo location check (ADR-019 amendment).** Each photo's
+    `capturedLat`/`capturedLng` (§2.2.2) shown as a distance from the listing
+    pin. The published images have had their EXIF stripped; these are what it
+    said before it went.
+
+    | Reading | What to make of it |
+    | --- | --- |
+    | **No coordinates** | Nothing. The common case, and not a signal: WhatsApp and most social platforms strip EXIF, screenshots never had it, location services are often off. Shown as "—", never as a warning — flagging absence would flag nearly every listing and teach reviewers to ignore the column. |
+    | Within ~1 km of the pin | Consistent. The radius is deliberately loose: these are **indoor** photos, where a phone falls back to wifi and cell positioning and can be off by hundreds of metres. A tight radius would flag honest listings all day. |
+    | Far from the pin | Worth reading. One outlier is often a stock shot of the neighbourhood; the whole set far away is a different question. |
+    | **Scattered across several places** | The strongest of the three, and the reason to show them together rather than one at a time: a set of photos from three different districts is not one home. |
+
+    `capturedAt` rides along and is not flagged — but a "recently renovated"
+    listing whose photos are eight years old is something a reviewer can see
+    for themselves.
+
+    **This is a signal, never a verification, and the surface must say so.**
+    `exiftool` rewrites GPS in seconds, so a determined bad actor defeats it
+    completely; it catches honest mistakes and lazy fraud. Same discipline as
+    the absent `MATCHED` badge (ADR-027).
 - **All-properties management:** list/filter every listing in any status;
   direct edit (no re-review, §2.2.1); pause/takedown.
 - **Users:** list `profiles` (id, provider, name, created, flags);

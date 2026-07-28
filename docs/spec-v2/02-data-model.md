@@ -125,7 +125,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   // — embedded photos (§2.2.2) —
   "photos": [
     { "url": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/1718000000-kitchen.jpg",
-      "isFloorplan": false, "sortOrder": 10 }
+      "isFloorplan": false, "sortOrder": 10,
+      // where the camera said it was — admin-only, see §2.2.2
+      "capturedLat": 41.65393, "capturedLng": -0.90783, "capturedAt": "2026-05-14T10:22:07Z" }
   ],
 
   // — embedded availability (§2.2.3) —
@@ -183,6 +185,18 @@ gallery), `sortOrder` (ascending; lowest = cover; reorder renumbers 10, 20,
 read *with* their property and only written through the property-editor API.
 Upload pipeline (validation, compression, 1-year cache headers): §4.4 of
 [04-functional-flows.md](04-functional-flows.md).
+
+`capturedLat` / `capturedLng` / `capturedAt` 🔜 hold what the camera's EXIF
+said, extracted during the upload re-encode that **strips EXIF from the
+published file** (ADR-019 amendment). All nullable and usually null — WhatsApp
+and most social platforms strip EXIF, screenshots never had it, and plenty of
+people keep location off.
+
+**Admin-only.** They never appear in the public property projection or the
+host's own. They exist for the review queue's photo check (§4.5) and are
+location data about a real person's whereabouts: an owner who uploads a shot
+taken at their private home has told us where they live. Deleted with the
+photo.
 
 ### 2.2.3 Embedded availability ✅ — and why embedded
 
@@ -349,6 +363,13 @@ public, max-age=31536000`** (1 year, v1 practice per docs/spec/07 §7.1
 Storage), and appends the photo entry to the property document. Deleting a
 photo removes both the blob and the embedded entry. No SAS tokens and no
 storage keys ever reach the client.
+
+What "validates" and "compresses" mean concretely — magic-byte sniffing, the
+`Content-Type` allowlist, no SVG, server-generated blob names, caps applied
+before decode, and the re-encode that both resizes and sanitises — is the
+**ADR-019 amendment of 2026-07-28**. The short version: the container is
+public-read, so an upload is a URL we host, and the re-encode is what
+guarantees the bytes behind it are pixels.
 
 ## 2.7 Seed data ✅
 

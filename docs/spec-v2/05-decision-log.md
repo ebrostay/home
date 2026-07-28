@@ -279,6 +279,93 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
   - Anyone can read any photo URL — do not upload non-public imagery
     (unchanged from v1's public bucket).
 
+### Amendment 2026-07-28 — what "validates, compresses" actually means
+
+The upload function is still 🔜 unbuilt. This is its design, written before
+building it rather than after, because most of it is a security boundary and
+retrofitting one is how you get holes.
+
+**The starting fact: `property-photos` is public-read.** An upload is not a
+file we store, it is a URL we host and hand out. Whatever lands there is
+served to anyone, with whatever `Content-Type` it carries. That, not
+"malware", is why this needs care.
+
+**Re-encoding is the control that does most of the work.** Decode to pixels,
+write out a fresh WebP. Anything that is not pixels — appended archives,
+polyglot files, script in metadata, EXIF — does not survive the round trip.
+It is the same operation as resizing, so one pass pays for both. What it does
+*not* defend is a file crafted against the decoder itself: image parsers have
+a long CVE history, so read dimensions from the header **before** decoding
+(a 10 KB PNG can declare 50000×50000 and take the Function's memory with it),
+and keep the library patched.
+
+The rest, none of which re-encoding covers:
+
+| Check | Because |
+| --- | --- |
+| Sniff magic bytes; set `Content-Type` from an allowlist (`image/jpeg`, `image/png`, `image/webp`) | Blob serves whatever `Content-Type` is set on it. A client-supplied `text/html` is stored XSS on our own storage account. |
+| **Refuse SVG** | A legitimate image format that can carry `<script>`, and opened directly rather than inside an `<img>` it executes in the storage origin. No flat photo is a vector. |
+| Blob name generated server-side (GUID under the property id) | Never the client's filename — that is path traversal and cross-listing overwrite in one. |
+| Byte cap and dimension cap, before decode | Decompression bombs, and `MaxPhotos = 40` only caps the count. |
+| Ownership from `x-ms-client-principal` | The caller must own the listing. The same rule as everywhere else (§3.5). |
+
+**Client-side resizing stays, with its purpose corrected.** It is a *transfer*
+optimisation, not a security control and not how the served sizes are
+produced: mobile uplink is several times slower than downlink, and an owner
+posting twelve 8 MP photos should not wait two minutes. So the browser
+downscales to a **generous ceiling (~2560px long edge), never to a final
+size** — a browser-made thumbnail would be a lossy master we could never
+derive a new size from — using `createImageBitmap` with `resizeWidth` so the
+downscale happens *during* decode rather than by allocating a 50 MP canvas on
+a low-end phone. If it fails for any reason, upload the original untouched.
+The server's behaviour does not change either way: browser output is untrusted
+input, and the resize is a hint that usually happens to be honoured.
+
+No SAS token appears in the client, per the locked decision above. Bytes go
+client → Function → Blob. (A quarantine-container pattern would get the bytes
+off the request path but needs a SAS in the browser, so it is out.)
+
+**HEIC is an open question, not a decision.** iOS generally converts to JPEG
+when picking through a file input, but a HEIC copied to a desktop and uploaded
+from Chrome decodes nowhere — not in the browser, not in the Function without
+adding a codec. Decide deliberately; do not discover it.
+
+### Amendment 2026-07-28 — photo EXIF: stripped from the file, kept for review
+
+Phone photos carry GPS. Publishing one with EXIF intact hands the exact
+doorway to anyone who downloads it, which silently defeats §4.2's rule that
+the address is shown only to guests who book. So the **published image always
+has EXIF stripped** — that part is not a trade-off.
+
+But the coordinates themselves are worth something to a reviewer (product
+owner, 2026-07-28): photos taken far from the pin, or scattered across several
+places, say something about whether this listing is one real home. So they are
+**extracted and kept as data, on a photo that no longer carries them**:
+`capturedLat`, `capturedLng`, `capturedAt`, all nullable, admin-only and never
+in the public projection (§2.2.2).
+
+Three things this decision has to be honest about:
+
+1. **EXIF is forgeable.** `exiftool` rewrites GPS in seconds. So this is a
+   signal, never a verification, and the review surface must say so. It is
+   the same discipline as ADR-027's refusal of a `MATCHED` badge.
+2. **Which means client-reported coordinates are acceptable here**, unlike the
+   Catastro answer ADR-027 refused to store. The difference is that the
+   Catastro has an authoritative source we can just ask, so a client copy was
+   strictly worse than a live query; photo EXIF has no authority anywhere. The
+   choice is a weak signal or no signal, not a weak copy of a strong one. The
+   Function extracts from whatever it receives; where the browser resized
+   first and stripped them on the way, it sends them alongside.
+3. **Missing coordinates are normal and must not be flagged.** WhatsApp strips
+   EXIF, so do most social platforms; screenshots and edited exports have
+   none; plenty of people keep location services off. Flagging absence would
+   flag nearly every listing and train reviewers to ignore the column.
+
+**Storing it is itself a privacy decision.** These are location data derived
+from an owner's own photos, and an owner who uploads a shot taken at their
+private home tells us where they live. Admin-only, out of every public
+projection, and deleted with the photo.
+
 ## ADR-020 — DeepSeek retained for the AI assistant
 
 - **Status:** ✅ locked 2026-07-19.

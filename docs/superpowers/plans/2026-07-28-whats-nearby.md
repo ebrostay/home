@@ -184,11 +184,10 @@ describe("reachFor", () => {
   it("returns null for a profile the entry has no figures for", () => {
     expect(reachFor(entry, "car")).toBeNull();
   });
-});
 
-describe("profiles", () => {
-  it("ships foot and car", () => {
-    expect([...NEARBY_PROFILES]).toEqual(["foot", "car"]);
+  it("resolves every declared profile independently", () => {
+    const both = { reach: { foot: { metres: 340, minutes: 4 }, car: { metres: 900, minutes: 3 } } };
+    for (const p of NEARBY_PROFILES) expect(reachFor(both, p)).not.toBeNull();
   });
 });
 ```
@@ -459,28 +458,40 @@ public static class NearbyGroups
         _ => throw new ArgumentOutOfRangeException(nameof(group)),
     };
 
-    /// Overpass QL body fragments. Kept here rather than in the client because
-    /// they are query syntax, not UI vocabulary.
-    public static string OverpassFilter(string group) => group switch
+    /// The OSM tag pairs each group searches for. Returned as PAIRS rather than
+    /// as an assembled query string: the caller has to interleave an
+    /// `(around:…)` clause after every selector, and doing that by string
+    /// surgery on an assembled query is the kind of thing that works until
+    /// someone adds a selector containing the separator.
+    public static (string Key, string Value)[] OverpassTags(string group) => group switch
     {
         "transport" =>
-            "node[\"railway\"=\"tram_stop\"];node[\"highway\"=\"bus_stop\"];" +
-            "node[\"railway\"=\"station\"];node[\"amenity\"=\"bicycle_rental\"];" +
-            "node[\"amenity\"=\"taxi\"];",
+        [
+            ("railway", "tram_stop"), ("highway", "bus_stop"),
+            ("railway", "station"), ("amenity", "bicycle_rental"),
+            ("amenity", "taxi"),
+        ],
         "groceries" =>
-            "node[\"shop\"=\"supermarket\"];node[\"amenity\"=\"marketplace\"];" +
-            "node[\"shop\"=\"bakery\"];node[\"shop\"=\"convenience\"];" +
-            "node[\"shop\"=\"mall\"];",
+        [
+            ("shop", "supermarket"), ("amenity", "marketplace"),
+            ("shop", "bakery"), ("shop", "convenience"), ("shop", "mall"),
+        ],
         "food" =>
-            "node[\"amenity\"=\"restaurant\"];node[\"amenity\"=\"cafe\"];" +
-            "node[\"amenity\"=\"bar\"];node[\"amenity\"=\"pub\"];",
+        [
+            ("amenity", "restaurant"), ("amenity", "cafe"),
+            ("amenity", "bar"), ("amenity", "pub"),
+        ],
         "outdoors" =>
-            "node[\"leisure\"=\"park\"];node[\"leisure\"=\"sports_centre\"];" +
-            "node[\"leisure\"=\"swimming_pool\"];node[\"leisure\"=\"playground\"];",
+        [
+            ("leisure", "park"), ("leisure", "sports_centre"),
+            ("leisure", "swimming_pool"), ("leisure", "playground"),
+        ],
         "health" =>
-            "node[\"amenity\"=\"pharmacy\"];node[\"amenity\"=\"clinic\"];" +
-            "node[\"amenity\"=\"hospital\"];node[\"amenity\"=\"dentist\"];" +
-            "node[\"amenity\"=\"veterinary\"];",
+        [
+            ("amenity", "pharmacy"), ("amenity", "clinic"),
+            ("amenity", "hospital"), ("amenity", "dentist"),
+            ("amenity", "veterinary"),
+        ],
         _ => throw new ArgumentOutOfRangeException(nameof(group)),
     };
 
@@ -902,10 +913,13 @@ public sealed class OverpassClient(
         double lat, double lng, string group, CancellationToken ct)
     {
         var radius = NearbyGroups.RadiusMetres(group);
-        var filters = NearbyGroups.OverpassFilter(group)
-            .Replace(";", $"(around:{radius},{lat.ToString(System.Globalization.CultureInfo.InvariantCulture)},{lng.ToString(System.Globalization.CultureInfo.InvariantCulture)});");
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var around = $"(around:{radius},{lat.ToString(inv)},{lng.ToString(inv)})";
 
-        var ql = $"[out:json][timeout:20];({filters});out body {MaxPois * 3};";
+        var selectors = string.Concat(NearbyGroups.OverpassTags(group)
+            .Select(t => $"node[\"{t.Key}\"=\"{t.Value}\"]{around};"));
+
+        var ql = $"[out:json][timeout:20];({selectors});out body {MaxPois * 3};";
 
         var http = factory.CreateClient("overpass");
         using var res = await http.PostAsync(Endpoint,

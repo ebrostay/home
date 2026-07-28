@@ -27,10 +27,63 @@ import type { LabSection } from "@/components/design/SectionNavLab";
 // switching to the dropdown removes the row, which makes the row fit, which
 // switches back.
 
-/** Where the editor's page layout stops having a left column at all. This one
- *  IS a breakpoint rather than a measurement, because it is a decision about
- *  the page grid — whether a second column exists — not about a label. */
-export const RAIL_MIN = 896; // 56rem, the editor's current value
+/**
+ * Where the editor's page layout stops having a left column. This one IS a
+ * breakpoint rather than a measurement, because it is a decision about the
+ * page grid — whether a second column exists — not about a label.
+ *
+ * In **rem**, and resolved against the root font size at measure time, not
+ * baked into a pixel number. A reader who sets a larger default font gets a
+ * 13rem rail column that is 312px rather than 208px, so the width at which two
+ * columns stop fitting moves with them. Tailwind's `min-[56rem]:` in the live
+ * page is already rem-based; a JS constant of 896 would have quietly been the
+ * one part that is not.
+ */
+export const RAIL_MIN_REM = 56;
+
+/**
+ * How many pixels a `rem` is, tracked live.
+ *
+ * Measured off a 1rem probe element watched by a ResizeObserver, rather than
+ * read from `getComputedStyle` on a `resize` listener. Three reasons, each of
+ * which cost a round of this being wrong:
+ *
+ *  1. There is no `document` during the static prerender. Reading one there
+ *     fails the export — which is how the first version was caught.
+ *  2. `resize` does not fire when a reader changes their browser's default
+ *     font size. Zoom fires it; a font preference does not, so the threshold
+ *     silently kept the old value. A ResizeObserver on something measured in
+ *     rem fires for BOTH, and for a CSS change too.
+ *  3. A value differing between the server render and the first client render
+ *     is a hydration mismatch, so the first render uses the same 16 the server
+ *     assumed and corrects itself immediately after mount.
+ */
+function useRootFontPx() {
+  const probe = useRef<HTMLSpanElement>(null);
+  const [px, setPx] = useState(16);
+
+  useEffect(() => {
+    const el = probe.current;
+    if (!el) return;
+    const read = () => setPx(el.getBoundingClientRect().height || 16);
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return {
+    px,
+    /** Must be rendered for the measurement to exist. */
+    probe: (
+      <span
+        ref={probe}
+        aria-hidden
+        className="pointer-events-none absolute h-[1rem] w-0"
+      />
+    ),
+  };
+}
 
 export function SectionNavLadder({
   sections,
@@ -83,7 +136,12 @@ export function SectionNavLadder({
         <span className="data text-[0.6875rem] text-muted">{width}px</span>
       </div>
 
-      <div className="flex flex-wrap items-start gap-8">
+      {/* `shrink-0` and a scrolling row, not flex-wrap. As flex children these
+          frames were being shrunk to fit the window — at a chosen 1100 they
+          were really 858 — so the demo showed correct behaviour under a width
+          it was not actually at, which is worse than showing nothing. Now the
+          frame is the width the label claims and the row scrolls instead. */}
+      <div className="flex items-start gap-8 overflow-x-auto pb-2">
         <Ladder page="manage" width={width} sections={sections} labels={labels} />
         <Ladder page="edit" width={width} sections={sections} labels={labels} />
       </div>
@@ -114,12 +172,20 @@ function Ladder({
 }) {
   // The editor keeps its rail while the page has room for two columns. Manage
   // has no rail rung at all — it never had a left column.
-  const rail = page === "edit" && width >= RAIL_MIN;
+  //
+  // Unconditionally, before the `&&` below — inside it the short-circuit would
+  // skip the hook on Manage's ladder and change the hook order between the two.
+  const rem = useRootFontPx();
+  // Resolved from the live rem rather than compared against a pixel constant,
+  // so a reader running a larger default font moves this threshold with
+  // everything else on the page.
+  const rail = page === "edit" && width >= RAIL_MIN_REM * rem.px;
   const [barFits, setBarFits] = useState(true);
   const stage = rail ? labels.stageRail : barFits ? labels.stageBar : labels.stageSheet;
 
   return (
-    <div className="flex flex-col gap-2" style={{ width }}>
+    <div className="relative flex shrink-0 flex-col gap-2" style={{ width }}>
+      {rem.probe}
       <div className="flex items-baseline justify-between gap-3">
         <p className="data text-[0.65625rem] tracking-[0.1em] text-ink">
           {page === "manage" ? labels.manage : labels.edit}
@@ -199,9 +265,20 @@ function FittingBar({
       const outer = box.current;
       const inner = ruler.current;
       if (!outer || !inner) return;
-      // The ruler is always at natural width, so this answers "would the bar
-      // fit" whether or not the bar is currently on screen.
-      const next = inner.scrollWidth <= outer.clientWidth;
+      // getBoundingClientRect, NOT scrollWidth/clientWidth. Those round to
+      // whole pixels — measured here, a ruler 755.4px wide reports 755 — so at
+      // the threshold the bar can be judged to fit when it is a fraction too
+      // wide. Fractional layout is the normal case at browser zoom levels that
+      // are not multiples of 100%, which is exactly when this would show.
+      //
+      // The ruler is always laid out at its natural width, so this answers
+      // "would the bar fit" whether or not the bar is currently on screen.
+      const wanted = inner.getBoundingClientRect().width;
+      const available = outer.getBoundingClientRect().width;
+      // A pixel of slack. Both numbers jitter sub-pixel during a resize or a
+      // transition, and without slack the two rungs can trade places for a
+      // frame at exactly the crossover.
+      const next = wanted <= available + 1;
       setFits(next);
       onFit(next);
     };

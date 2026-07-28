@@ -58,4 +58,25 @@ builder.Services.AddSingleton<Ebrostay.Api.Services.PlatformSettings>();
 builder.Services.AddSingleton<Ebrostay.Api.Services.PhotoStore>();
 builder.Services.AddSingleton<Ebrostay.Api.Services.PhotoPipeline>();
 
+builder.Services.AddHttpClient("ors", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(5);
+    // Required by ORS. A browser will not let us set this, which is one of the
+    // three reasons this call cannot be client-direct.
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("ebrostay/2.0 (info@ebrostay.com)");
+    c.DefaultRequestHeaders.Add("Authorization",
+        Environment.GetEnvironmentVariable("ORS_API_KEY") ?? "");
+});
+
+builder.Services.AddHttpClient("overpass", c =>
+{
+    // Overpass is genuinely slow; 5s would time out on legitimate answers.
+    c.Timeout = TimeSpan.FromSeconds(10);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("ebrostay/2.0 (info@ebrostay.com)");
+});
+
+builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.OrsBudget(
+    sp.GetRequiredService<Database>().GetContainer("serviceBudget")));
+builder.Services.AddSingleton<Ebrostay.Api.Services.OrsClient>();
+
 builder.Build().Run();

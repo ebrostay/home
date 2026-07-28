@@ -1411,6 +1411,11 @@ Two guardrails, and they are the load-bearing part:
   the failure paths cannot otherwise be tested at all.
 - **The ORS account is personal**, one per person by HeiGIT's terms. An
   operational concern only if someone other than the owner has to run this.
+- **Deploying `properties`'s indexing policy triggers a background reindex.**
+  Task 2 gave the live, populated `properties` container its first explicit
+  `indexingPolicy` (excluding `/nearby/*`, the embedded array this ADR adds).
+  Cosmos runs the transformation non-disruptively in the background, but it
+  is not instant — expect it on the next deploy of `infra/main.bicep`.
 
 ---
 

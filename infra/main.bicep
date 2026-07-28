@@ -64,7 +64,15 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
 // the "What's nearby" plan), so it is excluded from indexing here — every
 // owner save would otherwise pay to index up to 24 embedded entries for
 // nothing. /photos/* and /availability/* are almost certainly in the same
-// position but are pre-existing and out of scope for this change.
+// position but are pre-existing and out of scope for this change. `_etag`
+// is also excluded to match Cosmos's implicit default policy (the one in
+// effect before this explicit policy existed) — otherwise it would start
+// being indexed for no benefit.
+//
+// This is the first explicit indexingPolicy ever applied to `properties`,
+// which is live and populated. Deploying it triggers a Cosmos background
+// index transformation (non-disruptive, but not instant) — see ADR-028,
+// "Consequences to watch", docs/spec-v2/05-decision-log.md.
 var propertiesIndexingPolicy = {
   indexingMode: 'consistent'
   includedPaths: [
@@ -72,6 +80,7 @@ var propertiesIndexingPolicy = {
   ]
   excludedPaths: [
     { path: '/nearby/*' }
+    { path: '/"_etag"/?' }
   ]
 }
 

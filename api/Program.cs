@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -78,5 +79,11 @@ builder.Services.AddHttpClient("overpass", c =>
 builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.OrsBudget(
     sp.GetRequiredService<Database>().GetContainer("serviceBudget")));
 builder.Services.AddSingleton<Ebrostay.Api.Services.OrsClient>();
+
+builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.OverpassClient(
+    sp.GetRequiredService<IHttpClientFactory>(),
+    sp.GetRequiredService<Database>().GetContainer("nearbyCandidates"),
+    sp.GetRequiredService<ILogger<Ebrostay.Api.Services.OverpassClient>>()));
+builder.Services.AddSingleton<Ebrostay.Api.Services.NearbyLookup>();
 
 builder.Build().Run();

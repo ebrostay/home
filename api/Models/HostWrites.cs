@@ -258,19 +258,37 @@ public static class HostValidation
         var nearby = u.Nearby ?? [];
         if (nearby.Length > MaxNearby) return "nearby_too_many";
 
+        // Group validity has to be checked before anything groups BY group —
+        // otherwise seven entries with a bad or missing group would fail
+        // "too many in a group" instead of the more fundamental "not even a
+        // real group" they actually have.
+        foreach (var n in nearby)
+            if (n.Group is null || !NearbyGroups.All.Contains(n.Group)) return "nearby_bad_group";
+
         foreach (var g in nearby.GroupBy(n => n.Group))
             if (g.Count() > MaxNearbyPerGroup) return "nearby_group_full";
 
+        // Identity is the id — same posture as CheckDeclined's `(field,
+        // source)` pair below. Two writes claiming the same existing id
+        // would both resolve to the same stored entry in the merge and get
+        // saved back under one shared id, corrupting the document (the next
+        // save's id lookup would throw). Refused here rather than silently
+        // deduplicated.
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var n in nearby)
+            if (n.Id is not null && !seenIds.Add(n.Id)) return "nearby_duplicate_id";
+
         foreach (var n in nearby)
         {
-            if (n.Group is null || !NearbyGroups.All.Contains(n.Group)) return "nearby_bad_group";
             if (string.IsNullOrWhiteSpace(n.Name) || n.Name.Length > MaxNearbyNameLength)
                 return "nearby_bad_name";
             if (!NearbyGroups.InZaragoza(n.Lat, n.Lng)) return "nearby_out_of_area";
 
             if (n.Type is not null)
             {
-                if (!NearbyGroups.IsKnownType(n.Group, n.Type)) return "nearby_bad_type";
+                // `n.Group` is non-null here — the loop above already refused
+                // any entry whose group was null or unknown.
+                if (!NearbyGroups.IsKnownType(n.Group!, n.Type)) return "nearby_bad_type";
             }
             else
             {

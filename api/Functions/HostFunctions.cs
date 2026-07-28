@@ -186,7 +186,15 @@ public class HostFunctions(
         // is the case a naive "unchanged → keep" rule gets exactly backwards —
         // `pinMoved` (captured above, before doc.Lat/Lng were overwritten) is
         // what stops that.
-        var storedNearby = doc.Nearby.ToDictionary(n => n.Id, StringComparer.Ordinal);
+        // Grouped rather than ToDictionary, same defensive reason as the
+        // photos' `kept` a few lines above: a document that somehow carried
+        // the same id twice must not throw and brick every future save of
+        // this listing. Validation refuses a payload that would CREATE a
+        // duplicate (see nearby_duplicate_id below); this is what stops an
+        // already-corrupted document from being unrecoverable.
+        var storedNearby = doc.Nearby
+            .GroupBy(n => n.Id, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var writes = update.Nearby ?? [];
         var merged = new List<NearbyEntry>(writes.Length);
         var needsMeasuring = new List<int>();
@@ -220,7 +228,12 @@ public class HostFunctions(
                     : new Dictionary<string, NearbyReach>(),
                 OsmId: known?.OsmId,
                 MeasuredAt: known is not null && !moved && !pinMoved ? known.MeasuredAt : null,
-                NeedsCheck: false);
+                // Carried over under the SAME reuse test as Reach/MeasuredAt:
+                // the flag was earned by a measurement, and only that
+                // measurement being reused (not re-run) justifies keeping it.
+                // Defaulting this to false would silently clear a real flag
+                // on any save that happens not to touch this entry.
+                NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck);
 
             merged.Add(entry);
             if (entry.Reach.Count == 0) needsMeasuring.Add(i);

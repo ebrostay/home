@@ -1426,12 +1426,21 @@ Nearby: [.. p.Nearby.Select(n => new PublicNearby(
 var nearby = update.Nearby ?? [];
 if (nearby.Length > 24) return "nearby_too_many";
 
+// Group validity FIRST, so a payload of bogus groups reports the specific
+// error rather than the cap one.
+foreach (var n in nearby)
+    if (n.Group is null || !NearbyGroups.All.Contains(n.Group)) return "nearby_bad_group";
+
 foreach (var g in nearby.GroupBy(n => n.Group))
     if (g.Count() > 6) return "nearby_group_full";
 
+// A repeated id would merge two writes onto one stored entry.
+var ids = nearby.Where(n => n.Id is not null).Select(n => n.Id!).ToArray();
+if (ids.Length != ids.Distinct(StringComparer.Ordinal).Count())
+    return "nearby_duplicate_id";
+
 foreach (var n in nearby)
 {
-    if (n.Group is null || !NearbyGroups.All.Contains(n.Group)) return "nearby_bad_group";
     if (string.IsNullOrWhiteSpace(n.Name) || n.Name.Length > 80) return "nearby_bad_name";
     if (!NearbyGroups.InZaragoza(n.Lat, n.Lng)) return "nearby_out_of_area";
 
@@ -1472,7 +1481,17 @@ and `RouteCache cache` — added in the same style as its existing ones.
 var pinMoved = Math.Abs(doc.Lat - update.Lat) > 0.000001
     || Math.Abs(doc.Lng - update.Lng) > 0.000001;
 
-var storedNearby = doc.Nearby.ToDictionary(n => n.Id, StringComparer.Ordinal);
+// Grouped, not ToDictionary — exactly as the photo merge above does, and for
+// the same reason its comment gives: a document that somehow carried the same
+// id twice would throw here and turn EVERY future save of this listing into a
+// 500 the owner cannot get out of.
+var storedNearby = doc.Nearby
+    .GroupBy(n => n.Id, StringComparer.Ordinal)
+    .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+// Consumed ids, so a payload naming the same entry twice cannot mint two
+// stored entries under one id and create that corrupted document in the first
+// place. The second claim is treated as a new entry.
+var claimed = new HashSet<string>(StringComparer.Ordinal);
 var writes = update.Nearby ?? [];
 var merged = new List<NearbyEntry>(writes.Length);
 var needsMeasuring = new List<int>();
@@ -1480,7 +1499,8 @@ var needsMeasuring = new List<int>();
 for (var i = 0; i < writes.Length; i++)
 {
     var w = writes[i];
-    var known = w.Id is not null && storedNearby.TryGetValue(w.Id, out var prev) ? prev : null;
+    var known = w.Id is not null && claimed.Add(w.Id)
+        && storedNearby.TryGetValue(w.Id, out var prev) ? prev : null;
 
     var moved = known is not null
         && (Math.Abs(known.Lat - w.Lat) > 0.000001
@@ -1501,7 +1521,11 @@ for (var i = 0; i < writes.Length; i++)
             : new Dictionary<string, NearbyReach>(),
         OsmId: known?.OsmId,
         MeasuredAt: known is not null && !moved && !pinMoved ? known.MeasuredAt : null,
-        NeedsCheck: false);
+        // Conditioned on the same reuse test as Reach and MeasuredAt. Resetting
+        // it unconditionally would silently clear the flag the next time the
+        // owner edited anything else in the listing, without the entry ever
+        // having been re-verified — which is the whole point of the flag.
+        NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck);
 
     merged.Add(entry);
     if (entry.Reach.Count == 0) needsMeasuring.Add(i);

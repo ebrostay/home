@@ -280,10 +280,13 @@ function EditContent() {
     // zone is permanently half-covered at the end of the page.
     <main
       className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-32"
-      // Header + context bar — the same measurement Manage makes, because it
-      // is the same two bars. Without it the section nav parked level with the
-      // ContextBar and, one z-index lower, vanished behind it.
-      style={{ "--section-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
+      style={{
+        // Header + the context bar's MEASURED height. The fallback is the
+        // one-row figure this used to hardcode, so the first paint and the
+        // static export are unchanged; ContextBar overwrites it as soon as it
+        // mounts, and again whenever its buttons wrap to a second row.
+        "--section-nav-top": "calc(var(--header-h) + var(--context-bar-h, 3.4375rem))",
+      } as React.CSSProperties}
     >
       <ContextBar property={property} current="edit" />
 

@@ -247,9 +247,13 @@ function ManageContent() {
   return (
     <main
       className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24"
-      // Header + context bar. Both owner pages park their section nav here,
-      // so the name is not page-specific and the value lives in one shape.
-      style={{ "--section-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
+      style={{
+        // Header + the context bar's MEASURED height. The fallback is the
+        // one-row figure this used to hardcode, so the first paint and the
+        // static export are unchanged; ContextBar overwrites it as soon as it
+        // mounts, and again whenever its buttons wrap to a second row.
+        "--section-nav-top": "calc(var(--header-h) + var(--context-bar-h, 3.4375rem))",
+      } as React.CSSProperties}
     >
       <ContextBar property={property} current="manage" />
 

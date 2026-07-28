@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { BarChart3, ChevronLeft, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -13,6 +14,14 @@ import { bucketOf } from "@/lib/portfolio";
 //
 // Shared by both halves of the owner portal, which is what makes the pair feel
 // like one place: the only difference is which way the cross-link points.
+//
+// It PUBLISHES ITS OWN HEIGHT as `--context-bar-h`, because the section nav
+// parks directly beneath it and this bar does not have a fixed height: below
+// roughly 900px the buttons wrap to a second row and it grows from 55px to
+// 91px. Both pages used to hardcode the one-row figure, so as soon as it
+// wrapped the section nav parked 36px too high and vanished underneath it —
+// the same class of bug twice, because a measurement was written down as a
+// constant instead of being measured.
 
 const PILL: Record<string, { chip: string; dot: string }> = {
   live: { chip: "bg-brand-soft text-brand-strong", dot: "bg-brand" },
@@ -34,9 +43,35 @@ export function ContextBar({
   const t = useTranslations("host");
   const bucket = bucketOf(property);
   const soon = t("soon");
+  const bar = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+
+    // On the root, because the consumer is a sibling several levels away and
+    // there is exactly one of these bars per page. Cleared on unmount so a
+    // page without a context bar cannot inherit a stale height.
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--context-bar-h",
+        `${el.getBoundingClientRect().height}px`,
+      );
+
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--context-bar-h");
+    };
+  }, []);
 
   return (
-    <div className="sticky top-(--header-h) z-[25] -mx-6 flex flex-wrap items-center gap-3 border-b border-line bg-surface-2 px-6 py-2.5">
+    <div
+      ref={bar}
+      className="sticky top-(--header-h) z-[25] -mx-6 flex flex-wrap items-center gap-3 border-b border-line bg-surface-2 px-6 py-2.5"
+    >
       {/* The label goes on a phone but the chevron stays: with it, the bar
           fits the home's name and its state on one line. */}
       <Link

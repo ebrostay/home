@@ -427,6 +427,8 @@ git commit -m "feat(api): nearby entry, route and cache document models"
 - [ ] **Step 1: Create the file**
 
 ```csharp
+using System.Globalization;
+
 namespace Ebrostay.Api.Services;
 
 /// The closed vocabulary, and the ONLY place a group's search radius lives.
@@ -505,7 +507,6 @@ public static class NearbyGroups
         ("railway", "tram_stop") => "tram",
         ("highway", "bus_stop") => "bus",
         ("railway", "station") => "rail",
-        ("railway", "subway_entrance") => "metro",
         ("amenity", "bicycle_rental") => "bikeshare",
         ("amenity", "taxi") => "taxi",
         ("shop", "supermarket") => "supermarket",
@@ -529,6 +530,10 @@ public static class NearbyGroups
         _ => null,
     };
 
+    /// `tapas`, `river` and `metro` are owner-selectable only: no OSM tag
+    /// maps to them, so they can never arrive from a lookup. That is
+    /// deliberate — without saying so, a reader cannot tell a curated type
+    /// from a mapping somebody forgot to write.
     private static readonly Dictionary<string, string[]> TypesByGroup = new()
     {
         ["transport"] = ["tram", "bus", "rail", "metro", "bikeshare", "taxi"],
@@ -569,8 +574,13 @@ public static class NearbyGroups
         lat is >= 41.50 and <= 41.80 && lng is >= -1.10 and <= -0.65;
 
     /// Cache cell for the Overpass answer — 3 decimal places, about 110 m.
+    ///
+    /// InvariantCulture is load-bearing, not decoration: this string is a
+    /// Cosmos partition key, and a host running under a comma-decimal locale
+    /// would write "41,650|..." into a different partition and silently
+    /// fragment the cache. Same reason PlatformSettings and HostWrites pass it.
     public static string Cell(double lat, double lng, string group) =>
-        $"{lat:F3}|{lng:F3}|{group}";
+        string.Create(CultureInfo.InvariantCulture, $"{lat:F3}|{lng:F3}|{group}");
 }
 ```
 

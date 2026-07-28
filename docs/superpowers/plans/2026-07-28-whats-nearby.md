@@ -1464,6 +1464,11 @@ and `RouteCache cache` — added in the same style as its existing ones.
 // The pin is the origin of every one of these distances, so when it moves they
 // are ALL wrong, even though no entry changed. That is the case a naive
 // "unchanged → keep" rule gets exactly backwards.
+// CAPTURE THIS RIGHT AFTER VALIDATION, BEFORE ANY FIELD COPY. By the time the
+// merge runs, doc.Lat/doc.Lng have already been overwritten with the incoming
+// values by the existing assignment block, so comparing them here would make
+// pinMoved permanently false — and pin movement is the one case the whole
+// re-measure rule exists for.
 var pinMoved = Math.Abs(doc.Lat - update.Lat) > 0.000001
     || Math.Abs(doc.Lng - update.Lng) > 0.000001;
 

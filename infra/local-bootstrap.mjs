@@ -39,6 +39,9 @@ const CONTAINERS = [
   { id: "profiles", partitionKey: "/id" },
   { id: "bookingRequests", partitionKey: "/propertyId" },
   { id: "inquiries", partitionKey: "/id" },
+  { id: "nearbyRoutes", partitionKey: "/propertyId" },
+  { id: "nearbyCandidates", partitionKey: "/cell" },
+  { id: "serviceBudget", partitionKey: "/id" },
 ];
 
 // The emulator serves its gateway without direct-mode replica addresses, the

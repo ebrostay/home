@@ -60,11 +60,47 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
   }
 }
 
+// `properties` never queries on the embedded Nearby array (§2.2 / task-2 of
+// the "What's nearby" plan), so it is excluded from indexing here — every
+// owner save would otherwise pay to index up to 24 embedded entries for
+// nothing. /photos/* and /availability/* are almost certainly in the same
+// position but are pre-existing and out of scope for this change.
+var propertiesIndexingPolicy = {
+  indexingMode: 'consistent'
+  includedPaths: [
+    { path: '/*' }
+  ]
+  excludedPaths: [
+    { path: '/nearby/*' }
+  ]
+}
+
+// Route geometry is looked up only by its point id (id == "{entryId}-{profile}")
+// within a property's partition; nothing ever queries the polyline/metres/
+// seconds fields, so only the partition key is indexed.
+var nearbyRoutesIndexingPolicy = {
+  indexingMode: 'consistent'
+  includedPaths: [
+    { path: '/propertyId/?' }
+  ]
+  excludedPaths: [
+    { path: '/*' }
+  ]
+}
+
 var containers = [
-  { name: 'properties', partitionKey: '/id' }
-  { name: 'profiles', partitionKey: '/id' }
-  { name: 'bookingRequests', partitionKey: '/propertyId' }
-  { name: 'inquiries', partitionKey: '/id' }
+  { name: 'properties', partitionKey: '/id', defaultTtl: null, indexingPolicy: propertiesIndexingPolicy }
+  { name: 'profiles', partitionKey: '/id', defaultTtl: null, indexingPolicy: null }
+  { name: 'bookingRequests', partitionKey: '/propertyId', defaultTtl: null, indexingPolicy: null }
+  { name: 'inquiries', partitionKey: '/id', defaultTtl: null, indexingPolicy: null }
+  // POIs do not move; cached Overpass answers per rounded cell + group.
+  { name: 'nearbyCandidates', partitionKey: '/cell', defaultTtl: 2592000, indexingPolicy: null }
+  // Encoded route geometry, kept separate from `properties` so an anonymous
+  // guest's lazy route fetch can never race the owner's save of the listing.
+  { name: 'nearbyRoutes', partitionKey: '/propertyId', defaultTtl: 15552000, indexingPolicy: nearbyRoutesIndexingPolicy }
+  // Cross-instance daily call budget for the ORS matrix (Consumption plan
+  // scales out, so an in-process counter would not be a limit at all).
+  { name: 'serviceBudget', partitionKey: '/id', defaultTtl: 172800, indexingPolicy: null }
 ]
 
 resource sqlContainers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = [
@@ -72,13 +108,17 @@ resource sqlContainers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/conta
     parent: database
     name: c.name
     properties: {
-      resource: {
-        id: c.name
-        partitionKey: {
-          paths: [c.partitionKey]
-          kind: 'Hash'
-        }
-      }
+      resource: union(
+        {
+          id: c.name
+          partitionKey: {
+            paths: [c.partitionKey]
+            kind: 'Hash'
+          }
+        },
+        c.defaultTtl == null ? {} : { defaultTtl: c.defaultTtl },
+        c.indexingPolicy == null ? {} : { indexingPolicy: c.indexingPolicy }
+      )
     }
   }
 ]

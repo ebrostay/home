@@ -158,6 +158,7 @@ public class PropertyDoc
     public string? AvailableFrom { get; set; }
 
     public PropertyPhoto[] Photos { get; set; } = [];
+    public NearbyEntry[] Nearby { get; set; } = [];
     public AvailabilityRange[] Availability { get; set; } = [];
 
     public string? CreatedAt { get; set; }

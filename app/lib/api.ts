@@ -2,6 +2,8 @@
 // Same-origin "/api" in production (SWA); NEXT_PUBLIC_API_BASE points dev
 // at the local func host (func start --cors http://localhost:3000).
 
+import type { NearbyGroup, NearbyProfile, Reach } from "@/lib/nearby";
+
 export type Bilingual = { es: string | null; en: string | null };
 export type PublicRange = { start: string; end: string }; // end exclusive
 /** `cardUrl`/`detailUrl` are the sizes the upload pipeline derives (§2.2.2);
@@ -14,6 +16,51 @@ export type PropertyPhoto = {
   detailUrl: string | null;
   isFloorplan: boolean;
   sortOrder: number;
+};
+
+/** How far a place is, by one means of travel — `api/Models/NearbyModels.cs`
+ *  `NearbyReach`, keyed by `NearbyProfile`. A profile the router could not
+ *  reach on (e.g. no route on foot) is simply absent, never a zeroed entry —
+ *  use `reachFor` from `@/lib/nearby` rather than indexing this map, so an
+ *  absent profile cannot be read as a distance of zero. */
+export type NearbyReachMap = Partial<Record<NearbyProfile, Reach>>;
+
+/** A nearby entry as a visitor may see it (`api/Models/PublicModels.cs`
+ *  `PublicNearby`). Narrower than the owner's shape on purpose: `osmId`,
+ *  `measuredAt` and `needsCheck` are provenance and internal state — see
+ *  `HostNearbyEntry`, which is this shape plus those three fields. */
+export type PublicNearbyEntry = {
+  id: string;
+  group: NearbyGroup;
+  type: string | null;
+  customType: Bilingual | null;
+  name: string;
+  lat: number;
+  lng: number;
+  reach: NearbyReachMap;
+};
+
+/** A nearby entry as the OWNER sees it (`api/Models/HostModels.cs`
+ *  `HostListing.Nearby`, the raw `NearbyEntry`) — wider than the public
+ *  projection: `osmId`/`measuredAt` are provenance, and `needsCheck` flags an
+ *  entry farther than its group's radius allows and wanting a second look. */
+export type HostNearbyEntry = PublicNearbyEntry & {
+  osmId: string | null;
+  measuredAt: string | null;
+  needsCheck: boolean;
+};
+
+/** One Overpass POI near a point, with its measured reach — what the owner's
+ *  candidate search (`GET /api/host/nearby/candidates`) answers with, before
+ *  the owner has chosen to save it as a `HostNearbyEntry` (`api/Services/
+ *  NearbyLookup.cs` `NearbyCandidate`). */
+export type NearbyCandidate = {
+  osmId: string;
+  name: string;
+  type: string;
+  lat: number;
+  lng: number;
+  reach: NearbyReachMap;
 };
 
 export type PropertySummary = {
@@ -69,6 +116,7 @@ export type PropertyDetail = Omit<
    *  implies (bills, deposit) are derived instead — see StayTerms.tsx. */
   stayTerms: string[];
   photos: PropertyPhoto[];
+  nearby: PublicNearbyEntry[];
 };
 
 // The five states a listing moves through (spec-v2 §2.2.1). Stored values, not
@@ -184,6 +232,7 @@ export type HostListing = {
   couplesAllowed: boolean;
   selfCheckin: boolean;
   photos: HostPhoto[];
+  nearby: HostNearbyEntry[];
 };
 
 /** A logged booking request, as the owner is allowed to see it. No tenant
@@ -330,6 +379,90 @@ export const saveHostAvailability = (id: string, blocks: AvailabilityWrite[]) =>
   put<HostRange[]>(`/host/properties/${encodeURIComponent(id)}/availability`, {
     blocks,
   });
+
+// ---------------------------------------------------------------------------
+// "What's nearby" (ADR-028): the shared vocabulary, the owner's candidate
+// search and route preview, and the public, anonymous per-entry route lookup.
+// These four hit `api/Functions/NearbyFunctions.cs` directly with `fetch`
+// rather than the `get`/`put` helpers, because the vocabulary and route calls
+// are cancellable mid-flight (the map redraws on every candidate hover) and
+// `get`/`put` do not thread an `AbortSignal`.
+// ---------------------------------------------------------------------------
+
+export type RouteLine = { polyline: string; metres: number; seconds: number };
+
+/** The type vocabulary, served from the API so `NearbyGroups.cs` stays its
+ *  one definition (`app/lib/nearby.ts` keeps only the compile-time groups and
+ *  profiles). Anonymous and cacheable — see the route comment above it. */
+export async function fetchNearbyVocabulary(
+  signal?: AbortSignal,
+): Promise<{ groups: { key: string; types: string[] }[]; profiles: string[] }> {
+  const res = await fetch(`${BASE}/api/nearby/vocabulary`, { signal });
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as { groups: { key: string; types: string[] }[]; profiles: string[] };
+}
+
+/** Owner-authenticated Overpass search around a point, bounded to Zaragoza and
+ *  a known group server-side. Answers with candidates that already carry a
+ *  measured `reach` — the editor never measures anything itself. */
+export async function fetchNearbyCandidates(
+  lat: number,
+  lng: number,
+  group: NearbyGroup,
+  signal?: AbortSignal,
+): Promise<NearbyCandidate[]> {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    group,
+  });
+  const res = await fetch(`${BASE}/api/host/nearby/candidates?${params}`, { signal });
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as NearbyCandidate[];
+}
+
+/** Owner-authenticated route preview for a candidate not yet saved — stores
+ *  nothing, unlike `fetchNearbyRoute` below. */
+export async function fetchPreviewRoute(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  profile: NearbyProfile,
+  signal?: AbortSignal,
+): Promise<RouteLine> {
+  const params = new URLSearchParams({
+    lat: String(from.lat),
+    lng: String(from.lng),
+    toLat: String(to.lat),
+    toLng: String(to.lng),
+    profile,
+  });
+  const res = await fetch(`${BASE}/api/host/nearby/preview-route?${params}`, { signal });
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as RouteLine;
+}
+
+/** Loading the route for one SAVED entry. Anonymous, and takes ids rather than
+ *  coordinates — `RouteCache` on the server is the only place that turns them
+ *  into a `from`/`to` pair, which is what stops an anonymous caller from
+ *  routing arbitrary points at our expense.
+ *
+ *  The 503 case is distinguished from a 404 because they mean different
+ *  things to the reader: "we could not reach the routing service" is
+ *  temporary, "no such entry" is not. Both surface as `ApiError.status`, so a
+ *  caller checks that rather than the (absent, on a 404) body. */
+export async function fetchNearbyRoute(
+  propertyId: string,
+  entryId: string,
+  profile: NearbyProfile,
+  signal?: AbortSignal,
+): Promise<RouteLine> {
+  const res = await fetch(
+    `${BASE}/api/properties/${encodeURIComponent(propertyId)}/nearby/${encodeURIComponent(entryId)}/route?profile=${profile}`,
+    { signal },
+  );
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as RouteLine;
+}
 
 export const biText = (b: Bilingual | null | undefined, locale: string) =>
   (locale === "en" ? b?.en ?? b?.es : b?.es ?? b?.en) ?? "";

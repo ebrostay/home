@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Ebrostay.Api.Services;
 
 namespace Ebrostay.Api.Models;
 
@@ -38,6 +39,18 @@ public record BilingualWrite(string? Es, string? En);
 /// separate, still-unbuilt path (ADR-019, ADR-027).
 public record PhotoWrite(string? Url, bool IsFloorplan);
 
+/// What a client may say about a nearby entry. Note what is ABSENT: reach
+/// figures. They are measured server-side and never accepted (ADR-028
+/// Decision 8), the same posture as photo URLs in ADR-027 Decision 3.
+public record NearbyWrite(
+    string? Id,
+    string? Group,
+    string? Type,
+    BilingualWrite? CustomType,
+    string? Name,
+    double Lat,
+    double Lng);
+
 /// The content half of a listing (ADR-025). Everything here is a claim about
 /// the home, so saving it sends an approved listing back to the queue — which
 /// is the whole reason it is a different payload from PricingUpdate rather
@@ -67,7 +80,8 @@ public record DetailsUpdate(
     bool SmokingAllowed,
     bool CouplesAllowed,
     bool SelfCheckin,
-    PhotoWrite[]? Photos);
+    PhotoWrite[]? Photos,
+    NearbyWrite[]? Nearby);
 
 /// The only status move an owner may make on their own (ADR-024): closing a
 /// listing to new requests, and reopening it. Publishing is an admin act and
@@ -119,6 +133,14 @@ public static class HostValidation
     /// that a typo of 500 is caught.
     public const int MinFloor = -2;
     public const int MaxFloor = 60;
+
+    /// Bounded per group and in total (ADR-028 Decision 6): six of one kind is
+    /// already more than a visitor reads, and 24 keeps the whole feature "tens,
+    /// not thousands" like the calendar above.
+    public const int MaxNearby = 24;
+    public const int MaxNearbyPerGroup = 6;
+    public const int MaxNearbyNameLength = 80;
+    public const int MaxNearbyCustomTypeLength = 40;
 
     /// Four fields, two sources — eight combinations, and identity is the pair,
     /// so a correct client never exceeds eight. The cap is what keeps that true
@@ -231,6 +253,36 @@ public static class HostValidation
             // different path and does not exist yet (ADR-019).
             if (p.Url is null || !known.Contains(p.Url)) return "photo_unknown";
             if (!seen.Add(p.Url)) return "photo_duplicate";
+        }
+
+        var nearby = u.Nearby ?? [];
+        if (nearby.Length > MaxNearby) return "nearby_too_many";
+
+        foreach (var g in nearby.GroupBy(n => n.Group))
+            if (g.Count() > MaxNearbyPerGroup) return "nearby_group_full";
+
+        foreach (var n in nearby)
+        {
+            if (n.Group is null || !NearbyGroups.All.Contains(n.Group)) return "nearby_bad_group";
+            if (string.IsNullOrWhiteSpace(n.Name) || n.Name.Length > MaxNearbyNameLength)
+                return "nearby_bad_name";
+            if (!NearbyGroups.InZaragoza(n.Lat, n.Lng)) return "nearby_out_of_area";
+
+            if (n.Type is not null)
+            {
+                if (!NearbyGroups.IsKnownType(n.Group, n.Type)) return "nearby_bad_type";
+            }
+            else
+            {
+                // The escape hatch: Spanish required, English optional and falling
+                // back to it, mirroring copyEnApproved rather than inventing a new
+                // state.
+                var es = n.CustomType?.Es?.Trim();
+                if (string.IsNullOrEmpty(es) || es.Length > MaxNearbyCustomTypeLength)
+                    return "nearby_bad_custom";
+                if ((n.CustomType?.En?.Trim()?.Length ?? 0) > MaxNearbyCustomTypeLength)
+                    return "nearby_bad_custom";
+            }
         }
 
         return null;

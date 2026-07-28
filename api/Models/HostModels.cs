@@ -107,7 +107,12 @@ public record HostListing(
     bool SmokingAllowed,
     bool CouplesAllowed,
     bool SelfCheckin,
-    HostPhoto[] Photos);
+    HostPhoto[] Photos,
+    // Raw, unlike the public projection: the owner sees `needsCheck` — the
+    // flag that says a saved entry is farther than its group's radius allows
+    // and wants a second look — which is exactly why PublicNearby has no such
+    // field.
+    NearbyEntry[] Nearby);
 
 /// One logged booking request. Deliberately narrower than the stored document:
 /// `userId` and `userName` are NOT projected. Ebrostay owns the tenant
@@ -237,7 +242,8 @@ public static class HostProjection
         [.. p.Photos
             .OrderBy(ph => ph.SortOrder)
             .Select(ph => new HostPhoto(
-                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))]);
+                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))],
+        p.Nearby);
 
     public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(
         p.PriceNumber,

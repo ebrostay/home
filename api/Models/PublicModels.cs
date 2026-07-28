@@ -78,7 +78,8 @@ public record PropertyDetail(
     bool DepositProtected,
     string? AvailableFrom,
     PublicPhoto[] Photos,
-    PublicRange[] Availability);
+    PublicRange[] Availability,
+    PublicNearby[] Nearby);
 
 /// A photo as a visitor may see it. Narrower than the stored record on purpose:
 /// `capturedLat`/`capturedLng` are admin-only (§2.2.2), and handing the
@@ -90,6 +91,20 @@ public record PublicPhoto(
     string? DetailUrl,
     bool IsFloorplan,
     int SortOrder);
+
+/// A nearby entry as a visitor may see it. Narrower than the stored record on
+/// purpose: `osmId`, `measuredAt` and `needsCheck` are provenance and internal
+/// state. Handing the document type straight out is exactly how EXIF shipped
+/// once already — see PublicPhoto.
+public record PublicNearby(
+    string Id,
+    string Group,
+    string? Type,
+    Bilingual? CustomType,
+    string Name,
+    double Lat,
+    double Lng,
+    Dictionary<string, NearbyReach> Reach);
 
 public static class PublicProjection
 {
@@ -164,5 +179,7 @@ public static class PublicProjection
             p.StayTerms, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
             [.. p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => new PublicPhoto(
                 ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))],
-            BlockingRanges(p.Availability, now, p.TurnoverDays));
+            BlockingRanges(p.Availability, now, p.TurnoverDays),
+            [.. p.Nearby.Select(n => new PublicNearby(
+                n.Id, n.Group, n.Type, n.CustomType, n.Name, n.Lat, n.Lng, n.Reach))]);
 }

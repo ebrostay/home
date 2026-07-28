@@ -19,6 +19,8 @@ public class HostFunctions(
     PlatformSettings platform,
     PhotoStore photos,
     PhotoPipeline pipeline,
+    OrsClient ors,
+    RouteCache cache,
     ILogger<HostFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -120,6 +122,13 @@ public class HostFunctions(
         var invalid = HostValidation.CheckDetails(update, doc!);
         if (invalid is not null) return BadRequest(invalid);
 
+        // The pin is the origin of every nearby distance, so this has to be
+        // read BEFORE doc.Lat/doc.Lng are overwritten below — comparing the
+        // stored pin against the incoming one after the assignment would
+        // always see them equal.
+        var pinMoved = Math.Abs(doc!.Lat - update.Lat) > 0.000001
+            || Math.Abs(doc.Lng - update.Lng) > 0.000001;
+
         doc!.Name = update.Name!.Trim();
         doc.Type = update.Type!;
         doc.Address = Clean(update.Address);
@@ -167,6 +176,107 @@ public class HostFunctions(
                 kept[p.Url!] with { IsFloorplan = p.IsFloorplan, SortOrder = i }),
         ];
 
+        // Reach figures are NEVER taken from the payload. Entries are matched by
+        // id against the stored document and their measured figures carried
+        // over — the same posture as photos, where everything but order and
+        // flags comes from the stored entry.
+        //
+        // The pin is the origin of every one of these distances, so when it
+        // moves they are ALL wrong, even though no entry itself changed. That
+        // is the case a naive "unchanged → keep" rule gets exactly backwards —
+        // `pinMoved` (captured above, before doc.Lat/Lng were overwritten) is
+        // what stops that.
+        var storedNearby = doc.Nearby.ToDictionary(n => n.Id, StringComparer.Ordinal);
+        var writes = update.Nearby ?? [];
+        var merged = new List<NearbyEntry>(writes.Length);
+        var needsMeasuring = new List<int>();
+
+        for (var i = 0; i < writes.Length; i++)
+        {
+            var w = writes[i];
+            // A client-supplied id only ever MATCHES an existing entry on this
+            // same document — it can never create a new entry under an id of
+            // the caller's choosing, and an id belonging to another property
+            // simply will not be found in this doc's own dictionary.
+            var known = w.Id is not null && storedNearby.TryGetValue(w.Id, out var prev)
+                ? prev : null;
+
+            var moved = known is not null
+                && (Math.Abs(known.Lat - w.Lat) > 0.000001
+                    || Math.Abs(known.Lng - w.Lng) > 0.000001);
+
+            var entry = new NearbyEntry(
+                // Server-generated: a client-supplied id would let a caller
+                // point the route cache at an entry it does not own.
+                Id: known?.Id ?? Guid.NewGuid().ToString("n"),
+                Group: w.Group!,
+                Type: w.Type,
+                CustomType: ToBilingual(w.CustomType),
+                Name: w.Name!.Trim(),
+                Lat: w.Lat,
+                Lng: w.Lng,
+                Reach: known is not null && !moved && !pinMoved
+                    ? known.Reach
+                    : new Dictionary<string, NearbyReach>(),
+                OsmId: known?.OsmId,
+                MeasuredAt: known is not null && !moved && !pinMoved ? known.MeasuredAt : null,
+                NeedsCheck: false);
+
+            merged.Add(entry);
+            if (entry.Reach.Count == 0) needsMeasuring.Add(i);
+        }
+
+        if (needsMeasuring.Count > 0)
+        {
+            var origin = new GeoPoint(update.Lat, update.Lng);
+            var points = needsMeasuring
+                .Select(i => new GeoPoint(merged[i].Lat, merged[i].Lng))
+                .ToArray();
+
+            Dictionary<string, NearbyReach?[]> measured;
+            try
+            {
+                measured = new Dictionary<string, NearbyReach?[]>();
+                foreach (var prof in NearbyGroups.Profiles)
+                    measured[prof] = await ors.MatrixAsync(
+                        origin, points, prof, req.HttpContext.RequestAborted);
+            }
+            catch (OrsUnavailableException)
+            {
+                // Before anything is written: an entry with no figures must
+                // never be saved.
+                return new ObjectResult(new { error = "ors_unavailable" }) { StatusCode = 503 };
+            }
+
+            for (var k = 0; k < needsMeasuring.Count; k++)
+            {
+                var i = needsMeasuring[k];
+                // A profile ORS could not route keeps no entry, so the public
+                // page hides that entry under that toggle instead of showing a
+                // blank figure.
+                var reach = NearbyGroups.Profiles
+                    .Where(x => measured[x][k] is not null)
+                    .ToDictionary(x => x, x => measured[x][k]!);
+                // Unroutable by EVERY profile means the owner picked somewhere
+                // we cannot describe honestly. Refuse it rather than store an
+                // entry with no figures.
+                if (reach.Count == 0) return BadRequest("nearby_unroutable");
+                // Beyond its group's radius the SELECTION is now wrong, not
+                // just the number — so it is flagged rather than silently kept
+                // or dropped.
+                var far = reach.TryGetValue("foot", out var onFoot)
+                    && onFoot.Metres > NearbyGroups.RadiusMetres(merged[i].Group) * 1.5;
+                merged[i] = merged[i] with
+                {
+                    Reach = reach,
+                    MeasuredAt = DateTimeOffset.UtcNow.ToString("o"),
+                    NeedsCheck = far,
+                };
+            }
+        }
+
+        doc.Nearby = [.. merged];
+
         // §2.2.1: an approved listing re-enters the queue and leaves public
         // search until a reviewer sees it again. A draft stays a draft and a
         // rejected listing stays rejected — resubmitting is its own act, not
@@ -189,6 +299,13 @@ public class HostFunctions(
         // the alternative costs the owner their photos.
         if (saved is OkObjectResult)
             await DropBlobsAsync(dropped, req.HttpContext.RequestAborted);
+
+        // Same ordering reason as the blobs above: only drop the cached routes
+        // once the new pin is safely written. Every cached route was measured
+        // from the OLD pin, so once it has moved they are all stale, even for
+        // entries that did not themselves change.
+        if (saved is OkObjectResult && pinMoved)
+            await cache.DropAsync(doc.Id, req.HttpContext.RequestAborted);
 
         return saved;
     }

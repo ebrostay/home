@@ -185,7 +185,7 @@ Nine sections down a sticky rail, saved by **one** whole-page diff:
 | Section | Source | State |
 | --- | --- | --- |
 | Basics | `name`, `type`, capacity, `sizeM2`, `floorNumber` | ✅ editable |
-| Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; Catastro queried live both ways — reference → record, and address → reference for an owner without their IBI receipt. No `MATCHED` badge, no licence field (ADR-027) |
+| Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; Catastro queried live both ways — reference → record, and address → reference for an owner without their IBI receipt. No `MATCHED` badge, no licence field (ADR-027). An outside answer fills only an empty field and otherwise offers — **including the pin**, which a saved listing keeps until the owner accepts a move; a declined offer is remembered and not repeated until it changes (§2.2.4) |
 | Rooms & levels | — | ❌ no room entity (ADR-027) |
 | Photos | embedded `photos[]` — reorder, cover, floor-plan flag, remove | ⚠️ no upload (ADR-019 🔜) |
 | Floor plan | `isFloorplan` photos | ⚠️ flag only; no pins |
@@ -251,6 +251,15 @@ listings — enforced in the functions (§3.5), not the UI.
     None of these is a rejection on its own. The register goes stale, and an
     owner may simply be right — that is why the owner is never blocked from
     saving them (ADR-027 decision 4b). They are what a reviewer looks at.
+
+    **Where the owner has declined a suggestion** (§2.2.4), say so beside the
+    live comparison — "owner declined this on 28 Jul" — and nothing more.
+
+    | Rule | Why |
+    | --- | --- |
+    | It never suppresses a signal | The comparison above is computed from the live answer and shown in full whether or not the owner declined it. A decline is host-writable, so a queue that hid rows on the strength of one would let a listing silence its own review. |
+    | It is context, never a resolution | A reviewer may want to know the owner considered this and disagreed. That is not an answer to the question they are being asked. |
+    | It is not evidence of anything | It records that a dismissal happened, not that the owner was right. Weigh it accordingly. |
   - **🔜 Photo location check (ADR-019 amendment).** Each photo's
     `capturedLat`/`capturedLng` (§2.2.2) shown as a distance from the listing
     pin. The published images have had their EXIF stripped; these are what it

@@ -752,7 +752,8 @@ the owner's payout honest and the tenant's total complete.
 
 ## ADR-027 — The listing editor: one diff, one save, and what it deliberately cannot do
 
-- **Status:** ✅ locked and ✅ **built** 2026-07-27 (product owner: Raphael).
+- **Status:** ✅ locked and ✅ **built** 2026-07-27 (product owner: Raphael);
+  amended 2026-07-28 (declined suggestions — see below).
   **Implements** the content half of ADR-025 and the `published → pending_review`
   row of §2.2.1. Design handoff: `design_handoff_property_edit`.
 - **Context.** ADR-025 split owner editing by the *kind* of change: operational
@@ -925,7 +926,9 @@ the owner's payout honest and the tenant's total complete.
 
 - **A Catastro value is filled in only where the field is empty.** Anything the
   owner has already written is *offered* against, never replaced — the same
-  rule the geocoder follows. Nothing is locked.
+  rule the geocoder follows. Nothing is locked. (Coordinates were exempt from
+  this and were being overwritten on every page load; see the 2026-07-28
+  amendment below, which also settles what a second visit does.)
 - **Because the register is often stale.** A reform nobody declared, a surface
   measured to a different boundary, a change of use still working through:
   the Catastro being authoritative about the *record* does not make it right
@@ -1035,6 +1038,162 @@ What a decision here has to settle:
   should stop being a declared per-listing term. Likewise `cancellation`: the
   editor presents it as platform-wide policy, which is what it is, so carrying
   it per listing lets one home silently opt out of a company promise.
+
+### Amendment 2026-07-28 — an external answer is offered once, and remembered when declined
+
+Decision 4b says a value from an outside source fills only an empty field and
+is otherwise *offered*, "the same rule the geocoder follows". The geocoder did
+not, in fact, follow it. This amendment fixes the defect that exposed and
+settles what happens on the second visit.
+
+#### The defect
+
+`AddressFields` runs its lookup on mount, because a saved listing arrives with
+its address already filled. It then applied the top hit through a guard that
+checked only whether the owner had dragged the pin **in that session** — false
+by definition on a fresh page — so the stored coordinates were overwritten
+every time. Postcode and area behaved correctly; coordinates were exempted from
+the gap-fill rule because there is no empty coordinate to test against, and the
+exemption quietly turned "fill what is missing" into "overwrite on sight".
+
+Observed on every seeded listing. On `EBR-P-0201` the page opened with one
+unsaved address change moving the pin **5 km**, from Movera to Torrero — the
+same address ambiguity the cadastral finder already catches. A geocoder never
+returns stored coordinates to the seventh decimal, so a listing whose address
+is perfectly good opened dirty too.
+
+The cost is not a stray badge. `address` is reviewable, so an owner who trusted
+the save bar would move their pin and pull a published listing out of the
+search results, having touched nothing. `CadastrePanel` carried the identical
+guard against the parcel centroid; it had simply never fired, because no seeded
+listing has a `cadastralRef`.
+
+#### Decision 1 — A pin that arrived from the server is a decision already made
+
+Coordinates join the gap-fill rule. A listing that loads with a pin keeps it;
+an outside source may only *offer* a different one, through the two-pin
+comparison already built for the case where the owner placed the pin by hand.
+
+The distinction the old guard drew — did **this session** place the pin —
+was never the interesting one. What matters is whether a pin exists at all.
+
+#### Decision 2 — Remember the answer that was declined, not the fact of declining
+
+An offer that cannot be ended is a nag, and people end nags by pressing the
+affirmative button. Storing a boolean (`pinSuggestionDismissed`) would end it
+permanently, including for an answer the register genuinely changed later —
+which is the one case worth interrupting for.
+
+So what is stored is **what was declined**, and the live answer is compared
+against it on every visit:
+
+| Fresh answer vs. the declined one | Behaviour |
+| --- | --- |
+| Nothing declined | Offer, as today |
+| Same | The owner has already ruled on this. No call to action |
+| Different | A new fact, not a repeat. Offer again, and say it changed |
+
+Shape (§2.2.4), a list on the listing document:
+
+```jsonc
+"declinedSuggestions": [
+  {
+    "field": "pin",              // pin | postcode | area | size
+    "source": "osm",             // osm | catastro
+    "value": "41.628945,-0.881226",
+    "for": "Calle Movera 7, Zaragoza",
+    "at": "2026-07-28"
+  }
+]
+```
+
+- **Identity is `(field, source)`**, and a new decline for the same pair
+  replaces the old one. The list is therefore self-limiting at one entry per
+  combination; the write path caps it anyway, and rejects any other `field` or
+  `source`.
+- **`for` is the input that produced the suggestion** — the typed address for
+  OSM, the `cadastralRef` for the Catastro. When that input changes the entry
+  is dropped, because a decision about the old address says nothing about the
+  new one. This is the same rule the lookups themselves follow: every answer
+  carries the question it answers.
+- **`value` is the canonical string form of what was offered**, but the pin is
+  **not compared as a string**. Two geocodes of the same doorway differ in the
+  last digits, and string equality would re-offer forever — exactly the defect
+  above in a new costume. The pin is parsed and compared by distance using the
+  existing `SAME_PLACE_M` (25 m); everything else is an exact match.
+
+#### Decision 3 — A declined suggestion is demoted, not hidden
+
+Once declined the **call to action goes away entirely**. Not a smaller banner:
+a quieter permanent banner is still permanent, and still gets clicked to make
+it stop.
+
+The information stays. `CadastrePanel` already lists what the register says
+differently; a declined row remains in that list without its **Usar este**
+button, carrying the date it was reviewed. The register's answer is never
+concealed from the owner — it stops being a demand and becomes a record.
+
+#### Decision 4 — Change detection is that same comparison, not a job
+
+The page queries live on every load, so comparing the answer against the
+declined one **is** the change detector. It costs nothing extra and fires
+exactly when it is useful: the owner is on the page and can act.
+
+A timer-triggered Function sweeping every listing is buildable and is **not
+built**. Cadastral records change on the order of years, the review queue
+already asks live at the moment that matters, and a background job that
+notices a change nobody is present to act on has to invent a notification
+channel to be worth anything. Revisit if reviewers report stale approvals.
+
+#### Decision 5 — Declining is not a content edit
+
+A decline **must not** send the listing back to review, and Decision 2 of this
+ADR makes any save of the content payload do exactly that. So it does not ride
+that payload.
+
+- Its own endpoint, writing only this list and never touching `status`.
+- It applies **live**, on the click, like an operational edit under ADR-025 —
+  it changes nothing a guest sees.
+- It is absent from `FIELDS`/`changedSections()` and therefore from the rail,
+  the chips and the save bar. An owner dismissing a suggestion has not made an
+  unsaved change.
+
+#### Decision 6 — How this sits with "nothing from the Catastro is stored"
+
+Decision 4b forbids storing the register's answer, for two reasons: a stored
+copy goes stale, and the client is what reports it. This stores a value that
+came from the register, so the tension is real and is resolved deliberately
+rather than by not noticing it.
+
+What is stored is **a record of a human decision, fingerprinted by the value it
+was about** — not a fact about the property. Nothing reads it as a claim about
+the home: it is never displayed as the register's answer, never compared
+against by anything except the fresh live answer, and never fills a field.
+Staleness is not a failure mode here; a fingerprint going stale *is the signal*.
+
+Two guardrails, and they are the load-bearing part:
+
+- **The review queue ignores it entirely.** A reviewer queries the Catastro at
+  that moment (§4.5) and sees the disagreement regardless of what the owner
+  declined. The worst a forged entry achieves is silencing a reminder in the
+  owner's own editor.
+- **It is shown to the reviewer as context, never as a resolution** — "owner
+  declined this on 28 Jul" alongside the live comparison. A declined suggestion
+  is a thing a reviewer may want to know; it is not an answer to the question
+  they are being asked.
+
+#### Consequences
+
+- 🔜 `declinedSuggestions` on the listing document (§2.2.4), its projection,
+  and a write path that validates `field`/`source` against closed vocabularies
+  and cannot express a status change.
+- 🔜 The two-pin comparison becomes the *only* way an outside source moves a
+  saved pin, in both `AddressFields` and `CadastrePanel`.
+- 🔜 §4.5 gains the declined-suggestion column, under the rules of Decision 6.
+- 🔜 ES/EN strings for the demoted row and for "this changed since you reviewed
+  it".
+- The `pinIsManual` flag stops being accurately named once it means "a pin
+  exists", whoever placed it.
 
 ---
 

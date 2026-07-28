@@ -75,6 +75,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   the Catastro, so no surface claims a
                                       //   match (ADR-027)
   "lat": 41.65393, "lng": -0.90783,
+  "declinedSuggestions": [],          // 🔜 outside answers the owner has already
+                                      //   ruled on, so they are not re-offered
+                                      //   until they change (§2.2.4, ADR-027)
 
   // — bilingual copy —
   "area":    { "es": "…", "en": "…" },
@@ -263,6 +266,56 @@ Revisit only if a listing's calendar approaches document-size limits, which at
 v1's `availability_blocks.user_id` (tenant assigned to a stay, powering "My
 stays") is **not carried** — tenant-assigned stays are out of initial v2 scope
 (the v2 host dashboard covers own listings + requests instead, §4.4).
+
+### 2.2.4 Declined suggestions 🔜 (ADR-027 amendment 2026-07-28)
+
+The editor asks OpenStreetMap and the Catastro about a listing on every visit,
+and offers what they say where it differs from what the owner wrote (§4.4).
+This is how an offer *ends*.
+
+```jsonc
+"declinedSuggestions": [
+  {
+    "field": "pin",              // pin | postcode | area | size
+    "source": "osm",             // osm | catastro
+    "value": "41.628945,-0.881226",
+    "for": "Calle Movera 7, Zaragoza",
+    "at": "2026-07-28"
+  }
+]
+```
+
+- **Identity is `(field, source)`.** A new decline for the same pair replaces
+  the old one, so the list is self-limiting at one entry per combination. The
+  write path validates both against the closed vocabularies above and caps the
+  length regardless — it is a client-supplied list.
+- **`for` is the input that produced the suggestion** — the typed `address` for
+  OSM, the `cadastralRef` for the Catastro. When that input changes the entry
+  is dropped: a decision about the old address says nothing about the new one.
+- **`value` is what was offered, canonically.** The `pin` is stored as
+  `"lat,lng"` at six decimals but **compared by distance**, not as a string —
+  two geocodes of the same doorway differ in the last digits, and string
+  equality would re-offer forever. `postcode`, `area` and `size` are exact.
+- **Nullable in effect:** absent or `[]` on every listing until an owner
+  declines something.
+
+**It is not a copy of the register.** Nothing reads it as a fact about the
+property: it never fills a field, is never displayed as what the Catastro said,
+and is compared against only by the fresh live answer. Going stale is not a
+failure here — a fingerprint that no longer matches *is* the signal that the
+outside source changed, which is the one case worth interrupting an owner for.
+ADR-027 Decision 6 has the full reasoning against 4b's "nothing from the
+Catastro is stored".
+
+**Host-writable, and therefore not evidence.** It arrives from the client, so
+a forged entry is possible; what it buys is silence in the owner's own editor
+and nothing more. The review queue never reads it as a resolution — it asks the
+register live and sees the disagreement regardless (§4.5).
+
+**Not part of the content payload.** Declining applies live on the click via
+its own endpoint and leaves `status` untouched. Riding the content `PUT` would
+pull a published listing back into review for dismissing a banner (ADR-027
+Decision 5), and it is absent from the editor's diff for the same reason.
 
 ---
 

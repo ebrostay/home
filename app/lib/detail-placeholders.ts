@@ -1,23 +1,23 @@
 // ============================================================
 // PLACEHOLDER CONTENT — not real data.
 //
-// The v2 detail design calls for a host block and a "What's nearby"
-// panel. Neither exists in the API yet (api/Models/PublicModels.cs has
-// no host or neighbourhood fields), so the UI is built against these
-// shapes and fed from here. When the Cosmos documents and the C#
-// projections gain the fields, delete this file and read them off
-// PropertyDetail instead — the component props already match.
+// The v2 detail design calls for a "What's nearby" panel that the API
+// has no fields for (api/Models/PublicModels.cs has no neighbourhood
+// data), so the UI is built against this shape and fed from here. When
+// the Cosmos documents and the C# projections gain the fields, delete
+// this file and read them off PropertyDetail instead — the component
+// props already match.
+//
+// The design's host block ("Hosted by …", "Hosting since …") was removed
+// on 2026-07-28: it named a person the document does not record, on a
+// page a guest reads as fact. A real one needs a host profile to project
+// from, and §4.3 keeps Ebrostay between guest and owner anyway, so what
+// it should say is a product question rather than a missing field.
 //
 // Everything here is generic Zaragoza fact, deliberately NOT tied to a
 // specific listing: nothing in this file should read as a claim about a
 // real property or a real person.
 // ============================================================
-
-export type Host = {
-  name: string;
-  avatarUrl: string;
-  hostingSince: number;
-};
 
 export type NearbyItem = {
   name: string;
@@ -29,14 +29,6 @@ export type NearbyItem = {
 export type NearbyCategory = {
   key: "transport" | "groceries" | "food" | "outdoors" | "health";
   items: NearbyItem[];
-};
-
-// A stand-in host so the block can be laid out and reviewed. Replace with
-// the listing's real host record.
-export const PLACEHOLDER_HOST: Host = {
-  name: "Marta",
-  avatarUrl: "/brand/ebrostay-mark.svg",
-  hostingSince: 2021,
 };
 
 // Real Zaragoza landmarks, indicative distances. These are city facts, not

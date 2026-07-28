@@ -684,8 +684,6 @@
     "guests": "{count, plural, one {# guest} other {# guests}}",
     "photoOf": "Photo {n} of {total}",
     "allHomes": "All homes in Zaragoza",
-    "hostedBy": "Hosted by {name}",
-    "hostSince": "Hosting since {year}",
     "allPhotos": "All {count} photos",
     "floorPlan": "Floor plan",
     "share": "Share",

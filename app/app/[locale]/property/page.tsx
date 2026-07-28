@@ -13,10 +13,7 @@ import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
 import { formatEuro } from "@/lib/pricing";
-import {
-  PLACEHOLDER_HOST,
-  PLACEHOLDER_NEARBY,
-} from "@/lib/detail-placeholders";
+import { PLACEHOLDER_NEARBY } from "@/lib/detail-placeholders";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -223,41 +220,24 @@ function DetailBody({
           to know they are looking at the guest's view before they read it. */}
       <OwnerBar propertyId={p.id} />
 
-      {/* Title row */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap gap-1.5">
-            {p.checked && <Badge tone="brand">{t("listing.verified")}</Badge>}
-            {biText(p.area, locale) && (
-              <Badge tone="river">{biText(p.area, locale)}</Badge>
-            )}
-          </div>
-          <h1 className="mt-2.5 font-display text-3xl font-bold text-ink sm:text-[2.375rem]">
-            {p.name}
-          </h1>
-          <p className="mt-1.5 flex items-center gap-1.5 text-muted">
-            <MapPin size={15} strokeWidth={2} aria-hidden />
-            {biText(p.area, locale)}, Zaragoza
-          </p>
+      {/* Title. Was a two-column row until the placeholder host block beside
+          it was removed; the flex wrapper went with it, since a
+          justify-between with one child is layout that describes something no
+          longer there. */}
+      <div className="mt-4 min-w-0">
+        <div className="flex flex-wrap gap-1.5">
+          {p.checked && <Badge tone="brand">{t("listing.verified")}</Badge>}
+          {biText(p.area, locale) && (
+            <Badge tone="river">{biText(p.area, locale)}</Badge>
+          )}
         </div>
-
-        {/* Placeholder host — see lib/detail-placeholders.ts */}
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={PLACEHOLDER_HOST.avatarUrl}
-            alt=""
-            className="h-12 w-12 rounded-full border border-line bg-surface-2 object-cover p-1.5"
-          />
-          <div>
-            <p className="font-display text-[0.9375rem] font-semibold text-ink">
-              {td("hostedBy", { name: PLACEHOLDER_HOST.name })}
-            </p>
-            <p className="mt-0.5 text-xs text-muted">
-              {td("hostSince", { year: PLACEHOLDER_HOST.hostingSince })}
-            </p>
-          </div>
-        </div>
+        <h1 className="mt-2.5 font-display text-3xl font-bold text-ink sm:text-[2.375rem]">
+          {p.name}
+        </h1>
+        <p className="mt-1.5 flex items-center gap-1.5 text-muted">
+          <MapPin size={15} strokeWidth={2} aria-hidden />
+          {biText(p.area, locale)}, Zaragoza
+        </p>
       </div>
 
       <div className="mt-6">

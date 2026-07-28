@@ -23,7 +23,7 @@
 - **At most ONE retry on a 429.** Repeatedly exceeding ORS quota can disable the account without notice.
 - Browse the local stack at **`:4280`** (SWA emulator), never `:3000` — only `:4280` injects `x-ms-client-principal`.
 - `COSMOS_CONNECTION_MODE=Gateway` is required against the local emulator.
-- Build must stay green: `cd app && npm run build`, `npx tsc --noEmit`, `npx eslint` at its **5 pre-existing errors** (`app/not-found.tsx`, `components/site/ThemeToggle.tsx`). Any 6th is yours.
+- Build must stay green: `cd app && npm run build`, `npx tsc --noEmit`, `npx eslint` at its **5 pre-existing errors** (spread across `app/not-found.tsx`, `app/components/site/ThemeToggle.tsx`, `app/app/[locale]/page.tsx` and `app/app/[locale]/property/page.tsx` — verify the count, not the file list). Any 6th is yours.
 
 ---
 
@@ -2026,4 +2026,4 @@ git commit -m "docs: record the nearby data model, flows, and what the build set
 - **`api/local.settings.json` is gitignored and holds real keys.** Never commit it, never paste its contents into a message.
 - **Never write to the deployed Cosmos database.** All testing is against the local emulator.
 - If a step's code does not compile against the real file, **read the surrounding file and follow its conventions** rather than forcing this plan's snippet in. The plan's snippets are correct in intent; the codebase is correct in detail.
-- The 5 pre-existing eslint errors are in `app/not-found.tsx` and `components/site/ThemeToggle.tsx`. A 6th is yours.
+- The 5 pre-existing eslint errors are spread across `app/not-found.tsx`, `app/components/site/ThemeToggle.tsx`, `app/app/[locale]/page.tsx` and `app/app/[locale]/property/page.tsx`. Check the COUNT is still 5; a 6th is yours.

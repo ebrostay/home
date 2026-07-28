@@ -1,9 +1,10 @@
 "use client";
 
-import { Camera, MoreHorizontal } from "lucide-react";
+import { Camera } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AvailabilityBand } from "@/components/MonthBand";
+import { RowMenu } from "@/components/host/RowMenu";
 import type { HostProperty } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
 import { bucketOf, isDimmed, monthsFor, type Tab } from "@/lib/portfolio";
@@ -292,15 +293,11 @@ export function PropertyRow({
                 {t(`actions.${actions.secondary}` as "actions.overview")}
               </button>
             )}
-            <button
-              type="button"
-              disabled
-              title={soon}
-              aria-label={t("actions.more", { name: p.name })}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-(--radius-control) border border-line bg-surface text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <MoreHorizontal size={16} strokeWidth={2} aria-hidden />
-            </button>
+            {/* The row's two buttons are chosen per lifecycle state, and none
+                of those pairs has room for the listing editor without pushing
+                out something an owner reaches for more often. It goes here —
+                which is also the only route to the editor from this page. */}
+            <RowMenu propertyId={p.id} label={t("actions.more", { name: p.name })} />
           </div>
         </div>
       </div>

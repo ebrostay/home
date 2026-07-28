@@ -19,6 +19,7 @@ import { AMENITY_KEYS } from "@/lib/amenity-icons";
 export const SECTIONS = [
   "basics",
   "address",
+  "nearby",
   "photos",
   "description",
   "amenities",
@@ -50,6 +51,17 @@ const FIELDS: Record<SectionKey, (l: HostListing) => unknown[]> = {
     l.energyRating,
   ],
   address: (l) => [l.address, l.postcode, l.cadastralRef, l.lat, l.lng, ...bi(l.area)],
+  // What the owner CHOSE — not what we measured. Reach figures are recomputed
+  // server-side and can change with no owner action, so comparing them would
+  // light the "changed" indicator on a freshly opened page. Sorted, because
+  // array order is not content here: the public page orders by time.
+  nearby: (l) =>
+    l.nearby
+      .map((n) =>
+        [n.group, n.type ?? "", n.customType?.es ?? "", n.customType?.en ?? "",
+         n.name, n.lat.toFixed(6), n.lng.toFixed(6)].join("|"),
+      )
+      .sort(),
   // Order is content: it decides the cover photo and the order a guest swipes
   // through the gallery, so a reorder is a change like any other.
   photos: (l) => l.photos.map((p) => `${p.url}|${p.isFloorplan}`),

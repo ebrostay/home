@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -35,13 +36,18 @@ public sealed class OrsClient(
     private static bool Fixtures =>
         Environment.GetEnvironmentVariable("ORS_FIXTURES") == "1";
 
-    public async Task<NearbyReach[]> MatrixAsync(
+    public async Task<NearbyReach?[]> MatrixAsync(
         GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile,
         CancellationToken ct)
     {
         if (destinations.Count == 0) return [];
         if (Fixtures)
+        {
+            log.LogWarning(
+                "ORS_FIXTURES=1: serving canned matrix data, not calling ORS. " +
+                "This must never be set outside local development.");
             return [.. destinations.Select((_, i) => new NearbyReach(200 + i * 90, 3 + i))];
+        }
 
         if (!await budget.TryConsumeAsync(1, ct))
             throw new OrsUnavailableException("budget");
@@ -63,14 +69,21 @@ public sealed class OrsClient(
         var distances = doc.RootElement.GetProperty("distances")[0];
         var durations = doc.RootElement.GetProperty("durations")[0];
 
-        var reach = new NearbyReach[destinations.Count];
+        var reach = new NearbyReach?[destinations.Count];
         for (var i = 0; i < destinations.Count; i++)
         {
             // Index 0 is the origin to itself.
             var m = distances[i + 1];
             var s = durations[i + 1];
+            // ORS returns null per-destination for anything it cannot route to
+            // (no mapped footpath, an uncrossable road) — not an outage, just
+            // that one destination. Leave it null and let the caller drop it
+            // rather than aborting the whole category over one bad POI.
             if (m.ValueKind == JsonValueKind.Null || s.ValueKind == JsonValueKind.Null)
-                throw new OrsUnavailableException("unroutable");
+            {
+                reach[i] = null;
+                continue;
+            }
             reach[i] = new NearbyReach(
                 (int)Math.Round(m.GetDouble()),
                 Math.Max(1, (int)Math.Round(s.GetDouble() / 60.0)));
@@ -82,7 +95,12 @@ public sealed class OrsClient(
         GeoPoint from, GeoPoint to, string profile, CancellationToken ct)
     {
         if (Fixtures)
+        {
+            log.LogWarning(
+                "ORS_FIXTURES=1: serving canned route data, not calling ORS. " +
+                "This must never be set outside local development.");
             return new OrsRoute("_p~iF~ps|U_ulLnnqC_mqNvxq`@", 340, 260);
+        }
 
         if (!await budget.TryConsumeAsync(1, ct))
             throw new OrsUnavailableException("budget");
@@ -139,7 +157,8 @@ public sealed class OrsClient(
 
             log.LogWarning("ORS {Status} for {Url}", res.StatusCode, url);
             res.Dispose();
-            throw new OrsUnavailableException($"ors_{(int)res.StatusCode}");
+            throw new OrsUnavailableException(
+                $"ors_{((int)res.StatusCode).ToString(CultureInfo.InvariantCulture)}");
         }
         throw new OrsUnavailableException("ors_429");
     }

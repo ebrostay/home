@@ -801,7 +801,8 @@
         "note": "El alquiler se cobra por mes natural, así que el primer y el último plazo son parciales. Puedes adelantar más meses si lo prefieres: acordamos los plazos antes de la entrada."
       },
       "cleaningFee": "Preparación, pago único"
-    }
+    },
+    "ownerView": "Estás viendo tu vivienda como la ve un huésped."
   },
   "estimate": {
     "title": "Calcula tu estancia",

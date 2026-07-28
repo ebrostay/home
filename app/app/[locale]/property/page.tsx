@@ -24,6 +24,7 @@ import type { DateRange } from "@/components/ui/DateRangePicker";
 import { ListingsMap } from "@/components/ListingsMap";
 import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
+import { OwnerBar } from "@/components/detail/OwnerBar";
 import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
@@ -215,6 +216,12 @@ function DetailBody({
       >
         ← {td("allHomes")}
       </Link>
+
+      {/* Only ever rendered for the owner of this listing, and only as a way
+          back into their own portal — the API is what enforces that, not this.
+          Above the title because it frames everything below it: an owner needs
+          to know they are looking at the guest's view before they read it. */}
+      <OwnerBar propertyId={p.id} />
 
       {/* Title row */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-6">

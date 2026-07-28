@@ -801,7 +801,8 @@
         "note": "Rent is charged per calendar month, so the first and last instalments are part-months. You can pay further months up front if you prefer — we agree the intervals before you move in."
       },
       "cleaningFee": "Turnaround, one-off"
-    }
+    },
+    "ownerView": "You are seeing your home as a guest sees it."
   },
   "estimate": {
     "title": "Price your stay",

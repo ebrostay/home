@@ -247,7 +247,9 @@ function ManageContent() {
   return (
     <main
       className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24"
-      style={{ "--manage-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
+      // Header + context bar. Both owner pages park their section nav here,
+      // so the name is not page-specific and the value lives in one shape.
+      style={{ "--section-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
     >
       <ContextBar property={property} current="manage" />
 
@@ -294,7 +296,7 @@ function ManageContent() {
         labels={labels}
         ariaLabel={tm("nav.label")}
         sheetLabel={tm("nav.label")}
-        stickyTop="var(--manage-nav-top)"
+        stickyTop="var(--section-nav-top)"
         spy
       />
 

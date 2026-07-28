@@ -53,6 +53,11 @@ import { AmenityPicker } from "@/components/host/fields/AmenityPicker";
 import { RulesFields } from "@/components/host/fields/RulesFields";
 import { Button } from "@/components/ui/Button";
 
+/** The width at which this page has a left column, as a media query for the
+ *  nav. Must equal the `min-[64rem]:` on the grid below — they are two spellings
+ *  of one decision, kept in one file so they cannot drift apart. */
+const RAIL_QUERY = "(min-width: 64rem)";
+
 type State =
   | { kind: "loading" }
   | { kind: "signedOut" }
@@ -273,7 +278,13 @@ function EditContent() {
   return (
     // 8rem of bottom padding clears the fixed save bar; without it the danger
     // zone is permanently half-covered at the end of the page.
-    <main className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-32">
+    <main
+      className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-32"
+      // Header + context bar — the same measurement Manage makes, because it
+      // is the same two bars. Without it the section nav parked level with the
+      // ContextBar and, one z-index lower, vanished behind it.
+      style={{ "--section-nav-top": "calc(var(--header-h) + 3.4375rem)" } as React.CSSProperties}
+    >
       <ContextBar property={property} current="edit" />
 
       <header className="flex flex-wrap items-end justify-between gap-7 pt-1">
@@ -317,7 +328,13 @@ function EditContent() {
         </dl>
       </header>
 
-      <div className="grid items-start gap-9 min-[56rem]:grid-cols-[13rem_minmax(0,1fr)]">
+      {/* The two-column width. 64rem, not the 56rem it was: at 56rem the rail
+          took 13rem and left the form about 640px, which is tight for the
+          address section's map and cadastral panel side by side — and the
+          section bar needs 905px, so between 896 and the rail there was no
+          width at which it could appear. The nav's middle rung was
+          unreachable. RAIL_QUERY below must stay this same width. */}
+      <div className="grid items-start gap-9 min-[64rem]:grid-cols-[13rem_minmax(0,1fr)]">
         {/* Rail while the grid above still has a left column, then the same
             hairline bar Manage uses, then "Sections". No scroll spy: the discs
             already own this glance, and a highlight chasing the scroll would
@@ -329,9 +346,12 @@ function EditContent() {
           sheetLabel={te("nav.label")}
           changedLabel={te("nav.changed")}
           status={statuses}
-          rail
+          railQuery={RAIL_QUERY}
           railTop="calc(var(--header-h) + 4.5rem)"
-          stickyTop="var(--header-h)"
+          // Below the context bar, not level with it. Parked at --header-h the
+          // bar landed at the same offset as ContextBar and, one z-index
+          // lower, disappeared entirely underneath it.
+          stickyTop="var(--section-nav-top)"
         />
 
         <div className="flex min-w-0 flex-col gap-5">

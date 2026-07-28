@@ -46,7 +46,7 @@ export function SectionNav<K extends string>({
   stickyTop,
   status,
   spy = false,
-  rail = false,
+  railQuery,
   railTop,
 }: {
   sections: readonly K[];
@@ -57,19 +57,25 @@ export function SectionNav<K extends string>({
   /** Suffix on the count badge — "changed". Only used when `status` is given. */
   changedLabel?: string;
   /** CSS length for the sticky offset of the bar and the sheet, e.g.
-   *  `"var(--manage-nav-top)"`. Both rungs use it, so the two pages cannot
+   *  `"var(--section-nav-top)"`. Both rungs use it, so the two pages cannot
    *  drift apart on where the nav parks. */
   stickyTop: string;
   /** Per-section state discs. Absent means the page does not track status. */
   status?: Record<K, SectionStatus>;
   /** Follow the scroll and mark the section being read. */
   spy?: boolean;
-  /** Offer the vertical rail while the page has a left column. */
-  rail?: boolean;
+  /** The media query under which this page draws a left column, e.g.
+   *  `"(min-width: 64rem)"`. Omit and there is no rail rung at all.
+   *
+   *  It MUST be the same width as the page's own grid class. Passing it in
+   *  keeps the two literals adjacent in the page, which is the only thing that
+   *  reliably keeps them equal — a copy kept in here would drift the first
+   *  time someone tuned the grid. */
+  railQuery?: string;
   /** Sticky offset for the rail rung, which sits lower than the bar. */
   railTop?: string;
 }) {
-  const hasRail = useRailRoom(rail);
+  const hasRail = useRailRoom(railQuery);
   const active = useSpy(sections, spy);
 
   if (hasRail) {
@@ -370,31 +376,33 @@ function Sheet<K extends string>({
 /**
  * Does the page still have room for a left column?
  *
- * `matchMedia` with the same rem query the grid uses, so the browser evaluates
- * it — which means it is correct under zoom and under a reader's font-size
- * preference without any arithmetic of ours. An equivalent pixel constant
- * would have to be recomputed against the live root font size, and would still
- * disagree with the CSS that draws the column.
+ * The query comes from the CALLER, because the caller is what draws the
+ * column. It has to be the same width as the page's own grid class, and the
+ * only way to keep two literals in step is to keep them next to each other —
+ * so they live together in the page, not one here and one there.
  *
- * `false` until mounted: there is no `matchMedia` during the static export,
- * and a first client render that disagreed with the server's would be a
- * hydration mismatch.
+ * `matchMedia` rather than arithmetic on the root font size: it is the same
+ * rem query the CSS uses, evaluated by the browser, so zoom and a reader's
+ * font-size preference are handled without our doing sums that could disagree
+ * with the grid.
+ *
+ * `false` until mounted — there is no `matchMedia` during the static export,
+ * and a first client render disagreeing with the server's is a hydration
+ * mismatch.
  */
-const RAIL_QUERY = "(min-width: 56rem)";
-
-function useRailRoom(enabled: boolean) {
+function useRailRoom(query: string | undefined) {
   const [room, setRoom] = useState(false);
 
   useEffect(() => {
-    if (!enabled) return;
-    const mq = window.matchMedia(RAIL_QUERY);
+    if (!query) return;
+    const mq = window.matchMedia(query);
     const read = () => setRoom(mq.matches);
     read();
     mq.addEventListener("change", read);
     return () => mq.removeEventListener("change", read);
-  }, [enabled]);
+  }, [query]);
 
-  return enabled && room;
+  return Boolean(query) && room;
 }
 
 /** The last section whose heading has passed the top of the viewport. Reading

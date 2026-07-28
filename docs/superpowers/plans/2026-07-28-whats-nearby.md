@@ -608,7 +608,9 @@ git commit -m "feat(api): nearby group vocabulary with per-group radius"
 - Consumes: `NearbyGroups.OrsProfile`, `OrsBudgetDoc`.
 - Produces:
   - `OrsBudget.TryConsumeAsync(int calls, CancellationToken): Task<bool>`
-  - `OrsClient.MatrixAsync(GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile, CancellationToken): Task<NearbyReach[]>`
+  - `OrsClient.MatrixAsync(GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile, CancellationToken): Task<NearbyReach?[]>`
+    (an element is null when THAT destination is unroutable by that profile — one
+    unreachable POI must not fail the whole batch)
   - `OrsClient.RouteAsync(GeoPoint from, GeoPoint to, string profile, CancellationToken): Task<OrsRoute>`
   - `record GeoPoint(double Lat, double Lng)`
   - `record OrsRoute(string Polyline, int Metres, int Seconds)`
@@ -722,13 +724,13 @@ public sealed class OrsClient(
     private static bool Fixtures =>
         Environment.GetEnvironmentVariable("ORS_FIXTURES") == "1";
 
-    public async Task<NearbyReach[]> MatrixAsync(
+    public async Task<NearbyReach?[]> MatrixAsync(
         GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile,
         CancellationToken ct)
     {
         if (destinations.Count == 0) return [];
         if (Fixtures)
-            return [.. destinations.Select((_, i) => new NearbyReach(200 + i * 90, 3 + i))];
+            return [.. destinations.Select((_, i) => (NearbyReach?)new NearbyReach(200 + i * 90, 3 + i))];
 
         if (!await budget.TryConsumeAsync(1, ct))
             throw new OrsUnavailableException("budget");
@@ -750,14 +752,21 @@ public sealed class OrsClient(
         var distances = doc.RootElement.GetProperty("distances")[0];
         var durations = doc.RootElement.GetProperty("durations")[0];
 
-        var reach = new NearbyReach[destinations.Count];
+        var reach = new NearbyReach?[destinations.Count];
         for (var i = 0; i < destinations.Count; i++)
         {
             // Index 0 is the origin to itself.
             var m = distances[i + 1];
             var s = durations[i + 1];
+            // Null means ORS could not route to THIS destination — a park with no
+            // mapped footpath, an address the other side of an uncrossable road.
+            // Dropping that one candidate is right; failing the category because
+            // of it would make one bad POI look like an outage.
             if (m.ValueKind == JsonValueKind.Null || s.ValueKind == JsonValueKind.Null)
-                throw new OrsUnavailableException("unroutable");
+            {
+                reach[i] = null;
+                continue;
+            }
             reach[i] = new NearbyReach(
                 (int)Math.Round(m.GetDouble()),
                 Math.Max(1, (int)Math.Round(s.GetDouble() / 60.0)));
@@ -1042,13 +1051,20 @@ public sealed class NearbyLookup(OverpassClient overpass, OrsClient ors)
         var origin = new GeoPoint(lat, lng);
         var points = pois.Select(p => new GeoPoint(p.Lat, p.Lng)).ToArray();
 
-        var byProfile = new Dictionary<string, NearbyReach[]>();
+        var byProfile = new Dictionary<string, NearbyReach?[]>();
         foreach (var profile in NearbyGroups.Profiles)
             byProfile[profile] = await ors.MatrixAsync(origin, points, profile, ct);
 
+        // Profiles that came back null for a POI are simply absent from its Reach.
+        // The client's reachFor() already returns null for a missing profile, so a
+        // place reachable by car but not on foot renders correctly under the toggle.
         var candidates = pois.Select((p, i) => new NearbyCandidate(
             p.OsmId, p.Name, p.Type, p.Lat, p.Lng,
-            NearbyGroups.Profiles.ToDictionary(x => x, x => byProfile[x][i])));
+            NearbyGroups.Profiles
+                .Where(x => byProfile[x][i] is not null)
+                .ToDictionary(x => x, x => byProfile[x][i]!)))
+            // No walking figure means we cannot rank it or show it as nearby.
+            .Where(c => c.Reach.ContainsKey("foot"));
 
         // Ranked by walking time: the owner is choosing what is genuinely
         // nearby, and walking is the honest proxy for that whatever a guest
@@ -1492,7 +1508,7 @@ if (needsMeasuring.Count > 0)
     var points = needsMeasuring.Select(i =>
         new GeoPoint(merged[i].Lat, merged[i].Lng)).ToArray();
 
-    var measured = new Dictionary<string, NearbyReach[]>();
+    var measured = new Dictionary<string, NearbyReach?[]>();
     foreach (var prof in NearbyGroups.Profiles)
         measured[prof] = await ors.MatrixAsync(origin, points, prof,
             req.HttpContext.RequestAborted);
@@ -1500,10 +1516,18 @@ if (needsMeasuring.Count > 0)
     for (var k = 0; k < needsMeasuring.Count; k++)
     {
         var i = needsMeasuring[k];
-        var reach = NearbyGroups.Profiles.ToDictionary(x => x, x => measured[x][k]);
+        // A profile ORS could not route keeps no entry, so the public page
+        // hides that entry under that toggle instead of showing a blank figure.
+        var reach = NearbyGroups.Profiles
+            .Where(x => measured[x][k] is not null)
+            .ToDictionary(x => x, x => measured[x][k]!);
+        // Unroutable by EVERY profile means the owner picked somewhere we cannot
+        // describe honestly. Refuse it rather than store an entry with no figures.
+        if (reach.Count == 0) return BadRequest("nearby_unroutable");
         // Beyond its group's radius the SELECTION is now wrong, not just the
         // number — so it is flagged rather than silently kept or dropped.
-        var far = reach["foot"].Metres > NearbyGroups.RadiusMetres(merged[i].Group) * 1.5;
+        var far = reach.TryGetValue("foot", out var onFoot)
+            && onFoot.Metres > NearbyGroups.RadiusMetres(merged[i].Group) * 1.5;
         merged[i] = merged[i] with
         {
             Reach = reach,

@@ -16,6 +16,7 @@ import {
   type MonthState,
 } from "@/components/MonthBand";
 import { PropertyCard, type PropertyCardData } from "@/components/PropertyCard";
+import { SectionNavLab, type LabSection } from "@/components/design/SectionNavLab";
 import {
   DateRangePicker,
   type DateRange,
@@ -86,8 +87,21 @@ function sampleMonths(
   });
 }
 
+// The editor's real six sections, in order, with a spread of indicator states
+// so the comparison is about actual labels — "Dirección y catastro" is what
+// overflows, not a placeholder — rather than lorem of a convenient length.
+const LAB_SECTIONS = [
+  { key: "basics", state: "edited" },
+  { key: "address", state: "edited" },
+  { key: "photos", state: "needs" },
+  { key: "description", state: "idle" },
+  { key: "amenities", state: "needs" },
+  { key: "terms", state: "idle" },
+] as const satisfies readonly { key: string; state: LabSection["state"] }[];
+
 export default function DesignPage() {
   const t = useTranslations("design");
+  const te = useTranslations("host.edit");
   const th = useTranslations("search.hero");
   const ts = useTranslations("status");
   const ta = useTranslations("actions");
@@ -531,6 +545,36 @@ export default function DesignPage() {
               <Button onClick={() => setDialogOpen(false)}>{ta("book")}</Button>
             </div>
           </Dialog>
+        </div>
+      </section>
+
+      {/* Section navigation at narrow widths — a decision still open, laid out
+          so it can be made by looking. See the component header for what is
+          wrong with the two live versions. */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("sectionNav")}</span></div>
+        <p className="mt-5 max-w-2xl text-[0.84375rem] leading-relaxed text-body">
+          {t("sectionNavIntro")}
+        </p>
+        <div className="mt-6">
+          <SectionNavLab
+            sections={LAB_SECTIONS.map((s) => ({
+              ...s,
+              label: te(`nav.${s.key}` as "nav.basics"),
+            }))}
+            labels={{
+              width: t("snWidth"),
+              scroll: t("snScroll"),
+              scrollNote: t("snScrollNote"),
+              sheet: t("snSheet"),
+              sheetNote: t("snSheetNote"),
+              wrap: t("snWrap"),
+              wrapNote: t("snWrapNote"),
+              trigger: t("snTrigger"),
+              changed: t("snChanged"),
+              body: t("snBody"),
+            }}
+          />
         </div>
       </section>
     </main>

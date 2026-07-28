@@ -891,7 +891,19 @@
     "budgetMarks": "marks",
     "budget_case1": "Today's 4 · 950 / 980 / 1,350 / 1,350",
     "budget_case2": "4 homes priced close together",
-    "budget_case3": "12 homes"
+    "budget_case3": "12 homes",
+    "sectionNav": "SECTION NAVIGATION · NARROW WIDTHS",
+    "sectionNavIntro": "The editor and Manage solve the same problem with different rules: different breakpoints (56rem vs 40rem), one sticky and one not, and both overflow their box below roughly 560px. Each frame is a real scroll container, so stickiness can be judged too.",
+    "snWidth": "WIDTH",
+    "snScroll": "A · SCROLL WITH EDGE FADE",
+    "snScrollNote": "Everything one tap away, but you see two discs out of six — which is what the editor's rail exists to show.",
+    "snSheet": "B · JUMP TO SECTION",
+    "snSheetNote": "Fits any width by construction and gives the indicators a legible vertical list. Costs one extra tap.",
+    "snWrap": "C · WRAP",
+    "snWrapNote": "Hides nothing and adds no interaction, but on a phone it is three lines of sticky nav before any content.",
+    "snTrigger": "Sections",
+    "snChanged": "changed",
+    "snBody": "Sample content, only here to give the frame height so it can scroll."
   },
   "auth": {
     "signInWith": "Sign in with",

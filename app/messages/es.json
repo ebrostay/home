@@ -891,7 +891,19 @@
     "budgetMarks": "marcas",
     "budget_case1": "Las 4 de hoy · 950 / 980 / 1.350 / 1.350",
     "budget_case2": "4 viviendas con precios muy juntos",
-    "budget_case3": "12 viviendas"
+    "budget_case3": "12 viviendas",
+    "sectionNav": "NAVEGACIÓN DE SECCIONES · ANCHOS ESTRECHOS",
+    "sectionNavIntro": "El editor y Gestionar resuelven el mismo problema con reglas distintas: puntos de ruptura diferentes (56rem frente a 40rem), uno fijo al hacer scroll y el otro no, y ambos se salen de su caja por debajo de unos 560 px. Cada marco es un contenedor con scroll real, así que también se puede juzgar si la barra se queda fija.",
+    "snWidth": "ANCHO",
+    "snScroll": "A · SCROLL CON DEGRADADO",
+    "snScrollNote": "Todo a un toque, pero solo se ven dos discos de seis: justo lo que el carril del editor existe para mostrar.",
+    "snSheet": "B · IR A LA SECCIÓN",
+    "snSheetNote": "Cabe en cualquier ancho por construcción y da a los indicadores una lista vertical legible. Cuesta un toque más.",
+    "snWrap": "C · MULTILÍNEA",
+    "snWrapNote": "No oculta nada y no añade interacción, pero en un móvil son tres líneas de navegación fija antes del contenido.",
+    "snTrigger": "Secciones",
+    "snChanged": "cambiadas",
+    "snBody": "Contenido de ejemplo, solo para dar altura al marco y poder hacer scroll."
   },
   "auth": {
     "signInWith": "Entrar con",

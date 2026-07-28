@@ -89,10 +89,15 @@
 - Produces:
   - `NEARBY_GROUPS: readonly NearbyGroup[]` where `NearbyGroup = "transport" | "groceries" | "food" | "outdoors" | "health"`
   - `NEARBY_PROFILES: readonly NearbyProfile[]` where `NearbyProfile = "foot" | "car"`
-  - `TYPES_BY_GROUP: Record<NearbyGroup, readonly string[]>`
-  - `groupOfType(type: string): NearbyGroup | null`
   - `decodePolyline(encoded: string, precision?: number): [number, number][]`
   - `reachFor(entry: { reach: Partial<Record<NearbyProfile, {metres: number; minutes: number}>> }, profile: NearbyProfile): {metres: number; minutes: number} | null`
+
+> **The TYPE list is deliberately NOT here.** It is served by
+> `GET /api/nearby/vocabulary` (Task 6) so there is one definition, in
+> `NearbyGroups.cs`. Groups and profiles stay compile-time constants because
+> they are structural, not configuration: groups key the icon map in
+> `Nearby.tsx`, which is a `Record<NearbyGroup, LucideIcon>` and cannot be
+> built from a runtime fetch, and profiles key the toggle.
 
 - [ ] **Step 1: Install Vitest**
 
@@ -126,33 +131,36 @@ Create `app/lib/nearby.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import {
-  NEARBY_GROUPS,
-  NEARBY_PROFILES,
-  TYPES_BY_GROUP,
-  decodePolyline,
-  groupOfType,
-  reachFor,
-} from "./nearby";
+import en from "../messages/en.json";
+import es from "../messages/es.json";
+import { NEARBY_GROUPS, NEARBY_PROFILES, decodePolyline, reachFor } from "./nearby";
 
-describe("vocabulary", () => {
-  it("gives every group at least one type", () => {
-    for (const g of NEARBY_GROUPS) expect(TYPES_BY_GROUP[g].length).toBeGreaterThan(0);
+// The TYPE list lives on the server and arrives over the wire, so it cannot be
+// asserted here. What CAN be asserted is that the two catalogues agree with
+// each other — if they drift, one locale renders a type the other cannot, and
+// that is the failure this split introduced.
+describe("type labels", () => {
+  const keys = (m: { nearby: { type: Record<string, string> } }) =>
+    Object.keys(m.nearby.type).sort();
+
+  it("defines the same type keys in both locales", () => {
+    expect(keys(es as never)).toEqual(keys(en as never));
   });
 
-  it("never lets a type belong to two groups", () => {
-    const seen = new Set<string>();
-    for (const g of NEARBY_GROUPS)
-      for (const t of TYPES_BY_GROUP[g]) {
-        expect(seen.has(t)).toBe(false);
-        seen.add(t);
-      }
+  it("leaves no label empty", () => {
+    for (const m of [es, en] as never[])
+      for (const [k, v] of Object.entries(
+        (m as { nearby: { type: Record<string, string> } }).nearby.type,
+      ))
+        expect(v.trim(), `empty label for ${k}`).not.toBe("");
   });
+});
 
-  it("resolves a type back to its group", () => {
-    expect(groupOfType("tram")).toBe("transport");
-    expect(groupOfType("pharmacy")).toBe("health");
-    expect(groupOfType("not-a-type")).toBeNull();
+describe("groups", () => {
+  it("stays at the five the icon map is built for", () => {
+    expect([...NEARBY_GROUPS]).toEqual([
+      "transport", "groceries", "food", "outdoors", "health",
+    ]);
   });
 });
 
@@ -200,12 +208,17 @@ Expected: FAIL — `Failed to resolve import "./nearby"`.
 - [ ] **Step 5: Implement `app/lib/nearby.ts`**
 
 ```ts
-// The nearby vocabulary, mirrored from the server's NearbyGroups.cs.
+// The structural half of the nearby vocabulary, plus the pure helpers.
 //
-// Two copies exist on purpose: the server validates against its copy because a
-// client cannot be trusted, and the client needs its own to build the type
-// select without a round trip. The invariants below are tested so the two
-// cannot drift silently in shape — only the server's copy is authoritative.
+// GROUPS and PROFILES are compile-time constants because they are structure,
+// not configuration: groups key the icon map in Nearby.tsx, which is a
+// Record<NearbyGroup, LucideIcon> and cannot be built from a runtime fetch.
+//
+// TYPES are NOT here. They are served by GET /api/nearby/vocabulary so that
+// NearbyGroups.cs is their single definition — the server has to validate
+// against its own copy regardless, and a second hand-maintained list would
+// drift. The cost is that a type can arrive with no translation, so the editor
+// hides any type it has no label for rather than throwing MISSING_MESSAGE.
 
 export const NEARBY_GROUPS = [
   "transport",
@@ -218,21 +231,6 @@ export type NearbyGroup = (typeof NEARBY_GROUPS)[number];
 
 export const NEARBY_PROFILES = ["foot", "car"] as const;
 export type NearbyProfile = (typeof NEARBY_PROFILES)[number];
-
-/** Type keys resolve to `nearby.type.<key>` in the message catalogues, which
- *  both the editor and the public page read — defined once, translated once. */
-export const TYPES_BY_GROUP: Record<NearbyGroup, readonly string[]> = {
-  transport: ["tram", "bus", "rail", "metro", "bikeshare", "taxi"],
-  groceries: ["supermarket", "market", "bakery", "convenience", "mall"],
-  food: ["restaurant", "tapas", "cafe", "bar"],
-  outdoors: ["park", "river", "sports", "pool", "playground"],
-  health: ["pharmacy", "clinic", "hospital", "dentist", "vet"],
-};
-
-export function groupOfType(type: string): NearbyGroup | null {
-  for (const g of NEARBY_GROUPS) if (TYPES_BY_GROUP[g].includes(type)) return g;
-  return null;
-}
 
 export type Reach = { metres: number; minutes: number };
 
@@ -282,7 +280,10 @@ export function decodePolyline(encoded: string, precision = 5): [number, number]
 - [ ] **Step 6: Run tests**
 
 Run: `cd app && npm test`
-Expected: PASS, 7 tests.
+Expected: PASS. The label tests will only pass once Task 11 adds the
+`nearby.type.*` block to both catalogues — until then they fail on a missing
+key, which is correct and expected. Add a minimal `"nearby": { "type": {} }`
+to both files in this task so the suite is green, and Task 11 fills it.
 
 - [ ] **Step 7: Commit**
 
@@ -537,6 +538,28 @@ public static class NearbyGroups
 
     public static bool IsKnownType(string group, string type) =>
         TypesByGroup.TryGetValue(group, out var types) && types.Contains(type);
+
+    /// The vocabulary served to the editor. THIS is the single definition of
+    /// the type list — the client has none of its own, so drift is impossible
+    /// by construction rather than by discipline.
+    public static IReadOnlyDictionary<string, string[]> Vocabulary => TypesByGroup;
+
+    /// Invariants that used to be guarded by client-side tests. With the list
+    /// server-only and no C# test project, a startup check is what is left —
+    /// it fails the deployment rather than shipping a group with no types or a
+    /// type that answers to two groups.
+    static NearbyGroups()
+    {
+        var seen = new HashSet<string>();
+        foreach (var group in All)
+        {
+            if (!TypesByGroup.TryGetValue(group, out var types) || types.Length == 0)
+                throw new InvalidOperationException($"nearby group '{group}' has no types");
+            foreach (var t in types)
+                if (!seen.Add(t))
+                    throw new InvalidOperationException($"nearby type '{t}' is in two groups");
+        }
+    }
 
     /// Every listing is in Zaragoza. This bound is what stops the owner
     /// endpoint being a general-purpose router at our expense.
@@ -1152,6 +1175,27 @@ Follow the shape of `HostFunctions.cs` for auth (`ClientPrincipal.Parse`, `profi
 The snippets below use four injected fields — `profiles` (`ProfileService`), `lookup` (`NearbyLookup`), `ors` (`OrsClient`) and `cache` (`RouteCache`), plus whatever `HostFunctions` uses to reach Cosmos. Declare them as primary-constructor parameters in the same style `HostFunctions` uses; the plan does not repeat that boilerplate. Three endpoints:
 
 ```csharp
+// GET /api/nearby/vocabulary
+// Anonymous and heavily cached: it is static configuration, holds no secrets
+// and names no listing. It exists so NearbyGroups.cs is the ONE definition of
+// the type list — the client keeps no copy.
+[Function("NearbyVocabulary")]
+public IActionResult Vocabulary(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "nearby/vocabulary")]
+    HttpRequest req)
+{
+    req.HttpContext.Response.Headers.CacheControl = "public, max-age=3600";
+    return new OkObjectResult(new
+    {
+        groups = NearbyGroups.All.Select(g => new
+        {
+            key = g,
+            types = NearbyGroups.Vocabulary[g],
+        }),
+        profiles = NearbyGroups.Profiles,
+    });
+}
+
 // GET /api/host/nearby/candidates?lat=&lng=&group=
 // Owner-authenticated. Rejects coordinates outside Zaragoza and unknown groups
 // — that bound is what stops this being a general-purpose router.
@@ -1503,6 +1547,7 @@ git commit -m "feat(api): merge nearby entries on save, measuring server-side on
 - Produces:
   - `type NearbyReachMap = Partial<Record<NearbyProfile, { metres: number; minutes: number }>>`
   - `type PublicNearbyEntry`, `type HostNearbyEntry`
+  - `fetchNearbyVocabulary(signal?): Promise<{ groups: { key: string; types: string[] }[]; profiles: string[] }>`
   - `fetchNearbyCandidates(lat, lng, group, signal?): Promise<NearbyCandidate[]>`
   - `fetchPreviewRoute(from, to, profile, signal?): Promise<RouteLine>`
   - `fetchNearbyRoute(propertyId, entryId, profile, signal?): Promise<RouteLine>`
@@ -1840,7 +1885,9 @@ Structure per ADR-028 Decision 7 and the design's §7.1:
 - `Find nearby` expands the finder **inline** (never a dialog — it would fight the sticky nav and save bar).
 - Finder layout uses a **container query** (`@container`), not a media query: the edit page grows a rail at `64rem`, so the card's width is not a function of the viewport and a media query would be wrong in exactly the rail case.
 - Clicking a candidate calls `fetchPreviewRoute` and passes the polyline down. **Click, not hover** — hover would fire a request per mouse movement.
-- Type `<select>` pre-filled from the candidate's type, with `Other…` last revealing the ES/EN inputs.
+- Type `<select>` built from `fetchNearbyVocabulary()` — **the client keeps no type list of its own.** Pre-filled from the candidate's type, with `Other…` last revealing the ES/EN inputs.
+- **Hide any served type that has no `nearby.type.<key>` string** rather than rendering it. The vocabulary now arrives over the wire while the labels stay in the catalogues, so a type added server-side before its strings would otherwise throw `MISSING_MESSAGE`. Use next-intl's `has()` to check, and never render a raw key as a label.
+- If the vocabulary fetch fails, the finder still works and the type select falls back to disabled with the failure named — a candidate's own type is already known from the lookup, so adding is not blocked.
 - At 6 in a group, add controls are `disabled` with the reason rendered, not hidden.
 - On lookup failure, render the message and a retry; manual add stays available.
 - After adding, **focus stays in the candidate list**.

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Ebrostay.Api.Services;
 
 /// The closed vocabulary, and the ONLY place a group's search radius lives.
@@ -76,7 +78,6 @@ public static class NearbyGroups
         ("railway", "tram_stop") => "tram",
         ("highway", "bus_stop") => "bus",
         ("railway", "station") => "rail",
-        ("railway", "subway_entrance") => "metro",
         ("amenity", "bicycle_rental") => "bikeshare",
         ("amenity", "taxi") => "taxi",
         ("shop", "supermarket") => "supermarket",
@@ -100,6 +101,10 @@ public static class NearbyGroups
         _ => null,
     };
 
+    /// Type vocabulary by group. Note: "tapas" (food), "river" (outdoors), and
+    /// "metro" (transport) are owner-selectable types — no OSM tag produces them,
+    /// so they only appear when an owner manually adds a place. All others map
+    /// through `TypeOf` from Overpass results.
     private static readonly Dictionary<string, string[]> TypesByGroup = new()
     {
         ["transport"] = ["tram", "bus", "rail", "metro", "bikeshare", "taxi"],
@@ -119,18 +124,19 @@ public static class NearbyGroups
 
     /// Invariants that used to be guarded by client-side tests. With the list
     /// server-only and no C# test project, a startup check is what is left —
-    /// it fails the deployment rather than shipping a group with no types or a
-    /// type that answers to two groups.
+    /// this constructor is lazy-initialized on first access and throws on the
+    /// first request that touches the nearby feature, turning a bad edit into an
+    /// immediate, loud failure rather than silently wrong data.
     static NearbyGroups()
     {
         var seen = new HashSet<string>();
         foreach (var group in All)
         {
             if (!TypesByGroup.TryGetValue(group, out var types) || types.Length == 0)
-                throw new InvalidOperationException($"nearby group '{group}' has no types");
+                throw new InvalidOperationException($"NearbyGroups.cs: nearby group '{group}' has no types");
             foreach (var t in types)
                 if (!seen.Add(t))
-                    throw new InvalidOperationException($"nearby type '{t}' is in two groups");
+                    throw new InvalidOperationException($"NearbyGroups.cs: nearby type '{t}' is in two groups");
         }
     }
 
@@ -141,5 +147,5 @@ public static class NearbyGroups
 
     /// Cache cell for the Overpass answer — 3 decimal places, about 110 m.
     public static string Cell(double lat, double lng, string group) =>
-        $"{lat:F3}|{lng:F3}|{group}";
+        string.Create(CultureInfo.InvariantCulture, $"{lat:F3}|{lng:F3}|{group}");
 }

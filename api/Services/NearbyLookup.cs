@@ -27,7 +27,9 @@ public sealed class NearbyLookup(OverpassClient overpass, OrsClient ors)
 
         // Profiles that came back null for a POI are simply absent from its Reach.
         // The client's reachFor() already returns null for a missing profile, so a
-        // place reachable by car but not on foot renders correctly under the toggle.
+        // place reachable on foot but not by car renders correctly under the toggle
+        // (the reverse — car but no foot figure — is dropped below, since we can't
+        // rank or show a place we have no walking figure for at all).
         var candidates = pois.Select((p, i) => new NearbyCandidate(
             p.OsmId, p.Name, p.Type, p.Lat, p.Lng,
             NearbyGroups.Profiles

@@ -20,6 +20,13 @@ public sealed class OverpassClient(
     private const string Endpoint = "https://overpass-api.de/api/interpreter";
     private const int MaxPois = 20;
 
+    // The number of elements we ASK Overpass for, not the number we return.
+    // Overpass's `out body N` truncates before our own distance sort runs, and
+    // truncation order has no relationship to distance from the `around`
+    // point — a small cap can silently drop the true nearest POIs in a dense
+    // area. 200 gives our Haversine sort a real candidate set to work from.
+    private const int QueryBudget = 200;
+
     public async Task<NearbyPoi[]> FindAsync(
         double lat, double lng, string group, CancellationToken ct)
     {
@@ -38,18 +45,26 @@ public sealed class OverpassClient(
 
         var pois = await QueryAsync(lat, lng, group, ct);
 
-        try
+        // An empty result is never cached. We cannot tell "genuinely nothing
+        // in this radius" apart from a degraded-but-200 Overpass answer with
+        // no remark, so writing it would risk suppressing a whole group for
+        // the cache's full TTL. Re-querying an empty cell occasionally is
+        // far cheaper than that.
+        if (pois.Length > 0)
         {
-            await cache.UpsertItemAsync(
-                new NearbyCandidatesDoc(cell, cell, pois,
-                    DateTimeOffset.UtcNow.ToString("o")),
-                new PartitionKey(cell), cancellationToken: ct);
-        }
-        catch (CosmosException e)
-        {
-            // A failed cache write must never fail the request — it only means
-            // the next lookup asks again.
-            log.LogWarning(e, "nearby candidate cache write failed for {Cell}", cell);
+            try
+            {
+                await cache.UpsertItemAsync(
+                    new NearbyCandidatesDoc(cell, cell, pois,
+                        DateTimeOffset.UtcNow.ToString("o")),
+                    new PartitionKey(cell), cancellationToken: ct);
+            }
+            catch (CosmosException e)
+            {
+                // A failed cache write must never fail the request — it only
+                // means the next lookup asks again.
+                log.LogWarning(e, "nearby candidate cache write failed for {Cell}", cell);
+            }
         }
 
         return pois;
@@ -65,16 +80,44 @@ public sealed class OverpassClient(
         var selectors = string.Concat(NearbyGroups.OverpassTags(group)
             .Select(t => $"node[\"{t.Key}\"=\"{t.Value}\"]{around};"));
 
-        var ql = $"[out:json][timeout:20];({selectors});out body {MaxPois * 3};";
+        // qt (quadtile) order at least correlates with spatial locality, unlike
+        // the default element order, which has no relationship to distance
+        // from the `around` point.
+        var ql = $"[out:json][timeout:12];({selectors});out body qt {QueryBudget};";
 
         var http = factory.CreateClient("overpass");
-        using var res = await http.PostAsync(Endpoint,
-            new StringContent(ql, Encoding.UTF8, "text/plain"), ct);
+        HttpResponseMessage res;
+        try
+        {
+            res = await http.PostAsync(Endpoint,
+                new StringContent(ql, Encoding.UTF8, "text/plain"), ct);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The client's own timeout fired, not the caller's token — the QL
+            // asked Overpass for 12s and the "overpass" HttpClient is
+            // configured to outlive that, but treat an abort here the same
+            // graceful way as a non-2xx rather than letting it escape raw.
+            throw new OrsUnavailableException("overpass_timeout");
+        }
+        using var _ = res;
 
         if (!res.IsSuccessStatusCode)
             throw new OrsUnavailableException($"overpass_{(int)res.StatusCode}");
 
         using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
+
+        if (doc.RootElement.TryGetProperty("remark", out var remarkEl))
+        {
+            // A 200 with a `remark` means Overpass hit a server-side timeout or
+            // is overloaded — `elements` is then empty or partial, and that is
+            // indistinguishable from a genuine "nothing here" unless we check
+            // for this explicitly.
+            log.LogWarning(
+                "Overpass returned a degraded response for {Group} near {Lat},{Lng}: {Remark}",
+                group, lat, lng, remarkEl.GetString());
+            throw new OrsUnavailableException("overpass_degraded");
+        }
 
         var found = new List<NearbyPoi>();
         foreach (var el in doc.RootElement.GetProperty("elements").EnumerateArray())
@@ -85,11 +128,31 @@ public sealed class OverpassClient(
             var name = nameEl.GetString();
             if (string.IsNullOrWhiteSpace(name)) continue;
 
+            // Iterate the group's own tag list first, in its declared order,
+            // so a node carrying more than one mapped tag (e.g. shop=bakery
+            // AND amenity=cafe) classifies deterministically rather than by
+            // whatever order the JSON serialiser happened to emit the tags in.
             string? type = null;
-            foreach (var tag in tags.EnumerateObject())
+            foreach (var candidate in NearbyGroups.OverpassTags(group))
             {
-                type = NearbyGroups.TypeOf(tag.Name, tag.Value.GetString() ?? "");
-                if (type is not null) break;
+                if (tags.TryGetProperty(candidate.Key, out var v)
+                    && v.GetString() == candidate.Value)
+                {
+                    type = NearbyGroups.TypeOf(candidate.Key, candidate.Value);
+                    break;
+                }
+            }
+            // Fall back to scanning every tag only if none of the group's own
+            // selectors matched — this covers nothing in practice today (every
+            // node came back because it matched a selector), but keeps the
+            // wider tag-to-type mapping doing the same job it always did.
+            if (type is null)
+            {
+                foreach (var tag in tags.EnumerateObject())
+                {
+                    type = NearbyGroups.TypeOf(tag.Name, tag.Value.GetString() ?? "");
+                    if (type is not null) break;
+                }
             }
             // Unmapped tags are dropped rather than guessed at.
             if (type is null) continue;

@@ -71,8 +71,10 @@ builder.Services.AddHttpClient("ors", c =>
 
 builder.Services.AddHttpClient("overpass", c =>
 {
-    // Overpass is genuinely slow; 5s would time out on legitimate answers.
-    c.Timeout = TimeSpan.FromSeconds(10);
+    // The QL query itself asks Overpass for a 12s server-side timeout; this
+    // client timeout must stay comfortably above that so a legitimate answer
+    // arriving just under the deadline we granted is never aborted client-side.
+    c.Timeout = TimeSpan.FromSeconds(15);
     c.DefaultRequestHeaders.UserAgent.ParseAdd("ebrostay/2.0 (info@ebrostay.com)");
 });
 

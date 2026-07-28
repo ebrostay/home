@@ -16,8 +16,6 @@ import {
   type MonthState,
 } from "@/components/MonthBand";
 import { PropertyCard, type PropertyCardData } from "@/components/PropertyCard";
-import { SectionNavLab, type LabSection } from "@/components/design/SectionNavLab";
-import { SectionNavLadder } from "@/components/design/SectionNavLadder";
 import {
   DateRangePicker,
   type DateRange,
@@ -88,27 +86,8 @@ function sampleMonths(
   });
 }
 
-// The editor's real six sections, in order, with a spread of indicator states
-// so the comparison is about actual labels — "Dirección y catastro" is what
-// overflows, not a placeholder — rather than lorem of a convenient length.
-const LAB_SECTIONS = [
-  { key: "basics", state: "edited" },
-  { key: "address", state: "edited" },
-  { key: "photos", state: "needs" },
-  { key: "description", state: "idle" },
-  { key: "amenities", state: "needs" },
-  { key: "terms", state: "idle" },
-] as const satisfies readonly { key: string; state: LabSection["state"] }[];
-
 export default function DesignPage() {
   const t = useTranslations("design");
-  const te = useTranslations("host.edit");
-  // Built once and shared by both nav demos, so they are always comparing the
-  // same six labels in the same states.
-  const labSections: LabSection[] = LAB_SECTIONS.map((s) => ({
-    ...s,
-    label: te(`nav.${s.key}` as "nav.basics"),
-  }));
   const th = useTranslations("search.hero");
   const ts = useTranslations("status");
   const ta = useTranslations("actions");
@@ -555,57 +534,6 @@ export default function DesignPage() {
         </div>
       </section>
 
-      {/* Section navigation at narrow widths — a decision still open, laid out
-          so it can be made by looking. See the component header for what is
-          wrong with the two live versions. */}
-      <section className="mt-14">
-        <div className="ledger-rule"><span>{t("sectionNav")}</span></div>
-        <p className="mt-5 max-w-2xl text-[0.84375rem] leading-relaxed text-body">
-          {t("sectionNavIntro")}
-        </p>
-        <div className="mt-6">
-          <SectionNavLab
-            sections={labSections}
-            labels={{
-              width: t("snWidth"),
-              scroll: t("snScroll"),
-              scrollNote: t("snScrollNote"),
-              sheet: t("snSheet"),
-              sheetNote: t("snSheetNote"),
-              wrap: t("snWrap"),
-              wrapNote: t("snWrapNote"),
-              trigger: t("snTrigger"),
-              changed: t("snChanged"),
-              body: t("snBody"),
-            }}
-          />
-        </div>
-      </section>
-
-      {/* The proposed answer: the same rungs, climbed by fit. */}
-      <section className="mt-14">
-        <div className="ledger-rule"><span>{t("sectionLadder")}</span></div>
-        <p className="mt-5 max-w-2xl text-[0.84375rem] leading-relaxed text-body">
-          {t("sectionLadderIntro")}
-        </p>
-        <div className="mt-6">
-          <SectionNavLadder
-            sections={labSections}
-            labels={{
-              width: t("snWidth"),
-              manage: t("slManage"),
-              edit: t("slEdit"),
-              stage: t("slStage"),
-              stageRail: t("slStageRail"),
-              stageBar: t("slStageBar"),
-              stageSheet: t("slStageSheet"),
-              trigger: t("snTrigger"),
-              changed: t("snChanged"),
-              body: t("snBody"),
-            }}
-          />
-        </div>
-      </section>
     </main>
   );
 }

@@ -371,7 +371,8 @@
         "photos": "Photos",
         "description": "Description",
         "amenities": "What the home offers",
-        "terms": "Rules & terms"
+        "terms": "Rules & terms",
+        "changed": "changed"
       },
       "ledger": {
         "photos": "PHOTOS",
@@ -891,27 +892,7 @@
     "budgetMarks": "marks",
     "budget_case1": "Today's 4 · 950 / 980 / 1,350 / 1,350",
     "budget_case2": "4 homes priced close together",
-    "budget_case3": "12 homes",
-    "sectionNav": "SECTION NAVIGATION · NARROW WIDTHS",
-    "sectionNavIntro": "The editor and Manage solve the same problem with different rules: different breakpoints (56rem vs 40rem), one sticky and one not, and both overflow their box below roughly 560px. Each frame is a real scroll container, so stickiness can be judged too.",
-    "snWidth": "WIDTH",
-    "snScroll": "A · SCROLL WITH EDGE FADE",
-    "snScrollNote": "Everything one tap away, but you see two discs out of six — which is what the editor's rail exists to show.",
-    "snSheet": "B · JUMP TO SECTION",
-    "snSheetNote": "Fits any width by construction and gives the indicators a legible vertical list. Costs one extra tap.",
-    "snWrap": "C · WRAP",
-    "snWrapNote": "Hides nothing and adds no interaction, but on a phone it is three lines of sticky nav before any content.",
-    "snTrigger": "Sections",
-    "snChanged": "changed",
-    "snBody": "Sample content, only here to give the frame height so it can scroll.",
-    "sectionLadder": "PROPOSED LADDER · MANAGE AND EDIT",
-    "sectionLadderIntro": "The rungs are shared: the editor's middle rung IS Manage's top rung — same component, same styling — differing only in whether it carries status discs. The switch to \"Sections\" is decided by MEASURING whether the bar fits, not by a fixed breakpoint. Measured here: Manage reaches the bar at 760px in Spanish against 735px in English, and the editor at 900 against 860 — a fixed number tuned in one language clips the other, and the editor needs more room because its bar also carries discs.",
-    "slManage": "MANAGE · 2 RUNGS",
-    "slEdit": "EDIT · 3 RUNGS",
-    "slStage": "RUNG",
-    "slStageRail": "rail",
-    "slStageBar": "bar",
-    "slStageSheet": "sections"
+    "budget_case3": "12 homes"
   },
   "auth": {
     "signInWith": "Sign in with",

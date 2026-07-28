@@ -42,7 +42,7 @@ import {
 } from "@/lib/listing";
 import { ContextBar } from "@/components/host/manage/ContextBar";
 import { SectionCard } from "@/components/host/manage/SectionCard";
-import { SectionRail } from "@/components/host/edit/SectionRail";
+import { SectionNav, type SectionStatus } from "@/components/host/SectionNav";
 import { SaveBar, type SaveState } from "@/components/host/edit/SaveBar";
 import { DangerZone } from "@/components/host/edit/DangerZone";
 import { BasicsFields } from "@/components/host/fields/BasicsFields";
@@ -237,6 +237,17 @@ function EditContent() {
     SECTIONS.map((key) => [key, te(`nav.${key}` as "nav.basics")]),
   ) as Record<SectionKey, string>;
 
+  // The two sets the rail used to take separately, resolved here into the one
+  // state per section the nav renders. Edited wins: once you are working in a
+  // section, what matters is that the change is captured, not that it was
+  // already thin.
+  const statuses = Object.fromEntries(
+    SECTIONS.map((key) => [
+      key,
+      diff.edited.has(key) ? "edited" : diff.attention.has(key) ? "needs" : "idle",
+    ]),
+  ) as Record<SectionKey, SectionStatus>;
+
   const stats = diff.stats;
   const cells = [
     { key: "photos", value: String(stats.photos), label: te("ledger.photos"), warn: stats.photos === 0 },
@@ -307,11 +318,20 @@ function EditContent() {
       </header>
 
       <div className="grid items-start gap-9 min-[56rem]:grid-cols-[13rem_minmax(0,1fr)]">
-        <SectionRail
+        {/* Rail while the grid above still has a left column, then the same
+            hairline bar Manage uses, then "Sections". No scroll spy: the discs
+            already own this glance, and a highlight chasing the scroll would
+            compete with them for it. */}
+        <SectionNav
+          sections={SECTIONS}
           labels={labels}
-          edited={diff.edited}
-          attention={diff.attention}
           ariaLabel={te("nav.label")}
+          sheetLabel={te("nav.label")}
+          changedLabel={te("nav.changed")}
+          status={statuses}
+          rail
+          railTop="calc(var(--header-h) + 4.5rem)"
+          stickyTop="var(--header-h)"
         />
 
         <div className="flex min-w-0 flex-col gap-5">

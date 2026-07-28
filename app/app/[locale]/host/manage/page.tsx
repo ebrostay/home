@@ -39,7 +39,7 @@ import {
 import { formatEuro } from "@/lib/pricing";
 import { LedgerStrip, type LedgerCell } from "@/components/host/LedgerStrip";
 import { ContextBar } from "@/components/host/manage/ContextBar";
-import { SectionNav } from "@/components/host/manage/SectionNav";
+import { SectionNav } from "@/components/host/SectionNav";
 import { StaysSection } from "@/components/host/manage/StaysSection";
 import {
   PricingSection,
@@ -286,7 +286,17 @@ function ManageContent() {
         <LedgerStrip cells={cells} flush />
       </div>
 
-      <SectionNav labels={labels} ariaLabel={tm("nav.label")} />
+      {/* Bar while it fits, "Sections" when it does not. No status discs:
+          this nav answers where you are in a long page, not what you have
+          changed — Manage saves per section as you go. */}
+      <SectionNav
+        sections={SECTIONS}
+        labels={labels}
+        ariaLabel={tm("nav.label")}
+        sheetLabel={tm("nav.label")}
+        stickyTop="var(--manage-nav-top)"
+        spy
+      />
 
       <StaysSection
         stays={derived.stays}

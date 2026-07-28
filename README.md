@@ -33,20 +33,25 @@ assets/  brand assets carried over from v1
 
 ## Develop
 
+**Setting up a machine from scratch: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)** —
+prerequisites, the Cosmos DB and Azurite emulators, seeding, skills and
+plugins, and troubleshooting. Nothing local needs an Azure subscription.
+
+Once set up, three processes:
+
 ```bash
-# Frontend
-cd app
-npm install
-npm run dev          # http://localhost:3000/es
+npm run dev --prefix app                                              # :3000
+cd api && func start                                                  # :7071
+npx swa start http://localhost:3000 --api-devserver-url http://localhost:7071
+```
 
-# API (requires .NET 9 SDK; install script: https://dot.net/v1/dotnet-install.sh)
-cd api
-cp local.settings.sample.json local.settings.json   # first time
-func start           # requires Azure Functions Core Tools v4
+Then browse **<http://localhost:4280>** — *not* :3000. The SWA emulator is what
+injects the `x-ms-client-principal` header the API reads, so on :3000 every
+authenticated call returns 401 and the pages that need one look broken for
+reasons of their own.
 
-# Full emulation (static site + API + SWA auth emulation)
-npm run build --prefix app
-swa start app/out --api-location api
+```bash
+npm run build --prefix app    # static export → app/out; must stay green
 ```
 
 ## Deploy

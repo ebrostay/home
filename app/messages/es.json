@@ -420,6 +420,8 @@
         "pinSuggestion": "La dirección apunta a {distance} de tu punto.",
         "movePinHere": "Mover el punto aquí",
         "keepMine": "Dejar el mío",
+        "changedSince": "Esto ha cambiado desde que lo revisaste.",
+        "reviewedOn": "Lo revisaste el {date} y lo dejaste como está.",
         "cadastreWhat": "¿Qué es la referencia catastral?",
         "cadastreInfoWhat": "Es el identificador que el Catastro asigna a cada inmueble de España: 20 letras y números. Los cuatro anteriores a los dos últimos señalan la vivienda concreta dentro del edificio.",
         "cadastreInfoWhere": "La tienes impresa en el recibo del IBI, que es lo más rápido. También aparece en la escritura, o puedes buscarla por dirección en la Sede Electrónica del Catastro.",
@@ -563,6 +565,9 @@
         "too_many_photos": "Un anuncio admite 40 fotos como máximo.",
         "photo_unknown": "Una de esas fotos ya no está en el anuncio. Recarga para ver las actuales.",
         "photo_duplicate": "La misma foto aparece dos veces.",
+        "too_many_declined": "Son más sugerencias descartadas de las que admite un anuncio. Recarga la página.",
+        "declined_invalid": "No hemos podido descartar esa sugerencia. Recarga la página e inténtalo otra vez.",
+        "declined_duplicate": "Esa sugerencia ya estaba descartada. Recarga para ver el estado actual.",
         "status_invalid": "Desde aquí solo puedes pausar o reabrir el anuncio.",
         "status_not_allowed": "Este anuncio no se puede pausar ni reabrir en su estado actual.",
         "stale_write": "Esta vivienda ha cambiado en otro sitio mientras editabas. Recarga para ver la versión actual."

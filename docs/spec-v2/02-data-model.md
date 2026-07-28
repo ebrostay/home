@@ -75,7 +75,7 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   the Catastro, so no surface claims a
                                       //   match (ADR-027)
   "lat": 41.65393, "lng": -0.90783,
-  "declinedSuggestions": [],          // 🔜 outside answers the owner has already
+  "declinedSuggestions": [],          // ✅ outside answers the owner has already
                                       //   ruled on, so they are not re-offered
                                       //   until they change (§2.2.4, ADR-027)
 
@@ -267,7 +267,7 @@ v1's `availability_blocks.user_id` (tenant assigned to a stay, powering "My
 stays") is **not carried** — tenant-assigned stays are out of initial v2 scope
 (the v2 host dashboard covers own listings + requests instead, §4.4).
 
-### 2.2.4 Declined suggestions 🔜 (ADR-027 amendment 2026-07-28)
+### 2.2.4 Declined suggestions ✅ (ADR-027 amendment 2026-07-28)
 
 The editor asks OpenStreetMap and the Catastro about a listing on every visit,
 and offers what they say where it differs from what the owner wrote (§4.4).

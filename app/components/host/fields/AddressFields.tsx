@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Lock, MapPin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { Bilingual, HostListing } from "@/lib/api";
+import type { Bilingual, Declined, HostListing } from "@/lib/api";
 import { LIMITS, cadastreChecksum, cadastreValid, postcodeValid } from "@/lib/listing";
+import { pinValue, verdictFor } from "@/lib/declined";
 import { InfoPopover } from "@/components/ui/InfoPopover";
 import {
   SAME_PLACE_M,
@@ -27,8 +28,18 @@ import { TextField } from "./TextField";
 //   · empty fields are filled outright — there is nothing to lose,
 //   · filled fields get a one-line "OSM says X" with an apply button, because
 //     OSM's administrative boundaries are not always what locals call a place,
-//   · a hand-placed pin is shown against the suggested one and kept until the
+//   · an existing pin is shown against the suggested one and kept until the
 //     owner chooses.
+//
+// The pin was the exception to that rule and should not have been: it was
+// overwritten on sight, and since the lookup runs on mount, every saved
+// listing opened with an unsaved address change nobody had made. Coordinates
+// now follow the same rule as everything else — see `pinIsPlaced`.
+//
+// Declining is remembered (`lib/declined.ts`). An offer the owner has ruled on
+// is not put to them again until the answer itself changes; otherwise the page
+// asks the same settled question on every visit, and the way people end a
+// question like that is by pressing yes.
 //
 // The street itself is never rewritten, not even to OSM's official spelling.
 // It is the field the owner is typing in, and the detail OSM lacks is exactly
@@ -48,9 +59,14 @@ const DEBOUNCE_MS = 800;
 export function AddressFields({
   value,
   onChange,
+  declined,
+  onDecline,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
+  /** Suggestions already ruled on. Applies live and is not part of the diff. */
+  declined: Declined[];
+  onDecline: (entry: Omit<Declined, "at">) => void;
 }) {
   const t = useTranslations("host.edit.address");
   const locale = useLocale();
@@ -61,9 +77,20 @@ export function AddressFields({
   // came from.
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [lookup, setLookup] = useState<"idle" | "searching" | "none" | "error">("idle");
-  // Set the moment the owner drags or clicks the map, cleared when they accept
-  // a suggestion. It is the whole of "is this pin theirs or ours".
-  const [pinIsManual, setPinIsManual] = useState(false);
+  // Does this listing have a pin somebody decided on?
+  //
+  // Seeded from the loaded listing, which is the fix for the defect above: a
+  // saved pin is a decision already made, whoever made it, and starting this
+  // at `false` meant every page load counted as "no pin yet" and let the
+  // geocoder's answer straight in.
+  //
+  // The question it used to ask — did the owner drag the map *in this
+  // session* — was never the interesting one. What matters is whether there is
+  // a pin to protect. A pin is never removed, so this only ever goes true.
+  const [pinIsPlaced, setPinIsPlaced] = useState(
+    () => value.lat !== 0 || value.lng !== 0,
+  );
+  const placePin = () => setPinIsPlaced(true);
 
   const set = <K extends keyof HostListing>(key: K, next: HostListing[K]) =>
     onChange({ ...value, [key]: next });
@@ -130,12 +157,12 @@ export function AddressFields({
   /**
    * Take everything from a candidate that is safe to take.
    *
-   * `respectManualPin` is what separates the automatic path from a deliberate
-   * one. An automatic result must not move a pin the owner dragged onto their
-   * doorway; clicking a candidate, or "Move the pin here", is the owner saying
-   * to move it, so it does.
+   * `respectPlacedPin` is what separates the automatic path from a deliberate
+   * one. An automatic result must not move a pin that already exists; clicking
+   * a candidate, or "Move the pin here", is the owner saying to move it, so it
+   * does.
    */
-  const apply = (c: GeoCandidate, respectManualPin: boolean) => {
+  const apply = (c: GeoCandidate, respectPlacedPin: boolean) => {
     const next: HostListing = { ...value };
     if (c.postcode && !value.postcode?.trim()) next.postcode = c.postcode;
     if (c.area && !value.area?.es?.trim() && !value.area?.en?.trim()) {
@@ -147,13 +174,14 @@ export function AddressFields({
       next.area = { es: c.area, en: c.area };
     }
 
-    const keepPin = respectManualPin && pinIsManual;
+    const keepPin = respectPlacedPin && pinIsPlaced;
     if (!keepPin) {
       next.lat = c.lat;
       next.lng = c.lng;
     }
     onChange(next);
-    if (!keepPin) setPinIsManual(false);
+    // Whether it was filled or moved, there is a pin now.
+    if (!keepPin) placePin();
     setChosenId(c.placeId);
   };
 
@@ -162,24 +190,41 @@ export function AddressFields({
     applyRef.current = apply;
   });
 
-  // Fields the candidate disagrees with, offered rather than taken.
-  const conflicts = chosen
-    ? [
-        chosen.postcode && value.postcode && chosen.postcode !== value.postcode
-          ? { key: "postcode" as const, theirs: chosen.postcode }
-          : null,
-        chosen.area && value.area?.es?.trim() && chosen.area !== value.area.es
-          ? { key: "area" as const, theirs: chosen.area }
-          : null,
-      ].filter((c) => c !== null)
-    : [];
+  // Everything OSM offers is about the address that was typed, so that is the
+  // question a decision here gets recorded against.
+  const ruling = (field: "pin" | "postcode" | "area", offered: string) =>
+    verdictFor(declined, field, "osm", address, offered);
 
-  // Shown only when there is a hand-placed pin to protect AND the geocoder
-  // actually disagrees with it. Street-level accuracy is ~25 m, so anything
-  // closer is the same answer twice.
+  // Fields the candidate disagrees with, offered rather than taken — minus the
+  // ones the owner has already settled.
+  const conflicts = (
+    chosen
+      ? [
+          chosen.postcode && value.postcode && chosen.postcode !== value.postcode
+            ? { key: "postcode" as const, theirs: chosen.postcode }
+            : null,
+          chosen.area && value.area?.es?.trim() && chosen.area !== value.area.es
+            ? { key: "area" as const, theirs: chosen.area }
+            : null,
+        ].filter((c) => c !== null)
+      : []
+  )
+    .map((c) => ({ ...c, ...ruling(c.key, c.theirs) }))
+    .filter((c) => c.verdict !== "settled");
+
+  // Shown only when there is a pin to protect AND the geocoder actually
+  // disagrees with it. Street-level accuracy is ~25 m, so anything closer is
+  // the same answer twice.
   const distance =
-    chosen && pinIsManual ? metresBetween(chosen, { lat: value.lat, lng: value.lng }) : 0;
-  const suggestion = chosen && pinIsManual && distance > SAME_PLACE_M ? chosen : null;
+    chosen && pinIsPlaced ? metresBetween(chosen, { lat: value.lat, lng: value.lng }) : 0;
+  const disagrees = chosen && pinIsPlaced && distance > SAME_PLACE_M ? chosen : null;
+  const pinRuling = disagrees
+    ? ruling("pin", pinValue(disagrees.lat, disagrees.lng))
+    : null;
+  // A settled disagreement is not raised again. A changed one is: the source
+  // has moved since the owner looked, which is a new fact rather than the same
+  // question asked twice.
+  const suggestion = pinRuling?.verdict === "settled" ? null : disagrees;
 
   return (
     <div className="flex flex-col gap-4">
@@ -257,7 +302,12 @@ export function AddressFields({
           className="flex flex-wrap items-center gap-2.5 rounded-(--radius-control) bg-surface-2 px-3.5 py-2.5 text-[0.8125rem] text-body"
         >
           <MapPin size={14} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
-          {t(`conflict.${c.key}` as "conflict.postcode", { value: c.theirs })}
+          <span className="min-w-[12rem] flex-1">
+            {t(`conflict.${c.key}` as "conflict.postcode", { value: c.theirs })}
+            {c.verdict === "changed" && (
+              <span className="block text-xs text-muted">{t("changedSince")}</span>
+            )}
+          </span>
           <button
             type="button"
             onClick={() =>
@@ -268,6 +318,15 @@ export function AddressFields({
             className="rounded-(--radius-control) border border-line-strong bg-surface px-2.5 py-1 text-xs font-semibold text-ink transition-colors duration-(--dur-standard) hover:border-ink"
           >
             {t("useThis")}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onDecline({ field: c.key, source: "osm", value: c.theirs, for: address })
+            }
+            className="rounded-(--radius-control) px-2.5 py-1 text-xs font-semibold text-body transition-colors duration-(--dur-standard) hover:text-ink"
+          >
+            {t("keepMine")}
           </button>
         </p>
       ))}
@@ -351,8 +410,10 @@ export function AddressFields({
       <CadastrePanel
         value={value}
         onChange={onChange}
-        pinIsManual={pinIsManual}
-        onPinMoved={() => setPinIsManual(false)}
+        pinIsPlaced={pinIsPlaced}
+        onPinPlaced={placePin}
+        declined={declined}
+        onDecline={onDecline}
       />
 
       <div className="flex flex-col gap-2.5">
@@ -360,7 +421,7 @@ export function AddressFields({
           lat={value.lat}
           lng={value.lng}
           onChange={(lat, lng) => onChange({ ...value, lat, lng })}
-          onDragged={() => setPinIsManual(true)}
+          onDragged={placePin}
           suggestion={suggestion}
           label={t("mapLabel")}
           caption={status === "searching" ? t("searching") : t("mapCaption")}
@@ -378,6 +439,9 @@ export function AddressFields({
           <div className="flex flex-wrap items-center gap-2.5 rounded-(--radius-control) border border-river bg-river-soft px-3.5 py-2.5">
             <p className="min-w-[12rem] flex-1 text-[0.8125rem] text-ink">
               {t("pinSuggestion", { distance: formatDistance(distance, locale) })}
+              {pinRuling?.verdict === "changed" && (
+                <span className="block text-xs text-muted">{t("changedSince")}</span>
+              )}
             </p>
             <button
               type="button"
@@ -388,9 +452,19 @@ export function AddressFields({
             </button>
             <button
               type="button"
-              // Dismissing drops the candidate, not the pin: without it the
-              // suggestion sits on the map nagging about a settled decision.
-              onClick={() => setChosenId(null)}
+              // Dismissing drops the candidate, not the pin — and is recorded,
+              // so the same disagreement is not put to the owner again on the
+              // next visit. Clearing the selection alone lasted until reload,
+              // which for a page that re-asks on mount is no answer at all.
+              onClick={() => {
+                setChosenId(null);
+                onDecline({
+                  field: "pin",
+                  source: "osm",
+                  value: pinValue(suggestion.lat, suggestion.lng),
+                  for: address,
+                });
+              }}
               className="rounded-(--radius-control) px-3 py-1.5 text-[0.78125rem] font-semibold text-body transition-colors duration-(--dur-standard) hover:text-ink"
             >
               {t("keepMine")}

@@ -93,6 +93,7 @@ public class HostFunctions(
                 r => r.Status == "new"), null),
             HostProjection.ToPricing(doc!, platform.CleaningFeeEur),
             HostProjection.ToListing(doc!),
+            doc!.DeclinedSuggestions,
             requests));
     }
 
@@ -191,6 +192,53 @@ public class HostFunctions(
         return await SaveAsync(doc, etag, () => new OkObjectResult(
             HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null)));
     }
+
+    // Suggestions the owner has looked at and decided against (§2.2.4). Its own
+    // endpoint, and deliberately so: this is not a content edit, and riding the
+    // details payload would send a published listing back to the review queue
+    // for the act of dismissing a banner (ADR-027 decision 5). `Status` is not
+    // assigned anywhere below.
+    [Function("HostDeclinedUpdate")]
+    public async Task<IActionResult> UpdateDeclined(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "host/properties/{id}/declined")]
+        HttpRequest req,
+        string id)
+    {
+        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        if (error is not null) return error;
+
+        var update = await ReadJsonAsync<DeclinedUpdate>(req);
+        if (update?.Declined is null) return BadRequest("bad_request");
+
+        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        if (loadError is not null) return loadError;
+
+        var invalid = HostValidation.CheckDeclined(update.Declined);
+        if (invalid is not null) return BadRequest(invalid);
+
+        var today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
+        doc!.DeclinedSuggestions =
+        [
+            .. update.Declined.Select(d => new DeclinedSuggestion(
+                d.Field!, d.Source!, d.Value!.Trim(), d.For!.Trim(),
+                // Server-stamped, and preserved rather than restamped when the
+                // entry is unchanged: the payload replaces the list wholesale,
+                // so without this every dismissal would redate every other one
+                // and the reviewer's "decided on" column would say nothing.
+                DateOf(doc, d) ?? today)),
+        ];
+
+        return await SaveAsync(doc, etag, () =>
+            new OkObjectResult(doc.DeclinedSuggestions));
+    }
+
+    // The same entry, still about the same answer to the same question, keeps
+    // the date it was first declined on. A changed value is a NEW decision —
+    // the owner has looked at something different — so it takes today's.
+    private static string? DateOf(PropertyDoc doc, DeclinedWrite d) =>
+        doc.DeclinedSuggestions.FirstOrDefault(e =>
+            e.Field == d.Field && e.Source == d.Source &&
+            e.Value == d.Value?.Trim() && e.For == d.For?.Trim())?.At;
 
     private static string? Clean(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

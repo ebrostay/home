@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { BadgeCheck, Loader2, RotateCw, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { HostListing } from "@/lib/api";
+import type { Declined, HostListing } from "@/lib/api";
 import { cadastreChecksum } from "@/lib/listing";
 import { lookupCadastre, type CadastreRecord } from "@/lib/catastro";
+import { pinValue, verdictFor } from "@/lib/declined";
 import { SAME_PLACE_M, formatDistance, metresBetween } from "@/lib/geocode";
 
 // What the Catastro says about the reference the owner typed.
@@ -39,18 +40,32 @@ type State =
   | { kind: "notFound"; ref: string }
   | { kind: "error"; ref: string };
 
+/** A stored `YYYY-MM-DD` as a short date. Parsed as UTC, which is how the API
+ *  stamped it — a day is precise enough that a timezone cannot move it. */
+const onDate = (at: string, locale: string) =>
+  new Date(`${at}T00:00:00Z`).toLocaleDateString(locale, {
+    day: "numeric",
+    month: "short",
+  });
+
 export function CadastrePanel({
   value,
   onChange,
-  pinIsManual,
-  onPinMoved,
+  pinIsPlaced,
+  onPinPlaced,
+  declined,
+  onDecline,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
-  /** When the pin was placed by hand, the parcel centroid is offered rather
-   *  than taken — the same rule the geocoder follows. */
-  pinIsManual: boolean;
-  onPinMoved: () => void;
+  /** When the listing already has a pin, the parcel centroid is offered rather
+   *  than taken — the same rule everything else here follows. */
+  pinIsPlaced: boolean;
+  onPinPlaced: () => void;
+  /** Differences the owner has already ruled on. They stay on screen as a
+   *  record, without the button — see `differences` below. */
+  declined: Declined[];
+  onDecline: (entry: Omit<Declined, "at">) => void;
 }) {
   const t = useTranslations("host.edit.address");
   const locale = useLocale();
@@ -118,9 +133,14 @@ export function CadastrePanel({
       next.sizeM2 = Math.round(r.sizeM2);
       touched = true;
     }
-    if (r.lat !== null && r.lng !== null && !pinIsManual) {
+    // Only where there is no pin at all. A listing that arrived with one keeps
+    // it: the centroid is offered below instead.
+    if (r.lat !== null && r.lng !== null && !pinIsPlaced) {
       next.lat = r.lat;
       next.lng = r.lng;
+      // Otherwise the next lookup would see "no pin" again and write the same
+      // coordinates a second time.
+      onPinPlaced();
       touched = true;
     }
     if (touched) onChange(next);
@@ -179,32 +199,51 @@ export function CadastrePanel({
       : 0;
 
   // Only real disagreements — a field the owner has filled in, that the
-  // register answers differently.
-  const differences: { key: string; label: string; apply: () => void }[] = [];
+  // register answers differently. `offered` is the answer itself, which is what
+  // a decision about it is recorded against: the owner declines a *value*, not
+  // a row, so the register changing its mind reopens the question.
+  type Difference = {
+    key: "postcode" | "size" | "pin";
+    offered: string;
+    label: string;
+    apply: () => void;
+  };
+  const found: Difference[] = [];
   if (r.postcode && value.postcode?.trim() && r.postcode !== value.postcode) {
-    differences.push({
+    found.push({
       key: "postcode",
+      offered: r.postcode,
       label: t("cadastreDiffPostcode", { value: r.postcode }),
       apply: () => onChange({ ...value, postcode: r.postcode }),
     });
   }
   if (r.sizeM2 && value.sizeM2 > 0 && Math.round(r.sizeM2) !== value.sizeM2) {
-    differences.push({
+    found.push({
       key: "size",
+      offered: String(Math.round(r.sizeM2)),
       label: t("cadastreDiffSize", { value: Math.round(r.sizeM2) }),
       apply: () => onChange({ ...value, sizeM2: Math.round(r.sizeM2!) }),
     });
   }
-  if (r.lat !== null && r.lng !== null && pinIsManual && distance > SAME_PLACE_M) {
-    differences.push({
+  if (r.lat !== null && r.lng !== null && pinIsPlaced && distance > SAME_PLACE_M) {
+    found.push({
       key: "pin",
+      offered: pinValue(r.lat, r.lng),
       label: t("cadastreDiffPin", { distance: formatDistance(distance, locale) }),
       apply: () => {
         onChange({ ...value, lat: r.lat!, lng: r.lng! });
-        onPinMoved();
+        onPinPlaced();
       },
     });
   }
+
+  // The reference is the question every one of these answers, so it is what a
+  // decision is filed under. Change the reference and the decisions stop
+  // applying, which is right: they were about a different property.
+  const differences = found.map((d) => ({
+    ...d,
+    ...verdictFor(declined, d.key, "catastro", ref, d.offered),
+  }));
 
   return (
     <div className="flex flex-col gap-2.5 rounded-(--radius-control) border border-river bg-river-soft p-3.5">
@@ -234,16 +273,51 @@ export function CadastrePanel({
         <ul className="m-0 flex list-none flex-col gap-2 border-t border-river pt-2.5">
           {differences.map((d) => (
             <li key={d.key} className="flex flex-wrap items-center gap-2.5">
-              <span className="min-w-[10rem] flex-1 text-[0.8125rem] text-ink">
-                {d.label}
-              </span>
-              <button
-                type="button"
-                onClick={d.apply}
-                className="rounded-(--radius-control) border border-river-deep bg-surface px-2.5 py-1 text-xs font-semibold text-river-deep transition-colors duration-(--dur-standard) hover:bg-river-soft"
+              <span
+                className={`min-w-[10rem] flex-1 text-[0.8125rem] ${
+                  d.verdict === "settled" ? "text-muted" : "text-ink"
+                }`}
               >
-                {t("useThis")}
-              </button>
+                {d.label}
+                {d.verdict === "settled" && d.at && (
+                  <span className="block text-xs text-muted">
+                    {t("reviewedOn", { date: onDate(d.at, locale) })}
+                  </span>
+                )}
+                {d.verdict === "changed" && (
+                  <span className="block text-xs text-muted">{t("changedSince")}</span>
+                )}
+              </span>
+              {/* A settled difference keeps its place in the list and loses its
+                  button. The register's answer is never hidden from the owner —
+                  it stops being a demand and becomes a record. A quieter
+                  permanent banner would still be permanent, and would still get
+                  pressed to make it stop. */}
+              {d.verdict !== "settled" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={d.apply}
+                    className="rounded-(--radius-control) border border-river-deep bg-surface px-2.5 py-1 text-xs font-semibold text-river-deep transition-colors duration-(--dur-standard) hover:bg-river-soft"
+                  >
+                    {t("useThis")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onDecline({
+                        field: d.key,
+                        source: "catastro",
+                        value: d.offered,
+                        for: ref,
+                      })
+                    }
+                    className="rounded-(--radius-control) px-2.5 py-1 text-xs font-semibold text-body transition-colors duration-(--dur-standard) hover:text-ink"
+                  >
+                    {t("keepMine")}
+                  </button>
+                </>
+              )}
             </li>
           ))}
           <li className="text-xs leading-[1.4] text-muted">{t("cadastreDiffNote")}</li>

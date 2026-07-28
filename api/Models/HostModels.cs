@@ -110,10 +110,15 @@ public record HostRequestRow(
     string? Channel,
     string? CreatedAt);
 
+/// `Declined` sits BESIDE `Listing`, not inside it, and that placement is the
+/// decision (§2.2.4). Inside, it would join the editor's diff, and dismissing a
+/// suggestion would show up as an unsaved change — then travel with the content
+/// save, and pull a published listing back into review.
 public record HostPropertyDetail(
     HostProperty Property,
     HostPricing Pricing,
     HostListing Listing,
+    DeclinedSuggestion[] Declined,
     HostRequestRow[] Requests);
 
 /// What a content save answers with. The listing, so the editor can rebase its

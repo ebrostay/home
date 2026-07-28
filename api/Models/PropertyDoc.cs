@@ -7,6 +7,30 @@ public record Bilingual(string? Es, string? En);
 
 public record PropertyPhoto(string Url, bool IsFloorplan, int SortOrder);
 
+/// An outside answer — OpenStreetMap's or the Catastro's — that the owner has
+/// already looked at and decided against (§2.2.4). It exists so an offer can
+/// END: the editor re-asks both services on every visit, and without this it
+/// would re-offer a settled disagreement forever until the owner accepted it
+/// just to stop being asked.
+///
+/// It is NOT a stored copy of what either service said. Nothing reads it as a
+/// fact about the property: it never fills a field, is never shown as the
+/// register's answer, and is compared against only by the fresh live answer.
+/// Going stale is the point — a fingerprint that stops matching is the signal
+/// that the outside source changed, which is the one case worth interrupting
+/// an owner about.
+///
+/// `For` is the question that produced the suggestion: the typed address for
+/// `osm`, the cadastral reference for `catastro`. When that moves, the entry
+/// stops applying — a decision about the old address says nothing about the
+/// new one.
+public record DeclinedSuggestion(
+    string Field,  // pin | postcode | area | size
+    string Source, // osm | catastro
+    string Value,
+    string For,
+    string At);
+
 public record AvailabilityRange(
     string Start,
     string End, // exclusive
@@ -44,6 +68,11 @@ public class PropertyDoc
 
     public double Lat { get; set; }
     public double Lng { get; set; }
+
+    // Outside answers the owner has already ruled on (§2.2.4). Host-writable,
+    // and therefore never evidence: the review queue asks the register live and
+    // sees every disagreement regardless of what is parked here.
+    public DeclinedSuggestion[] DeclinedSuggestions { get; set; } = [];
 
     public Bilingual? Area { get; set; }
     public Bilingual? Copy { get; set; }

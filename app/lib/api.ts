@@ -178,10 +178,28 @@ export type HostRequestRow = {
   createdAt: string | null;
 };
 
+/** An outside answer the owner has already ruled on (§2.2.4, ADR-027). Kept
+ *  apart from `HostListing` on purpose: inside it, dismissing a suggestion
+ *  would count as an unsaved content change and take the listing back to
+ *  review. */
+export type Declined = {
+  field: "pin" | "postcode" | "area" | "size";
+  source: "osm" | "catastro";
+  /** What was offered, canonically. The pin is `"lat,lng"` — stored as a
+   *  string, never compared as one (`lib/declined.ts`). */
+  value: string;
+  /** The question it answers: the typed address for OSM, the cadastral
+   *  reference for the Catastro. When that moves, the entry stops applying. */
+  for: string;
+  /** Server-stamped `YYYY-MM-DD`. */
+  at: string;
+};
+
 export type HostPropertyDetail = {
   property: HostProperty;
   pricing: HostPricing;
   listing: HostListing;
+  declined: Declined[];
   requests: HostRequestRow[];
 };
 
@@ -252,6 +270,12 @@ export const saveHostPricing = (
 
 export const saveHostListing = (id: string, listing: HostListing) =>
   put<HostListingSaved>(`/host/properties/${encodeURIComponent(id)}`, listing);
+
+/** Applies live and never touches `status` — dismissing a suggestion is not a
+ *  content edit (ADR-027 decision 5). The list is replaced wholesale; the API
+ *  answers with the stored version, whose `at` dates are its own. */
+export const saveHostDeclined = (id: string, declined: Omit<Declined, "at">[]) =>
+  put<Declined[]>(`/host/properties/${encodeURIComponent(id)}/declined`, { declined });
 
 /** Pause or reopen. The API accepts nothing else here — publishing is an admin
  *  act, and `paused → published` is the only reopen (ADR-024). */

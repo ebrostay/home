@@ -1184,16 +1184,23 @@ Two guardrails, and they are the load-bearing part:
 
 #### Consequences
 
-- 🔜 `declinedSuggestions` on the listing document (§2.2.4), its projection,
-  and a write path that validates `field`/`source` against closed vocabularies
-  and cannot express a status change.
-- 🔜 The two-pin comparison becomes the *only* way an outside source moves a
+- ✅ `declinedSuggestions` on the listing document (§2.2.4), projected beside
+  `listing` rather than inside it, and `PUT …/declined` — which validates
+  `field`/`source` against closed vocabularies, caps the list, refuses a
+  repeated `(field, source)`, and cannot express a status change. `At` is
+  server-stamped and preserved across an unchanged entry, so one dismissal does
+  not redate the others.
+- ✅ The two-pin comparison is now the *only* way an outside source moves a
   saved pin, in both `AddressFields` and `CadastrePanel`.
+- ✅ `lib/declined.ts` holds the comparison, including the rule that the pin is
+  stored as a string and compared by distance.
+- ✅ ES/EN strings for the demoted row and for "this changed since you reviewed
+  it", plus the three new error codes.
+- ✅ `pinIsManual` renamed `pinIsPlaced` — it means "a pin exists", whoever
+  placed it, and the old name described the question that turned out to be the
+  wrong one.
 - 🔜 §4.5 gains the declined-suggestion column, under the rules of Decision 6.
-- 🔜 ES/EN strings for the demoted row and for "this changed since you reviewed
-  it".
-- The `pinIsManual` flag stops being accurately named once it means "a pin
-  exists", whoever placed it.
+  The review queue itself is still unbuilt.
 
 ---
 

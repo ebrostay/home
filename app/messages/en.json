@@ -420,6 +420,8 @@
         "pinSuggestion": "The address points {distance} from your pin.",
         "movePinHere": "Move the pin here",
         "keepMine": "Keep mine",
+        "changedSince": "This has changed since you reviewed it.",
+        "reviewedOn": "You reviewed this on {date} and kept yours.",
         "cadastreWhat": "What is a cadastral reference?",
         "cadastreInfoWhat": "The identifier the Catastro gives every property in Spain: 20 letters and digits. The four before the last two pick out the individual home inside the building.",
         "cadastreInfoWhere": "It is printed on your IBI receipt, which is the quickest place to look. It is also on the deed, or you can search for it by address at the Catastro's electronic office.",
@@ -563,6 +565,9 @@
         "too_many_photos": "A listing takes 40 photos at most.",
         "photo_unknown": "One of those photos is no longer on the listing. Reload to see the current ones.",
         "photo_duplicate": "The same photo appears twice.",
+        "too_many_declined": "That is more dismissed suggestions than one listing takes. Reload the page.",
+        "declined_invalid": "That suggestion could not be dismissed. Reload the page and try again.",
+        "declined_duplicate": "That suggestion is already dismissed. Reload to see the current state.",
         "status_invalid": "From here you can only pause or reopen the listing.",
         "status_not_allowed": "This listing cannot be paused or reopened in its current state.",
         "stale_write": "This home changed somewhere else while you were editing. Reload to see the current version."

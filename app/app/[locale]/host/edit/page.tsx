@@ -22,11 +22,14 @@ import {
   ApiError,
   biText,
   fetchHostProperty,
+  saveHostDeclined,
   saveHostListing,
   saveHostStatus,
+  type Declined,
   type HostListing,
   type HostPropertyDetail,
 } from "@/lib/api";
+import { stamped, withDecline } from "@/lib/declined";
 import {
   SECTIONS,
   attentionOf,
@@ -76,6 +79,10 @@ function EditContent() {
   // the diff is always against what the server last confirmed — not against
   // whatever the form held a moment ago.
   const [listing, setListing] = useState<HostListing | null>(null);
+  // Deliberately NOT part of `listing`, and therefore not part of the diff:
+  // dismissing a suggestion is not an unsaved change and must never reach the
+  // save bar or the content payload (ADR-027 decision 5). It applies live.
+  const [declined, setDeclined] = useState<Declined[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("clean");
   const [statusBusy, setStatusBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -91,6 +98,7 @@ function EditContent() {
         if (cancelled) return;
         setState({ kind: "ready", detail });
         setListing(detail.listing);
+        setDeclined(detail.declined ?? []);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -163,6 +171,26 @@ function EditContent() {
     } catch (err) {
       setError(message(err));
       setSaveState("error");
+    }
+  };
+
+  // "Keep mine". Applied on screen first and written after, because the whole
+  // point is that the offer goes away when the owner says so — a suggestion
+  // that lingers for a round trip is one they will press again. A failed write
+  // brings it back, which is the honest outcome: nothing was recorded.
+  const decline = async (entry: Omit<Declined, "at">) => {
+    const next = withDecline(declined, entry);
+    const before = declined;
+    setDeclined(stamped(declined, next, new Date().toISOString().slice(0, 10)));
+    try {
+      setDeclined(await saveHostDeclined(property.id, next));
+      setError(undefined);
+    } catch (err) {
+      // Put the suggestion back and say why. A dismissal that silently fails
+      // and then reappears on the next visit reads as the page ignoring the
+      // owner, which is the complaint this whole mechanism exists to answer.
+      setDeclined(before);
+      setError(message(err));
     }
   };
 
@@ -279,7 +307,12 @@ function EditContent() {
           </SectionCard>
 
           <SectionCard id="address" label={te("nav.address")}>
-            <AddressFields value={listing} onChange={setListing} />
+            <AddressFields
+              value={listing}
+              onChange={setListing}
+              declined={declined}
+              onDecline={decline}
+            />
           </SectionCard>
 
           <SectionCard

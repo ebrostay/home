@@ -74,6 +74,21 @@ public record DetailsUpdate(
 /// is not expressible here.
 public record StatusUpdate(string? Status);
 
+/// One suggestion the owner has declined. `At` is absent: the date is stamped
+/// by the server, because a client-authored "I decided this in 2019" is worth
+/// nothing and the field is read by a human reviewer.
+public record DeclinedWrite(string? Field, string? Source, string? Value, string? For);
+
+/// The whole list, replaced wholesale — the same shape as AvailabilityUpdate,
+/// for the same reason: a partial write needs an identity for each row, and the
+/// list is small enough that sending it entire is simpler than inventing one.
+///
+/// Note what this payload cannot express: no status, no price, no content. An
+/// owner dismissing a banner must not be able to move their listing, and under
+/// ADR-027 decision 2 *any* content save would send a published listing back to
+/// review — which is exactly why this is not part of DetailsUpdate.
+public record DeclinedUpdate(DeclinedWrite[]? Declined);
+
 public static class HostValidation
 {
     /// A listing carries a small, bounded calendar (§2.2.3 "tens, not
@@ -104,6 +119,15 @@ public static class HostValidation
     /// that a typo of 500 is caught.
     public const int MinFloor = -2;
     public const int MaxFloor = 60;
+
+    /// Four fields, two sources — eight combinations, and identity is the pair,
+    /// so a correct client never exceeds eight. The cap is what keeps that true
+    /// when the writer is not a correct client.
+    public const int MaxDeclined = 12;
+    public const int MaxDeclinedValueLength = 64;
+
+    private static readonly string[] DeclinableFields = ["pin", "postcode", "area", "size"];
+    private static readonly string[] SuggestionSources = ["osm", "catastro"];
 
     private static readonly string[] BillsPolicies = ["included", "capped", "excluded"];
     private static readonly string[] CleaningParties = ["host", "platform"];
@@ -226,6 +250,39 @@ public static class HostValidation
 
     private static bool TooLong(BilingualWrite? b, int max) =>
         b?.Es is { } es && es.Length > max || b?.En is { } en && en.Length > max;
+
+    /// Declined suggestions (§2.2.4). Both vocabularies are closed, and
+    /// `(field, source)` is the identity — a list carrying the same pair twice
+    /// has no defined meaning, so it is refused rather than deduplicated.
+    ///
+    /// What is deliberately NOT checked is whether `For` matches the document.
+    /// It cannot be: an owner may retype the address and decline the geocoder's
+    /// answer about the new one before saving either, so the question a
+    /// suggestion belongs to is routinely one the stored document has not seen
+    /// yet. An entry keyed to a question that never arrives is inert — the
+    /// editor ignores any whose `For` is not the current one.
+    public static string? CheckDeclined(DeclinedWrite[] declined)
+    {
+        if (declined.Length > MaxDeclined) return "too_many_declined";
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var d in declined)
+        {
+            if (!DeclinableFields.Contains(d.Field ?? "") ||
+                !SuggestionSources.Contains(d.Source ?? "")) return "declined_invalid";
+
+            if (string.IsNullOrWhiteSpace(d.Value) ||
+                d.Value.Length > MaxDeclinedValueLength) return "declined_invalid";
+            // `For` is an address or a cadastral reference; the address bound is
+            // the wider of the two and the one that matters.
+            if (string.IsNullOrWhiteSpace(d.For) ||
+                d.For.Length > MaxAddressLength) return "declined_invalid";
+
+            if (!seen.Add($"{d.Field}|{d.Source}")) return "declined_duplicate";
+        }
+
+        return null;
+    }
 
     /// Blocks must be well-formed, non-overlapping among themselves, and must
     /// not collide with a hold the booking flow is still holding. The overlap

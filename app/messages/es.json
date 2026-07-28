@@ -471,7 +471,10 @@
         "moveLater": "Atrasar la foto {n}",
         "togglePlan": "Marcar la foto {n} como plano",
         "remove": "Quitar la foto {n}",
-        "uploadSoon": "Subir fotos nuevas todavía no está disponible. Escríbenos y las añadimos por ti."
+        "upload": "Añadir fotos",
+        "uploading": "Subiendo {done} de {total}…",
+        "uploadFull": "Has llegado al máximo de {max} fotos",
+        "uploadHint": "JPEG, PNG o WebP. Las fotos se suben al momento; el orden y el resto de cambios se guardan con el botón de abajo."
       },
       "description": {
         "about": "Sobre esta vivienda",
@@ -565,6 +568,12 @@
         "too_many_photos": "Un anuncio admite 40 fotos como máximo.",
         "photo_unknown": "Una de esas fotos ya no está en el anuncio. Recarga para ver las actuales.",
         "photo_duplicate": "La misma foto aparece dos veces.",
+        "photo_empty": "Ese archivo está vacío.",
+        "photo_too_large": "Esa foto es demasiado grande. Admitimos hasta 25 MB y 120 megapíxeles.",
+        "photo_not_an_image": "No podemos leer ese archivo como foto. Usa JPEG, PNG o WebP.",
+        "photo_unreadable": "No hemos podido abrir esa foto. Puede estar dañada; prueba a exportarla de nuevo.",
+        "photo_heic": "Es un archivo HEIC y todavía no podemos leerlo. Expórtalo como JPEG y súbelo así.",
+        "photo_svg": "SVG es un formato de dibujo, no una foto. Usa JPEG, PNG o WebP.",
         "too_many_declined": "Son más sugerencias descartadas de las que admite un anuncio. Recarga la página.",
         "declined_invalid": "No hemos podido descartar esa sugerencia. Recarga la página e inténtalo otra vez.",
         "declined_duplicate": "Esa sugerencia ya estaba descartada. Recarga para ver el estado actual.",

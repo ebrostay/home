@@ -212,11 +212,17 @@ history, and "keep the data, close the listing" is what `paused` means.
    **availability blocks** (add/remove confirmed blocks and holds, §2.2.3);
    **Nominatim geocoding** for the address (client-direct, docs/spec/07 §7.4
    carried incl. usage-policy notes); **AI assistant** (§4.6).
-3. **Photos:** upload via `POST /api/host/properties/{id}/photos`. The API
-   validates (content type ∈ jpeg/png/webp, size cap), compresses to a web
-   size (carrying v1's compressed-JPEG practice), writes the blob with 1-year
-   cache headers, and appends `{url, isFloorplan, sortOrder}` (§2.6). Reorder,
-   floor-plan flag, and delete are editor actions on the embedded array.
+3. **Photos:** ✅ upload via `POST /api/host/properties/{id}/photos`, one file
+   per request. The browser downscales to a ~2560 px ceiling first — a
+   transfer optimisation only, and its output is untrusted like any other
+   input. The API sniffs magic bytes, refuses SVG and HEIC by name, caps bytes
+   and reads dimensions **before** decoding, extracts EXIF, then re-encodes
+   into three WebP sizes (§2.2.2) under server-generated names with 1-year
+   cache headers. Full rules: ADR-019 amendment.
+   - **Applies live**, and does **not** move `status`: a photo is a transfer,
+     not a claim. Reorder, floor-plan flag and delete stay in the editor's diff
+     and travel with the content save, because those *are* claims.
+   - Removing a photo deletes all three blobs, after the document write.
 4. Submit → `pending_review` (validation: required fields in both locales,
    ≥1 photo). A **content** edit of a published listing also returns it to
    `pending_review` (§2.2.1; refinement OD-5). Operational edits made from

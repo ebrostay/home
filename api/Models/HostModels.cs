@@ -65,7 +65,19 @@ public record HostPricing(
 /// One photo as the editor sees it. `SortOrder` travels so the owner's list
 /// and the guest's gallery are demonstrably the same order; the editor sends
 /// position back implicitly, as the order of the array.
-public record HostPhoto(string Url, bool IsFloorplan, int SortOrder);
+/// `CardUrl`/`DetailUrl` are the derived sizes (§2.2.2) — the editor's grid
+/// draws the card one, since there is no reason for an owner managing twelve
+/// photos to download twelve full-size masters. Null on photos that predate
+/// the upload pipeline; every consumer falls back to `Url`.
+///
+/// `Captured*` is NOT here. It is admin-only, and the owner's own surface is
+/// not an admin surface — the review queue reads it off the document.
+public record HostPhoto(
+    string Url,
+    string? CardUrl,
+    string? DetailUrl,
+    bool IsFloorplan,
+    int SortOrder);
 
 /// Everything the listing editor edits — the half of the document that changes
 /// once or twice a year, and the half whose change is a new claim about the
@@ -224,7 +236,8 @@ public static class HostProjection
         // photo ends up differing between them.
         [.. p.Photos
             .OrderBy(ph => ph.SortOrder)
-            .Select(ph => new HostPhoto(ph.Url, ph.IsFloorplan, ph.SortOrder))]);
+            .Select(ph => new HostPhoto(
+                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))]);
 
     public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(
         p.PriceNumber,

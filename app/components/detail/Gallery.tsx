@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Images, Ruler } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PropertyPhoto } from "@/lib/api";
+import { SIZES, srcSet } from "@/lib/photos";
 import { Dialog } from "@/components/ui/Dialog";
 
 // A 2fr/1fr/1fr mosaic: one hero frame plus four supporting tiles. Anything
@@ -44,6 +45,7 @@ export function Gallery({
             photo={hero}
             alt={t("photoOf", { n: 1, total: photos.length })}
             className={tiles.length >= 3 ? "sm:row-span-2" : ""}
+            sizes={SIZES.hero}
           />
           {tiles.map((photo, i) => (
             <Frame
@@ -86,6 +88,7 @@ export function Gallery({
               photo={photo}
               alt={t("photoOf", { n: i + 1, total: photos.length })}
               className="aspect-[4/3] rounded-(--radius-control)"
+              lazy
             />
           ))}
         </div>
@@ -98,15 +101,32 @@ function Frame({
   photo,
   alt,
   className = "",
+  lazy = false,
+  sizes = SIZES.tile,
 }: {
   photo: PropertyPhoto;
   alt: string;
   className?: string;
+  /** How wide this frame is actually drawn. The hero is twice the others, and
+   *  one shared value would make the tiles fetch the hero's size. */
+  sizes?: string;
+  /** The grid above the fold is the page's headline image — deferring it would
+   *  delay the one photo the visitor came for. Everything behind a click is a
+   *  different matter, and most visitors never open it. */
+  lazy?: boolean;
 }) {
   return (
     <div className={`overflow-hidden bg-surface-2 ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized */}
-      <img src={photo.url} alt={alt} className="h-full w-full object-cover" />
+      <img
+        src={photo.detailUrl ?? photo.url}
+        srcSet={srcSet(photo)}
+        sizes={sizes}
+        alt={alt}
+        loading={lazy ? "lazy" : undefined}
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
     </div>
   );
 }

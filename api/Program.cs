@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +42,20 @@ builder.Services.AddSingleton(sp =>
     return sp.GetRequiredService<CosmosClient>().GetDatabase(database);
 });
 
+// Photo storage (§2.6). Same singleton rule as Cosmos — the client pools
+// connections, and one per request exhausts sockets under any real load.
+// Falls back to AzureWebJobsStorage so a local run needs one setting, not two.
+builder.Services.AddSingleton(_ =>
+{
+    var connection = Environment.GetEnvironmentVariable("PHOTOS_CONNECTION")
+        ?? Environment.GetEnvironmentVariable("AzureWebJobsStorage")
+        ?? throw new InvalidOperationException("PHOTOS_CONNECTION not set");
+    return new BlobServiceClient(connection);
+});
+
 builder.Services.AddSingleton<Ebrostay.Api.Services.ProfileService>();
 builder.Services.AddSingleton<Ebrostay.Api.Services.PlatformSettings>();
+builder.Services.AddSingleton<Ebrostay.Api.Services.PhotoStore>();
+builder.Services.AddSingleton<Ebrostay.Api.Services.PhotoPipeline>();
 
 builder.Build().Run();

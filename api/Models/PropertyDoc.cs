@@ -5,7 +5,26 @@ namespace Ebrostay.Api.Models;
 
 public record Bilingual(string? Es, string? En);
 
-public record PropertyPhoto(string Url, bool IsFloorplan, int SortOrder);
+/// One stored photo (§2.2.2). `Url` is the full-size master; `CardUrl` and
+/// `DetailUrl` are the derived sizes the public pages actually serve, and are
+/// null on photos uploaded before the pipeline existed — every consumer falls
+/// back to `Url`, so an old listing keeps working and simply ships more bytes.
+///
+/// `Captured*` is where the camera said it was, extracted during the upload
+/// re-encode that strips EXIF from the published file (ADR-019 amendment).
+/// ADMIN-ONLY: it must never appear in a public projection, which is why
+/// `PublicPhoto` exists rather than this record being handed out directly.
+/// It is location data about a real person — an owner who uploads a shot taken
+/// at their own home has told us where they live.
+public record PropertyPhoto(
+    string Url,
+    bool IsFloorplan,
+    int SortOrder,
+    string? CardUrl = null,
+    string? DetailUrl = null,
+    double? CapturedLat = null,
+    double? CapturedLng = null,
+    string? CapturedAt = null);
 
 /// An outside answer — OpenStreetMap's or the Catastro's — that the owner has
 /// already looked at and decided against (§2.2.4). It exists so an offer can

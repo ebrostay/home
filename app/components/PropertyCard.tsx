@@ -5,6 +5,7 @@ import { Check, MapPin, RotateCcw, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
+import { SIZES, srcSet } from "@/lib/photos";
 import { AvailabilityBand, type MonthAvailability } from "@/components/MonthBand";
 
 export type CardView = "grid" | "list";
@@ -14,6 +15,11 @@ export type PropertyCardData = {
   name: string;
   area: string;
   photoUrl: string;
+  /** The derived sizes for `photoUrl`, when the photo has them. A card is
+   *  drawn ~407 px wide; pulling a 2560 px master to do it is the single
+   *  biggest avoidable cost on the search page. */
+  photoCardUrl?: string | null;
+  photoDetailUrl?: string | null;
   pricePerMonth: number;
   bedrooms: number;
   bathrooms: number;
@@ -122,8 +128,18 @@ export function PropertyCard({
             (capped by max-h above); the image just fills and crops from centre. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized */}
         <img
-          src={property.photoUrl}
+          src={property.photoCardUrl ?? property.photoUrl}
+          srcSet={srcSet({
+            url: property.photoUrl,
+            cardUrl: property.photoCardUrl,
+            detailUrl: property.photoDetailUrl,
+          })}
+          sizes={SIZES.card}
           alt=""
+          // Results run well past the fold, and a search that loads every
+          // photo before the visitor has scrolled pays for photos nobody sees.
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
         {/* In list view the same facts are spelled out in the text column, so

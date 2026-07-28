@@ -127,7 +127,12 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
 
   // — embedded photos (§2.2.2) —
   "photos": [
-    { "url": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/1718000000-kitchen.jpg",
+    { // the full-size master, and the fallback every surface can always use
+      "url": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/9f3a…-full.webp",
+      // ✅ the derived sizes the public pages actually serve. Null on photos
+      //    uploaded before the pipeline existed
+      "cardUrl": "…/9f3a…-card.webp",       // 800 px long edge
+      "detailUrl": "…/9f3a…-detail.webp",   // 1600 px long edge
       "isFloorplan": false, "sortOrder": 10,
       // where the camera said it was — admin-only, see §2.2.2
       "capturedLat": 41.65393, "capturedLng": -0.90783, "capturedAt": "2026-05-14T10:22:07Z" }
@@ -189,17 +194,33 @@ read *with* their property and only written through the property-editor API.
 Upload pipeline (validation, compression, 1-year cache headers): §4.4 of
 [04-functional-flows.md](04-functional-flows.md).
 
-`capturedLat` / `capturedLng` / `capturedAt` 🔜 hold what the camera's EXIF
+**Three sizes per photo** ✅, all WebP, written by one upload
+(`POST /api/host/properties/{id}/photos`):
+
+| Field | Long edge | Serves |
+| --- | --- | --- |
+| `url` | 2560 px | The master. Every other size is derived from it, which is why the browser is never allowed to produce a final size — a browser-made thumbnail would be a lossy master. |
+| `detailUrl` | 1600 px | The property page's gallery hero (~630 px CSS, so 1600 covers it at 2×). |
+| `cardUrl` | 800 px | Search results (407 px CSS — almost exactly a retina card) and the editor's own grid. |
+
+The widths come from what actually renders, not from a round-number ladder.
+Clients emit all three as a `srcset` with a per-position `sizes` and let the
+browser choose; **null on photos that predate the pipeline**, and every surface
+falls back to `url`, so an old listing keeps working and simply ships more
+bytes than it needs to.
+
+`capturedLat` / `capturedLng` / `capturedAt` ✅ hold what the camera's EXIF
 said, extracted during the upload re-encode that **strips EXIF from the
 published file** (ADR-019 amendment). All nullable and usually null — WhatsApp
 and most social platforms strip EXIF, screenshots never had it, and plenty of
 people keep location off.
 
 **Admin-only.** They never appear in the public property projection or the
-host's own. They exist for the review queue's photo check (§4.5) and are
-location data about a real person's whereabouts: an owner who uploads a shot
-taken at their private home has told us where they live. Deleted with the
-photo.
+host's own — which is why `PublicPhoto` and `HostPhoto` exist as narrower
+records rather than the stored one being handed out. They are for the review
+queue's photo check (§4.5), and they are location data about a real person's
+whereabouts: an owner who uploads a shot taken at their private home has told
+us where they live. Deleted with the photo, along with all three blobs.
 
 ### 2.2.3 Embedded availability ✅ — and why embedded
 
@@ -408,14 +429,23 @@ marketplace model an owner simply signs in and creates a listing (ADR-014).
 ## 2.6 Blob storage: container `property-photos` ✅
 
 Storage account `ebrostayphotos` (spaincentral), container `property-photos`,
-**public read** at the blob level. **All writes go through the API**
-(ADR-019): the upload function validates content type/size, compresses
-(carrying v1's client-compression practice server-side or client-side before
-upload — see §4.4), writes the blob with **`Cache-Control:
-public, max-age=31536000`** (1 year, v1 practice per docs/spec/07 §7.1
-Storage), and appends the photo entry to the property document. Deleting a
-photo removes both the blob and the embedded entry. No SAS tokens and no
-storage keys ever reach the client.
+**public read** at the blob level. **All writes go through the API** ✅
+(ADR-019): the upload function validates, re-encodes into the three sizes of
+§2.2.2, writes each blob with **`Cache-Control: public, max-age=31536000,
+immutable`** (1 year, v1 practice per docs/spec/07 §7.1 Storage) and a
+`Content-Type` we set from what we encoded — never echoed from the request,
+since Blob serves whatever it is given and a client-supplied `text/html` would
+be stored XSS on our own account. Blob names are server-generated
+(`{propertyId}/{guid}-{size}.webp`); a client filename would be path traversal
+and cross-listing overwrite in one. Deleting a photo removes all three blobs
+and the embedded entry. No SAS tokens and no storage keys ever reach the
+client. `immutable` is safe because a name is never reused — replacing a photo
+writes a new one.
+
+**Local development** uses Azurite; `PHOTOS_CONNECTION` falls back to
+`AzureWebJobsStorage`, so a local run needs one setting and one container:
+`docker run -d --name ebrostay-blob -p 10000:10000
+mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0`.
 
 What "validates" and "compresses" mean concretely — magic-byte sniffing, the
 `Content-Type` allowlist, no SVG, server-generated blob names, caps applied

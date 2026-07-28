@@ -187,6 +187,8 @@ export default function HomePage() {
         name: p.name,
         area: biText(p.area, locale),
         photoUrl: p.coverUrl ?? "/brand/zaragoza-hero.webp",
+        photoCardUrl: p.coverCardUrl,
+        photoDetailUrl: p.coverDetailUrl,
         pricePerMonth: p.priceNumber,
         bedrooms: p.bedrooms,
         bathrooms: p.bathrooms,

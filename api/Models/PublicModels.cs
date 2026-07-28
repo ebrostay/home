@@ -26,7 +26,13 @@ public record PropertySummary(
     bool Checked,
     bool DepositProtected,
     string? AvailableFrom,
+    /// The full-size master, kept as the fallback every client can always use.
     string? CoverUrl,
+    /// The derived sizes, so a search result can pick one instead of
+    /// downloading a 1200 px photo to draw it 407 px wide — which is what
+    /// every card did before the pipeline existed. Null on older photos.
+    string? CoverCardUrl,
+    string? CoverDetailUrl,
     PublicRange[] Availability);
 
 public record PropertyDetail(
@@ -71,8 +77,19 @@ public record PropertyDetail(
     bool Checked,
     bool DepositProtected,
     string? AvailableFrom,
-    PropertyPhoto[] Photos,
+    PublicPhoto[] Photos,
     PublicRange[] Availability);
+
+/// A photo as a visitor may see it. Narrower than the stored record on purpose:
+/// `capturedLat`/`capturedLng` are admin-only (§2.2.2), and handing the
+/// document type straight out is exactly how they would have shipped — the
+/// public detail projection returns this array verbatim.
+public record PublicPhoto(
+    string Url,
+    string? CardUrl,
+    string? DetailUrl,
+    bool IsFloorplan,
+    int SortOrder);
 
 public static class PublicProjection
 {
@@ -116,17 +133,23 @@ public static class PublicProjection
             : DateOnly.ParseExact(iso, "yyyy-MM-dd").AddDays(days).ToString("yyyy-MM-dd");
 
     public static PropertySummary ToSummary(PropertyDoc p, DateTimeOffset now)
-        => new(
+    {
+        // The cover is the first non-floorplan photo. Pulled out once so all
+        // three URLs come from the SAME photo — selecting each independently is
+        // how a card ends up with one photo's small size beside another's.
+        var cover = p.Photos
+            .Where(ph => !ph.IsFloorplan)
+            .OrderBy(ph => ph.SortOrder)
+            .FirstOrDefault();
+
+        return new(
             p.Id, p.City, p.Type, p.Name, p.Area, p.Lat, p.Lng,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2,
             p.PriceNumber, p.BillsPolicy, p.Amenities, p.IsNew,
             p.Checked, p.DepositProtected, p.AvailableFrom,
-            p.Photos
-                .Where(ph => !ph.IsFloorplan)
-                .OrderBy(ph => ph.SortOrder)
-                .Select(ph => ph.Url)
-                .FirstOrDefault(),
+            cover?.Url, cover?.CardUrl, cover?.DetailUrl,
             BlockingRanges(p.Availability, now, p.TurnoverDays));
+    }
 
     public static PropertyDetail ToDetail(PropertyDoc p, DateTimeOffset now, int platformFee)
         => new(
@@ -139,6 +162,7 @@ public static class PublicProjection
             p.BillsPolicy, p.UtilitiesCapEur, p.MinStayMonths, p.MaxStayMonths,
             CleaningFee(p, platformFee),
             p.StayTerms, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
-            p.Photos.OrderBy(ph => ph.SortOrder).ToArray(),
+            [.. p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => new PublicPhoto(
+                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))],
             BlockingRanges(p.Availability, now, p.TurnoverDays));
 }

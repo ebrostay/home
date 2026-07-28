@@ -281,9 +281,11 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 
 ### Amendment 2026-07-28 — what "validates, compresses" actually means
 
-The upload function is still 🔜 unbuilt. This is its design, written before
-building it rather than after, because most of it is a security boundary and
-retrofitting one is how you get holes.
+✅ **Built 2026-07-28**, to this design. `PhotoPipeline` and `PhotoStore` in
+`api/Services/`, `POST /api/host/properties/{id}/photos`. Written before
+building rather than after, because most of it is a security boundary and
+retrofitting one is how you get holes. What the build settled is recorded at
+the end of this amendment.
 
 **The starting fact: `property-photos` is public-read.** An upload is not a
 file we store, it is a URL we host and hand out. Whatever lands there is
@@ -325,10 +327,40 @@ No SAS token appears in the client, per the locked decision above. Bytes go
 client → Function → Blob. (A quarantine-container pattern would get the bytes
 off the request path but needs a SAS in the browser, so it is out.)
 
-**HEIC is an open question, not a decision.** iOS generally converts to JPEG
-when picking through a file input, but a HEIC copied to a desktop and uploaded
-from Chrome decodes nowhere — not in the browser, not in the Function without
-adding a codec. Decide deliberately; do not discover it.
+**HEIC: refused, with copy that says so** (product owner, 2026-07-28 —
+resolving what this amendment first recorded as an open question). Neither the
+browser nor the Function decodes HEIC without adding a codec, and the codec
+that would do it drags in a far wider parser surface than the one format needs.
+iOS generally converts to JPEG when picking through a file input, so this
+mainly catches a HEIC copied to a desktop. It is therefore detected by its
+`ftyp` brand and refused as `photo_heic` — *"that is a HEIC file, export it as
+JPEG"* — rather than falling through to "that is not an image", which is true
+of nothing the owner did. Revisit if owners actually hit it.
+
+### What the build settled
+
+- **SkiaSharp + MetadataExtractor**, both permissively licensed and both
+  managed-plus-small-native rather than a full ImageMagick. `SKCodec.Create`
+  reads dimensions from the header without decoding, which is exactly the
+  pre-decode check this amendment asks for.
+- **Three sizes, not one** (product owner): 2560 master, 1600 detail, 800 card,
+  measured off what renders (§2.2.2). The browser's ~2560 output becomes the
+  stored master and the other two are derived from it server-side.
+- **EXIF orientation has to be applied by hand.** It lives in the metadata the
+  re-encode destroys, so without an explicit upright pass every portrait photo
+  from a phone would publish on its side. Verified: a 3000×2000 file with
+  `Orientation=6` stores as 1707×2560.
+- **Uploading does not move `status`.** A photo is a transfer, not a claim; the
+  content save that follows is what carries a listing back into review
+  (ADR-025). It applies live for the same reason — holding bytes until Save
+  would lose an eight-photo upload to a closed tab.
+- **Dropping a photo now deletes its blobs**, all three, and only after the
+  document write succeeds. Deleting first would strand a listing pointing at
+  photos that no longer exist if the ETag check then failed; this order leaks
+  an orphan instead, which is the cheaper failure.
+- **Measured**: a 1.03 MB 3000×2000 JPEG uploads as 459 KB after the browser
+  downscale (−56%) and stores as 318 KB / 188 KB / 75 KB. The card a search
+  result actually needs is **75 KB against the 1 MB original**.
 
 ### Amendment 2026-07-28 — photo EXIF: stripped from the file, kept for review
 

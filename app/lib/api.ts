@@ -4,7 +4,17 @@
 
 export type Bilingual = { es: string | null; en: string | null };
 export type PublicRange = { start: string; end: string }; // end exclusive
-export type PropertyPhoto = { url: string; isFloorplan: boolean; sortOrder: number };
+/** `cardUrl`/`detailUrl` are the sizes the upload pipeline derives (§2.2.2);
+ *  null on photos that predate it, so every surface falls back to `url`. The
+ *  capture coordinates are deliberately absent — admin-only, and this is the
+ *  shape a visitor receives. */
+export type PropertyPhoto = {
+  url: string;
+  cardUrl: string | null;
+  detailUrl: string | null;
+  isFloorplan: boolean;
+  sortOrder: number;
+};
 
 export type PropertySummary = {
   id: string;
@@ -26,10 +36,15 @@ export type PropertySummary = {
   depositProtected: boolean;
   availableFrom: string | null;
   coverUrl: string | null;
+  coverCardUrl: string | null;
+  coverDetailUrl: string | null;
   availability: PublicRange[];
 };
 
-export type PropertyDetail = Omit<PropertySummary, "coverUrl"> & {
+export type PropertyDetail = Omit<
+  PropertySummary,
+  "coverUrl" | "coverCardUrl" | "coverDetailUrl"
+> & {
   address: string | null;
   copy: Bilingual | null;
   details: Bilingual | null;
@@ -125,7 +140,12 @@ export type HostPricing = {
 };
 
 export type HostPhoto = {
+  /** The full-size master. Always present, and the fallback every surface
+   *  uses for photos uploaded before the pipeline existed. */
   url: string;
+  /** Derived sizes (§2.2.2). Null on older photos. */
+  cardUrl: string | null;
+  detailUrl: string | null;
   isFloorplan: boolean;
   /** Server-assigned. The editor sends position as array order instead, so a
    *  gap or a repeat in this number can never reorder the gallery. */
@@ -270,6 +290,30 @@ export const saveHostPricing = (
 
 export const saveHostListing = (id: string, listing: HostListing) =>
   put<HostListingSaved>(`/host/properties/${encodeURIComponent(id)}`, listing);
+
+/** Upload one photo (ADR-019). Multipart rather than JSON because the payload
+ *  is bytes; the API answers with the listing's whole photo list, so the
+ *  caller never has to guess where the new one landed or what the server named
+ *  it. Applies live and does not move `status` — the content save that follows
+ *  is what carries a listing back into review. */
+export async function uploadHostPhoto(
+  id: string,
+  file: Blob,
+  isFloorplan: boolean,
+): Promise<HostPhoto[]> {
+  const body = new FormData();
+  // The name is the server's to choose; this one only rides along so the
+  // request is a well-formed file part.
+  body.append("photo", file, "photo");
+  body.append("isFloorplan", String(isFloorplan));
+
+  const res = await fetch(`${BASE}/api/host/properties/${encodeURIComponent(id)}/photos`, {
+    method: "POST",
+    body,
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as HostPhoto[];
+}
 
 /** Applies live and never touches `status` — dismissing a suggestion is not a
  *  content edit (ADR-027 decision 5). The list is replaced wholesale; the API

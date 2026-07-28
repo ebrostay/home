@@ -27,6 +27,7 @@ import {
   saveHostStatus,
   type Declined,
   type HostListing,
+  type HostPhoto,
   type HostPropertyDetail,
 } from "@/lib/api";
 import { stamped, withDecline } from "@/lib/declined";
@@ -172,6 +173,31 @@ function EditContent() {
       setError(message(err));
       setSaveState("error");
     }
+  };
+
+  // A finished upload is already stored, so it has to land in BOTH the working
+  // copy and the saved baseline. Into the working copy alone it would show up
+  // as an unsaved change to a photo the server already has — and pressing
+  // Discard would then "undo" it back out of a gallery it is still in.
+  //
+  // What lands is only what the upload ADDED, appended to each list as it
+  // stands. Taking the server's list wholesale would undo whatever the owner
+  // did while the transfer was in flight — a reorder would snap back to
+  // storage order, and a photo they had just removed would reappear, because
+  // the server still has it until the content save goes through.
+  const photosUploaded = (stored: HostPhoto[]) => {
+    const before = new Set(detail.listing.photos.map((p) => p.url));
+    const added = stored.filter((p) => !before.has(p.url));
+    if (added.length === 0) return;
+
+    setListing({ ...listing, photos: [...listing.photos, ...added] });
+    setState({
+      ...state,
+      detail: {
+        ...detail,
+        listing: { ...detail.listing, photos: [...detail.listing.photos, ...added] },
+      },
+    });
   };
 
   // "Keep mine". Applied on screen first and written after, because the whole
@@ -320,7 +346,12 @@ function EditContent() {
             label={te("nav.photos")}
             figure={te("photoCount", { count: stats.photos })}
           >
-            <PhotoManager value={listing} onChange={setListing} />
+            <PhotoManager
+              value={listing}
+              onChange={setListing}
+              propertyId={property.id}
+              onUploaded={photosUploaded}
+            />
           </SectionCard>
 
           <SectionCard

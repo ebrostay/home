@@ -2,6 +2,8 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "_photos": "Listing photos (§2.6). Falls back to AzureWebJobsStorage, so a local run needs Azurite and nothing else: docker run -d --name ebrostay-blob -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0",
+    "PHOTOS_CONNECTION": ""
   }
 }

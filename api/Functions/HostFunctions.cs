@@ -17,6 +17,8 @@ public class HostFunctions(
     Database database,
     ProfileService profiles,
     PlatformSettings platform,
+    PhotoStore photos,
+    PhotoPipeline pipeline,
     ILogger<HostFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -144,10 +146,25 @@ public class HostFunctions(
         // Position comes from the array's order, not from a number the client
         // sends: an index the client owns can arrive with gaps or repeats, and
         // the gallery would silently reorder itself.
+        //
+        // Everything else about a photo is carried over from the stored entry
+        // rather than accepted: the derived URLs and the capture coordinates
+        // are the pipeline's output and the reviewer's evidence, and this
+        // payload's job is to reorder, re-flag and drop.
+        // Grouped rather than ToDictionary: a document that somehow carried the
+        // same URL twice would throw, and turn every future save of that
+        // listing into a 500 the owner cannot get out of.
+        var kept = doc.Photos
+            .GroupBy(p => p.Url, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var dropped = doc.Photos
+            .Where(p => !(update.Photos ?? []).Any(w => w.Url == p.Url))
+            .ToArray();
+
         doc.Photos =
         [
             .. (update.Photos ?? []).Select((p, i) =>
-                new PropertyPhoto(p.Url!, p.IsFloorplan, i)),
+                kept[p.Url!] with { IsFloorplan = p.IsFloorplan, SortOrder = i }),
         ];
 
         // §2.2.1: an approved listing re-enters the queue and leaves public
@@ -160,10 +177,40 @@ public class HostFunctions(
             doc.ReviewNote = null;
         }
 
-        return await SaveAsync(doc, etag, () => new OkObjectResult(
+        var saved = await SaveAsync(doc, etag, () => new OkObjectResult(
             new HostListingSaved(
                 HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null),
                 HostProjection.ToListing(doc))));
+
+        // Only after the document is safely written. Deleting first would lose
+        // the blobs of a save that then failed its ETag check, leaving a
+        // listing pointing at photos that no longer exist. The other order
+        // leaves orphans if this half fails, and an orphan costs storage where
+        // the alternative costs the owner their photos.
+        if (saved is OkObjectResult)
+            await DropBlobsAsync(dropped, req.HttpContext.RequestAborted);
+
+        return saved;
+    }
+
+    // Every URL a photo entry owns. A dropped photo takes all three sizes with
+    // it — deleting only the master would leave two thirds of the bytes behind
+    // and none of them reachable.
+    private async Task DropBlobsAsync(PropertyPhoto[] gone, CancellationToken token)
+    {
+        foreach (var url in gone.SelectMany(p => new[] { p.Url, p.CardUrl, p.DetailUrl })
+                     .Where(u => !string.IsNullOrEmpty(u)))
+        {
+            try
+            {
+                await photos.DeleteAsync(url!, token);
+            }
+            catch (Exception ex)
+            {
+                // Cleanup, not part of the write. The edit already succeeded.
+                logger.LogWarning(ex, "Could not delete blob {Url}", url);
+            }
+        }
     }
 
     // Close the listing to new requests, or reopen it. ADR-024: reopening is
@@ -191,6 +238,112 @@ public class HostFunctions(
 
         return await SaveAsync(doc, etag, () => new OkObjectResult(
             HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null)));
+    }
+
+    // Adding a photo — the path ADR-019 describes and §2.2.2 depends on.
+    //
+    // One file per request. Batching would make a partial failure ambiguous
+    // (which of the six landed?) and the owner-visible unit is one photo
+    // anyway: the client uploads a queue and reports each result.
+    //
+    // The whole security argument lives in `PhotoPipeline`. What matters here
+    // is that nothing reaches the container that has not been through it, and
+    // that the blob name comes from us — a client filename is path traversal
+    // and cross-listing overwrite in one.
+    [Function("HostPhotoUpload")]
+    public async Task<IActionResult> UploadPhoto(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "host/properties/{id}/photos")]
+        HttpRequest req,
+        string id)
+    {
+        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        if (error is not null) return error;
+
+        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        if (loadError is not null) return loadError;
+
+        if (doc!.Photos.Length >= HostValidation.MaxPhotos)
+            return BadRequest("too_many_photos");
+
+        var token = req.HttpContext.RequestAborted;
+        byte[] bytes;
+        bool isFloorplan;
+        try
+        {
+            if (!req.HasFormContentType) return BadRequest("bad_request");
+            var form = await req.ReadFormAsync(token);
+            var file = form.Files.GetFile("photo");
+            if (file is null || file.Length == 0) return BadRequest("photo_empty");
+            // Checked before reading, so an oversized upload is refused rather
+            // than buffered. The pipeline checks again on the real length —
+            // Content-Length is the client's claim, not a measurement.
+            if (file.Length > PhotoPipeline.MaxBytes) return BadRequest("photo_too_large");
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, token);
+            bytes = buffer.ToArray();
+            isFloorplan = form["isFloorplan"] == "true";
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
+            return BadRequest("bad_request");
+        }
+
+        PhotoPipeline.Result processed;
+        try
+        {
+            processed = pipeline.Process(bytes);
+        }
+        catch (PhotoPipeline.RejectedException ex)
+        {
+            return BadRequest(ex.Code);
+        }
+        catch (Exception ex)
+        {
+            // A decoder that fell over on a file that passed every check is
+            // still a refusal, not a 500: the owner's next move is the same
+            // either way, and the detail belongs in our logs, not their screen.
+            logger.LogError(ex, "Photo processing failed for {Id}", id);
+            return BadRequest("photo_unreadable");
+        }
+
+        // Server-generated, always. One id shared by the three sizes so they
+        // are recognisably one photo in the container.
+        var key = Guid.NewGuid().ToString("n");
+        var urls = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var variant in processed.Variants)
+                urls[variant.Suffix] = await photos.PutAsync(
+                    $"{id}/{key}-{variant.Suffix}.webp", variant.Bytes, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Blob upload failed for {Id}", id);
+            // Whatever landed before the failure is orphaned. Cheaper to leave
+            // than to risk a cleanup pass deleting a blob another request just
+            // wrote under a name we are no longer sure about.
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
+
+        doc.Photos =
+        [
+            .. doc.Photos,
+            new PropertyPhoto(
+                urls["full"], isFloorplan,
+                // Last, so a new photo joins the end of the gallery rather
+                // than displacing the cover the owner chose.
+                doc.Photos.Length == 0 ? 0 : doc.Photos.Max(p => p.SortOrder) + 1,
+                urls["card"], urls["detail"],
+                processed.Capture.Lat, processed.Capture.Lng, processed.Capture.At),
+        ];
+
+        // Note what is NOT here: no status change. Adding a photo to a draft
+        // leaves it a draft, and the content save that follows is what carries
+        // a published listing back into review (ADR-025). Uploading is not the
+        // claim; publishing the listing that shows it is.
+        return await SaveAsync(doc, etag, () => new OkObjectResult(
+            HostProjection.ToListing(doc).Photos));
     }
 
     // Suggestions the owner has looked at and decided against (§2.2.4). Its own

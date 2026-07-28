@@ -471,7 +471,10 @@
         "moveLater": "Move photo {n} later",
         "togglePlan": "Mark photo {n} as a floor plan",
         "remove": "Remove photo {n}",
-        "uploadSoon": "Uploading new photos is not available yet. Send them to us and we will add them."
+        "upload": "Add photos",
+        "uploading": "Uploading {done} of {total}…",
+        "uploadFull": "You have reached the maximum of {max} photos",
+        "uploadHint": "JPEG, PNG or WebP. Photos upload straight away; the order and everything else save with the button below."
       },
       "description": {
         "about": "About this home",
@@ -565,6 +568,12 @@
         "too_many_photos": "A listing takes 40 photos at most.",
         "photo_unknown": "One of those photos is no longer on the listing. Reload to see the current ones.",
         "photo_duplicate": "The same photo appears twice.",
+        "photo_empty": "That file is empty.",
+        "photo_too_large": "That photo is too big. Anything up to 25 MB and 120 megapixels is fine.",
+        "photo_not_an_image": "That is not a photo we can read. Use JPEG, PNG or WebP.",
+        "photo_unreadable": "We could not open that photo. It may be damaged — try exporting it again.",
+        "photo_heic": "That is a HEIC file, which we cannot read yet. Export it as JPEG and upload that.",
+        "photo_svg": "SVG is a drawing format, not a photo. Use JPEG, PNG or WebP.",
         "too_many_declined": "That is more dismissed suggestions than one listing takes. Reload the page.",
         "declined_invalid": "That suggestion could not be dismissed. Reload the page and try again.",
         "declined_duplicate": "That suggestion is already dismissed. Reload to see the current state.",

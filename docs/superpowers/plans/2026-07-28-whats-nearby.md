@@ -416,7 +416,9 @@ git commit -m "feat(api): nearby entry, route and cache document models"
   - `NearbyGroups.All: IReadOnlyList<string>`
   - `NearbyGroups.Profiles: IReadOnlyList<string>`
   - `NearbyGroups.RadiusMetres(string group): int`
-  - `NearbyGroups.OverpassFilter(string group): string`
+  - `NearbyGroups.OverpassTags(string group): (string Key, string Value)[]`
+  - `NearbyGroups.Vocabulary: IReadOnlyDictionary<string, string[]>`
+  - `NearbyGroups.Cell(double lat, double lng, string group): string`
   - `NearbyGroups.TypeOf(string osmTagKey, string osmTagValue): string?`
   - `NearbyGroups.IsKnownType(string group, string type): bool`
   - `NearbyGroups.InZaragoza(double lat, double lng): bool`

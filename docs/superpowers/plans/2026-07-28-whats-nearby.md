@@ -639,7 +639,11 @@ public sealed class OrsBudget(Container container)
 
     public async Task<bool> TryConsumeAsync(int calls, CancellationToken ct)
     {
-        var id = $"ors-{DateTimeOffset.UtcNow:yyyy-MM-dd}";
+        // InvariantCulture for the same reason NearbyGroups.Cell needs it: this
+        // is a Cosmos id AND partition key. A host whose culture defaults to a
+        // non-Gregorian calendar would render a different year entirely.
+        var id = FormattableString.Invariant(
+            $"ors-{DateTimeOffset.UtcNow:yyyy-MM-dd}");
         var key = new PartitionKey(id);
 
         for (var attempt = 0; attempt < MaxAttempts; attempt++)

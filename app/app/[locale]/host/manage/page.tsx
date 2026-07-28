@@ -247,13 +247,18 @@ function ManageContent() {
   return (
     <main
       className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24"
-      style={{
-        // Header + the context bar's MEASURED height. The fallback is the
-        // one-row figure this used to hardcode, so the first paint and the
-        // static export are unchanged; ContextBar overwrites it as soon as it
-        // mounts, and again whenever its buttons wrap to a second row.
-        "--section-nav-top": "calc(var(--header-h) + var(--context-bar-h, 3.4375rem))",
-      } as React.CSSProperties}
+      style={
+        {
+          // Header + the context bar's MEASURED height — where the section
+          // nav parks. The fallbacks are the figures this used to hardcode, so
+          // the first paint and the static export are unchanged; both bars
+          // overwrite them on mount and whenever they change shape.
+          "--section-nav-top": "calc(var(--header-h) + var(--context-bar-h, 3.4375rem))",
+          // …and where an anchor has to land to clear all of it, nav included.
+          "--section-anchor-top":
+            "calc(var(--header-h) + var(--context-bar-h, 3.4375rem) + var(--section-nav-h, 2.625rem) + 0.75rem)",
+        } as React.CSSProperties
+      }
     >
       <ContextBar property={property} current="manage" />
 

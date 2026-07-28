@@ -37,6 +37,12 @@ import { Check, ChevronDown, ListChecks } from "lucide-react";
 
 export type SectionStatus = "edited" | "needs" | "idle";
 
+/** How tall the section nav is, for whatever needs to scroll clear of it.
+ *  On the root because the consumer — every SectionCard — is scattered across
+ *  the page, and there is one nav. */
+const publishNavHeight = (px: number) =>
+  document.documentElement.style.setProperty("--section-nav-h", `${px}px`);
+
 export function SectionNav<K extends string>({
   sections,
   labels,
@@ -76,7 +82,14 @@ export function SectionNav<K extends string>({
   railTop?: string;
 }) {
   const hasRail = useRailRoom(railQuery);
-  const active = useSpy(sections, spy);
+
+  // The rail sits BESIDE the content, so it hides none of it and an anchor
+  // needs to clear only the bars above. The bar and the sheet do cover the
+  // content, and publish their real height from `FittingNav`.
+  useEffect(() => {
+    if (!hasRail) return;
+    publishNavHeight(0);
+  }, [hasRail]);
 
   if (hasRail) {
     return (
@@ -92,8 +105,7 @@ export function SectionNav<K extends string>({
           <a
             key={key}
             href={`#sec-${key}`}
-            aria-current={active === key ? "true" : undefined}
-            className={`flex items-center gap-2.5 rounded-(--radius-control) px-2.5 py-[7px] text-[0.8125rem] transition-colors duration-(--dur-standard) hover:bg-surface ${weight(status?.[key], active === key)}`}
+            className={`flex items-center gap-2.5 rounded-(--radius-control) px-2.5 py-[7px] text-[0.8125rem] transition-colors duration-(--dur-standard) hover:bg-surface ${weight(status?.[key])}`}
           >
             {status && <Disc state={status[key]} big />}
             {labels[key]}
@@ -112,17 +124,17 @@ export function SectionNav<K extends string>({
       changedLabel={changedLabel}
       stickyTop={stickyTop}
       status={status}
-      active={active}
+      spy={spy}
     />
   );
 }
 
 /** Edited wins over needs-attention: once you are working in a section, what
  *  you need to know is that the change is captured, not that it was thin. */
-function weight(state: SectionStatus | undefined, isActive: boolean) {
+function weight(state: SectionStatus | undefined) {
   if (state === "edited") return "font-semibold text-brand-strong";
   if (state === "needs") return "font-semibold text-ink";
-  return isActive ? "font-semibold text-ink" : "font-medium text-body";
+  return "font-medium text-body";
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -137,7 +149,7 @@ function FittingNav<K extends string>({
   changedLabel,
   stickyTop,
   status,
-  active,
+  spy,
 }: {
   sections: readonly K[];
   labels: Record<K, string>;
@@ -146,12 +158,13 @@ function FittingNav<K extends string>({
   changedLabel?: string;
   stickyTop: string;
   status?: Record<K, SectionStatus>;
-  active: K | null;
+  spy: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const ruler = useRef<HTMLDivElement>(null);
   const [fits, setFits] = useState(true);
   const [stuck, setStuck] = useState(false);
+  const active = useSpy(sections, spy, box);
 
   useEffect(() => {
     const measure = () => {
@@ -181,6 +194,12 @@ function FittingNav<K extends string>({
       // so a sticky bar above it wrapping onto two lines moves this with it.
       const top = parseFloat(style.top) || 0;
       setStuck(outer.getBoundingClientRect().top <= top + 0.5);
+
+      // How much of the content this nav covers, for the anchor offset the
+      // sections scroll to. It changes between the bar and the sheet, and
+      // again with the font — so like the context bar's height it is published
+      // rather than written down.
+      publishNavHeight(outer.getBoundingClientRect().height);
     };
 
     measure();
@@ -405,20 +424,40 @@ function useRailRoom(query: string | undefined) {
   return Boolean(query) && room;
 }
 
-/** The last section whose heading has passed the top of the viewport. Reading
- *  forward and keeping the last match handles the final section, which on a
- *  short page may never reach the line. */
-function useSpy<K extends string>(sections: readonly K[], enabled: boolean) {
+/**
+ * The last section whose heading has passed under the nav. Reading forward and
+ * keeping the last match handles the final section, which on a short page may
+ * never reach the line.
+ *
+ * The line is the NAV'S OWN BOTTOM EDGE, measured every time. It cannot be a
+ * number: the sticky stack above it is the header plus a context bar that
+ * wraps to two or three rows as the window narrows, so a fixed line is right
+ * at exactly one width. Written as a constant it read the section *above* the
+ * one you had just jumped to — click Availability, watch Pricing light up.
+ *
+ * Measuring the element also makes it self-correcting: parked, its bottom is
+ * wherever the stack actually ends; unparked, you are at the top of the page
+ * and the first section is the right answer anyway.
+ */
+function useSpy<K extends string>(
+  sections: readonly K[],
+  enabled: boolean,
+  nav: React.RefObject<HTMLElement | null>,
+) {
   const [active, setActive] = useState<K | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
 
     const measure = () => {
-      // A generous line: an anchor jump parks its target at exactly the
-      // section's scroll-margin-top, and without slack whether the section you
-      // just clicked lights up comes down to sub-pixel rounding.
-      const line = 140;
+      const box = nav.current?.getBoundingClientRect();
+      if (!box) return;
+      // The slack matters: an anchor jump parks its target at exactly the
+      // section's scroll-margin-top, which lands within a pixel of this edge.
+      // Without room to spare, whether the tab you just clicked lights up comes
+      // down to sub-pixel rounding.
+      const line = box.bottom + 16;
+
       let current: K | null = sections[0] ?? null;
       for (const key of sections) {
         const el = document.getElementById(`sec-${key}`);
@@ -434,7 +473,7 @@ function useSpy<K extends string>(sections: readonly K[], enabled: boolean) {
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
     };
-  }, [sections, enabled]);
+  }, [sections, enabled, nav]);
 
   return active;
 }

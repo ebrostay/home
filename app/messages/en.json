@@ -803,6 +803,9 @@
     },
     "ownerView": "You are seeing your home as a guest sees it."
   },
+  "nearby": {
+    "type": {}
+  },
   "estimate": {
     "title": "Price your stay",
     "hint": "Pick move-in and move-out in the calendar. Days with a diagonal line are taken.",

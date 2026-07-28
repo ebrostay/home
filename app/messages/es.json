@@ -803,6 +803,9 @@
     },
     "ownerView": "Estás viendo tu vivienda como la ve un huésped."
   },
+  "nearby": {
+    "type": {}
+  },
   "estimate": {
     "title": "Calcula tu estancia",
     "hint": "Elige entrada y salida en el calendario. Los días con línea diagonal están ocupados.",

@@ -1702,11 +1702,13 @@ const base = (over: Partial<HostListing> = {}): HostListing =>
     ...over,
   }) as HostListing;
 
+// Mirrors HostNearbyEntry exactly — osmId and measuredAt are REQUIRED there,
+// matching the C#, so a fixture omitting them will not typecheck.
 const entry = (over = {}) => ({
   id: "a", group: "transport", type: "tram", customType: null,
   name: "Tranvía L1", lat: 41.651, lng: -0.891,
   reach: { foot: { metres: 340, minutes: 4 } },
-  needsCheck: false,
+  osmId: "node/1", measuredAt: "2026-07-28T00:00:00Z", needsCheck: false,
   ...over,
 });
 

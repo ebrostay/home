@@ -577,9 +577,17 @@ End-to-end checks:
 
 ---
 
-## 12. Follow-on documents
+## 12. Relationship to the decision log
 
-An **ADR-028** in `docs/spec-v2/05-decision-log.md` records the decisions in
-§2 in the project's own format, and `docs/spec-v2/02-data-model.md` gains the
-entry and route shapes. Both are written as part of implementation, as
-ADR-025 and ADR-027 were.
+**`ADR-028` in `docs/spec-v2/05-decision-log.md` is the primary record.** It
+holds the decisions and their rationale in the project's own format, and is
+what should be read before touching this feature.
+
+This document is the working design that elaborates it: the shapes, the
+container definitions, the ASCII layouts, the failure table and the
+verification list — build-level detail an ADR should not carry. Where the two
+ever disagree, the ADR wins and this document is wrong.
+
+Still to be written during implementation: `docs/spec-v2/02-data-model.md`
+gains the entry and route shapes, and `04-functional-flows.md` gains the
+lookup and route flows.

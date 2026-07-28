@@ -1236,6 +1236,184 @@ Two guardrails, and they are the load-bearing part:
 
 ---
 
+## ADR-028 — "What's nearby": measured, not typed; numbers eager, geometry lazy
+
+- **Status:** ✅ locked 2026-07-28 (product owner: Raphael); 🔜 **not built**.
+  Replaces the `PLACEHOLDER_NEARBY` stand-in in
+  `app/lib/detail-placeholders.ts`, whose own header instructs its deletion
+  once the API has fields. Working notes and the full build-level design:
+  `docs/superpowers/specs/2026-07-28-whats-nearby-design.md` — **this ADR is
+  the primary record; that document elaborates it.**
+- **Context.** The detail page's "What's nearby" panel shows generic Zaragoza
+  facts identical for every listing, with times measured from "central
+  Zaragoza" rather than from the home. It needs per-listing data, which means
+  it needs an editor. The shape of that editor is the whole decision: a text
+  box beside a place name invites an owner to make their flat sound closer
+  than it is.
+
+### Decision 1 — The owner chooses places; the system measures distances
+
+- An owner picks a group, gets real places around their pin, and selects which
+  the listing mentions. **They never type a distance or a duration.**
+- Rationale: a number beside a place name is a promise a guest reads as fact,
+  and it is the one part of a listing where the owner has both the motive and
+  the opportunity to be optimistic. The same reasoning removed the "Hosted
+  by …" block on 2026-07-28 — a page-level claim with nothing behind it.
+- Consequence: if the routing service cannot be reached, the entry **is not
+  saved**. A listing with no nearby section beats one with a fabricated
+  figure. This is the one place the feature stops rather than degrades.
+
+### Decision 2 — Distance is a walking route, not a straight line
+
+- Figures come from a routing engine, computed **once at pick time** and
+  stored on the document.
+- Rationale: Zaragoza has a river. A straight line of 300 m is a 2 km walk if
+  the bridge is the other way, so straight-line figures are optimistic exactly
+  where the error matters most.
+- Candidates are ranked using the engine's **matrix** endpoint — one request
+  returns the distance from the pin to every candidate at once — so a category
+  open costs one request per profile rather than one per candidate.
+
+### Decision 3 — OpenRouteService, called from a Function, behind one seam
+
+- Provider: **ORS**, hosted by HeiGIT. Account `info@ebrostay.com` (GitHub
+  sign-in); HeiGIT permits one account per person. Key in **`ORS_API_KEY`**,
+  Functions app settings only.
+- **Server-side is not a preference, it is forced three times over:** the key
+  cannot go in the client (§1 secrets rule); ORS requires a real `User-Agent`,
+  which a browser will not let us set — the mirror image of the Catastro case
+  in ADR-027 Decision 4, where the browser's automatic header made
+  client-direct the *lower*-risk option; and a one-request-per-second promise
+  can only be kept from a place that sees all the traffic.
+- `OrsClient` is the only class that knows ORS exists. The terms may change
+  "effective immediately upon posting", and self-hosting OSRM (BSD-2-Clause)
+  or ORS itself (GPL-3.0, no network clause) speaks the same request shape.
+- **Terms as read 2026-07-28** (`account.heigit.org/info/tos`): commercial use
+  is **not** restricted; results are **CC-BY-SA 4.0**, not CC-BY; attribution
+  `© openrouteservice by HeiGIT | Data from OpenStreetMap` is required
+  wherever results are shown; there is **no restriction on caching or storing
+  results**; repeatedly exceeding quota can disable the account **without
+  notice**. Requests therefore carry coordinates and a profile and nothing
+  else — no listing id, no owner id, no address string.
+
+### Decision 4 — Numbers eager, geometry lazy, and the endpoint takes ids
+
+- Distances are written when the owner saves. **Route geometry is fetched the
+  first time anyone asks for it** and cached write-through, so each
+  `(entry, profile)` pair costs exactly one call ever.
+- The public endpoint is `GET /api/properties/{id}/nearby/{entryId}/route`
+  and takes **`(propertyId, entryId, profile)` — never coordinates.** Origin
+  and destination are read from the stored document.
+- This is a security rule of the same family as ADR-027 Decision 3: there,
+  photo URLs had to already be on the document because each renders in a
+  public `<img>`; here, coordinates must come from the document because
+  otherwise an anonymous caller could route arbitrary points at our expense on
+  an account that can be disabled for overuse. Unknown ids 404 without
+  touching ORS.
+- Consequence: nothing a guest sees **on page load** depends on a third party.
+  The figures are on the document. Only a first-ever click on a route can fail,
+  and it fails to a named message beside a figure that is still correct.
+
+### Decision 5 — Routes are referenced, not embedded
+
+- `nearbyRoutes`, partitioned by `/propertyId` (the shape `bookingRequests`
+  already uses), id `{entryId}-{profile}`, always a point read, 180-day TTL,
+  index everything excluded but the partition key.
+- Rationale is correctness before performance: routes are written by an
+  **anonymous** lazy path while the property document is written by the
+  owner's save. Embedding would make the public path read-modify-write the hot
+  document, where it can clobber a save outright. That access correlation is
+  also near zero — every detail page load would carry geometry almost no
+  reader wants.
+- The TTL is the design, not housekeeping: these are a cache, so road-network
+  changes propagate with no admin work.
+
+### Decision 6 — Reach is a map of profiles; radius is per group
+
+- Entries store `Reach: { "foot": {…}, "car": {…} }` rather than two scalar
+  pairs, so a third profile is configuration rather than a migration. The
+  profile list stays **closed and validated server-side**.
+- The **profile toggle belongs to the guest**, not the owner: owners choose
+  places, and walking distance is the right proxy for whether something is
+  genuinely nearby. The editor shows and ranks by walking figures while
+  storing both.
+- **Search radius is per group.** "Nearby" is 800 m for a bus stop and 10 km
+  for a hospital; one fixed radius is wrong at both ends.
+- **Drive time excludes parking**, and walking has no equivalent hidden cost.
+  Labelled "drive", never the default. Every mapping product has this problem
+  and none solves it; naming it beats shipping it quietly.
+
+### Decision 7 — Type is a fixed translated vocabulary with a Spanish-first hatch
+
+- The second line of an entry is a **vocabulary key**, translated once in
+  `messages/*.json` under a shared `nearby.type.*` namespace used by both the
+  editor and the public page. No owner translation work, and consistent
+  wording across every listing.
+- The escape hatch takes **Spanish required, English optional**, falling back
+  to Spanish with an attention flag — mirroring `enNotApproved` (ADR-027
+  Decision 4) rather than inventing a parallel state. Common misses get
+  promoted into the vocabulary over time.
+- Place **names are one string, not bilingual**: they are proper nouns.
+
+### Decision 8 — Derived figures are never accepted from the client
+
+- On save, entries are matched by id against the stored document and their
+  measured figures carried over — the `kept[p.Url]` pattern of ADR-027
+  Decision 3. New entries, moved entries, and **every entry when the pin
+  moves** are re-measured server-side.
+- Moving the pin invalidates every distance because the *origin* changed.
+  Recomputing is not overwriting the owner's work — they never authored these
+  numbers — but an entry that lands beyond its group's radius is now a bad
+  *selection*, so it is flagged `needsCheck` rather than silently kept or
+  silently dropped. This is the same instinct as the two-pin comparison, applied
+  to the one case where the data is derived rather than authored.
+- Entry ids are **server-generated**, like photo filenames: a client-supplied
+  id would let a caller point the route cache at an entry it does not own.
+
+### Decision 9 — The neighbourhood is one section, not two
+
+- Detail-page sections 7 ("Where you'll be") and 9 ("What's nearby") merge.
+- Rationale: the route line has to be drawn in the same viewport as the list
+  that was clicked, and the two halves fix each other's weakness — a map with
+  nothing to click is inert, a list of places with no map is abstract.
+- `YourPlaces` is deliberately **untouched** despite computing its times as
+  `km ÷ speed` on a straight line, so the page will briefly carry two
+  standards of rigour. It routes to arbitrary addresses a visitor types, which
+  is exactly the unbounded, guest-triggered, uncacheable workload Decision 4
+  exists to avoid.
+
+### What this deliberately does not do
+
+- **No city-wide POI set.** Hospitals and the AVE station are shared city
+  facts, but which of them are worth showing is a product question with no
+  evidence yet. Owners choose first; optimise on a real decision base.
+- **No timer-driven refresh of stale measurements.** `MeasuredAt` records when
+  figures were computed and nothing refreshes them: Cosmos `_ts` is
+  document-level, and embedded fields cannot carry a TTL. **SWA managed
+  functions support HTTP triggers only**, so the eventual answer is lazy
+  refresh on save, or an admin endpoint driven by a GitHub Actions cron.
+- **No admin review surface** for nearby entries; it joins the Catastro check
+  and the photo location check waiting on §4.5.
+- **No transit or cycling profile** in v1, though Decision 6 admits them
+  without a migration.
+
+### Consequences to watch
+
+- **Cross-instance rate limiting is awkward on Consumption**, where in-process
+  throttling is per-instance and therefore no limit at all. Durable Functions
+  are unavailable on managed functions, so the limiter is a Cosmos counter
+  document with ETag concurrency, fronted by a candidate cache that caps
+  outbound volume structurally. Retries are bounded to **one** — an aggressive
+  retry against an account that can be disabled for overuse is the single most
+  dangerous thing this feature could contain.
+- **Local development consumes production quota**, since no ORS emulator
+  exists. A fixture switch is required, both to spare the quota and because
+  the failure paths cannot otherwise be tested at all.
+- **The ORS account is personal**, one per person by HeiGIT's terms. An
+  operational concern only if someone other than the owner has to run this.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

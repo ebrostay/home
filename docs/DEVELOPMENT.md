@@ -290,6 +290,20 @@ claude plugin install superpowers@claude-plugins-official
 **Takes effect on the next session**, not the current one. It supplies the
 workflow skills — brainstorming, planning, TDD, systematic debugging.
 
+### The rest of `.claude/`
+
+| File | Tracked? | What it is |
+| --- | --- | --- |
+| `settings.json` | yes | Enables the superpowers plugin. The whole file. |
+| `launch.json` | yes | Dev-server definitions for the in-app browser preview: `app-dev` on :3000, `app-dev-verify` on :3020 for checking a change without disturbing a running :3000. |
+| `skills/` | yes | The two vendored skills above. |
+| `settings.local.json` | **no** — gitignored | Personal tool permissions. Yours will not exist until you create it, and nothing here depends on it. |
+
+One trap in `launch.json`: it starts **Next alone on :3000**, which is the
+right thing for a preview pane but is *not* the running app. The SWA emulator
+still has to be started separately, and you still browse **:4280** (§6).
+Anything behind sign-in will 401 against a bare :3000 preview.
+
 Read `CLAUDE.md` before your first change. The conventions that bite hardest:
 bilingual ES/EN is a hard requirement (every string in both message files),
 light and dark are both first-class, `Link`/`useRouter` come from

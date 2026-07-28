@@ -17,6 +17,7 @@ import {
 } from "@/components/MonthBand";
 import { PropertyCard, type PropertyCardData } from "@/components/PropertyCard";
 import { SectionNavLab, type LabSection } from "@/components/design/SectionNavLab";
+import { SectionNavLadder } from "@/components/design/SectionNavLadder";
 import {
   DateRangePicker,
   type DateRange,
@@ -102,6 +103,12 @@ const LAB_SECTIONS = [
 export default function DesignPage() {
   const t = useTranslations("design");
   const te = useTranslations("host.edit");
+  // Built once and shared by both nav demos, so they are always comparing the
+  // same six labels in the same states.
+  const labSections: LabSection[] = LAB_SECTIONS.map((s) => ({
+    ...s,
+    label: te(`nav.${s.key}` as "nav.basics"),
+  }));
   const th = useTranslations("search.hero");
   const ts = useTranslations("status");
   const ta = useTranslations("actions");
@@ -558,10 +565,7 @@ export default function DesignPage() {
         </p>
         <div className="mt-6">
           <SectionNavLab
-            sections={LAB_SECTIONS.map((s) => ({
-              ...s,
-              label: te(`nav.${s.key}` as "nav.basics"),
-            }))}
+            sections={labSections}
             labels={{
               width: t("snWidth"),
               scroll: t("snScroll"),
@@ -570,6 +574,31 @@ export default function DesignPage() {
               sheetNote: t("snSheetNote"),
               wrap: t("snWrap"),
               wrapNote: t("snWrapNote"),
+              trigger: t("snTrigger"),
+              changed: t("snChanged"),
+              body: t("snBody"),
+            }}
+          />
+        </div>
+      </section>
+
+      {/* The proposed answer: the same rungs, climbed by fit. */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>{t("sectionLadder")}</span></div>
+        <p className="mt-5 max-w-2xl text-[0.84375rem] leading-relaxed text-body">
+          {t("sectionLadderIntro")}
+        </p>
+        <div className="mt-6">
+          <SectionNavLadder
+            sections={labSections}
+            labels={{
+              width: t("snWidth"),
+              manage: t("slManage"),
+              edit: t("slEdit"),
+              stage: t("slStage"),
+              stageRail: t("slStageRail"),
+              stageBar: t("slStageBar"),
+              stageSheet: t("slStageSheet"),
               trigger: t("snTrigger"),
               changed: t("snChanged"),
               body: t("snBody"),

@@ -903,7 +903,15 @@
     "snWrapNote": "Hides nothing and adds no interaction, but on a phone it is three lines of sticky nav before any content.",
     "snTrigger": "Sections",
     "snChanged": "changed",
-    "snBody": "Sample content, only here to give the frame height so it can scroll."
+    "snBody": "Sample content, only here to give the frame height so it can scroll.",
+    "sectionLadder": "PROPOSED LADDER · MANAGE AND EDIT",
+    "sectionLadderIntro": "The rungs are shared: the editor's middle rung IS Manage's top rung — same component, same styling — differing only in whether it carries status discs. The switch to \"Sections\" is decided by MEASURING whether the bar fits, not by a fixed breakpoint. Measured here: Manage reaches the bar at 760px in Spanish against 735px in English, and the editor at 900 against 860 — a fixed number tuned in one language clips the other, and the editor needs more room because its bar also carries discs.",
+    "slManage": "MANAGE · 2 RUNGS",
+    "slEdit": "EDIT · 3 RUNGS",
+    "slStage": "RUNG",
+    "slStageRail": "rail",
+    "slStageBar": "bar",
+    "slStageSheet": "sections"
   },
   "auth": {
     "signInWith": "Sign in with",

@@ -903,7 +903,15 @@
     "snWrapNote": "No oculta nada y no añade interacción, pero en un móvil son tres líneas de navegación fija antes del contenido.",
     "snTrigger": "Secciones",
     "snChanged": "cambiadas",
-    "snBody": "Contenido de ejemplo, solo para dar altura al marco y poder hacer scroll."
+    "snBody": "Contenido de ejemplo, solo para dar altura al marco y poder hacer scroll.",
+    "sectionLadder": "ESCALERA PROPUESTA · GESTIONAR Y EDITAR",
+    "sectionLadderIntro": "Los mismos peldaños compartidos: el peldaño intermedio del editor ES el peldaño superior de Gestionar, mismo componente y mismo estilo, y solo cambia si lleva discos de estado. El salto a «Secciones» se decide MIDIENDO si la barra cabe, no con un punto de ruptura fijo. Medido aquí: Gestionar pasa a barra a 760 px en español y a 735 px en inglés, y el editor a 900 frente a 860 — un número fijo afinado en un idioma recorta el otro, y el editor necesita más ancho porque su barra además lleva discos.",
+    "slManage": "GESTIONAR · 2 PELDAÑOS",
+    "slEdit": "EDITAR · 3 PELDAÑOS",
+    "slStage": "PELDAÑO",
+    "slStageRail": "carril",
+    "slStageBar": "barra",
+    "slStageSheet": "secciones"
   },
   "auth": {
     "signInWith": "Entrar con",

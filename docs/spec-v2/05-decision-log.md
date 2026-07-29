@@ -1545,6 +1545,49 @@ Two guardrails, and they are the load-bearing part:
   The common root is worth naming: the pin was treated as an initial
   condition by everything downstream of the address section, when it is a
   value that changes mid-session.
+- **Discovery was measured for the first time on 2026-07-29, and three of its
+  four assumptions were wrong.** Decision 6 settled a radius *per group*, and
+  the search took that to mean one radius, one element type and nearest-N. An
+  owner reported seeing "dozens of bus stops, no tram or train"; probing
+  Overpass directly explained all of it and more.
+  - **One radius per group is too coarse.** For Pedro II el Católico 3 the
+    nearest tram is 1705 m and for Movera 7 the nearest station is 1172 m —
+    both outside transport's 800 m, so neither was ever fetched. A bus stop
+    at 800 m is a fact about the street; the tram is a fact about the city.
+    Radius is now per TYPE where it differs (tram 2500, rail 3000), and
+    `RadiusMetres(group, type)` is also what `needsCheck` measures against —
+    against the group's 800 m, every tram stop would be flagged the moment it
+    was saved.
+  - **Nearest-N is a popularity contest the densest type always wins.** Within
+    800 m of that same listing there are 38 bus stops, 11 bike shares, 5 taxi
+    ranks and one railway station; the nearest 20 were 15 bus stops, 4 bike
+    shares and a taxi rank. Delicias, 595 m away and well inside the radius,
+    placed about 24th. Per-type quotas now cap each type, as HARD caps — a
+    first attempt kept a fill pass for the leftover slots and measurement
+    showed it restoring the original 17-bus-stops-of-30 answer, which is a
+    decision made and then undone in the same method.
+  - **`node` alone cannot see a park.** Within 2 km there are 38 named parks
+    and 92 swimming pools, and every one is an OSM *way* — the outdoors group
+    had never once returned a park. Area-mapped features are now queried with
+    `nwr` + `out center`. Selectively, though: food returns the identical 91
+    elements either way and takes ~1.3 s as `node` against ~7.5 s as `nwr`.
+  - **A gym was in no group at all.** `leisure=sports_centre` is the sports
+    complex; a gym carries `leisure=fitness_centre`, which nothing queried.
+    Added as type `gym`, and the group is now "Sport & outdoors" — it holds
+    pools, sports centres and gyms, so "Outdoors" was already inaccurate.
+  - Overpass gets **three attempts** now (700 ms, 1.4 s; 3 s for a 429, which
+    is its slot limiter rather than a busy moment). One in three identical
+    small queries returned 504 during sampling, and the group an owner most
+    often saw fail — food — was simply the heaviest query. Its radius is also
+    down from 1000 m to 600 m.
+  - The candidate cache cell carries a **version** (`v5|…`). Cells live 30
+    days, so without it a widened radius would reach an already-visited
+    neighbourhood a month late, and only the neighbourhoods nobody had opened
+    would get the fix.
+  - The editor shows **three per type** with "Show N more places". Client-side
+    on one payload, not a paged endpoint: an ORS matrix costs the same single
+    request whether it carries 20 destinations or 30, so paging would double
+    what browsing spends against the 1,500/day ceiling for nothing.
 
 ---
 

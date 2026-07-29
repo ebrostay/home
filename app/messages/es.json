@@ -486,6 +486,8 @@
         "searching": "Buscando cerca…",
         "lookupFailed": "La búsqueda no ha respondido. Aun así puedes añadir un sitio a mano.",
         "noResults": "No hemos encontrado nada cerca. Aun así puedes añadir un sitio a mano.",
+        "showAll": "Ver {count, plural, one {# sitio más} other {# sitios más}}",
+        "showFewer": "Ver menos",
         "retry": "Reintentar",
         "dropHint": "Toca el mapa donde está el sitio.",
         "measuring": "Midiendo el camino a pie desde tu vivienda…",
@@ -500,7 +502,7 @@
           "transport": "Transporte",
           "groceries": "Compras",
           "food": "Restaurantes",
-          "outdoors": "Aire libre",
+          "outdoors": "Deporte y aire libre",
           "health": "Salud"
         }
       },
@@ -902,6 +904,7 @@
       "park": "Parque",
       "river": "Río",
       "sports": "Centro deportivo",
+      "gym": "Gimnasio",
       "pool": "Piscina",
       "playground": "Zona infantil",
       "pharmacy": "Farmacia",

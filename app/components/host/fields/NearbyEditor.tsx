@@ -64,6 +64,11 @@ const tempId = () => `local-${Date.now()}-${Math.random().toString(36).slice(2, 
  *  the way a `querySelector` would. */
 const candidateButtonId = (osmId: string) => `nearby-candidate-${osmId}`;
 
+/** How many of one type the collapsed candidate list shows. The server's own
+ *  per-type quota (`NearbyGroups.QuotaFor`) is the wider one — this is the
+ *  first screenful, and "Show all" reveals the rest without another request. */
+const PREVIEW_PER_TYPE = 3;
+
 type Vocab =
   | { kind: "loading" }
   | { kind: "error" }
@@ -113,6 +118,7 @@ export function NearbyEditor({
 
   const [vocab, setVocab] = useState<Vocab>({ kind: "loading" });
   const [search, setSearch] = useState<Search>({ kind: "idle" });
+  const [showAll, setShowAll] = useState(false);
   const [searchAttempt, setSearchAttempt] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 
@@ -204,6 +210,7 @@ export function NearbyEditor({
   const openFinder = () => {
     if (!finderOpen) setSearch({ kind: "loading" });
     setFinderOpen(true);
+    setShowAll(false);
   };
   const closeFinder = () => {
     setFinderOpen(false);
@@ -214,6 +221,7 @@ export function NearbyEditor({
     setDropPoint(null);
     setMeasure({ kind: "idle" });
     setDrafts({});
+    setShowAll(false);
   };
   const retrySearch = () => {
     setSearch({ kind: "loading" });
@@ -223,6 +231,9 @@ export function NearbyEditor({
     setActiveGroup(g);
     setActiveId(null);
     setRoutePolyline(null);
+    // Each group is its own search and its own list length: an owner who
+    // expanded Transport has said nothing about Restaurants.
+    setShowAll(false);
     if (finderOpen) setSearch({ kind: "loading" });
   };
   const selectPin = (id: string | null) => {
@@ -475,14 +486,37 @@ export function NearbyEditor({
 
   const remove = (id: string) => onChange(value.filter((e) => e.id !== id));
 
+  // What the list actually shows. The server sends up to 30 with its own
+  // per-type quotas; three of each is what fits on screen without the densest
+  // type burying the rest — around a city-centre pin the honest answer to
+  // "what transport is nearby" is four bus stops and the tram, not the
+  // fifteen nearest bus stops.
+  const shownCandidates = useMemo(() => {
+    if (visibleSearch.kind !== "ready") return [];
+    if (showAll) return visibleSearch.candidates;
+    const used = new Map<string, number>();
+    return visibleSearch.candidates.filter((c) => {
+      const n = used.get(c.type) ?? 0;
+      if (n >= PREVIEW_PER_TYPE) return false;
+      used.set(c.type, n + 1);
+      return true;
+    });
+  }, [visibleSearch, showAll]);
+
+  const hiddenCount =
+    (visibleSearch.kind === "ready" ? visibleSearch.candidates.length : 0) -
+    shownCandidates.length;
+
+  // The map draws exactly what the list offers. A pin with no row behind it
+  // can be clicked and routed but never added, which is a map that promises
+  // more than the page can do — and this editor's rule is that the list is
+  // the source of truth and the map is the enhancement.
   const candidatePins: NearbyMapPin[] = useMemo(
     () =>
-      visibleSearch.kind === "ready"
-        ? visibleSearch.candidates
-            .filter((c) => !chosenOsmIds.has(c.osmId))
-            .map((c) => ({ id: c.osmId, lat: c.lat, lng: c.lng, label: c.name }))
-        : [],
-    [visibleSearch, chosenOsmIds],
+      shownCandidates
+        .filter((c) => !chosenOsmIds.has(c.osmId))
+        .map((c) => ({ id: c.osmId, lat: c.lat, lng: c.lng, label: c.name })),
+    [shownCandidates, chosenOsmIds],
   );
   const chosenPins: NearbyMapPin[] = useMemo(
     () => chosenForGroup.map((e) => ({ id: e.id, lat: e.lat, lng: e.lng, label: e.name })),
@@ -716,7 +750,7 @@ export function NearbyEditor({
 
                 {visibleSearch.kind === "ready" && visibleSearch.candidates.length > 0 && (
                   <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                    {visibleSearch.candidates.map((c) => {
+                    {shownCandidates.map((c) => {
                       const draft = draftFor(c);
                       const already = chosenOsmIds.has(c.osmId);
                       const reach = reachFor(c, "foot");
@@ -804,6 +838,21 @@ export function NearbyEditor({
                       );
                     })}
                   </ul>
+                )}
+
+                {/* No second request behind it: everything it reveals is
+                    already here. The server sends one page because an ORS
+                    matrix costs the same one call whether it carries 20
+                    destinations or 30, so paging would double the routing
+                    budget a browse spends for nothing. */}
+                {visibleSearch.kind === "ready" && (hiddenCount > 0 || showAll) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll((v) => !v)}
+                    className="self-start rounded-(--radius-control) border border-line-strong bg-surface px-3 py-1.5 text-[0.78125rem] font-semibold text-body transition-colors duration-(--dur-standard) hover:border-ink hover:text-ink"
+                  >
+                    {showAll ? t("showFewer") : t("showAll", { count: hiddenCount })}
+                  </button>
                 )}
               </div>
             </div>

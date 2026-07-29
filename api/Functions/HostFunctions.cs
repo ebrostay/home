@@ -278,7 +278,12 @@ public class HostFunctions(
                 // just the number — so it is flagged rather than silently kept
                 // or dropped.
                 var far = reach.TryGetValue("foot", out var onFoot)
-                    && onFoot.Metres > NearbyGroups.RadiusMetres(merged[i].Group) * 1.5;
+                    // The entry's OWN reach, not its group's: a tram stop is
+                    // searched for across 2.5 km on purpose, so measuring it
+                    // against transport's 800 m would flag every tram stop
+                    // ever saved as "farther since the pin moved".
+                    && onFoot.Metres > NearbyGroups.RadiusMetres(
+                        merged[i].Group, merged[i].Type) * 1.5;
                 merged[i] = merged[i] with
                 {
                     Reach = reach,

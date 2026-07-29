@@ -486,6 +486,8 @@
         "searching": "Searching nearby…",
         "lookupFailed": "The search did not answer. You can still add a place by hand.",
         "noResults": "Nothing found nearby. You can still add a place by hand.",
+        "showAll": "Show {count, plural, one {# more place} other {# more places}}",
+        "showFewer": "Show fewer",
         "retry": "Try again",
         "dropHint": "Click the map where the place is.",
         "measuring": "Measuring the walk from your home…",
@@ -500,7 +502,7 @@
           "transport": "Transport",
           "groceries": "Groceries",
           "food": "Restaurants",
-          "outdoors": "Outdoors",
+          "outdoors": "Sport & outdoors",
           "health": "Health"
         }
       },
@@ -902,6 +904,7 @@
       "park": "Park",
       "river": "River",
       "sports": "Sports centre",
+      "gym": "Gym",
       "pool": "Pool",
       "playground": "Playground",
       "pharmacy": "Pharmacy",

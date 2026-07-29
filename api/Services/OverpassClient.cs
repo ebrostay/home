@@ -18,7 +18,23 @@ public sealed class OverpassClient(
     ILogger<OverpassClient> log)
 {
     private const string Endpoint = "https://overpass-api.de/api/interpreter";
-    private const int MaxPois = 20;
+
+    /// The ceiling on what one group open returns. 30, not the 20 it was: the
+    /// per-type quotas below need room to seat a tram and a station without
+    /// evicting the bus stops an owner also legitimately wants. It costs
+    /// nothing in ORS requests — a matrix is one request whether it carries 20
+    /// destinations or 30 — and the editor shows three per type until the
+    /// owner asks for more.
+    private const int MaxPois = 30;
+
+    /// Overpass drops requests when it is busy: a 504 whose body is an HTML
+    /// page, or a 200 whose body carries a `remark`. Both are transient and
+    /// neither is our fault, so the request is worth repeating before the
+    /// owner is told the search failed — a measured 1 in 3 identical small
+    /// queries came back 504 during one sampling.
+    private const int Attempts = 3;
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(700);
+    private static readonly TimeSpan RateLimitDelay = TimeSpan.FromSeconds(3);
 
     // The number of elements we ASK Overpass for, not the number we return.
     // Overpass's `out body N` truncates before our own distance sort runs, and
@@ -43,7 +59,7 @@ public sealed class OverpassClient(
             // Cold cell — fall through and ask.
         }
 
-        var pois = await QueryAsync(lat, lng, group, ct);
+        var pois = await QueryWithRetryAsync(lat, lng, group, ct);
 
         // An empty result is never cached. We cannot tell "genuinely nothing
         // in this radius" apart from a degraded-but-200 Overpass answer with
@@ -70,20 +86,55 @@ public sealed class OverpassClient(
         return pois;
     }
 
+    /// One shot per attempt, with a short pause between. Only the transient
+    /// failures are retried — a malformed query or a genuine empty answer
+    /// would return the same thing three times, so those are not repeated.
+    private async Task<NearbyPoi[]> QueryWithRetryAsync(
+        double lat, double lng, string group, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await QueryAsync(lat, lng, group, ct);
+            }
+            catch (OrsUnavailableException e) when (attempt < Attempts)
+            {
+                log.LogWarning(
+                    "Overpass attempt {Attempt}/{Total} for {Group} failed: {Reason}",
+                    attempt, Attempts, group, e.Message);
+                // 429 is Overpass's slot limiter, not a busy moment: coming
+                // straight back in 700 ms is what earned it. Everything else
+                // (504, a degraded 200) is transient load and clears fast.
+                var pause = e.Message.EndsWith("429", StringComparison.Ordinal)
+                    ? RateLimitDelay
+                    : RetryDelay * attempt;
+                await Task.Delay(pause, ct);
+            }
+        }
+    }
+
     private async Task<NearbyPoi[]> QueryAsync(
         double lat, double lng, string group, CancellationToken ct)
     {
-        var radius = NearbyGroups.RadiusMetres(group);
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        var around = $"(around:{radius},{lat.ToString(inv)},{lng.ToString(inv)})";
 
-        var selectors = string.Concat(NearbyGroups.OverpassTags(group)
-            .Select(t => $"node[\"{t.Key}\"=\"{t.Value}\"]{around};"));
+        // Each selector carries its OWN radius, so the tram is searched for
+        // across 2.5 km in the same request that looks 800 m for a bus stop.
+        // Each selector brings its own radius AND its own element type: `nwr`
+        // for things OSM maps as areas (a park is never a node), `node` for
+        // everything else, because asking for ways where there are none is
+        // pure latency. `out center` below gives every way a representative
+        // point, which is all a distance needs.
+        var selectors = string.Concat(NearbyGroups.OverpassSelectors(group)
+            .Select(t =>
+                $"{t.Element}[\"{t.Key}\"=\"{t.Value}\"]"
+                + $"(around:{t.Radius},{lat.ToString(inv)},{lng.ToString(inv)});"));
 
         // qt (quadtile) order at least correlates with spatial locality, unlike
         // the default element order, which has no relationship to distance
         // from the `around` point.
-        var ql = $"[out:json][timeout:12];({selectors});out body qt {QueryBudget};";
+        var ql = $"[out:json][timeout:12];({selectors});out center qt {QueryBudget};";
 
         var http = factory.CreateClient("overpass");
         HttpResponseMessage res;
@@ -157,18 +208,76 @@ public sealed class OverpassClient(
             // Unmapped tags are dropped rather than guessed at.
             if (type is null) continue;
 
+            // A node carries its own lat/lon; a way or relation carries the
+            // `center` that `out center` computed for it. Anything with
+            // neither is not placeable and is dropped rather than guessed at.
+            double poiLat, poiLng;
+            if (el.TryGetProperty("lat", out var latEl)
+                && el.TryGetProperty("lon", out var lonEl))
+            {
+                poiLat = latEl.GetDouble();
+                poiLng = lonEl.GetDouble();
+            }
+            else if (el.TryGetProperty("center", out var centre))
+            {
+                poiLat = centre.GetProperty("lat").GetDouble();
+                poiLng = centre.GetProperty("lon").GetDouble();
+            }
+            else continue;
+
             found.Add(new NearbyPoi(
-                $"node/{el.GetProperty("id").GetInt64()}",
+                // Type-qualified, because a way and a node may share an id.
+                $"{el.GetProperty("type").GetString()}/{el.GetProperty("id").GetInt64()}",
                 name.Length > 80 ? name[..80] : name,
                 type,
-                el.GetProperty("lat").GetDouble(),
-                el.GetProperty("lon").GetDouble()));
+                poiLat,
+                poiLng));
         }
 
-        return [.. found
+        return Select(found, lat, lng);
+    }
+
+    /// Nearest-first, but with a quota per type and one entry per real place.
+    ///
+    /// Straight-line distance decides the order here; the walking figures come
+    /// later, from ORS. That is the same split as before — this only changes
+    /// WHICH candidates are worth paying a matrix for.
+    internal static NearbyPoi[] Select(
+        IEnumerable<NearbyPoi> found, double lat, double lng)
+    {
+        var ordered = found
             .DistinctBy(p => p.OsmId)
             .OrderBy(p => Haversine(lat, lng, p.Lat, p.Lng))
-            .Take(MaxPois)];
+            // A tram stop is two OSM nodes, one per direction: "Emperador
+            // Carlos V" appears at 1686 m and again at 1705 m. Distinct ids,
+            // one place, and to an owner reading a list they are a duplicate —
+            // one that would also eat half of that type's quota. The nearest
+            // of the pair survives, which is the one already at the front.
+            .DistinctBy(p => (p.Type, p.Name.Trim().ToLowerInvariant()))
+            .ToArray();
+
+        var taken = new List<NearbyPoi>(MaxPois);
+        var perType = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var p in ordered)
+        {
+            if (taken.Count == MaxPois) break;
+            perType.TryGetValue(p.Type, out var used);
+            if (used >= NearbyGroups.QuotaFor(p.Type)) continue;
+            perType[p.Type] = used + 1;
+            taken.Add(p);
+        }
+
+        // No fill pass. An earlier version handed the leftover slots to the
+        // next-nearest places regardless of type, and measuring it showed
+        // exactly why that is wrong: for Pedro II el Católico 3 the quotas
+        // seated the tram and the station, then the fill put the list back to
+        // 17 bus stops out of 30. A quota is a decision about how much of one
+        // type is worth reading; topping the list back up with the densest
+        // type is that decision being made and then undone in the same method.
+        //
+        // A thin neighbourhood therefore returns fewer than MaxPois, which is
+        // the honest answer: there is no more.
+        return [.. taken];
     }
 
     /// Straight-line, used ONLY to pick which candidates are worth routing.

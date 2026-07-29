@@ -41,18 +41,26 @@ const Callout = Node.create({
 /** Both reference nodes are ATOMS carrying an identifier and nothing else.
  *  There is no href, no src and no free-text attribute — the label a guest
  *  sees is resolved from the listing at render time. */
+// The chip/card labels below are rendered straight into the editable
+// ProseMirror DOM (there is no NodeView), so they are real, host-visible
+// text — not decoration. They come from `addOptions`/`.configure()` so the
+// module-level Node definitions stay pure while the component instance
+// supplies the localized label from `strings`; no English literal lives here.
 const PhotoRef = Node.create({
   name: "photoRef",
   group: "inline",
   inline: true,
   atom: true,
+  addOptions: () => ({ label: "" }),
   addAttributes: () => ({ url: { default: null } }),
   parseHTML: () => [{ tag: "span[data-photo-ref]" }],
-  renderHTML: ({ HTMLAttributes }) => [
-    "span",
-    mergeAttributes({ "data-photo-ref": HTMLAttributes.url, class: chipClass("bg-surface-2 text-ink") }),
-    "▣ photo",
-  ],
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "span",
+      mergeAttributes({ "data-photo-ref": HTMLAttributes.url, class: chipClass("bg-surface-2 text-ink") }),
+      `▣ ${this.options.label}`,
+    ];
+  },
 });
 
 const PlaceRef = Node.create({
@@ -60,18 +68,21 @@ const PlaceRef = Node.create({
   group: "inline",
   inline: true,
   atom: true,
+  addOptions: () => ({ label: "" }),
   addAttributes: () => ({ entryId: { default: null } }),
   parseHTML: () => [{ tag: "span[data-place-ref]" }],
-  renderHTML: ({ HTMLAttributes }) => [
-    "span",
-    // brand tones, not "meadow" (that token doesn't exist — see globals.css) —
-    // matches the placeRef chip RichText.tsx renders for guests, so the
-    // editing surface and the guest page read as the same colour.
-    mergeAttributes({ "data-place-ref": HTMLAttributes.entryId, class: chipClass("bg-brand-soft text-brand-strong") }),
-    // No label attribute exists on this atom (see the comment above), so the
-    // editor shows a generic tag rather than pretending to resolve a name.
-    "◎ place",
-  ],
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "span",
+      // brand tones, not "meadow" (that token doesn't exist — see globals.css) —
+      // matches the placeRef chip RichText.tsx renders for guests, so the
+      // editing surface and the guest page read as the same colour.
+      mergeAttributes({ "data-place-ref": HTMLAttributes.entryId, class: chipClass("bg-brand-soft text-brand-strong") }),
+      // No label attribute exists on this atom (see the comment above), so the
+      // editor shows a generic tag rather than pretending to resolve a name.
+      `◎ ${this.options.label}`,
+    ];
+  },
 });
 
 const PhotoFigure = Node.create({
@@ -79,13 +90,16 @@ const PhotoFigure = Node.create({
   group: "block",
   atom: true,
   draggable: true,
+  addOptions: () => ({ label: "" }),
   addAttributes: () => ({ url: { default: null }, caption: { default: null } }),
   parseHTML: () => [{ tag: "figure[data-photo-figure]" }],
-  renderHTML: ({ HTMLAttributes }) => [
-    "figure",
-    mergeAttributes({ "data-photo-figure": HTMLAttributes.url, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
-    "▣ photo",
-  ],
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "figure",
+      mergeAttributes({ "data-photo-figure": HTMLAttributes.url, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
+      `▣ ${this.options.label}`,
+    ];
+  },
 });
 
 const PlaceCard = Node.create({
@@ -93,13 +107,16 @@ const PlaceCard = Node.create({
   group: "block",
   atom: true,
   draggable: true,
+  addOptions: () => ({ label: "" }),
   addAttributes: () => ({ entryId: { default: null } }),
   parseHTML: () => [{ tag: "div[data-place-card]" }],
-  renderHTML: ({ HTMLAttributes }) => [
-    "div",
-    mergeAttributes({ "data-place-card": HTMLAttributes.entryId, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
-    "◎ place",
-  ],
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "div",
+      mergeAttributes({ "data-place-card": HTMLAttributes.entryId, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
+      `◎ ${this.options.label}`,
+    ];
+  },
 });
 
 const chipClass = (tone: string) => `mx-0.5 inline-flex items-baseline gap-1 rounded-(--radius-control) px-1.5 py-0.5 text-[0.875em] ${tone}`;
@@ -116,7 +133,18 @@ const chipClass = (tone: string) => `mx-0.5 inline-flex items-baseline gap-1 rou
 // warning in the editor. Narrowing the content expression here makes both
 // actions no-ops instead — ProseMirror simply won't apply a transaction the
 // schema disallows.
-const RestrictedHeading = Heading.extend({ content: "text*" }).configure({ levels: [3] });
+// Every reachable path already forces level 3 (the toolbar's
+// `toggleHeading({level:3})`, the `#` input rule, and `parseHTML`, which only
+// matches `h3` since `levels: [3]` is the sole configured level) — but the
+// stock extension's `level` attribute still *defaults* to 1 when unset. That
+// default is exactly the field `validateDoc` rejects on
+// (`copy_bad_heading`), so it's overridden here too: belt-and-braces against
+// any future insertion path (e.g. a bare `setNode("heading")`) that forgets
+// to pass an explicit level.
+const RestrictedHeading = Heading.extend({
+  content: "text*",
+  addAttributes: () => ({ level: { default: 3, rendered: false } }),
+}).configure({ levels: [3] });
 const RestrictedListItem = ListItem.extend({ content: "paragraph" });
 
 export type RichTextEditorProps = {
@@ -143,7 +171,11 @@ export function RichTextEditor({
       RestrictedHeading,
       BulletList, OrderedList, RestrictedListItem, History,
       Placeholder.configure({ placeholder: placeholder ?? "" }),
-      Callout, PhotoRef, PlaceRef, PhotoFigure, PlaceCard,
+      Callout,
+      PhotoRef.configure({ label: strings.photo }),
+      PlaceRef.configure({ label: strings.place }),
+      PhotoFigure.configure({ label: strings.photo }),
+      PlaceCard.configure({ label: strings.place }),
     ],
     content: value ?? { type: "doc", content: [] },
     editorProps: {

@@ -234,7 +234,10 @@ const MIN_COMPARABLES = 3;
 
 export function priceBandFor(
   published: PropertySummary[],
-  self: HostProperty,
+  /** Only the two fields it reads — which lets the create wizard ask for a
+   *  band before there is a listing to ask about, using the bedroom count the
+   *  owner has just typed and an id that matches nothing. */
+  self: Pick<HostProperty, "id" | "bedrooms">,
 ): PriceBand | null {
   const others = published.filter((c) => c.id !== self.id && c.priceNumber > 0);
   // Closest first: same size in the same city, then the city alone. A studio

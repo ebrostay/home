@@ -139,6 +139,11 @@ export type HostRange = PublicRange & {
   /** Admin-set, for a stay whose turnaround cannot be staffed in the listing's
    *  usual window. Null means "use the listing's turnoverDays". */
   turnoverDaysOverride: number | null;
+  /** `"own_use"` carries no turnaround (ADR-031) — the owner closed these
+   *  dates themselves and nobody schedules a clean after them. Null is a stay
+   *  and keeps the full ADR-026 buffer. Server-decided on save; the client
+   *  sets it only on blocks it has just created and not yet saved. */
+  kind: string | null;
 };
 
 /** An owner's own listing (api/Models/HostModels.cs) — carries the things the
@@ -300,8 +305,16 @@ async function get<T>(path: string): Promise<T> {
 }
 
 async function put<T>(path: string, body: unknown): Promise<T> {
+  return write<T>("PUT", path, body);
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  return write<T>("POST", path, body);
+}
+
+async function write<T>(method: string, path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, {
-    method: "PUT",
+    method,
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
@@ -336,6 +349,23 @@ export const fetchProperty = (id: string) =>
 
 export const fetchHostProperty = (id: string) =>
   get<HostPropertyDetail>(`/host/properties/${encodeURIComponent(id)}`);
+
+/** Bring a listing into existence (ADR-030). No body: the wizard's first step
+ *  is the address, and it saves that through the same content endpoint the
+ *  editor uses — a create that also took content would be a second way to
+ *  write the same fields, validated in a second place. Answers with the same
+ *  detail a GET returns, so the wizard holds exactly what the editor holds. */
+export const createHostProperty = () =>
+  post<HostPropertyDetail>("/host/properties", {});
+
+/** Send a finished draft to the review queue. The API accepts this from
+ *  `draft` and `rejected` alone, and only when the listing meets all eleven
+ *  completeness checks — `submitBlockers` in lib/wizard.ts is the client's
+ *  copy of that list, so this should never be reached while it is non-empty. */
+export const submitHostProperty = (id: string) =>
+  put<HostProperty>(`/host/properties/${encodeURIComponent(id)}/status`, {
+    status: "pending_review",
+  });
 
 export const saveHostPricing = (
   id: string,

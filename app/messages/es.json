@@ -59,6 +59,154 @@
     "error": "No se han podido cargar tus viviendas.",
     "retry": "Reintentar",
     "soon": "El editor de anuncios llega a continuación.",
+    "blocker": {
+      "noPhotos": "Todavía no hay ninguna foto",
+      "noAddress": "Falta la dirección",
+      "noAmenities": "No has marcado nada del equipamiento",
+      "missingTranslation": "{count, plural, one {# campo sin traducir} other {# campos sin traducir}}",
+      "enNotApproved": "Falta aprobar la descripción en inglés",
+      "nearbyTypeEnMissing": "Un lugar cercano tiene un tipo personalizado sin inglés",
+      "nearbyNeedsCheck": "Hay que revisar un lugar cercano tras mover el pin",
+      "untransArea": "La zona no está en los dos idiomas (paso Dirección)",
+      "untransCopy": "«Sobre esta vivienda» no está en los dos idiomas",
+      "untransDetails": "«Detalles» no está en los dos idiomas",
+      "untransBeds": "«Camas» no está en los dos idiomas",
+      "noName": "La vivienda todavía no tiene título",
+      "noCapacity": "Faltan los metros, las habitaciones o las plazas",
+      "noPrice": "Falta el precio por 30 días",
+      "noDeposit": "Falta la fianza"
+    },
+    "new": {
+      "title": "Nueva vivienda",
+      "draftPill": "BORRADOR · SE GUARDA SOLO",
+      "saveExit": "Guardar y salir",
+      "railLabel": "{count} pasos",
+      "counter": "Paso {position} de {total}",
+      "minutesLeft": "quedan {minutes} min",
+      "whyWeAsk": "POR QUÉ LO PREGUNTAMOS",
+      "back": "Atrás",
+      "continue": "Continuar",
+      "skip": "Lo hago luego",
+      "submit": "Enviar a revisión",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "savesAsYouGo": "Se guarda solo al pasar de paso",
+      "saveFailed": "No se ha guardado",
+      "reassurance": "No se publica nada hasta que lo envíes a revisión, y te contestamos en un día laborable.",
+      "needsAddressFirst": "Primero la dirección: las fotos se guardan en el anuncio y todavía no existe.",
+      "readyToSend": "Todo listo. Puedes enviarlo a revisión.",
+      "remaining": "{count, plural, one {FALTA # COSA} other {FALTAN # COSAS}}",
+      "requiredCount": "{count, plural, one {# dato obligatorio pendiente} other {# datos obligatorios pendientes}}",
+      "step": {
+        "address": {
+          "name": "Dirección",
+          "head": "¿Dónde está la vivienda?",
+          "lede": "Calle y código postal. Lo demás lo buscamos mientras escribes —el código postal, el barrio y el punto en el mapa— y tú corriges lo que no cuadre.",
+          "why": "La dirección decide el barrio por el que filtran los huéspedes, y es lo único que devuelve un anuncio aprobado a revisión cada vez que cambia."
+        },
+        "nearby": {
+          "name": "Qué hay cerca",
+          "head": "¿Qué hay alrededor?",
+          "lede": "Elige los sitios que de verdad importan a quien va a vivir aquí seis meses. Las distancias las medimos nosotros desde tu punto en el mapa.",
+          "why": "Una empresa que aloja a alguien seis meses pregunta por el tranvía y el supermercado antes que por la terraza."
+        },
+        "basics": {
+          "name": "La vivienda",
+          "head": "¿Qué tipo de vivienda es?",
+          "lede": "Los números por los que filtran los huéspedes. Aquí no suponemos nada por ti.",
+          "why": "Habitaciones, baños y metros son los tres filtros que usa casi toda empresa que busca vivienda para su gente."
+        },
+        "photos": {
+          "name": "Fotos",
+          "head": "Enséñanos la vivienda",
+          "lede": "Una sola galería, en el orden en que la va a ver un huésped. Haz la foto más abierta que puedas desde cada puerta.",
+          "why": "La primera foto que no sea un plano será tu portada: en el buscador y arriba del anuncio. El orden que pongas aquí es el orden que se ve."
+        },
+        "description": {
+          "name": "Descripción",
+          "head": "Cuéntales cómo es",
+          "lede": "Escríbelo en español y luego en inglés. Todavía no traducimos por ti, así que los dos textos son tuyos, y tú apruebas el inglés antes de que se publique.",
+          "why": "Las empresas leen esto para decidir si su persona va a estar a gusto seis meses. En los dos idiomas, porque la mitad de nuestros inquilinos leen antes en inglés."
+        },
+        "amenities": {
+          "name": "Equipamiento",
+          "head": "¿Con qué viene?",
+          "lede": "Marca todo lo que la vivienda tiene de verdad. Quince cosas, y cada una es un filtro.",
+          "why": "Cada etiqueta es un filtro del buscador. Lo que no marques es una búsqueda en la que no apareces."
+        },
+        "pricing": {
+          "name": "Precio y calendario",
+          "head": "¿Cuánto cuesta?",
+          "lede": "Tu precio es por treinta días —no por mes natural, así el precio del día no baila con febrero—. Luego los suministros, la fianza, los días de preparación y la estancia mínima que aceptas.",
+          "why": "Un precio a treinta días y un calendario real es lo que convierte una visita en una solicitud. Nuestra comisión se cobra una vez por estancia, en el primer mes, y nunca más con ese inquilino."
+        },
+        "rules": {
+          "name": "Normas",
+          "head": "Tus normas y condiciones",
+          "lede": "Sé concreto. Nosotros contestamos todas las preguntas del inquilino por ti, así que un no claro vale más que un quizá.",
+          "why": "Nosotros llevamos toda la conversación con el inquilino, pero solo con lo que nos cuentes aquí. Una norma que falta es la causa habitual de una estancia cancelada."
+        },
+        "paperwork": {
+          "name": "Papeleo",
+          "head": "Lo último: el papeleo",
+          "lede": "Cinco cosas, una sola vez. Las revisamos antes de publicar tu anuncio y los huéspedes no las ven nunca.",
+          "why": "La verificación es la razón por la que las empresas reservan aquí. El sello verde es lo que hace que se fíen de tu anuncio."
+        }
+      },
+      "blocked": {
+        "street": "Falta la calle",
+        "postcode": "El código postal son 5 cifras",
+        "pin": "Falta el punto en el mapa",
+        "name": "Falta el título",
+        "size": "Faltan los metros",
+        "bedrooms": "Falta el número de habitaciones",
+        "bathrooms": "Falta el número de baños",
+        "copyEs": "Falta la descripción en español",
+        "price": "Falta el precio"
+      },
+      "payout": {
+        "label": "LO QUE COBRAS",
+        "firstMonth": "PRIMER MES DE LA ESTANCIA",
+        "laterMonths": "CADA MES SIGUIENTE",
+        "working": "{rent} € − {commission} € de comisión (15%, con tope de treinta días de renta)",
+        "plusCleaning": "+ {amount} € de tu limpieza",
+        "note": "La comisión se cobra una vez por estancia, no cada mes: un inquilino de seis meses te cuesta la comisión una sola vez. Los suministros se miden y se liquidan en la factura final tras la salida, junto con la fianza. Te pagamos el día 5."
+      },
+      "paperwork": {
+        "visionBadge": "TODAVÍA NO ESTÁ HECHO · DISEÑO",
+        "visionNote": "Esta parte está diseñada pero aún no funciona: no hay dónde guardar los documentos. No hace falta para enviar el anuncio a revisión, y te los pediremos antes de publicarlo.",
+        "documents": "Documentos",
+        "ready": "{done} DE {total} LISTOS",
+        "addFile": "AÑADIR",
+        "terms": "Soy el propietario de esta vivienda o tengo autorización para alquilarla, y acepto el contrato de propietario: la comisión del 15% de Ebrostay sobre la renta, con tope de treinta días de renta y cobrada una sola vez por estancia; la renta prorrateada por días y cobrada por mes natural; estancias de 31 días hasta algo menos de un año; y cancelación gratuita del inquilino hasta 48 horas antes de la entrada.",
+        "doc": {
+          "id": { "name": "DNI, NIE o pasaporte", "hint": "Por las dos caras, del propietario que figura en la escritura" },
+          "deed": { "name": "Justificante de propiedad", "hint": "Nota simple, escritura o el último recibo del IBI" },
+          "energy": { "name": "Certificado energético", "hint": "Obligatorio por ley para cualquier alquiler en España" },
+          "cadastre": { "name": "Referencia catastral", "hint": "Solo comprobamos que tenga la forma correcta; todavía no se verifica contra el Catastro" },
+          "iban": { "name": "IBAN para los cobros", "hint": "Tiene que ser del propietario o de su empresa" }
+        }
+      },
+      "sent": {
+        "title": "Enviado a revisión",
+        "body": "Comprobamos la dirección, el punto del mapa y las fotos antes de que el anuncio salga en el buscador. Puedes seguir editando el borrador mientras lo miramos.",
+        "toPortfolio": "Volver a mis viviendas",
+        "addAnother": "Añadir otra vivienda",
+        "step": {
+          "sent": { "name": "Borrador enviado", "when": "AHORA MISMO" },
+          "checking": { "name": "Comprobamos la dirección, el punto del mapa y las fotos", "when": "EN 1 DÍA LABORABLE" },
+          "live": { "name": "En el buscador · las empresas ya pueden solicitarla", "when": "TRAS LA APROBACIÓN" }
+        }
+      },
+      "error": {
+        "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",
+        "too_many_drafts": "Tienes demasiados borradores sin terminar. Acaba o borra alguno antes de empezar otro.",
+        "listing_incomplete": "Todavía falta algo por rellenar. Mira los pasos marcados en ámbar.",
+        "stale_write": "Alguien ha guardado este anuncio mientras lo editabas. Recarga la página.",
+        "status_not_allowed": "Este anuncio no se puede enviar a revisión desde su estado actual.",
+        "ors_unavailable": "No hemos podido medir las distancias ahora mismo. Prueba otra vez en un momento."
+      }
+    },
     "signedOut": {
       "title": "Inicia sesión para gestionar tus viviendas",
       "body": "Tus anuncios, solicitudes y disponibilidad están en tu cuenta."
@@ -284,6 +432,7 @@
         "bandIntro": "La banda resume los próximos doce meses. Elige las fechas exactas en el calendario de abajo: una estancia casi nunca empieza el día 1.",
         "monthsOpen": "{count, plural, =0 {COMPLETO} one {# MES LIBRE} other {# MESES LIBRES}}",
         "pickLabel": "CIERRA FECHAS PARA TI",
+        "ownUseNote": "A las fechas que cierras tú no les añadimos días de preparación ni organizamos la limpieza después. Si una estancia empieza justo al acabar, la vivienda tiene que estar lista.",
         "selectPrompt": "Elige el primer y el último día que quieres cerrar.",
         "selected": "{range} · {days, plural, one {# día} other {# días}}",
         "notePlaceholder": "¿Para qué es? (opcional)",
@@ -592,16 +741,7 @@
         "saving": "Guardando…",
         "discard": "Descartar",
         "reviewNote": "Al guardar, el anuncio vuelve a revisión y deja de verse en el buscador hasta que lo aprobemos.",
-        "liveNote": "Los cambios se aplican en cuanto guardas.",
-        "blocker": {
-          "noPhotos": "Todavía no hay ninguna foto",
-          "noAddress": "Falta la dirección",
-          "noAmenities": "No has marcado nada del equipamiento",
-          "missingTranslation": "{count, plural, one {# campo sin traducir} other {# campos sin traducir}}",
-          "enNotApproved": "Falta aprobar la descripción en inglés",
-          "nearbyTypeEnMissing": "Un lugar cercano tiene un tipo personalizado sin inglés",
-          "nearbyNeedsCheck": "Hay que revisar un lugar cercano tras mover el pin"
-        }
+        "liveNote": "Los cambios se aplican en cuanto guardas."
       },
       "error": {
         "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",

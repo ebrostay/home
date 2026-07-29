@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ApiError, fetchHostProperties, type HostProperty } from "@/lib/api";
 import { bucketOf, portfolioStats, tabCounts, type Tab } from "@/lib/portfolio";
 import { PortfolioLedger } from "@/components/host/PortfolioLedger";
@@ -87,14 +88,15 @@ export default function HostPage() {
           </p>
         </div>
 
-        <Button
-          disabled
-          title={t("soon")}
-          className="h-[42px] gap-2 px-[18px] text-sm"
+        {/* Real since ADR-030. It was a disabled button for the whole of v2 —
+            every home in the system arrived by seed script. */}
+        <Link
+          href="/host/new"
+          className="flex h-[42px] shrink-0 items-center gap-2 rounded-(--radius-control) bg-brand px-[18px] text-sm font-semibold text-white transition-colors duration-(--dur-standard) hover:bg-brand-strong"
         >
           <Plus size={16} strokeWidth={2.2} aria-hidden />
           {t("add")}
-        </Button>
+        </Link>
       </header>
 
       {state.kind === "loading" && (
@@ -174,14 +176,12 @@ function AddPrompt({ promoted = false }: { promoted?: boolean }) {
           {promoted ? t("empty.body") : t("prompt.body")}
         </p>
       </div>
-      <button
-        type="button"
-        disabled
-        title={t("soon")}
-        className="h-10 rounded-(--radius-control) border border-brand bg-surface px-4 text-sm font-semibold text-brand-strong transition-colors duration-(--dur-standard) hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-45"
+      <Link
+        href="/host/new"
+        className="flex h-10 shrink-0 items-center rounded-(--radius-control) border border-brand bg-surface px-4 text-sm font-semibold text-brand-strong transition-colors duration-(--dur-standard) hover:bg-brand-soft"
       >
         {t("prompt.cta")}
-      </button>
+      </Link>
     </section>
   );
 }

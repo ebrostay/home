@@ -35,7 +35,17 @@ import { Check, ChevronDown, ListChecks } from "lucide-react";
 // natural width. Measuring the visible row would oscillate: switching to the
 // sheet removes the row, which makes the row fit, which switches back.
 
-export type SectionStatus = "edited" | "needs" | "idle";
+// ── One vocabulary, three pages ──────────────────────────────────────────
+// The names describe the MARK, not one page's reason for it, because the
+// three pages have different reasons and the same four marks:
+//
+//   done  — settled. The editor means "you changed this"; the wizard means
+//           "you finished this step".
+//   now   — where you are. Only the wizard has this: the editor shows every
+//           section at once, so nothing is "current".
+//   needs — something in here is missing.
+//   idle  — nothing to say yet.
+export type SectionStatus = "done" | "now" | "needs" | "idle";
 
 /** How tall the section nav is, for whatever needs to scroll clear of it.
  *  On the root because the consumer — every SectionCard — is scattered across
@@ -54,6 +64,7 @@ export function SectionNav<K extends string>({
   spy = false,
   railQuery,
   railTop,
+  onSelect,
 }: {
   sections: readonly K[];
   labels: Record<K, string>;
@@ -80,6 +91,15 @@ export function SectionNav<K extends string>({
   railQuery?: string;
   /** Sticky offset for the rail rung, which sits lower than the bar. */
   railTop?: string;
+  /** Makes every rung a BUTTON that calls this, instead of an anchor that
+   *  jumps to `#sec-{key}`.
+   *
+   *  The wizard shows one step at a time, so there is no section on the page
+   *  to anchor to — the nav is what changes which one is rendered. Everything
+   *  else about the three rungs is identical, which is the reason this is a
+   *  prop and not a second component: the measured rail → bar → sheet ladder
+   *  is the hard part, and it is the same hard part on every owner page. */
+  onSelect?: (key: K) => void;
 }) {
   const hasRail = useRailRoom(railQuery);
 
@@ -102,14 +122,18 @@ export function SectionNav<K extends string>({
           {ariaLabel}
         </span>
         {sections.map((key) => (
-          <a
+          <Item
             key={key}
-            href={`#sec-${key}`}
-            className={`flex items-center gap-2.5 rounded-(--radius-control) px-2.5 py-[7px] text-[0.8125rem] transition-colors duration-(--dur-standard) hover:bg-surface ${weight(status?.[key])}`}
+            id={key}
+            onSelect={onSelect}
+            current={status?.[key] === "now"}
+            className={`flex w-full items-center gap-2.5 rounded-(--radius-control) px-2.5 py-[7px] text-left text-[0.8125rem] transition-colors duration-(--dur-standard) hover:bg-surface ${
+              status?.[key] === "now" ? "bg-surface" : ""
+            } ${weight(status?.[key])}`}
           >
             {status && <Disc state={status[key]} big />}
-            {labels[key]}
-          </a>
+            <span className="min-w-0 flex-1 truncate">{labels[key]}</span>
+          </Item>
         ))}
       </nav>
     );
@@ -125,16 +149,60 @@ export function SectionNav<K extends string>({
       stickyTop={stickyTop}
       status={status}
       spy={spy}
+      onSelect={onSelect}
     />
   );
 }
 
-/** Edited wins over needs-attention: once you are working in a section, what
- *  you need to know is that the change is captured, not that it was thin. */
+/** Done wins over needs-attention: once you have worked in a section, what you
+ *  need to know is that it is captured, not that it was thin. `now` is the
+ *  wizard's you-are-here and outranks both. */
 function weight(state: SectionStatus | undefined) {
-  if (state === "edited") return "font-semibold text-brand-strong";
+  if (state === "now") return "font-semibold text-ink";
+  if (state === "done") return "font-semibold text-brand-strong";
   if (state === "needs") return "font-semibold text-ink";
   return "font-medium text-body";
+}
+
+/** An anchor, or a button when the page has nothing to anchor to. Same box
+ *  either way — the `button` reset in globals.css leaves it unstyled, so the
+ *  caller's classes are the whole appearance. */
+function Item<K extends string>({
+  id,
+  onSelect,
+  onClick,
+  current,
+  className,
+  children,
+}: {
+  id: K;
+  onSelect?: (key: K) => void;
+  /** Fires in both modes — the sheet closes itself whether the item jumped or
+   *  switched step. */
+  onClick?: () => void;
+  current?: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const shared = {
+    className,
+    // "step" where the nav IS the progression and only one item can be
+    // current; "true" where it merely reports which section is being read.
+    "aria-current": current ? (onSelect ? ("step" as const) : true) : undefined,
+    onClick: () => {
+      onClick?.();
+      onSelect?.(id);
+    },
+  };
+  return onSelect ? (
+    <button type="button" {...shared}>
+      {children}
+    </button>
+  ) : (
+    <a href={`#sec-${id}`} {...shared}>
+      {children}
+    </a>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -150,6 +218,7 @@ function FittingNav<K extends string>({
   stickyTop,
   status,
   spy,
+  onSelect,
 }: {
   sections: readonly K[];
   labels: Record<K, string>;
@@ -159,12 +228,17 @@ function FittingNav<K extends string>({
   stickyTop: string;
   status?: Record<K, SectionStatus>;
   spy: boolean;
+  onSelect?: (key: K) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const ruler = useRef<HTMLDivElement>(null);
   const [fits, setFits] = useState(true);
   const [stuck, setStuck] = useState(false);
-  const active = useSpy(sections, spy, box);
+  const spied = useSpy(sections, spy, box);
+  // Two ways to be the current item, and only ever one of them per page: the
+  // scroll has reached it, or the page is showing it. A wizard step is not
+  // scrolled to, so the spy would report the first section forever.
+  const active = spied ?? sections.find((k) => status?.[k] === "now") ?? null;
 
   useEffect(() => {
     const measure = () => {
@@ -275,16 +349,17 @@ function FittingNav<K extends string>({
           <ul className="flex gap-x-[26px]">
             {sections.map((key) => (
               <li key={key} className="relative">
-                <a
-                  href={`#sec-${key}`}
-                  aria-current={active === key ? "true" : undefined}
+                <Item
+                  id={key}
+                  onSelect={onSelect}
+                  current={active === key}
                   className={`data flex items-center gap-2 whitespace-nowrap py-3 text-[0.6875rem] tracking-[0.11em] transition-colors duration-(--dur-standard) ${
                     active === key ? "text-ink" : "text-muted hover:text-ink"
                   }`}
                 >
                   {status && <Disc state={status[key]} />}
                   {labels[key]}
-                </a>
+                </Item>
                 {/* Sits ON the container's rule, breaking it — the tab is part
                     of the line, not a marker floating under it. */}
                 {active === key && (
@@ -306,6 +381,7 @@ function FittingNav<K extends string>({
           changedLabel={changedLabel}
           status={status}
           active={active}
+          onSelect={onSelect}
         />
       )}
     </div>
@@ -320,6 +396,7 @@ function Sheet<K extends string>({
   changedLabel,
   status,
   active,
+  onSelect,
 }: {
   sections: readonly K[];
   labels: Record<K, string>;
@@ -328,11 +405,15 @@ function Sheet<K extends string>({
   changedLabel?: string;
   status?: Record<K, SectionStatus>;
   active: K | null;
+  onSelect?: (key: K) => void;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
+  // Only ever rendered beside `changedLabel`, which the wizard does not pass —
+  // "3 changed" is the editor's question, and a wizard counting its finished
+  // steps has the progress header for that.
   const changed = status
-    ? sections.filter((k) => status[k] === "edited").length
+    ? sections.filter((k) => status[k] === "done").length
     : 0;
 
   useEffect(() => {
@@ -392,18 +473,19 @@ function Sheet<K extends string>({
           />
           <div className="absolute inset-x-0 top-full z-50 flex flex-col rounded-b-(--radius-card) border border-line bg-surface p-1 shadow-(--shadow-pop)">
             {sections.map((key) => (
-              <a
+              <Item
                 key={key}
-                href={`#sec-${key}`}
-                aria-current={active === key ? "true" : undefined}
+                id={key}
+                onSelect={onSelect}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-2.5 rounded-(--radius-control) px-2.5 py-2 text-[0.8125rem] hover:bg-surface-2 ${
+                current={active === key}
+                className={`flex w-full items-center gap-2.5 rounded-(--radius-control) px-2.5 py-2 text-left text-[0.8125rem] hover:bg-surface-2 ${
                   active === key ? "font-semibold text-ink" : "text-body"
                 }`}
               >
                 {status && <Disc state={status[key]} big />}
-                <span className="truncate">{labels[key]}</span>
-              </a>
+                <span className="min-w-0 flex-1 truncate">{labels[key]}</span>
+              </Item>
             ))}
           </div>
         </>
@@ -510,14 +592,19 @@ function Disc({ state, big = false }: { state: SectionStatus; big?: boolean }) {
     <span
       aria-hidden
       className={`grid shrink-0 place-items-center rounded-full ${big ? "h-4 w-4" : "h-[13px] w-[13px]"} ${
-        state === "edited"
+        state === "done"
           ? "bg-brand"
-          : state === "needs"
-            ? "shadow-[inset_0_0_0_1.5px_var(--warn)]"
-            : "shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
+          : state === "now"
+            ? // Filled, not ringed: "you are here" has to read at a glance
+              // against a column of rings, and a heavier ring alone reads as
+              // a done step you have not finished.
+              "bg-brand-soft shadow-[inset_0_0_0_1.5px_var(--brand)]"
+            : state === "needs"
+              ? "shadow-[inset_0_0_0_1.5px_var(--warn)]"
+              : "shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
       }`}
     >
-      {state === "edited" && (
+      {state === "done" && (
         <Check
           size={big ? 10 : 8}
           strokeWidth={big ? 3.5 : 4}

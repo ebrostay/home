@@ -104,7 +104,18 @@ export const goesBackToReview = (changed: SectionKey[]) =>
 /** The bilingual fields a listing must carry in both languages. Mirrors four
  *  of the API's submit-for-review checks (`HostProjection.Sections`); the
  *  others belong to Manage's half of the document and are not editable here. */
-const BILINGUAL: (keyof HostListing)[] = ["area", "copy", "details", "beds"];
+const BILINGUAL = ["area", "copy", "details", "beds"] as const;
+
+export type BilingualField = (typeof BILINGUAL)[number];
+
+/** Which of the four still lack a language. The editor's save bar only needs
+ *  the count — every bilingual field it owns is on one page. The wizard needs
+ *  the NAMES, because they are not: `area` is asked on the address step and
+ *  the other three on the description step, and a blocker that says "1 field
+ *  untranslated" while pointing at the wrong step is a dead end an owner
+ *  cannot get out of. */
+export const untranslated = (l: HostListing): BilingualField[] =>
+  BILINGUAL.filter((key) => !bothLanguages(l[key]));
 
 export type Completeness = {
   photos: number;
@@ -168,9 +179,7 @@ export function blockersOf(l: HostListing): Blocker[] {
   if (!l.address?.trim() || (l.lat === 0 && l.lng === 0)) out.push({ key: "noAddress" });
   if (l.amenities.length === 0) out.push({ key: "noAmenities" });
 
-  const missing = BILINGUAL.filter(
-    (key) => !bothLanguages(l[key] as Bilingual | null),
-  ).length;
+  const missing = untranslated(l).length;
   if (missing > 0) out.push({ key: "missingTranslation", count: missing });
 
   // Only worth saying once there is English to approve.

@@ -252,14 +252,12 @@ export function PropertyRow({
                 : "bg-brand text-white hover:bg-brand-strong"
             }`;
             const label = t(`actions.${actions.primary}` as "actions.overview");
-            // Live listings have somewhere to go; the rest keep the same button
-            // shape, disabled, so a row does not change silhouette by state.
-            return actions.primaryManage || actions.primaryHref ? (
+            // A destination makes it a link; without one it keeps the same
+            // button shape, disabled, so a row does not change silhouette by
+            // state.
+            return actions.primaryTo ? (
               <Link
-                href={{
-                  pathname: actions.primaryManage ? "/host/manage" : "/property",
-                  query: { id: p.id },
-                }}
+                href={{ pathname: actions.primaryTo, query: { id: p.id } }}
                 className={`${primaryClass} flex items-center justify-center`}
               >
                 {label}
@@ -272,16 +270,9 @@ export function PropertyRow({
           })()}
 
           <div className="flex flex-1 gap-2 min-[50rem]:w-full min-[50rem]:flex-none">
-            {actions.secondaryManage ? (
+            {actions.secondaryTo ? (
               <Link
-                href={{ pathname: "/host/manage", query: { id: p.id } }}
-                className="flex h-9 flex-1 items-center justify-center rounded-(--radius-control) border border-line bg-surface text-[0.8125rem] font-medium text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2"
-              >
-                {t(`actions.${actions.secondary}` as "actions.overview")}
-              </Link>
-            ) : actions.secondaryHref ? (
-              <Link
-                href={{ pathname: "/property", query: { id: p.id } }}
+                href={{ pathname: actions.secondaryTo, query: { id: p.id } }}
                 className="flex h-9 flex-1 items-center justify-center rounded-(--radius-control) border border-line bg-surface text-[0.8125rem] font-medium text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2"
               >
                 {t(`actions.${actions.secondary}` as "actions.overview")}
@@ -310,38 +301,46 @@ export function PropertyRow({
 
 // A row never spends its two buttons on the same job: the note-line link and
 // the primary action always route somewhere different.
+//
+// A button's destination is a path, not a flag per page. The flags this table
+// used to carry (`primaryManage`, `primaryHref`, `secondaryManage`,
+// `secondaryHref`) were four spellings of one question — and adding the
+// wizard as a fifth answer would have made it six.
 const ACTIONS: Record<
   Bucket,
   {
     primary: string;
     secondary: string;
     quiet?: boolean;
-    secondaryHref?: boolean;
-    /** Routes to the guest page rather than the portal — only meaningful since
-     *  ADR-029 made that page answer to its owner in every state. */
-    primaryHref?: boolean;
-    primaryManage?: boolean;
-    secondaryManage?: boolean;
+    /** Where the button goes, with `?id=`. Absent means the destination does
+     *  not exist yet, and the button renders disabled. "/property" is the
+     *  guest page — only meaningful since ADR-029 made it answer to its owner
+     *  in every state. */
+    primaryTo?: "/host/manage" | "/host/new" | "/property";
+    secondaryTo?: "/host/manage" | "/property";
   }
 > = {
-  live: {
-    primary: "overview",
-    secondary: "viewAsGuest",
-    secondaryHref: true,
-    primaryManage: true,
-  },
+  live: { primary: "overview", secondary: "viewAsGuest", primaryTo: "/host/manage", secondaryTo: "/property" },
   // The one quiet primary: nothing to do while review has the listing, so the
   // button must not look like the moment's action. It never hovers to brand.
   // "View submission" is what the reviewer is looking at, which since ADR-029
   // is a page the owner can open — the label promised this before it existed.
-  review: { primary: "viewSubmission", secondary: "withdraw", quiet: true, primaryHref: true },
-  // Preview is a real link since ADR-029: the guest page answers to its own
-  // owner in every state, so "what does the reviewer see?" is one click from
-  // the row that is asking the owner to change it.
-  changes: { primary: "fix", secondary: "preview", secondaryHref: true },
-  draft: { primary: "continue", secondary: "delete" },
+  review: { primary: "viewSubmission", secondary: "withdraw", quiet: true, primaryTo: "/property" },
+  // Fix reopens the wizard, the one surface with a Send-for-review button —
+  // the editor can change a rejected listing but deliberately never resubmits
+  // it (a save must not re-queue a listing as a side effect). A rejected
+  // listing is usually complete, so the wizard resumes on its last step:
+  // the Send button beside the list of anything still missing. Preview is a
+  // real link since ADR-029: the guest page answers to its own owner in every
+  // state, so "what does the reviewer see?" is one click from the row that is
+  // asking the owner to change it.
+  changes: { primary: "fix", secondary: "preview", primaryTo: "/host/new", secondaryTo: "/property" },
+  // Continue reopens the wizard, which restores the draft and lands on its
+  // first unfinished step (ADR-030). Delete stays disabled: there is no
+  // delete endpoint, and "keep the data, close the listing" is `paused`.
+  draft: { primary: "continue", secondary: "delete", primaryTo: "/host/new" },
   // Reopening is a mutation that does not exist yet, so the route into Manage
   // is the secondary — a paused home still has a calendar and a price worth
   // reading, and the owner should be able to get to them.
-  paused: { primary: "reopen", secondary: "manage", secondaryManage: true },
+  paused: { primary: "reopen", secondary: "manage", secondaryTo: "/host/manage" },
 };

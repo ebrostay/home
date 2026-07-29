@@ -272,9 +272,38 @@ The **danger zone** offers pause/reopen via `PUT …/status` (ADR-024, no
 re-review on reopen). Deleting a listing is not offered: a listing carries stay
 history, and "keep the data, close the listing" is what `paused` means.
 
+**Add a property** — `/{locale}/host/new` ✅ built (ADR-030): the nine-step
+wizard a listing comes into existence through. It owns no fields — every step
+but the last wraps a component the editor already uses, over **one** draft
+`HostListing` plus its pricing and blocks:
+
+| Step | Composes | Gate to advance |
+| --- | --- | --- |
+| Address | `AddressFields` (geocoder, cadastre, `LocationPicker`) | street, valid postcode, a placed pin |
+| Nearby | `NearbyEditor` (§4.4.1) | — skippable |
+| The home | `BasicsFields` | name, area, ≥1 bedroom, ≥1 bathroom |
+| Photos | `PhotoManager` | — skippable |
+| Description | `DescriptionFields` | ES description present |
+| Amenities | `AmenityPicker` | — |
+| Price & availability | `PricingFields` + `AvailabilityEditor` + payout card | price > 0, a chosen minimum stay |
+| Rules & terms | `RulesFields` | — all four rules have a valid default |
+| Paperwork | — | ❌ no document model — shipped inside a `NOT BUILT YET` frame (ADR-030 Decision 6) |
+
+The document is created **on leaving step 1** by `POST /api/host/properties`
+(no body, mints an empty owned `draft`, `MaxOpenDrafts = 8`), because photo
+uploads are live writes that need a real id. A draft — and only a draft — may
+be nameless: the wizard asks *where* before *what to call it*.
+
+The draft persists when a step is **left**, not on every keystroke, through
+the same three endpoints the editor and Manage use. Step gates cover only what
+the next step needs; everything else is reported at submit by the editor's own
+`blockersOf`, surfaced on the rail. The rail is `SectionNav` with jump buttons
+and a `done`/`now`/`ahead` disc set — the same measured rail → bar → sheet
+ladder as the other two owner pages.
+
 **Create/edit → submit → review → publish/reject** (lifecycle §2.2.1):
 
-1. Create listing → `draft` (owner = caller).
+1. Create listing → `draft` (owner = caller) ✅ `POST /api/host/properties`.
 2. Editor: full property data entry — **bilingual es+en fields side by side**
    (both required to submit), amenities, conditions, pricing, stay limits;
    **availability blocks** (add/remove confirmed blocks and holds, §2.2.3);
@@ -291,10 +320,13 @@ history, and "keep the data, close the listing" is what `paused` means.
      not a claim. Reorder, floor-plan flag and delete stay in the editor's diff
      and travel with the content save, because those *are* claims.
    - Removing a photo deletes all three blobs, after the document write.
-4. Submit → `pending_review` (validation: required fields in both locales,
-   ≥1 photo). A **content** edit of a published listing also returns it to
-   `pending_review` (§2.2.1; refinement OD-5). Operational edits made from
-   Manage do not — ADR-025.
+4. Submit → `pending_review` ✅ `PUT …/status`, accepted from `draft` or
+   `rejected` only, and only when `HostProjection.SectionsDone(doc) ==
+   SectionsTotal` — the same eleven checks the portfolio's draft progress bar
+   counts (required fields in both locales, ≥1 photo, a price, a deposit).
+   Resubmitting clears `reviewNote`. A **content** edit of a published listing
+   also returns it to `pending_review` (§2.2.1; refinement OD-5). Operational
+   edits made from Manage do not — ADR-025.
 5. Admin approves → `published` (public) or rejects with a note → `rejected`;
    host edits and resubmits.
 

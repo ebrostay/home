@@ -63,6 +63,7 @@ type NominatimHit = {
 };
 
 const ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const REVERSE_ENDPOINT = "https://nominatim.openstreetmap.org/reverse";
 
 /** Where Ebrostay operates. Appended when the query does not already say so,
  *  because "Movera 7" alone matches half of Europe. */
@@ -148,6 +149,58 @@ export async function geocode(
   }
 
   return rankSpainFirst(out);
+}
+
+/**
+ * The neighbourhood at a point, for when the forward answer carried none.
+ *
+ * A house node's computed address hierarchy sometimes skips the barrio
+ * entirely — Calle Elvira de Hidalgo 10 jumps from `road` straight to `city`
+ * even though the point sits inside a mapped `Centro` boundary. Asked in
+ * REVERSE at zoom 14 (suburb resolution), Nominatim answers from the boundary
+ * polygon instead of the node's hierarchy, and the barrio comes back.
+ *
+ * One request, and only from the no-area path: an address whose forward
+ * answer already names a neighbourhood never gets here. Spanish, like the
+ * forward fill — most Zaragoza neighbourhoods are proper nouns that do not
+ * translate, and the owner edits the English where it genuinely differs.
+ *
+ * `null` on any failure: a missing area is a convenience lost, never an
+ * error worth surfacing — the field can still be typed by hand.
+ */
+export async function reverseArea(
+  lat: number,
+  lng: number,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    addressdetails: "1",
+    zoom: "14",
+    "accept-language": "es",
+    lat: String(lat),
+    lon: String(lng),
+  });
+
+  try {
+    // Same 1-per-second slot as the forward search: to Nominatim the two are
+    // one client, and the promise is about the client, not the endpoint.
+    const wait = claimSlot();
+    if (wait > 0) await sleep(wait, signal);
+
+    const res = await fetch(`${REVERSE_ENDPOINT}?${params}`, {
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!res.ok) return null;
+    const hit = (await res.json()) as NominatimHit;
+    const a = hit.address ?? {};
+    return AREA_KEYS.map((k) => a[k]).find(Boolean) ?? null;
+  } catch {
+    // Includes abort: the caller checks its own signal before using the
+    // answer, so a null here and an abort land in the same place.
+    return null;
+  }
 }
 
 /** Collapse the whitespace the strip-and-replace passes leave behind, and the

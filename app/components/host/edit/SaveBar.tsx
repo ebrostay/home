@@ -39,6 +39,9 @@ export function SaveBar({
   onDiscard: () => void;
 }) {
   const t = useTranslations("host.edit.save");
+  // One namespace up: the wizard's submit gate reports the same list plus four
+  // it also checks, and two copies of "no photos yet" would drift.
+  const tb = useTranslations("host.blocker");
   const dirty = changed.length > 0;
 
   return (
@@ -82,8 +85,8 @@ export function SaveBar({
                 >
                   <span aria-hidden className="h-[5px] w-[5px] shrink-0 rounded-full bg-warn" />
                   {b.key === "missingTranslation"
-                    ? t("blocker.missingTranslation", { count: b.count })
-                    : t(`blocker.${b.key}` as "blocker.noPhotos")}
+                    ? tb("missingTranslation", { count: b.count })
+                    : tb(`${b.key}` as "noPhotos")}
                 </span>
               ))}
         </div>

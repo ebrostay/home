@@ -58,7 +58,15 @@ public record AvailabilityRange(
     string? HoldExpiresAt,
     /// Admin-set, for the stay whose turnaround cannot be staffed in the
     /// listing's usual window. Null means "use the listing's TurnoverDays".
-    int? TurnoverDaysOverride = null);
+    int? TurnoverDaysOverride = null,
+    /// What kind of occupancy this is, for the turnaround rule (ADR-031).
+    /// "own_use" — the owner closed these dates themselves, and no turnaround
+    /// is scheduled or blocked after them: nobody staffs a clean the platform
+    /// was never asked for, and the owner answers for their own home's state.
+    /// Null — a stay (or any block predating the field), which keeps the full
+    /// ADR-026 buffer. Null is the SAFE default on purpose: an unlabelled
+    /// block over-blocks rather than letting a tenant into an unprepared home.
+    string? Kind = null);
 
 public class PropertyDoc
 {

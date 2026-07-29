@@ -31,22 +31,19 @@ const PILL: Record<string, { chip: string; dot: string }> = {
   paused: { chip: "bg-surface-2 text-body", dot: "bg-occupied" },
 };
 
-export function ContextBar({
-  property,
-  current,
-}: {
-  property: HostProperty;
-  /** Which half of the portal we are on. Decides which way the cross-link
-   *  points — never render a link back to the page you are already on. */
-  current: "manage" | "edit";
-}) {
-  const t = useTranslations("host");
-  const bucket = bucketOf(property);
-  const soon = t("soon");
-  const bar = useRef<HTMLDivElement>(null);
-
+/**
+ * Publish this bar's measured height as `--context-bar-h` on the root, for
+ * whatever parks beneath it.
+ *
+ * Exported because the wizard has its own bar — it has no listing to name, no
+ * state pill and no cross-links, so it is not this component — but it has the
+ * identical problem: the section nav parks under it and the bar wraps to a
+ * second row on a narrow window. Written down as a constant in either page,
+ * that is the bug this hook already exists to have fixed once.
+ */
+export function usePublishedBarHeight(ref: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
-    const el = bar.current;
+    const el = ref.current;
     if (!el) return;
 
     // On the root, because the consumer is a sibling several levels away and
@@ -65,7 +62,23 @@ export function ContextBar({
       ro.disconnect();
       document.documentElement.style.removeProperty("--context-bar-h");
     };
-  }, []);
+  }, [ref]);
+}
+
+export function ContextBar({
+  property,
+  current,
+}: {
+  property: HostProperty;
+  /** Which half of the portal we are on. Decides which way the cross-link
+   *  points — never render a link back to the page you are already on. */
+  current: "manage" | "edit";
+}) {
+  const t = useTranslations("host");
+  const bucket = bucketOf(property);
+  const soon = t("soon");
+  const bar = useRef<HTMLDivElement>(null);
+  usePublishedBarHeight(bar);
 
   return (
     <div

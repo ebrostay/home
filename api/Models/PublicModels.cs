@@ -44,7 +44,7 @@ public record PropertyDetail(
     double Lat,
     double Lng,
     Bilingual? Area,
-    Bilingual? Copy,
+    BilingualDoc? Copy,
     Bilingual? Details,
     Bilingual? Beds,
     Bilingual? PriceNote,

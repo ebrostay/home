@@ -97,7 +97,7 @@ public record HostListing(
     double Lat,
     double Lng,
     Bilingual? Area,
-    Bilingual? Copy,
+    BilingualDoc? Copy,
     bool CopyEnApproved,
     Bilingual? Details,
     Bilingual? Beds,
@@ -181,6 +181,24 @@ public static class HostProjection
 
     private static bool Both(Bilingual? b) =>
         !string.IsNullOrWhiteSpace(b?.Es) && !string.IsNullOrWhiteSpace(b?.En);
+
+    /// The document equivalent of the check above. Existing is not enough — a
+    /// `doc` with an empty `content` array, or one holding only a photo chip,
+    /// is not a written description, so this counts WORDS, not presence.
+    /// Mirrors `HostValidation.RichText`'s own length count and the client's
+    /// `textLength()` in `app/lib/rich-text.ts`: text nodes only, references
+    /// and captions uncharged.
+    private static bool Both(BilingualDoc? d) =>
+        TextLength(d?.Es) > 0 && TextLength(d?.En) > 0;
+
+    private static int TextLength(RichNode? n)
+    {
+        if (n is null) return 0;
+        var total = n.Type == "text" ? n.Text?.Length ?? 0 : 0;
+        foreach (var child in n.Content ?? [])
+            total += TextLength(child);
+        return total;
+    }
 
     // Same blocking rule as the public projection (§2.2.3) — an expired hold
     // is not a block, and an owner should not see their own calendar as

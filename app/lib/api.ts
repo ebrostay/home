@@ -3,6 +3,7 @@
 // at the local func host (func start --cors http://localhost:3000).
 
 import type { NearbyGroup, NearbyProfile, Reach } from "@/lib/nearby";
+import type { BilingualDoc } from "@/lib/rich-text";
 
 export type Bilingual = { es: string | null; en: string | null };
 export type PublicRange = { start: string; end: string }; // end exclusive
@@ -16,6 +17,10 @@ export type PropertyPhoto = {
   detailUrl: string | null;
   isFloorplan: boolean;
   sortOrder: number;
+  /** A photo kept out of the gallery — it exists only to be referenced from
+   *  the description. The public detail projection already sends this;
+   *  `Gallery.tsx`/`property/page.tsx` filtering on it is Task 11. */
+  hiddenFromGallery: boolean;
 };
 
 /** How far a place is, by one means of travel — `api/Models/NearbyModels.cs`
@@ -93,7 +98,7 @@ export type PropertyDetail = Omit<
   "coverUrl" | "coverCardUrl" | "coverDetailUrl"
 > & {
   address: string | null;
-  copy: Bilingual | null;
+  copy: BilingualDoc | null;
   details: Bilingual | null;
   beds: Bilingual | null;
   priceNote: Bilingual | null;
@@ -208,6 +213,11 @@ export type HostPhoto = {
   /** Server-assigned. The editor sends position as array order instead, so a
    *  gap or a repeat in this number can never reorder the gallery. */
   sortOrder: number;
+  /** A photo kept out of the gallery — it exists only to be referenced from
+   *  the description. Not yet carried by `HostListing`'s C# shape or
+   *  `ToListing`'s mapping (`api/Models/HostModels.cs`) — that plumbing is
+   *  Task 10 Step 0; this type is declared ahead of it. */
+  hiddenFromGallery: boolean;
 };
 
 /** The content half of a listing — what the editor edits, and what re-enters
@@ -225,7 +235,7 @@ export type HostListing = {
   lat: number;
   lng: number;
   area: Bilingual | null;
-  copy: Bilingual | null;
+  copy: BilingualDoc | null;
   /** The owner stands behind the English description. Only `copy` is gated. */
   copyEnApproved: boolean;
   details: Bilingual | null;

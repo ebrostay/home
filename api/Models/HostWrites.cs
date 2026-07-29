@@ -65,7 +65,7 @@ public record DetailsUpdate(
     double Lat,
     double Lng,
     BilingualWrite? Area,
-    BilingualWrite? Copy,
+    BilingualDoc? Copy,
     bool CopyEnApproved,
     BilingualWrite? Details,
     BilingualWrite? Beds,
@@ -341,7 +341,6 @@ public static class HostValidation
             return "energy_invalid";
 
         if (TooLong(u.Area, MaxAreaLength) ||
-            TooLong(u.Copy, MaxCopyLength) ||
             TooLong(u.Details, MaxDetailsLength) ||
             TooLong(u.Beds, MaxBedsLength)) return "text_too_long";
 
@@ -419,6 +418,27 @@ public static class HostValidation
                     return "nearby_bad_custom";
             }
         }
+
+        // Built from the INCOMING payload, not the document (D9): one save can
+        // both delete a photo and reference it; validating against the stored
+        // arrays would let a dangling reference through while DropBlobsAsync
+        // deletes the blob underneath it. Placed after the photo and nearby
+        // loops above so both sets are already validated, not just parsed.
+        var photoUrls = photos.Select(p => p.Url!).ToHashSet(StringComparer.Ordinal);
+        // NearbyEntry.Id is server-generated (HostFunctions.UpdateDetails
+        // assigns a fresh Guid to any write whose Id does not already match a
+        // stored entry, AFTER this validator runs) — so an entry newly added
+        // in this same save carries a null Id here. A placeRef literally
+        // cannot reference an entry that has no id yet, so only the ids the
+        // payload actually carries are valid reference targets.
+        var entryIds = nearby
+            .Where(n => n.Id is not null)
+            .Select(n => n.Id!)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var copyError = RichText(u.Copy?.Es, photoUrls, entryIds)
+                     ?? RichText(u.Copy?.En, photoUrls, entryIds);
+        if (copyError is not null) return copyError;
 
         return null;
     }

@@ -99,8 +99,8 @@ function sampleMonths(
 // where translated copy replaces these literals.
 
 const RICH_TEXT_PHOTOS: HostPhoto[] = [
-  { url: "/brand/sample-home-1.jpg", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0 },
-  { url: "/brand/sample-home-2.jpg", cardUrl: null, detailUrl: null, isFloorplan: true, sortOrder: 1 },
+  { url: "/brand/sample-home-1.jpg", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0, hiddenFromGallery: false },
+  { url: "/brand/sample-home-2.jpg", cardUrl: null, detailUrl: null, isFloorplan: true, sortOrder: 1, hiddenFromGallery: false },
 ];
 
 const RICH_TEXT_PLACES: HostNearbyEntry[] = [

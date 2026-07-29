@@ -220,7 +220,10 @@ public class HostFunctions(
         doc.Lat = update.Lat;
         doc.Lng = update.Lng;
         doc.Area = ToBilingual(update.Area);
-        doc.Copy = ToBilingual(update.Copy);
+        // No ToBilingual-style repair for the document (D8: RichText REJECTS,
+        // never repairs) — CheckDetails has already walked and validated it,
+        // so this is a straight carry-over, not a sanitize.
+        doc.Copy = update.Copy;
         doc.CopyEnApproved = update.CopyEnApproved;
         doc.Details = ToBilingual(update.Details);
         doc.Beds = ToBilingual(update.Beds);

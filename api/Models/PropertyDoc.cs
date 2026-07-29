@@ -107,7 +107,7 @@ public class PropertyDoc
     public DeclinedSuggestion[] DeclinedSuggestions { get; set; } = [];
 
     public Bilingual? Area { get; set; }
-    public Bilingual? Copy { get; set; }
+    public BilingualDoc? Copy { get; set; }
     public Bilingual? Details { get; set; }
     public Bilingual? Beds { get; set; }
     public Bilingual? PriceNote { get; set; }

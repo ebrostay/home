@@ -275,7 +275,7 @@ export default function HomePage() {
             </div>
           ) : all === null ? (
             <div
-              className={`grid gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
+              className={`grid grid-cols-1 gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
             >
               {Array.from({ length: 4 }, (_, i) => (
                 <div
@@ -300,7 +300,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div
-              className={`grid gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
+              className={`grid grid-cols-1 gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
             >
               {cards.map((c) => (
                 <PropertyCard

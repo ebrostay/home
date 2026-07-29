@@ -151,7 +151,7 @@ export function YourPlaces() {
 
       {adding ? (
         <div className="mt-5 rounded-(--radius-control) border border-line bg-surface p-4">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]">
             <Field label={t("nameLabel")}>
               {(id) => (
                 <Input

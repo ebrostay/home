@@ -202,7 +202,7 @@ export function Nearby({
       />
 
       {groups.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {groups.map(({ group, list }) => {
             const Icon = CATEGORY_ICONS[group];
             return (

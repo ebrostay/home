@@ -81,7 +81,7 @@ export function Gallery({
       </div>
 
       <Dialog open={allOpen} onClose={() => setAllOpen(false)} title={name}>
-        <div className="grid max-h-[70vh] gap-2.5 overflow-y-auto sm:grid-cols-2">
+        <div className="grid max-h-[70vh] grid-cols-1 gap-2.5 overflow-y-auto sm:grid-cols-2">
           {photos.map((photo, i) => (
             <Frame
               key={photo.url}

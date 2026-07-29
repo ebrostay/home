@@ -259,7 +259,7 @@ function DetailBody({
         <Gallery photos={gallery} hasFloorplan={!!floorplan} name={p.name} />
       </div>
 
-      <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_minmax(0,380px)] lg:items-start">
+      <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_minmax(0,380px)] lg:items-start">
         <div className="flex flex-col gap-10">
           {/* 1 — Key facts */}
           <div className="flex flex-wrap items-end gap-x-10 gap-y-4 border-b border-line pb-6">
@@ -292,7 +292,7 @@ function DetailBody({
           {/* 3 — Amenities */}
           {p.amenities.length > 0 && (
             <Section title={td("offers")}>
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {p.amenities.map((a) => {
                   const Icon = AMENITY_ICONS[a];
                   return (
@@ -363,7 +363,7 @@ function DetailBody({
 
           {/* 6 — Conditions */}
           <Section title={td("conditions")}>
-            <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <dl className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {conditions.map(([k, v]) => (
                 <div
                   key={k}
@@ -505,7 +505,7 @@ function DetailSkeleton() {
       <div className="skeleton h-4 w-40" />
       <div className="skeleton mt-5 h-10 w-2/3" />
       <div className="skeleton mt-6 h-[380px] w-full rounded-(--radius-card)" />
-      <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_minmax(0,380px)]">
+      <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_minmax(0,380px)]">
         <div className="space-y-3">
           <div className="skeleton h-4 w-full" />
           <div className="skeleton h-4 w-5/6" />

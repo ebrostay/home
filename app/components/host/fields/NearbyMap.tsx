@@ -72,6 +72,7 @@ export function NearbyMap({
   /* eslint-disable @typescript-eslint/no-explicit-any -- Leaflet is loaded at
      runtime and has no types available at this import site. */
   const mapRef = useRef<any>(null);
+  const homeRef = useRef<any>(null);
   const pinsRef = useRef<any>(null);
   const lineRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
@@ -121,10 +122,12 @@ export function NearbyMap({
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(mapRef.current);
 
-      // The home pin is added directly to the map, not into pinsRef: it
-      // never moves and must survive pinsRef.clearLayers() on every
-      // candidate/chosen redraw.
-      L.marker([home.lat, home.lng], {
+      // The home pin is added directly to the map, not into pinsRef, so it
+      // survives pinsRef.clearLayers() on every candidate/chosen redraw. It
+      // is kept in a ref because it DOES move: the pin can change under an
+      // open finder — the owner accepts a geocoder suggestion, drags the pin
+      // on the address map, or takes the Catastro's parcel centroid.
+      homeRef.current = L.marker([home.lat, home.lng], {
         title: homeLabel,
         alt: homeLabel,
         icon: L.divIcon({
@@ -146,12 +149,31 @@ export function NearbyMap({
     return () => {
       cancelled = true;
     };
-    // Mount once. `home` is the STARTING position — re-running on every
-    // change would rebuild the map out from under the owner. `homeLabel` is
-    // omitted the same way `t` always has been: a translated string does not
-    // change within one page life, so there is nothing to react to.
+    // Mount once, and mean it. `home` used to be listed here, which read as
+    // "react to the pin moving" and did nothing of the kind: the effect's own
+    // `mapRef.current` guard returns immediately on every re-run, so the pin
+    // stayed where the map was built. Rebuilding the map is not the answer
+    // either — it would tear the map out from under the owner. The pin moves
+    // in its own effect below, the way LocationPicker has always done it.
+    // `homeLabel` is omitted the same way `t` always has been: a translated
+    // string does not change within one page life.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [home.lat, home.lng]);
+  }, []);
+
+  // The home pin follows the listing's pin. Both the marker and the view: a
+  // marker that moves while the viewport stays put can leave the home off
+  // screen entirely, and this map exists to show what is around the home.
+  //
+  // This is not the "re-fit on every prop change" trap the pins effect warns
+  // about. That trap is about redraws — data arriving, a selection changing —
+  // yanking the view while the owner works. A pin move is the owner's own
+  // deliberate act on the address section, and the whole map is anchored to
+  // it. Zoom is preserved, so it is a pan, not a reset.
+  useEffect(() => {
+    if (!homeRef.current || !mapRef.current) return;
+    homeRef.current.setLatLng([home.lat, home.lng]);
+    mapRef.current.setView([home.lat, home.lng], mapRef.current.getZoom());
+  }, [home.lat, home.lng, mapReady]);
 
   // Redraw candidate and chosen pins whenever the lists or the active
   // selection change.
@@ -233,6 +255,7 @@ export function NearbyMap({
     () => () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      homeRef.current = null;
     },
     [],
   );

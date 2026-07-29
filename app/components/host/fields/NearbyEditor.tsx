@@ -73,7 +73,10 @@ type Search =
   | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "error" }
-  | { kind: "ready"; candidates: NearbyCandidate[] };
+  /** `lat`/`lng` are the pin these candidates were found around, not a copy of
+   *  the current one. They are what makes staleness derivable when the pin
+   *  moves under an open finder — see `visibleSearch`. */
+  | { kind: "ready"; candidates: NearbyCandidate[]; lat: number; lng: number };
 
 type Measure =
   | { kind: "idle" }
@@ -89,11 +92,16 @@ export function NearbyEditor({
   value,
   lat,
   lng,
+  pinMoved,
   onChange,
 }: {
   value: HostNearbyEntry[];
   lat: number;
   lng: number;
+  /** The pin has moved since the last save, so every figure below was measured
+   *  from somewhere this home no longer is. Decided by the page, which holds
+   *  the saved baseline; this component only knows the pin it was handed. */
+  pinMoved: boolean;
   onChange: (value: HostNearbyEntry[]) => void;
 }) {
   const t = useTranslations("host.edit.nearby");
@@ -157,7 +165,7 @@ export function NearbyEditor({
     fetchNearbyCandidates(lat, lng, activeGroup, controller.signal)
       .then((candidates) => {
         if (controller.signal.aborted) return;
-        setSearch({ kind: "ready", candidates });
+        setSearch({ kind: "ready", candidates, lat, lng });
       })
       .catch((err) => {
         if (controller.signal.aborted || (err as Error).name === "AbortError") return;
@@ -165,6 +173,28 @@ export function NearbyEditor({
       });
     return () => controller.abort();
   }, [finderOpen, activeGroup, lat, lng, searchAttempt]);
+
+  // Candidates belong to the pin they were found around. When the pin moves
+  // under an open finder the effect above re-runs, but until it answers the
+  // state still holds the previous pin's places — and they would be drawn
+  // against a home marker that has already moved, which is a picture of
+  // distances that were never true.
+  //
+  // Derived, never synced. A `setSearch({kind:"loading"})` in an effect would
+  // be a second piece of state describing one fetch, and this component's
+  // rule (see the effect above) is that only event handlers move `search`
+  // into "loading". Every read below goes through this, not `search`.
+  // Memoized for its IDENTITY, not its cost: it feeds the pin memos below,
+  // and a fresh `{kind:"loading"}` object every render would hand NearbyMap a
+  // new (empty) pin array every render, which is a clearLayers-and-redraw on
+  // each one.
+  const visibleSearch: Search = useMemo(
+    () =>
+      search.kind === "ready" && (search.lat !== lat || search.lng !== lng)
+        ? { kind: "loading" }
+        : search,
+    [search, lat, lng],
+  );
 
   // Opening the finder, closing it, switching group, retrying a failed
   // search, and picking a pin all reset some slice of the finder's state.
@@ -229,10 +259,10 @@ export function NearbyEditor({
   // resolve to, for the route-preview effect below.
   const pinLookup = useMemo(() => {
     const map = new Map<string, { lat: number; lng: number }>();
-    if (search.kind === "ready") for (const c of search.candidates) map.set(c.osmId, c);
+    if (visibleSearch.kind === "ready") for (const c of visibleSearch.candidates) map.set(c.osmId, c);
     for (const e of chosenForGroup) map.set(e.id, e);
     return map;
-  }, [search, chosenForGroup]);
+  }, [visibleSearch, chosenForGroup]);
 
   // The active pin's own coordinates, read out of pinLookup as PRIMITIVES —
   // deliberately not the effect's dependency. `pinLookup` is a new Map on
@@ -364,7 +394,7 @@ export function NearbyEditor({
   // that button survives the Add→Added swap (only the button BESIDE it
   // changes), so it is always there to receive focus.
   const focusCandidateAfterAdd = (justAdded: NearbyCandidate) => {
-    const pool = search.kind === "ready" ? search.candidates : [];
+    const pool = visibleSearch.kind === "ready" ? visibleSearch.candidates : [];
     const next = pool.find((x) => x.osmId !== justAdded.osmId && !chosenOsmIds.has(x.osmId));
     const targetId = next?.osmId ?? justAdded.osmId;
     document.getElementById(candidateButtonId(targetId))?.focus();
@@ -411,7 +441,7 @@ export function NearbyEditor({
   // in the same finder territory the reviewer asked for — and only falls
   // back to the "Add manually" control itself when the list is empty.
   const focusAfterManualAdd = () => {
-    const pool = search.kind === "ready" ? search.candidates : [];
+    const pool = visibleSearch.kind === "ready" ? visibleSearch.candidates : [];
     const first = pool.find((x) => !chosenOsmIds.has(x.osmId));
     if (first) {
       document.getElementById(candidateButtonId(first.osmId))?.focus();
@@ -447,12 +477,12 @@ export function NearbyEditor({
 
   const candidatePins: NearbyMapPin[] = useMemo(
     () =>
-      search.kind === "ready"
-        ? search.candidates
+      visibleSearch.kind === "ready"
+        ? visibleSearch.candidates
             .filter((c) => !chosenOsmIds.has(c.osmId))
             .map((c) => ({ id: c.osmId, lat: c.lat, lng: c.lng, label: c.name }))
         : [],
-    [search, chosenOsmIds],
+    [visibleSearch, chosenOsmIds],
   );
   const chosenPins: NearbyMapPin[] = useMemo(
     () => chosenForGroup.map((e) => ({ id: e.id, lat: e.lat, lng: e.lng, label: e.name })),
@@ -467,6 +497,22 @@ export function NearbyEditor({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[0.84375rem] leading-relaxed text-body">{t("hint")}</p>
+
+      {/* Every distance below was measured from the saved pin, so once the pin
+          moves they all describe a home that is somewhere else — and nothing
+          on screen would otherwise say so, because the figures still render
+          perfectly well. The re-measurement happens server-side on the save
+          that carries the move; this is the sentence that stops an owner
+          reading the stale numbers as current in the meantime. */}
+      {pinMoved && value.length > 0 && (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-(--radius-control) border border-warn bg-warn-soft px-3.5 py-2.5 text-[0.8125rem] text-ink"
+        >
+          <TriangleAlert size={15} strokeWidth={2.2} aria-hidden className="mt-0.5 shrink-0 text-warn" />
+          {t("pinMoved")}
+        </p>
+      )}
 
       <ChipGroup
         label={t("groupsLabel")}
@@ -654,9 +700,9 @@ export function NearbyEditor({
                   </div>
                 )}
 
-                {search.kind === "loading" && <Waiting label={t("searching")} />}
+                {visibleSearch.kind === "loading" && <Waiting label={t("searching")} />}
 
-                {search.kind === "error" && (
+                {visibleSearch.kind === "error" && (
                   <Unreachable
                     message={t("lookupFailed")}
                     retryLabel={t("retry")}
@@ -664,13 +710,13 @@ export function NearbyEditor({
                   />
                 )}
 
-                {search.kind === "ready" && search.candidates.length === 0 && (
+                {visibleSearch.kind === "ready" && visibleSearch.candidates.length === 0 && (
                   <p className="text-[0.8125rem] text-body">{t("noResults")}</p>
                 )}
 
-                {search.kind === "ready" && search.candidates.length > 0 && (
+                {visibleSearch.kind === "ready" && visibleSearch.candidates.length > 0 && (
                   <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                    {search.candidates.map((c) => {
+                    {visibleSearch.candidates.map((c) => {
                       const draft = draftFor(c);
                       const already = chosenOsmIds.has(c.osmId);
                       const reach = reachFor(c, "foot");

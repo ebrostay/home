@@ -399,6 +399,15 @@ function EditContent() {
               value={listing.nearby}
               lat={listing.lat}
               lng={listing.lng}
+              // Against the SAVED pin, not the last render's: every figure on
+              // these entries was measured from the pin the server holds, so
+              // that is the one that decides whether they still describe this
+              // home. The server re-measures all of them on the save that
+              // carries the move (ADR-028 Decision 1).
+              pinMoved={
+                !!detail &&
+                (listing.lat !== detail.listing.lat || listing.lng !== detail.listing.lng)
+              }
               onChange={(nearby) => setListing({ ...listing, nearby })}
             />
           </SectionCard>

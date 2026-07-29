@@ -478,6 +478,7 @@
         "groupFull": "This group already has 6 places. Remove one to add another.",
         "limitReached": "This listing already has the maximum of 24 nearby places.",
         "needsCheck": "Farther since the pin moved",
+        "pinMoved": "You moved the pin. These distances are still measured from the old one — saving re-measures every place from the new address.",
         "typeLabel": "Type",
         "customType": "Other…",
         "customEs": "What is it? (Spanish)",

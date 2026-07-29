@@ -1521,6 +1521,30 @@ Two guardrails, and they are the load-bearing part:
   exercising the seam a design ADR calls "the ONLY class that knows
   OpenRouteService exists." A network double proves the code that talks to the
   double; it does not prove the code that talks to the network.
+- **The pin can move under an open finder, and everything on screen was built
+  as if it could not** (found 2026-07-29, in use). The server side was right
+  all along — a moved pin clears every `reach`/`measuredAt`, re-measures all
+  entries in the same save, recomputes `needsCheck`, and drops the route cache
+  — but three client surfaces still showed the old pin's world:
+  - `NearbyMap` created the home marker inside its mount effect and never
+    touched it again. `[home.lat, home.lng]` was in the deps, which read as
+    "react to the pin moving" and did nothing of the kind: the effect's own
+    `mapRef.current` guard returns immediately on re-run. `LocationPicker` had
+    solved this correctly from the start with a `setLatLng` effect on
+    `[lat, lng]`; the newer map simply did not follow it.
+  - The candidate list outlived the pin it was searched around, so places
+    found near the old address were drawn against a home marker at the new
+    one — a picture of distances that were never true. `Search`'s `ready`
+    variant now carries the pin it was fetched for and staleness is *derived*
+    (`visibleSearch`), never synced through a `setSearch` in an effect.
+  - Nothing said the figures were stale before the save that fixes them. The
+    `needsCheck` flag is earned by a re-measurement, so between moving the pin
+    and saving there was no signal at all — the numbers simply kept rendering.
+    A note now says so, driven by the page's diff against the saved pin.
+
+  The common root is worth naming: the pin was treated as an initial
+  condition by everything downstream of the address section, when it is a
+  value that changes mid-session.
 
 ---
 

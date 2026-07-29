@@ -478,6 +478,7 @@
         "groupFull": "Este grupo ya tiene sus 6 sitios. Quita uno para añadir otro.",
         "limitReached": "Este anuncio ya tiene el máximo de 24 sitios cercanos.",
         "needsCheck": "Más lejos desde que moviste el punto",
+        "pinMoved": "Has movido el punto. Estas distancias siguen medidas desde el anterior: al guardar se recalculan todas desde la nueva dirección.",
         "typeLabel": "Tipo",
         "customType": "Otro…",
         "customEs": "¿Qué es? (en español)",

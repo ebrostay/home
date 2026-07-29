@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarPlus, Lock, X } from "lucide-react";
+import { CalendarPlus, Lock, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HostRange, PublicRange } from "@/lib/api";
 import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
@@ -143,6 +143,12 @@ export function AvailabilityEditor({
           status: "confirmed",
           note: note.trim() || null,
           turnoverDaysOverride: null,
+          // The server stamps this on save (a new span through the owner's
+          // endpoint is own use by definition, ADR-031); set here too so the
+          // band and calendar draw the block WITHOUT a turnaround hatch in
+          // the seconds before the save — the same reason turnoverOf runs on
+          // this side at all.
+          kind: "own_use",
         },
       ].sort((a, b) => a.start.localeCompare(b.start)),
     );
@@ -274,6 +280,21 @@ export function AvailabilityEditor({
       <div className="flex flex-col gap-2 rounded-(--radius-control) border border-line bg-surface-2 p-3">
         <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">
           {t("pickLabel")}
+        </p>
+
+        {/* Said BEFORE the dates are picked, not discovered on the band after:
+            dates the owner closes themselves get no turnaround (ADR-031), so
+            if a stay starts right after them, nobody will have prepared the
+            home but the owner. The icon carries the amber; --warn text cannot
+            reach 4.5:1 on any light surface we have. */}
+        <p className="flex items-start gap-2 text-xs leading-[1.45] text-body">
+          <TriangleAlert
+            size={14}
+            strokeWidth={2}
+            className="mt-0.5 shrink-0 text-warn"
+            aria-hidden
+          />
+          {t("ownUseNote")}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">

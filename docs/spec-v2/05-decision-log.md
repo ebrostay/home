@@ -1845,6 +1845,68 @@ undone the consolidation that produced it.
 
 ---
 
+## ADR-031 — No turnaround after the owner's own use
+
+- **Status:** ✅ locked and ✅ **built** 2026-07-29 (product owner: Raphael).
+  **Amends ADR-026**, which applied the `turnoverDays` buffer to every
+  blocking range without asking what the range was.
+- **Context.** An owner closing a weekend for themselves watched the calendar
+  hatch a turnaround after it — days made unsellable for a clean nobody will
+  staff. The buffer pays for what a TENANT stay leaves behind (the deep clean,
+  the inspection, the meter reading, possibly at the platform fee); after the
+  owner's own use, none of that is scheduled, no fee is charged, and the owner
+  answers for their own home's state. The blanket rule was also mildly
+  self-defeating: an owner who noticed could shorten the block by the buffer
+  length, beating the rule while making the calendar less honest.
+
+### Decision 1 — Blocks carry a `kind`, and the server decides it
+
+`AvailabilityRange` gains `kind`: `"own_use"` carries no turnaround, `null`
+is a stay and keeps the full ADR-026 buffer. The owner's availability
+endpoint **stamps** it, never accepts it: a span already on the document
+keeps what it was (the same span-match that preserves the admin's
+`turnoverDaysOverride`), and a span the owner writes for the first time is
+their own use — the only thing that endpoint can express. Stays arrive by
+seed or by Ebrostay, labelled `null`, and keep their buffer through any
+number of owner calendar saves.
+
+**Null is the safe default on purpose.** Every block predating the field is
+treated as a stay: an unlabelled block over-blocks a few days rather than
+letting a tenant into a home nobody prepared. No migration.
+
+### Decision 2 — Said before the dates are picked
+
+The close-dates control carries the warning up front: *"Dates you close
+yourself get no turnaround days, and we don't arrange the clean after them.
+If a stay starts right when they end, the home has to be ready."* The rule
+without the sentence would trade one surprise (phantom blocked days) for a
+worse one (a tenant at the door of an unprepared home, and an owner who was
+never told that was now their job).
+
+### What this deliberately does not do
+
+- **No kind picker.** The owner is not asked "is this a stay or own use?" —
+  everything they can write through their own calendar is own use, because
+  Ebrostay owns every tenant conversation (§4.3) and therefore every stay.
+  An owner recording a stay by hand is the platform's data-entry gap
+  (§4.5's missing stay record), not a case to design an owner control for.
+- **The admin override still outranks both kinds**, so a real edge case —
+  own use that does somehow need staffed work after it — has an escape hatch
+  that already existed.
+
+### Consequences
+
+- `PublicProjection.Turnover` (C#) and `turnoverOf` (client) both apply the
+  kind; `lib/availability.test.ts` pins the two-sided contract.
+- The band and day calendar draw no turnaround hatch after own-use blocks —
+  including in the seconds before a new block is saved, which is why the
+  editor stamps its local copy too.
+- **Open, deliberately:** whether the turnaround should skip or extend over
+  weekends and public holidays. The buffer is calendar days today; a 2-day
+  turnaround ending on a Saturday is staffed by nobody. Parked as OD-6.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their
@@ -1857,3 +1919,4 @@ resolution paths.
 | OD-3 | **.NET 10 availability watch** | 🔜 | SWA managed functions do not yet accept `net10`. | Check the SWA supported-runtimes list on each Azure update cycle; upgrade immediately on availability per §1.6 / ADR-018. |
 | OD-4 | **Supabase decommission snapshot** | 🔜 | v1 prod data stays in Supabase until decommission (ADR-016). What is kept, and when is the project deleted? | After cutover + a settling period: export full `pg_dump` + storage bucket archive to operator-held storage, verify readability, then delete the Supabase project. Date to be set with OD-1. |
 | OD-5 | **Published-edit review visibility** | 🔜 | §2.2.1 takes the simple rule: editing a published listing pulls it from public view until re-approved. Should the prior published version instead stay live while the edit awaits review (draft-over-live)? | Keep the simple rule for launch; revisit if hosts complain about visibility gaps. Draft-over-live = store a `pendingRevision` sub-document on the property; approve = promote. Pure additive change. |
+| OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Decide with the cleaning-operations reality once real stays flow: needs a holiday calendar source and a rule for who owns the extra days' cost. Raised with ADR-031. |

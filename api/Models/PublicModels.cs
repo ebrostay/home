@@ -128,8 +128,12 @@ public static class PublicProjection
          exp > now);
 
     /// How many days after this range the home still cannot be let (ADR-026).
+    /// Zero after the owner's own use (ADR-031): the turnaround pays for what
+    /// a TENANT stay leaves behind — the deep clean, the inspection, the meter
+    /// reading — and none of that is scheduled after a weekend the owner spent
+    /// in their own home. The admin override still wins if one is ever set.
     public static int Turnover(AvailabilityRange r, int listingDays) =>
-        Math.Max(0, r.TurnoverDaysOverride ?? listingDays);
+        Math.Max(0, r.TurnoverDaysOverride ?? (r.Kind == "own_use" ? 0 : listingDays));
 
     /// The public availability shape: blocking ranges with the turnover buffer
     /// already folded in. Extending the range HERE rather than at each consumer

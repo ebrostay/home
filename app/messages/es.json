@@ -432,6 +432,7 @@
         "bandIntro": "La banda resume los próximos doce meses. Elige las fechas exactas en el calendario de abajo: una estancia casi nunca empieza el día 1.",
         "monthsOpen": "{count, plural, =0 {COMPLETO} one {# MES LIBRE} other {# MESES LIBRES}}",
         "pickLabel": "CIERRA FECHAS PARA TI",
+        "ownUseNote": "A las fechas que cierras tú no les añadimos días de preparación ni organizamos la limpieza después. Si una estancia empieza justo al acabar, la vivienda tiene que estar lista.",
         "selectPrompt": "Elige el primer y el último día que quieres cerrar.",
         "selected": "{range} · {days, plural, one {# día} other {# días}}",
         "notePlaceholder": "¿Para qué es? (opcional)",

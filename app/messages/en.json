@@ -432,6 +432,7 @@
         "bandIntro": "The band summarises the next twelve months. Pick exact dates on the calendar below — a stay rarely starts on the 1st.",
         "monthsOpen": "{count, plural, =0 {FULL} one {# MONTH OPEN} other {# MONTHS OPEN}}",
         "pickLabel": "CLOSE DATES FOR YOURSELF",
+        "ownUseNote": "Dates you close yourself get no turnaround days, and we don't arrange the clean after them. If a stay starts right when they end, the home has to be ready.",
         "selectPrompt": "Pick the first and last day you want closed.",
         "selected": "{range} · {days, plural, one {# day} other {# days}}",
         "notePlaceholder": "What is it for? (optional)",

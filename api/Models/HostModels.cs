@@ -12,7 +12,12 @@ namespace Ebrostay.Api.Models;
 /// unable to tell a booking from the days after it — and unable to edit the
 /// block without editing the buffer with it.
 public record HostAvailabilityRange(
-    string Start, string End, string? Status, string? Note, int? TurnoverDaysOverride);
+    string Start, string End, string? Status, string? Note, int? TurnoverDaysOverride,
+    /// "own_use" carries no turnaround (ADR-031); null is a stay and does.
+    /// The client needs it for the same reason it needs the override: the
+    /// band and calendar it draws include blocks not yet saved, so the same
+    /// buffer rule has to run on both sides.
+    string? Kind);
 
 public record HostProperty(
     string Id,
@@ -215,7 +220,7 @@ public static class HostProjection
             p.Availability
                 .Where(r => Blocks(r, now))
                 .Select(r => new HostAvailabilityRange(
-                    r.Start, r.End, r.Status, r.Note, r.TurnoverDaysOverride))
+                    r.Start, r.End, r.Status, r.Note, r.TurnoverDaysOverride, r.Kind))
                 .OrderBy(r => r.Start, StringComparer.Ordinal)
                 .ToArray());
 

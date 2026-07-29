@@ -139,6 +139,11 @@ export type HostRange = PublicRange & {
   /** Admin-set, for a stay whose turnaround cannot be staffed in the listing's
    *  usual window. Null means "use the listing's turnoverDays". */
   turnoverDaysOverride: number | null;
+  /** `"own_use"` carries no turnaround (ADR-031) — the owner closed these
+   *  dates themselves and nobody schedules a clean after them. Null is a stay
+   *  and keeps the full ADR-026 buffer. Server-decided on save; the client
+   *  sets it only on blocks it has just created and not yet saved. */
+  kind: string | null;
 };
 
 /** An owner's own listing (api/Models/HostModels.cs) — carries the things the

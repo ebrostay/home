@@ -12,8 +12,13 @@ import { addDays, rangesOverlap } from "@/lib/pricing";
 // has just added and not yet saved — the server has never seen them, so the
 // same rule has to be available on this side too. Same arithmetic, one place.
 
+// Zero after the owner's own use (ADR-031): the turnaround pays for what a
+// TENANT stay leaves behind, and none of it is scheduled after a weekend the
+// owner spent in their own home. Mirrors `PublicProjection.Turnover` — the
+// same rule, spelled once per side, because the blocks drawn here include
+// ones the server has never seen.
 export function turnoverOf(r: HostRange, listingDays: number): number {
-  return Math.max(0, r.turnoverDaysOverride ?? listingDays);
+  return Math.max(0, r.turnoverDaysOverride ?? (r.kind === "own_use" ? 0 : listingDays));
 }
 
 /** Blocking ranges with the buffer folded in — what a guest would be shown. */

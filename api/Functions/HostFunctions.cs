@@ -708,7 +708,14 @@ public class HostFunctions(
                 // Preserved, not accepted from the client: the per-stay
                 // override is the admin's, and an owner saving their calendar
                 // must not be able to set or silently drop one.
-                OverrideFor(doc, b.Start!, b.End!))),
+                OverrideFor(doc, b.Start!, b.End!),
+                // Kind is decided HERE, never sent: a span already on the
+                // document keeps what it was, and a span the owner is writing
+                // for the first time is their own use — the only thing this
+                // endpoint can express (ADR-031). Stays arrive by seed or by
+                // Ebrostay, already labelled null, and keep their turnaround
+                // through the same match that carries the override.
+                KindFor(doc, b.Start!, b.End!))),
         ];
 
         return await SaveAsync(doc, etag, () => new OkObjectResult(
@@ -723,6 +730,18 @@ public class HostFunctions(
         doc.Availability
             .FirstOrDefault(r => r.Start == start && r.End == end && r.Status != "hold")
             ?.TurnoverDaysOverride;
+
+    // Same span-match as OverrideFor, but here "no match" and "match with no
+    // kind" are DIFFERENT answers — a null kind is a stay and must stay one,
+    // while an unmatched span is a block the owner just wrote and is their
+    // own use. Collapsing the two with `?.` would relabel every stay as
+    // own-use on the first calendar save and silently drop its turnaround.
+    private static string? KindFor(PropertyDoc doc, string start, string end)
+    {
+        var stored = doc.Availability
+            .FirstOrDefault(r => r.Start == start && r.End == end && r.Status != "hold");
+        return stored is null ? "own_use" : stored.Kind;
+    }
 
     private static bool HoldAlive(AvailabilityRange r, DateTimeOffset now) =>
         r.HoldExpiresAt is not null &&

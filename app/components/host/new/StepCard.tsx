@@ -47,8 +47,13 @@ export function StepCard({
   }, [head]);
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card)">
-      <div className="flex items-center gap-3.5 border-b border-line bg-surface-2 px-[22px] py-3.5">
+    // NOT overflow-hidden, though the tinted header and footer would love it:
+    // the pricing step opens a calendar popover that hangs below the card, and
+    // a clipping card cuts it off mid-July. The two bars follow the card's
+    // corners by rounding themselves instead — the same reason Manage's
+    // SectionCard doesn't clip either.
+    <section className="flex flex-col rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card)">
+      <div className="flex items-center gap-3.5 rounded-t-[inherit] border-b border-line bg-surface-2 px-[22px] py-3.5">
         {/* Not a <progress>: this is a decorative echo of the counter beside
             it, which is the accessible statement of the same fact. Two of them
             announced would be the same number read twice. */}
@@ -101,7 +106,7 @@ export function StepCard({
         </aside>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface-2 px-6 py-4 sm:px-9">
+      <div className="flex flex-wrap items-center gap-3 rounded-b-[inherit] border-t border-line bg-surface-2 px-6 py-4 sm:px-9">
         {footer}
       </div>
     </section>

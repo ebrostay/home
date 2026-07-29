@@ -114,8 +114,29 @@ describe("submitBlockers", () => {
   it("does not ask for English approval before there is English", () => {
     const noEn = complete({ copy: { es: "Un ático", en: null }, copyEnApproved: false });
     const keys = submitBlockers(noEn, priced()).map((b) => b.key);
-    expect(keys).toContain("missingTranslation");
+    expect(keys).toContain("untransCopy");
     expect(keys).not.toContain("enNotApproved");
+  });
+
+  it("names each untranslated field instead of counting them", () => {
+    const keys = submitBlockers(
+      complete({
+        area: { es: "Delicias", en: null },
+        beds: { es: "1 cama doble", en: "" },
+      }),
+      priced(),
+    ).map((b) => b.key);
+    expect(keys).toEqual(expect.arrayContaining(["untransArea", "untransBeds"]));
+    expect(keys).not.toContain("missingTranslation");
+  });
+
+  it("routes a half-translated zone to the ADDRESS step, not description", () => {
+    // The trap that stranded the first real walkthrough: the geocoder had
+    // filled only the Spanish zone, and "1 field untranslated" pointed at a
+    // description step where every box was full.
+    const blockers = submitBlockers(complete({ area: { es: "Delicias", en: null } }), priced());
+    expect(attentionSteps(blockers).has("address")).toBe(true);
+    expect(attentionSteps(blockers).has("description")).toBe(false);
   });
 
   it("routes every blocker it can produce to a real step", () => {

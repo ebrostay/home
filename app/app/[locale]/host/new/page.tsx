@@ -722,9 +722,7 @@ function Remaining({
               className="flex items-center gap-2.5 text-left text-[0.8125rem] text-body transition-colors duration-(--dur-standard) hover:text-ink"
             >
               <span aria-hidden className="h-[5px] w-[5px] shrink-0 rounded-full bg-warn" />
-              {b.key === "missingTranslation"
-                ? tb("missingTranslation", { count: b.count })
-                : tb(`${b.key}` as "noPhotos")}
+              {tb(b.key as "noPhotos")}
             </button>
           </li>
         ))}

@@ -1,5 +1,5 @@
 import type { HostListing, HostPricing } from "@/lib/api";
-import { blockersOf, type Blocker } from "@/lib/listing";
+import { blockersOf, untranslated, type Blocker } from "@/lib/listing";
 
 // ============================================================
 // "Add a property" — the order of the questions, what each one needs before
@@ -158,13 +158,41 @@ export function stepBlockers(
 // here it is what stops us presenting a Send button that bounces.
 // ------------------------------------------------------------
 
-export type SubmitBlocker = Blocker | { key: "noName" } | { key: "noCapacity" } | { key: "noPrice" } | { key: "noDeposit" };
+export type SubmitBlocker =
+  | Exclude<Blocker, { key: "missingTranslation"; count: number }>
+  | { key: "untransArea" }
+  | { key: "untransCopy" }
+  | { key: "untransDetails" }
+  | { key: "untransBeds" }
+  | { key: "noName" }
+  | { key: "noCapacity" }
+  | { key: "noPrice" }
+  | { key: "noDeposit" };
 
 export function submitBlockers(
   listing: HostListing,
   pricing: HostPricing,
 ): SubmitBlocker[] {
-  const out: SubmitBlocker[] = [...blockersOf(listing)];
+  // The editor's aggregate "N fields untranslated" is replaced with the
+  // fields' NAMES. The editor can afford the count — every bilingual field it
+  // owns is one page-scroll away. Here they are split across two steps
+  // (`area` is asked with the address, the other three with the description),
+  // and an owner sent to the wrong step by an unnamed count has no way to
+  // find the one empty box. This is the bug that stranded the first real
+  // walkthrough: the geocoder had filled only the Spanish zone.
+  const out: SubmitBlocker[] = blockersOf(listing).filter(
+    (b): b is Exclude<Blocker, { key: "missingTranslation"; count: number }> =>
+      b.key !== "missingTranslation",
+  );
+  for (const field of untranslated(listing)) {
+    out.push({
+      key: (`untrans${field[0].toUpperCase()}${field.slice(1)}`) as
+        | "untransArea"
+        | "untransCopy"
+        | "untransDetails"
+        | "untransBeds",
+    });
+  }
 
   if (!listing.name.trim()) out.push({ key: "noName" });
   if (
@@ -192,12 +220,18 @@ export function submitBlockers(
  *  listing everything that is wrong. */
 export const STEP_OF: Record<SubmitBlocker["key"], StepKey> = {
   noAddress: "address",
+  // The zone is an ADDRESS answer — the geocoder fills it there, and its
+  // English box is there. Routing it to Description with the other bilingual
+  // fields is exactly the dead end the per-field split exists to prevent.
+  untransArea: "address",
   nearbyTypeEnMissing: "nearby",
   nearbyNeedsCheck: "nearby",
   noName: "basics",
   noCapacity: "basics",
   noPhotos: "photos",
-  missingTranslation: "description",
+  untransCopy: "description",
+  untransDetails: "description",
+  untransBeds: "description",
   enNotApproved: "description",
   noAmenities: "amenities",
   noPrice: "pricing",

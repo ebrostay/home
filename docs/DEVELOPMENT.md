@@ -178,6 +178,29 @@ Three of these are load-bearing and easy to get wrong:
   `AzureWebJobsStorage`, so Azurite serves both roles locally and there is one
   fewer setting to keep in step.
 
+The "What's nearby" feature needs one more: **`ORS_API_KEY`**, required for it
+to work at all — without it, OpenRouteService calls fail with no explanation
+unless you're reading API logs. Get a key from an OpenRouteService account at
+<https://account.heigit.org>; this project's account is `info@ebrostay.com`,
+signed in via GitHub, and HeiGIT permits one account per person, so do not
+create a second one. Locally it goes in `api/local.settings.json` under
+`Values`; once deployed it goes in the Static Web App's environment
+variables. It must never reach the client — a browser cannot set the
+`User-Agent` header ORS requires, and the secrets-only-in-Functions-app-settings
+rule (CLAUDE.md) applies here too. The free tier is roughly 2,500 requests a
+day; the code holds itself to a self-imposed ceiling of 1,500 (`OrsBudget`) so
+ordinary use trips our own wire first — but repeatedly exceeding the real
+quota can still get the account disabled without notice, so treat it as
+scarce even locally.
+
+Two more, both optional and both for local work only — never set either
+anywhere but a developer's machine:
+
+| Variable | Effect |
+| --- | --- |
+| `ORS_FIXTURES=1` | Answers nearby queries from canned data instead of calling ORS, so UI work costs no quota and does not depend on ORS being up. The code logs a warning on every fixture call, so it is visible in App Insights if it is ever set somewhere it shouldn't be. |
+| `ORS_FIXTURES_UNROUTABLE=1` | Only meaningful alongside `ORS_FIXTURES=1`. Makes one destination in a batch come back unroutable, so the paths that handle a place the router can't reach can be exercised on purpose — real ORS data produces this rarely, and those paths are easy to get wrong without noticing. |
+
 ---
 
 ## 5. Create the containers and seed

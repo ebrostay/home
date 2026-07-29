@@ -1775,6 +1775,10 @@ git commit -m "feat: the listing description is a document, not a string"
 - Consumes: `RichTextEditor`, `PhotoPicker`, `PlacePicker`, `canonical`, `referencedPhotoUrls`, `uploadHostPhoto`.
 - Produces: no new exports.
 
+- [ ] **Step 0: Carry `hiddenFromGallery` into the OWNER's models — found during Task 8's survey**
+
+Task 8 stopped at `PropertyDoc`, `PhotoWrite` and `PublicPhoto`. The owner-facing path was not in its brief and is still missing the flag: **`HostPhoto` and its `ToListing` mapping in `api/Models/HostModels.cs`**, plus `HostPhoto` in `app/lib/api.ts`. Without these the editor cannot read or set the flag at all, and `PhotoPicker`'s checkbox has nowhere to write to.
+
 - [ ] **Step 1: Fix the section differ first**
 
 In `app/lib/listing.ts`:
@@ -1952,6 +1956,11 @@ Use the page's real gallery-open handler and the real nearby-selection setter (A
 - [ ] **Step 3: Filter hidden photos out of the gallery**
 
 Anywhere the page or `Gallery.tsx` builds the gallery list, exclude `hiddenFromGallery` photos. The cover-photo choice must skip them too.
+
+**Two concrete sites, found during Task 8's survey:**
+
+1. `app/app/[locale]/property/page.tsx:125` filters the gallery on `isFloorplan` alone — add the new flag.
+2. **`PublicProjection.ToSummary` in `api/Models/PublicModels.cs` picks a listing's cover photo without excluding `HiddenFromGallery`.** This is the one that actually bites: a photo an owner deliberately kept out of the gallery — a close-up of a hob, a diagram — could become the cover image on a search card, which is the most prominent photo on the site. Fix it in the same pass, and note it is an API change, so it belongs in this task's commit even though the rest of the task is frontend.
 
 - [ ] **Step 4: Verify**
 

@@ -14,11 +14,17 @@ namespace Ebrostay.Api.Functions;
 // draws from, the owner's candidate search and route preview, and the public,
 // anonymous route lookup a guest's map renders.
 //
-// The public endpoint is the security-critical one. It takes a propertyId, an
-// entryId and a profile — never coordinates — and `RouteCache` is the only
-// place that turns those ids into a `from`/`to` pair, always read from the
-// stored document. That is what stops an anonymous caller from routing
-// arbitrary points at our expense on a paid ORS account.
+// The public, ANONYMOUS endpoint (`PropertyNearbyRoute`) is the
+// security-critical one. It takes a propertyId, an entryId and a profile —
+// never coordinates — and `RouteCache` is the ONLY place that turns those ids
+// into a `from`/`to` pair for that endpoint, always read from the stored
+// document. That is what stops an anonymous caller from routing arbitrary
+// points at our expense on a paid ORS account.
+//
+// `HostNearbyPreviewRoute` below is the deliberate, narrower exception: it
+// calls `OrsClient.RouteAsync` directly with owner-supplied coordinates, but
+// it is owner-authenticated and bounds-checked to the Zaragoza box — a
+// different trust boundary, not a hole in the claim above.
 public class NearbyFunctions(
     Database database,
     ProfileService profiles,
@@ -141,9 +147,15 @@ public class NearbyFunctions(
                 seconds = route.Seconds,
             });
         }
-        catch (OrsUnavailableException e)
+        catch (OrsUnavailableException)
         {
-            return new ObjectResult(new { error = e.Message }) { StatusCode = 503 };
+            // ANONYMOUS caller: never echo the real reason (`budget`,
+            // `ors_429`, …) here — that would tell an unauthenticated prober
+            // whether our ORS quota is exhausted. The client branches on the
+            // HTTP status, not the body, so one opaque code costs nothing.
+            // The two owner-authenticated endpoints above are trusted callers
+            // and keep returning the real reason.
+            return new ObjectResult(new { error = "ors_unavailable" }) { StatusCode = 503 };
         }
     }
 

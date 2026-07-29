@@ -587,7 +587,9 @@
           "noAddress": "Falta la dirección",
           "noAmenities": "No has marcado nada del equipamiento",
           "missingTranslation": "{count, plural, one {# campo sin traducir} other {# campos sin traducir}}",
-          "enNotApproved": "Falta aprobar la descripción en inglés"
+          "enNotApproved": "Falta aprobar la descripción en inglés",
+          "nearbyTypeEnMissing": "Un lugar cercano tiene un tipo personalizado sin inglés",
+          "nearbyNeedsCheck": "Hay que revisar un lugar cercano tras mover el pin"
         }
       },
       "error": {

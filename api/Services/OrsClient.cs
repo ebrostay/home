@@ -46,7 +46,21 @@ public sealed class OrsClient(
             log.LogWarning(
                 "ORS_FIXTURES=1: serving canned matrix data, not calling ORS. " +
                 "This must never be set outside local development.");
-            return [.. destinations.Select((_, i) => new NearbyReach(200 + i * 90, 3 + i))];
+            // A single destination is a route preview: keep it non-null so
+            // that flow still works locally. With more than one destination,
+            // exercise the nullable-reach contract for real — a fully
+            // populated fixture array meant NearbyLookup's foot-less-candidate
+            // filter and the save path's `nearby_unroutable` refusal never
+            // ran during local work. The LAST destination in the batch is
+            // "unroutable", same as ORS returning null for one POI it cannot
+            // reach.
+            if (destinations.Count == 1) return [new NearbyReach(200, 3)];
+            var fixtureReach = new NearbyReach?[destinations.Count];
+            for (var i = 0; i < destinations.Count; i++)
+                fixtureReach[i] = i == destinations.Count - 1
+                    ? null
+                    : new NearbyReach(200 + i * 90, 3 + i);
+            return fixtureReach;
         }
 
         if (!await budget.TryConsumeAsync(1, ct))
@@ -99,7 +113,13 @@ public sealed class OrsClient(
             log.LogWarning(
                 "ORS_FIXTURES=1: serving canned route data, not calling ORS. " +
                 "This must never be set outside local development.");
-            return new OrsRoute("_p~iF~ps|U_ulLnnqC_mqNvxq`@", 340, 260);
+            // A short, bent walk near Movera, Zaragoza — NOT the canonical
+            // Google reference polyline ("_p~iF~ps|U..."), which decodes to
+            // California, ~9,000 km from any listing, and made fixture-mode
+            // map UI work look broken. `app/lib/nearby.test.ts` decodes the
+            // ORIGINAL reference vector on purpose, as a decoder correctness
+            // test, and is untouched.
+            return new OrsRoute("cse}Fbq_DcBwB{@kCkCcBoAkC", 340, 260);
         }
 
         if (!await budget.TryConsumeAsync(1, ct))
@@ -141,8 +161,29 @@ public sealed class OrsClient(
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var res = await http.PostAsync(url,
-                new StringContent(body, Encoding.UTF8, "application/json"), ct);
+            HttpResponseMessage res;
+            try
+            {
+                res = await http.PostAsync(url,
+                    new StringContent(body, Encoding.UTF8, "application/json"), ct);
+            }
+            catch (HttpRequestException e)
+            {
+                // DNS, connection refused, TLS — a transport failure, never an
+                // ORS answer. Same shape as OverpassClient's own timeout guard:
+                // this must become the same OrsUnavailableException a bad HTTP
+                // status does, not an unhandled 500.
+                log.LogWarning(e, "ORS transport failure for {Url}", url);
+                throw new OrsUnavailableException("ors_unavailable");
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                // The HttpClient's own Timeout fired, not the caller's token —
+                // a caller-initiated cancellation (ct.IsCancellationRequested)
+                // is deliberately NOT caught here and propagates untouched.
+                log.LogWarning("ORS request to {Url} timed out", url);
+                throw new OrsUnavailableException("ors_unavailable");
+            }
 
             if (res.IsSuccessStatusCode) return res;
 

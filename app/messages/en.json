@@ -587,7 +587,9 @@
           "noAddress": "The address is missing",
           "noAmenities": "Nothing ticked under what the home offers",
           "missingTranslation": "{count, plural, one {# field is untranslated} other {# fields are untranslated}}",
-          "enNotApproved": "The English description needs your approval"
+          "enNotApproved": "The English description needs your approval",
+          "nearbyTypeEnMissing": "A nearby place's custom type has no English yet",
+          "nearbyNeedsCheck": "A nearby place needs a check after the pin moved"
         }
       },
       "error": {

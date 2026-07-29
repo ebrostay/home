@@ -234,6 +234,17 @@ export function NearbyEditor({
     return map;
   }, [search, chosenForGroup]);
 
+  // The active pin's own coordinates, read out of pinLookup as PRIMITIVES —
+  // deliberately not the effect's dependency. `pinLookup` is a new Map on
+  // every Add/Remove (it is keyed on the whole chosen list), so depending on
+  // it directly re-fired the preview fetch for a pin that never moved: an
+  // owner adding six places was paying for roughly double the preview quota.
+  // Two numbers that happen to be unchanged compare equal in a dependency
+  // array; two Map instances never do.
+  const activePoint = activeId ? (pinLookup.get(activeId) ?? null) : null;
+  const activeLat = activePoint?.lat;
+  const activeLng = activePoint?.lng;
+
   // Click, not hover: this effect only ever runs from `selectPin` (the
   // explicit onPick/row-click handler above), never from pointer movement.
   // `selectPin` already clears `routePolyline` synchronously, so this effect
@@ -242,11 +253,9 @@ export function NearbyEditor({
   // figures unaffected") — the walking figure already shown came from the
   // candidate search or the saved entry, not from this preview.
   useEffect(() => {
-    if (!activeId) return;
-    const point = pinLookup.get(activeId);
-    if (!point) return;
+    if (activeLat === undefined || activeLng === undefined) return;
     const controller = new AbortController();
-    fetchPreviewRoute({ lat, lng }, point, "foot", controller.signal)
+    fetchPreviewRoute({ lat, lng }, { lat: activeLat, lng: activeLng }, "foot", controller.signal)
       .then((r) => {
         if (!controller.signal.aborted) setRoutePolyline(r.polyline);
       })
@@ -254,7 +263,7 @@ export function NearbyEditor({
         if (!controller.signal.aborted) setRoutePolyline(null);
       });
     return () => controller.abort();
-  }, [activeId, pinLookup, lat, lng]);
+  }, [activeLat, activeLng, lat, lng]);
 
   // Measuring a manually dropped point — the one place the owner never types
   // a distance: both profiles are fetched so the saved entry carries the same
@@ -276,7 +285,13 @@ export function NearbyEditor({
       for (const r of results) {
         if (r.status !== "fulfilled") continue;
         const [profile, line] = r.value;
-        reach[profile] = { metres: Math.round(line.metres), minutes: Math.round(line.seconds / 60) };
+        // Math.max(1, …) mirrors the server (OrsClient.MatrixAsync): a place
+        // 20 seconds away must preview as "1 min", not "0 min", the same
+        // figure it saves as — never a smaller one the owner didn't see.
+        reach[profile] = {
+          metres: Math.round(line.metres),
+          minutes: Math.max(1, Math.round(line.seconds / 60)),
+        };
       }
       // No walking figure at all means nothing to rank or show — the same
       // rule the server applies when it re-measures this same point.

@@ -143,7 +143,22 @@ export type Blocker =
   | { key: "noAddress" }
   | { key: "noAmenities" }
   | { key: "missingTranslation"; count: number }
-  | { key: "enNotApproved" };
+  | { key: "enNotApproved" }
+  | { key: "nearbyTypeEnMissing" }
+  | { key: "nearbyNeedsCheck" };
+
+/** A nearby entry using the Spanish-first custom-type escape hatch (ADR-028
+ *  Decision 7) with no English yet — it falls back to Spanish on the public
+ *  page, same as `enNotApproved` falls back for the description, and is
+ *  flagged here the same way. */
+const nearbyTypeEnMissing = (l: HostListing) =>
+  l.nearby.some((n) => !!n.customType?.es?.trim() && !n.customType?.en?.trim());
+
+/** A nearby entry the pin move re-measured beyond its group's radius
+ *  (ADR-028 Decision 8) — earned by a measurement, never by a save. It stays
+ *  visible on the public page (the figure is accurate), but an owner who
+ *  never re-opens the Nearby section body should still be told. */
+const nearbyNeedsCheck = (l: HostListing) => l.nearby.some((n) => n.needsCheck);
 
 export function blockersOf(l: HostListing): Blocker[] {
   const out: Blocker[] = [];
@@ -160,6 +175,9 @@ export function blockersOf(l: HostListing): Blocker[] {
 
   // Only worth saying once there is English to approve.
   if (l.copy?.en?.trim() && !l.copyEnApproved) out.push({ key: "enNotApproved" });
+
+  if (nearbyTypeEnMissing(l)) out.push({ key: "nearbyTypeEnMissing" });
+  if (nearbyNeedsCheck(l)) out.push({ key: "nearbyNeedsCheck" });
 
   return out;
 }
@@ -184,6 +202,13 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
   )
     out.add("description");
   if (l.amenities.length === 0) out.add("amenities");
+  // Both nearby flags render only inside the Nearby section body (the
+  // "needs check" chip on a single entry row, the missing-English fallback),
+  // so an owner who moves their pin, saves, and never re-expands that
+  // section would otherwise never be told an entry was flagged — the whole
+  // point of the flag. Surfacing it on the rail disc is what makes it findable
+  // without opening the section.
+  if (nearbyTypeEnMissing(l) || nearbyNeedsCheck(l)) out.add("nearby");
   return out;
 }
 

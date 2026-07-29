@@ -505,6 +505,18 @@
   }
 }
 
+/* The walking/driving route line (NeighbourhoodMap, NearbyMap — ADR-028).
+   Leaflet writes a polyline's `color` option straight into the SVG path's
+   `stroke` PRESENTATION ATTRIBUTE, not a style rule. Some engines never
+   resolve var() there, so a bare `color: "var(--brand-strong)"` risks
+   silently painting `stroke: none`; even where it happens to resolve, a
+   value read that way does not reliably repaint on a `data-theme` flip. A
+   class name plus a real CSS declaration sidesteps both problems, since it
+   goes through the ordinary cascade like anything else on the page. */
+.nearby-route-line {
+  stroke: var(--brand-strong);
+}
+
 /* Budget controls. The drawing IS the track: a native range input is laid over
    the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
    and touch come from the platform rather than a hand-rolled pointer handler.

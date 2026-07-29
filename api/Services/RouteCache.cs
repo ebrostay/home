@@ -5,13 +5,20 @@ using Ebrostay.Api.Models;
 
 namespace Ebrostay.Api.Services;
 
-/// The lazy write-through, and the ONLY place a route's origin and destination
-/// are chosen.
+/// The lazy write-through, and the ONLY place the ANONYMOUS route endpoint
+/// (`PropertyNearbyRoute`) chooses a route's origin and destination.
 ///
-/// That single fact is the security property: both come from the stored
-/// document, so an anonymous caller cannot make us route arbitrary points at
-/// our expense. There is no code path here that reads coordinates from a
-/// request.
+/// That single fact is the security property for that endpoint: both come
+/// from the stored document, so an anonymous caller cannot make us route
+/// arbitrary points at our expense. There is no code path here that reads
+/// coordinates from a request.
+///
+/// The deliberate exception is `HostNearbyPreviewRoute` (NearbyFunctions.cs),
+/// which calls `OrsClient.RouteAsync` directly with owner-supplied
+/// coordinates — bounds-checked to the Zaragoza box and behind owner auth, a
+/// different and narrower trust boundary than an anonymous caller, so it does
+/// not go through this class. Do not read this comment as "nothing else in
+/// the codebase calls RouteAsync with request coordinates" — that is false.
 public sealed class RouteCache(
     Container routes, OrsClient ors, ILogger<RouteCache> log)
 {
@@ -33,6 +40,15 @@ public sealed class RouteCache(
         catch (CosmosException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
             // Cold. Fetch it once, for everyone.
+        }
+        catch (CosmosException e)
+        {
+            // A cache miss and an unreadable cache must behave the same: fall
+            // through to a live fetch rather than failing the request over a
+            // transient Cosmos error. The write path below already treats a
+            // failed cache WRITE this way; a failed cache READ deserves no
+            // less.
+            log.LogWarning(e, "route cache read failed for {Id}", id);
         }
 
         var route = await ors.RouteAsync(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SECTIONS, changedSections } from "./listing";
+import { SECTIONS, attentionOf, blockersOf, changedSections } from "./listing";
 import type { HostListing, HostNearbyEntry } from "./api";
 
 // A listing with only the fields the diff reads. Cast once here so each test
@@ -77,5 +77,55 @@ describe("changedSections", () => {
     const a = entry({ id: "a" });
     const b = entry({ id: "b", name: "Bus Ci1" });
     expect(changedSections(base({ nearby: [b, a] }), base({ nearby: [a, b] }))).toEqual([]);
+  });
+});
+
+// ADR-028 Decision 7: the custom-type escape hatch is Spanish required,
+// English optional, falling back to Spanish with an attention flag —
+// mirroring `enNotApproved`. Decision 8: a needsCheck entry is earned by a
+// re-measurement, and both flags must surface outside the Nearby section
+// body (the rail disc), not only inside it, or an owner who never re-opens
+// the section is never told.
+describe("nearby attention flags", () => {
+  it("blockersOf flags a custom type with Spanish but no English", () => {
+    const l = base({
+      nearby: [entry({ type: null, customType: { es: "Panadería", en: null } })],
+    });
+    expect(blockersOf(l)).toContainEqual({ key: "nearbyTypeEnMissing" });
+  });
+
+  it("blockersOf does not flag a custom type once English is filled in", () => {
+    const l = base({
+      nearby: [entry({ type: null, customType: { es: "Panadería", en: "Bakery" } })],
+    });
+    expect(blockersOf(l)).not.toContainEqual({ key: "nearbyTypeEnMissing" });
+  });
+
+  it("blockersOf flags a needsCheck entry", () => {
+    const l = base({ nearby: [entry({ needsCheck: true })] });
+    expect(blockersOf(l)).toContainEqual({ key: "nearbyNeedsCheck" });
+  });
+
+  it("blockersOf reports neither flag for an ordinary entry", () => {
+    const l = base({ nearby: [entry()] });
+    expect(blockersOf(l)).not.toContainEqual({ key: "nearbyTypeEnMissing" });
+    expect(blockersOf(l)).not.toContainEqual({ key: "nearbyNeedsCheck" });
+  });
+
+  it("attentionOf surfaces the nearby section for a Spanish-only custom type", () => {
+    const l = base({
+      nearby: [entry({ type: null, customType: { es: "Panadería", en: null } })],
+    });
+    expect(attentionOf(l).has("nearby")).toBe(true);
+  });
+
+  it("attentionOf surfaces the nearby section for a needsCheck entry", () => {
+    const l = base({ nearby: [entry({ needsCheck: true })] });
+    expect(attentionOf(l).has("nearby")).toBe(true);
+  });
+
+  it("attentionOf leaves the nearby section alone when nothing is flagged", () => {
+    const l = base({ nearby: [entry()] });
+    expect(attentionOf(l).has("nearby")).toBe(false);
   });
 });

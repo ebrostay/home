@@ -147,7 +147,12 @@ export function NeighbourhoodMap({
     layer.clearLayers();
     if (!routePolyline) return;
     L.polyline(decodePolyline(routePolyline), {
-      color: "var(--brand-strong)",
+      // `stroke` comes from CSS (globals.css `.nearby-route-line`), not a
+      // `color` option: Leaflet writes `color` straight into the SVG path's
+      // `stroke` presentation attribute, and var() substitution there is not
+      // reliable across engines or on a `data-theme` flip — see the CSS
+      // comment.
+      className: "nearby-route-line",
       weight: 4,
       opacity: 0.85,
     }).addTo(layer);

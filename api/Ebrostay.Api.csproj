@@ -8,6 +8,13 @@
     <RootNamespace>Ebrostay.Api</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The SDK's default compile glob is recursive and does not stop at a
+         nested project's own .csproj, so without this the test project's
+         sources get compiled into THIS assembly too — and, worse, into the
+         `dotnet publish` output SWA deploys. Exclude the whole subtree. -->
+    <Compile Remove="Ebrostay.Api.Tests/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="MetadataExtractor" Version="2.9.3" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.*" />

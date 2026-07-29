@@ -6,9 +6,10 @@ app/.next/
 app/out/
 app/next-env.d.ts
 
-# .NET / Azure Functions (api/)
-api/bin/
-api/obj/
+# .NET / Azure Functions (api/) — ** covers the test project's nested
+# bin/obj too (api/Ebrostay.Api.Tests/bin, .../obj), not just api/'s own.
+api/**/bin/
+api/**/obj/
 api/local.settings.json
 
 # Claude Code personal overrides

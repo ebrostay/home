@@ -13,7 +13,7 @@ import History from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
 import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, StickyNote } from "lucide-react";
-import { RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
+import { EMPTY_DOC, isEmptyDoc, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
 
 // The ONLY file in the app that imports Tiptap. Everything downstream — the
 // renderer, the differ, the C# walk — reads the plain JSON tree, so replacing
@@ -186,12 +186,21 @@ export function RichTextEditor({
     onUpdate: ({ editor: e }) => onChange(e.getJSON() as RichNode),
   });
 
-  // Re-sync when the parent replaces the document wholesale — a discard, or a
-  // reload after save. Guarded, or every keystroke would reset the cursor.
+  // Re-sync when the parent replaces the document wholesale — a discard
+  // (including back to `null`, which means "no document", not "no change"),
+  // or a reload after save. `null` is normalized to `EMPTY_DOC` so a discard
+  // actually clears the editor instead of leaving the discarded text on
+  // screen. Skipped only when both sides are already empty — a `null` value
+  // arriving on an editor nobody has typed into yet must not trigger a
+  // pointless `setContent`. Otherwise guarded by a content comparison, or
+  // every keystroke would reset the cursor.
   useEffect(() => {
-    if (!editor || !value) return;
-    if (JSON.stringify(editor.getJSON()) !== JSON.stringify(value)) {
-      editor.commands.setContent(value, { emitUpdate: false });
+    if (!editor) return;
+    const next = value ?? EMPTY_DOC;
+    const current = editor.getJSON() as RichNode;
+    if (isEmptyDoc(next) && isEmptyDoc(current)) return;
+    if (JSON.stringify(current) !== JSON.stringify(next)) {
+      editor.commands.setContent(next, { emitUpdate: false });
     }
   }, [editor, value]);
 

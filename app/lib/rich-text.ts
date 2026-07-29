@@ -115,7 +115,7 @@ export function paragraphDoc(text: string): RichNode {
     : { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: trimmed }] }] };
 }
 
-/** The twelve rejections. Identical strings on both sides, so the client can
+/** The ten rejections. Identical strings on both sides, so the client can
  *  pre-empt one and the server's answer is recognisable when it cannot. */
 export type RichError =
   | "copy_bad_root"

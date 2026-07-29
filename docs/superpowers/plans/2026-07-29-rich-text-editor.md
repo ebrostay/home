@@ -26,7 +26,7 @@
 
 ## A note on the C# test project
 
-The repo has **no C# tests today**, and `docs/DEVELOPMENT.md` records that verification is by running the app. Task 6 adds a minimal xunit project anyway, scoped to `HostValidation.RichText` alone. This is a deliberate departure, and the justification is narrow: the validator is the feature's security boundary, it has twelve distinct rejection codes, and exercising twelve codes by curl against `:4280` is both slow and easy to leave half-done. OD-1 already assumes a test gate will exist, so this moves toward a decision rather than pre-empting one. **It is not a mandate to backfill tests elsewhere** — nothing outside the validator gets a test project in this plan.
+The repo has **no C# tests today**, and `docs/DEVELOPMENT.md` records that verification is by running the app. Task 6 adds a minimal xunit project anyway, scoped to `HostValidation.RichText` alone. This is a deliberate departure, and the justification is narrow: the validator is the feature's security boundary, it has ten distinct rejection codes, and exercising ten codes by curl against `:4280` is both slow and easy to leave half-done. OD-1 already assumes a test gate will exist, so this moves toward a decision rather than pre-empting one. **It is not a mandate to backfill tests elsewhere** — nothing outside the validator gets a test project in this plan.
 
 ## File Structure
 
@@ -313,7 +313,7 @@ git commit -m "feat(app): the description document vocabulary and canonical form
 - Consumes: everything from Task 1.
 - Produces: `validateDoc(node, refs): RichError | null`, `type RichError`, `referencedPhotoUrls(node): Set<string>`, `referencedEntryIds(node): Set<string>`.
 
-`RichError` is the union of the twelve codes the C# walk returns; both sides use the same strings so the client can pre-empt a rejection and the server's answer is recognisable.
+`RichError` is the union of the ten codes the C# walk returns; both sides use the same strings so the client can pre-empt a rejection and the server's answer is recognisable.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -434,7 +434,7 @@ Expected: FAIL — `validateDoc is not exported`.
 Append to `app/lib/rich-text.ts`:
 
 ```ts
-/** The twelve rejections. Identical strings on both sides, so the client can
+/** The ten rejections. Identical strings on both sides, so the client can
  *  pre-empt one and the server's answer is recognisable when it cannot. */
 export type RichError =
   | "copy_bad_root"
@@ -1393,7 +1393,7 @@ using Xunit;
 namespace Ebrostay.Api.Tests;
 
 // The validator is this feature's security boundary. It is the one place in
-// the API with its own tests, and the reason is narrow: twelve rejection codes
+// the API with its own tests, and the reason is narrow: ten rejection codes
 // are too many to check by curl and too important to leave unchecked.
 public class RichTextValidationTests
 {
@@ -1459,13 +1459,21 @@ public class RichTextValidationTests
     public void RejectsTextNodeWithChildren() =>
         Assert.Equal("copy_bad_node", Check(Doc(P(new RichNode("text", [T("y")], "x", null, null)))));
 
+    // Expects copy_bad_node, NOT copy_too_deep. The content model already
+    // bounds depth: the longest legal chain is doc>bulletList>listItem>
+    // paragraph>text, which is exactly MaxCopyDepth, and listItem admits only
+    // paragraph so lists cannot nest. A bomb therefore becomes content-model
+    // illegal at depth ~4 and is refused there. That IS the property under
+    // test — the other 38 wraps are never visited. The depth guard stays as
+    // defence in depth for a future content-model change; it is unreachable
+    // today by construction. (Established in Task 2; TS behaves identically.)
     [Fact]
     public void RejectsNestingBomb()
     {
         var n = P(T("deep"));
         for (var i = 0; i < 40; i++)
             n = new RichNode("bulletList", [new("listItem", [n], null, null, null)], null, null, null);
-        Assert.Equal("copy_too_deep", Check(Doc(n)));
+        Assert.Equal("copy_bad_node", Check(Doc(n)));
     }
 
     [Fact]
@@ -2028,4 +2036,4 @@ git commit -m "feat: seed description documents, and record the decision"
 
 - **Spec coverage:** §5.1 → Tasks 6, 9. §5.2 → Task 8. §6 → Tasks 1, 4, 7. §7.1 → Tasks 4, 5, 10. §7.2 → Tasks 3, 11. §7.3 → Tasks 3, 4. §8 → Tasks 2, 7. §9 → Tasks 5, 7, 10, 12. §10 → the checkpoint split. §11 → Task 12 step 5. §13's deferred items are correctly absent.
 - **Known soft spots, flagged rather than hidden:** the Tailwind token names in Tasks 3–5 and the Tiptap 3 list-package layout in Task 4 are the two places this plan guesses at facts it could not verify without running the code. Both have an explicit verification step attached rather than being presented as settled.
-- **Type consistency:** `RichNode`/`RichAttrs`/`BilingualDoc` are named identically in TS and C#; the twelve error codes are one list used by both sides; `hiddenFromGallery`/`HiddenFromGallery` is the single spelling throughout.
+- **Type consistency:** `RichNode`/`RichAttrs`/`BilingualDoc` are named identically in TS and C#; the ten error codes are one list used by both sides; `hiddenFromGallery`/`HiddenFromGallery` is the single spelling throughout.

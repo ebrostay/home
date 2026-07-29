@@ -256,7 +256,12 @@ public class HostFunctions(
         doc.Photos =
         [
             .. (update.Photos ?? []).Select((p, i) =>
-                kept[p.Url!] with { IsFloorplan = p.IsFloorplan, SortOrder = i }),
+                kept[p.Url!] with
+                {
+                    IsFloorplan = p.IsFloorplan,
+                    HiddenFromGallery = p.HiddenFromGallery,
+                    SortOrder = i,
+                }),
         ];
 
         // Reach figures are NEVER taken from the payload. Entries are matched by
@@ -554,12 +559,21 @@ public class HostFunctions(
         [
             .. doc.Photos,
             new PropertyPhoto(
-                urls["full"], isFloorplan,
+                Url: urls["full"],
+                IsFloorplan: isFloorplan,
                 // Last, so a new photo joins the end of the gallery rather
                 // than displacing the cover the owner chose.
-                doc.Photos.Length == 0 ? 0 : doc.Photos.Max(p => p.SortOrder) + 1,
-                urls["card"], urls["detail"],
-                processed.Capture.Lat, processed.Capture.Lng, processed.Capture.At),
+                SortOrder: doc.Photos.Length == 0 ? 0 : doc.Photos.Max(p => p.SortOrder) + 1,
+                // Not yet settable from this endpoint (ADR-019's original
+                // upload path) — every photo uploaded here lands visible in
+                // the gallery. A description-editor upload wants the opposite
+                // default; that wiring is a later task, not this one.
+                HiddenFromGallery: false,
+                CardUrl: urls["card"],
+                DetailUrl: urls["detail"],
+                CapturedLat: processed.Capture.Lat,
+                CapturedLng: processed.Capture.Lng,
+                CapturedAt: processed.Capture.At),
         ];
 
         // Note what is NOT here: no status change. Adding a photo to a draft

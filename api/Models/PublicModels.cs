@@ -96,7 +96,11 @@ public record PublicPhoto(
     string? CardUrl,
     string? DetailUrl,
     bool IsFloorplan,
-    int SortOrder);
+    int SortOrder,
+    /// A display choice, not admin-only data like `Captured*` above — the
+    /// guest gallery needs it to filter this photo out while still resolving
+    /// it for a `photoRef`/`photoFigure` node in the description.
+    bool HiddenFromGallery);
 
 /// A nearby entry as a visitor may see it. Narrower than the stored record on
 /// purpose: `osmId`, `measuredAt` and `needsCheck` are provenance and internal
@@ -188,7 +192,7 @@ public static class PublicProjection
             CleaningFee(p, platformFee),
             p.StayTerms, p.IsNew, p.Checked, p.DepositProtected, p.AvailableFrom,
             [.. p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => new PublicPhoto(
-                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))],
+                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder, ph.HiddenFromGallery))],
             BlockingRanges(p.Availability, now, p.TurnoverDays),
             [.. p.Nearby.Select(n => new PublicNearby(
                 n.Id, n.Group, n.Type, n.CustomType, n.Name, n.Lat, n.Lng, n.Reach))]);

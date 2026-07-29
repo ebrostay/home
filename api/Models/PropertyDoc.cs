@@ -20,6 +20,11 @@ public record PropertyPhoto(
     string Url,
     bool IsFloorplan,
     int SortOrder,
+    /// Kept out of the gallery — a photo that exists to be referenced from the
+    /// description. NEGATIVE on purpose: a C# bool defaults to false and no
+    /// stored document carries this field, so `InGallery` would deserialize to
+    /// false and empty every gallery on the site. Reads worse; fails safe.
+    bool HiddenFromGallery = false,
     string? CardUrl = null,
     string? DetailUrl = null,
     double? CapturedLat = null,

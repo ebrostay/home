@@ -37,7 +37,7 @@ public record BilingualWrite(string? Es, string? En);
 /// validator rejects any URL not already on the document, so this payload can
 /// reorder, re-flag and drop photos but never introduce one. Uploading is a
 /// separate, still-unbuilt path (ADR-019, ADR-027).
-public record PhotoWrite(string? Url, bool IsFloorplan);
+public record PhotoWrite(string? Url, bool IsFloorplan, bool HiddenFromGallery = false);
 
 /// What a client may say about a nearby entry. Note what is ABSENT: reach
 /// figures. They are measured server-side and never accepted (ADR-028

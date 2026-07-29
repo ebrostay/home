@@ -250,7 +250,7 @@ function EditContent() {
   const statuses = Object.fromEntries(
     SECTIONS.map((key) => [
       key,
-      diff.edited.has(key) ? "edited" : diff.attention.has(key) ? "needs" : "idle",
+      diff.edited.has(key) ? "done" : diff.attention.has(key) ? "needs" : "idle",
     ]),
   ) as Record<SectionKey, SectionStatus>;
 

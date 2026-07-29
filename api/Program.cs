@@ -65,7 +65,16 @@ builder.Services.AddHttpClient("ors", c =>
     // Required by ORS. A browser will not let us set this, which is one of the
     // three reasons this call cannot be client-direct.
     c.DefaultRequestHeaders.UserAgent.ParseAdd("ebrostay/2.0 (info@ebrostay.com)");
-    c.DefaultRequestHeaders.Add("Authorization",
+    // TryAddWithoutValidation, NOT Add. `Authorization` is a "known" header
+    // that HttpHeaders.Add parses as AuthenticationHeaderValue ("scheme
+    // credential"), but ORS's key is a bare token with no scheme — Add throws
+    // FormatException while BUILDING the client, before any request is made.
+    // Fixture mode (OrsClient.Fixtures) returns before factory.CreateClient
+    // ("ors") is ever called, so this path went unexercised through twelve
+    // tasks of fixture-mode testing until Task 13 ran with ORS_FIXTURES unset
+    // for the first time. Do not "tidy" this back to .Add — it will break
+    // every real ORS call again, silently, until the next real-account run.
+    c.DefaultRequestHeaders.TryAddWithoutValidation("Authorization",
         Environment.GetEnvironmentVariable("ORS_API_KEY") ?? "");
 });
 

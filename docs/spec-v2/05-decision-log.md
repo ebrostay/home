@@ -1501,8 +1501,21 @@ Two guardrails, and they are the load-bearing part:
   the first time. Confirmed reproducible (100%, not a flaky network symptom)
   and confirmed to cost nothing against the real account: `OrsBudget` still
   increments before the throw, so the local counter moved, but no request ever
-  left the machine. **Left unfixed per this task's brief** ("report it and
-  stop" rather than patch production code unasked) — recorded here rather than
+  left the machine. **Reported and left unfixed for one round** ("report it
+  and stop" rather than patch production code unasked), then **fixed on
+  explicit instruction, same task**: `Add` → `TryAddWithoutValidation`, with a
+  comment on the line naming the exact failure mode so a future "tidy" doesn't
+  reintroduce it. Confirmed live afterward against the real account: a real
+  Overpass candidate search returned real Zaragoza bus stops with real ORS
+  matrix figures; the resulting route's decoded polyline had 5 points for the
+  walking profile and 3 for driving, with **the walking segments' bearings
+  swinging 212° → 120° → 211° → 121°** against a **127° straight-line
+  bearing** origin-to-destination — a real routed path bending around a
+  block, not a 2-point interpolation; moving the pin ~5 km and re-saving
+  re-measured the same entry to 8,404 m / 101 min on foot and correctly set
+  `needsCheck: true` (beyond 1.5× the transport group's 800 m radius); the
+  second click on an already-drawn route cost the browser 0 bytes
+  (`transferSize: 0`) against 364 on the first. Recorded here rather than
   silently patched, because the ADR is the place this class of gap belongs:
   code review, and 12 tasks of fixture-mode testing, are not a substitute for
   exercising the seam a design ADR calls "the ONLY class that knows

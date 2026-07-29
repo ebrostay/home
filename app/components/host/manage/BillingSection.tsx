@@ -131,7 +131,14 @@ export function BillingSection({
         </div>
       )}
 
-      <div className="grid gap-3 min-[34rem]:grid-cols-2">
+      {/* `grid-cols-1` is not redundant with `grid`. Without an explicit track
+          the single column is IMPLICIT and sized `auto`, whose floor is the
+          item's min-content — and an AccountCard is a nowrap label beside a
+          shrink-0 button, so on a 375px phone it demanded 448px and took the
+          whole page with it into a horizontal scroll. Tailwind's `grid-cols-1`
+          emits `repeat(1, minmax(0, 1fr))`, and the `0` floor is the entire
+          point of it. */}
+      <div className="grid grid-cols-1 gap-3 min-[34rem]:grid-cols-2">
         <AccountCard label={t("accountLabel")} value={t("accountValue")} cta={t("accountCta")} />
         <AccountCard label={t("invoicesLabel")} value={t("invoicesValue")} cta={t("invoicesCta")} />
       </div>

@@ -36,14 +36,19 @@ export function LedgerStrip({
 }: {
   cells: LedgerCell[];
   /** True when the parent card has no padding of its own and the cells supply
-   *  all of it; false pulls the first cell back onto the card's left edge. */
+   *  all of it; false pulls the first cell back onto the card's left edge.
+   *
+   *  That pull MUST equal the cell padding, and the cell padding is
+   *  responsive — so this is too. They are two halves of one measurement:
+   *  if they ever disagree, the first label sits off the card's own margin by
+   *  the difference. */
   flush?: boolean;
 }) {
   return (
     <div
       className={`grid grid-cols-1 grid-rows-[auto_auto_auto] gap-x-px bg-line ${
         COLUMNS[cells.length] ?? COLUMNS[4]
-      } ${flush ? "" : "-ml-5"}`}
+      } ${flush ? "" : "-ml-3 min-[30rem]:-ml-5"}`}
     >
       {cells.map((c) => (
         <div
@@ -51,7 +56,11 @@ export function LedgerStrip({
           /* py rather than a row gap: once the grid collapses to one column the
              cells stack, and a row gap would fall between a cell's own label,
              value and note as well as between cells. */
-          className={`row-span-3 grid grid-rows-subgrid content-start gap-y-1.5 bg-surface px-5 ${
+          /* px halves below 30rem for the same reason SectionCard's does: on a
+             phone these cells sit in a card that runs edge to edge, and 20px
+             a side is width a long note ("10 open months before the next
+             stay") would rather have. */
+          className={`row-span-3 grid grid-rows-subgrid content-start gap-y-1.5 bg-surface px-3 min-[30rem]:px-5 ${
             flush ? "py-[18px]" : "py-2.5"
           }`}
         >

@@ -293,7 +293,11 @@ function ManageContent() {
         </div>
       </header>
 
-      <div className="overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card)">
+      {/* Full-bleed on a phone, exactly as SectionCard is: same -mx-6 against
+          this main's px-6, same loss of the side border and radius, so the
+          figures and the sections below them start at the same edge instead
+          of one being inset and the other not. */}
+      <div className="-mx-6 overflow-hidden rounded-none border border-x-0 border-line bg-surface shadow-(--shadow-card) min-[30rem]:mx-0 min-[30rem]:rounded-(--radius-card) min-[30rem]:border-x">
         <LedgerStrip cells={cells} flush />
       </div>
 

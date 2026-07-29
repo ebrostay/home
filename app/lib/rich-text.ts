@@ -1,0 +1,116 @@
+import { LIMITS } from "./listing";
+
+// The listing description document (ADR pending; design 2026-07-29).
+//
+// This module is PURE — no React, no fetching, no Tiptap. It is the shared
+// definition of what a description IS, and it is deliberately readable by
+// three consumers that must agree: the editor, the renderer, and the section
+// differ. The C# walk in `HostWrites.cs` mirrors it and is the one that counts.
+
+export const RICH_MARKS = ["bold", "italic"] as const;
+export type RichMarkType = (typeof RICH_MARKS)[number];
+export type RichMark = { type: RichMarkType };
+
+export const RICH_NODES = [
+  "doc", "paragraph", "heading", "bulletList", "orderedList", "listItem",
+  "callout", "photoFigure", "placeCard", "text", "photoRef", "placeRef",
+] as const;
+export type RichNodeType = (typeof RICH_NODES)[number];
+
+/** Only the attributes we name. Anything else a client sends is dropped —
+ *  structurally on the server, where System.Text.Json has no member for it. */
+export type RichAttrs = {
+  level?: 3;
+  url?: string;
+  caption?: string;
+  entryId?: string;
+};
+
+export type RichNode = {
+  type: RichNodeType;
+  content?: RichNode[];
+  text?: string;
+  marks?: RichMark[];
+  attrs?: RichAttrs;
+};
+
+export type BilingualDoc = { es: RichNode | null; en: RichNode | null };
+
+export const RICH_LIMITS = {
+  maxText: LIMITS.maxCopy,
+  maxCaption: 200,
+  maxNodes: 400,
+  maxDepth: 5,
+} as const;
+
+/** What each node may contain. `null` marks an atom — a node with no children
+ *  at all, which is why a photo reference can never hold text and a caption is
+ *  an attribute rather than a content slot. */
+export const CONTENT_MODEL: Record<RichNodeType, readonly RichNodeType[] | null> = {
+  doc: ["paragraph", "heading", "bulletList", "orderedList", "callout", "photoFigure", "placeCard"],
+  paragraph: ["text", "photoRef", "placeRef"],
+  heading: ["text"],
+  bulletList: ["listItem"],
+  orderedList: ["listItem"],
+  // Paragraphs and nothing else, so lists cannot nest.
+  listItem: ["paragraph"],
+  callout: ["paragraph"],
+  photoFigure: null,
+  placeCard: null,
+  text: null,
+  photoRef: null,
+  placeRef: null,
+};
+
+export const EMPTY_DOC: RichNode = { type: "doc", content: [] };
+
+export const isEmptyDoc = (node: RichNode | null | undefined): boolean =>
+  !node || !node.content?.length || textLength(node) === 0;
+
+/** Text characters only. References and captions are NOT charged — their
+ *  labels live on other records, so charging them would let renaming a nearby
+ *  place change the length of a description nobody touched. */
+export function textLength(node: RichNode): number {
+  let total = node.type === "text" ? (node.text?.length ?? 0) : 0;
+  for (const child of node.content ?? []) total += textLength(child);
+  return total;
+}
+
+/** A stable string for two documents that mean the same thing.
+ *
+ *  `FIELDS.description` compares documents to decide whether the section
+ *  changed, and raw JSON.stringify would depend on key order and on
+ *  absent-versus-undefined at EVERY node — the same hazard `bi()` documents
+ *  for a two-key record, multiplied by the tree. Without this the "changed"
+ *  indicator lights on a freshly opened page. */
+export function canonical(node: RichNode | null | undefined): string {
+  if (!node) return "null";
+  return JSON.stringify(canonicalNode(node));
+}
+
+// Keys are written in alphabetical order; JSON.stringify preserves insertion
+// order, so the output is deterministic.
+const canonicalNode = (n: RichNode): unknown => ({
+  attrs: n.attrs
+    ? {
+        caption: n.attrs.caption ?? null,
+        entryId: n.attrs.entryId ?? null,
+        level: n.attrs.level ?? null,
+        url: n.attrs.url ?? null,
+      }
+    : null,
+  content: n.content ? n.content.map(canonicalNode) : null,
+  // Sorted: Tiptap emits marks in application order, the API in stored order.
+  marks: n.marks ? [...n.marks].map((m) => m.type).sort() : null,
+  text: n.text ?? null,
+  type: n.type,
+});
+
+/** Plain text → a one-paragraph document. Used by the style-book fixtures and
+ *  by anything that needs to start a document from a string. */
+export function paragraphDoc(text: string): RichNode {
+  const trimmed = text.trim();
+  return trimmed === ""
+    ? { type: "doc", content: [] }
+    : { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: trimmed }] }] };
+}

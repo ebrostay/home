@@ -771,7 +771,25 @@ export function NearbyEditor({
                 // purpose: Leaflet needs `invalidateSize()` when its
                 // container changes size, and it only listens for window
                 // resize — which is the one event that can change this.
-                className="h-64 w-full @min-[34rem]:h-[22rem]"
+                //
+                // Sticky in the two-column layout only. The list is far taller
+                // than the map, so the row is list-height and the map would
+                // otherwise scroll away at exactly the point an owner starts
+                // reading candidates — the moment they most want to see where
+                // a place is. The empty column beneath it becomes the room it
+                // travels in.
+                //
+                // `self-start` is load-bearing: a stretched grid item is as
+                // tall as its row, and something with nowhere to move cannot
+                // stick to anything.
+                //
+                // The offset is the page's own measured one. `--section-anchor-top`
+                // is what an in-page anchor has to clear — header + context
+                // bar + section nav, all published live by the bars
+                // themselves, because both have wrapped and changed height
+                // before. The fallback covers any page that mounts this
+                // editor without those bars.
+                className="h-64 w-full @min-[34rem]:sticky @min-[34rem]:top-[var(--section-anchor-top,7rem)] @min-[34rem]:h-[22rem] @min-[34rem]:max-h-[calc(100dvh-var(--section-anchor-top,7rem)-1.5rem)] @min-[34rem]:self-start"
               />
 
               <div className="flex flex-col gap-3">

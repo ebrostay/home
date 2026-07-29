@@ -574,6 +574,27 @@ export function NearbyEditor({
         .map((c) => ({ id: c.osmId, lat: c.lat, lng: c.lng, label: c.name })),
     [shownCandidates, chosenOsmIds],
   );
+  // What the pins on screen are ANSWERING, as one string. It moves when the
+  // search, the group, the type filter or the expansion does — each of which
+  // puts a different set of places on the map, often at a different scale,
+  // since the search radius is per type (bus 800 m against rail 3 km). It
+  // deliberately does not move when a row is clicked, a route drawn or a
+  // place added: those redraw the same answer, and re-framing then would take
+  // the map away from the owner mid-task.
+  const fitKey = useMemo(
+    () =>
+      visibleSearch.kind === "ready"
+        ? [
+            activeGroup,
+            effectiveType ?? "*",
+            showAll ? "all" : "few",
+            visibleSearch.lat,
+            visibleSearch.lng,
+          ].join("|")
+        : "",
+    [visibleSearch, activeGroup, effectiveType, showAll],
+  );
+
   const chosenPins: NearbyMapPin[] = useMemo(
     () => chosenForGroup.map((e) => ({ id: e.id, lat: e.lat, lng: e.lng, label: e.name })),
     [chosenForGroup],
@@ -738,6 +759,7 @@ export function NearbyEditor({
                 activeId={activeId}
                 routePolyline={routePolyline}
                 dropMode={dropMode}
+                fitKey={fitKey}
                 onPick={selectPin}
                 onDrop={(dLat, dLng) => {
                   setDropMode(false);

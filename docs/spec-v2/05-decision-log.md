@@ -1599,6 +1599,18 @@ Two guardrails, and they are the load-bearing part:
     type cap entirely: with one type on screen there is nothing left to bury,
     and answering "show me supermarkets" with three of them and a button
     would be the same burial in a smaller box.
+  - The map **re-frames itself** when the filter changes, and only then. Per-
+    type radii made this necessary rather than nice: a view framed for bus
+    stops (800 m) has the stations off-screen, and one framed for stations
+    (3 km) has every bus stop in one unreadable clump. Measured on Pedro II
+    el Católico 3, the fit now lands on **z15 for bus and bike share and z13
+    for tram and rail** — a 4× scale change — with every pin inside the
+    viewport in each case. The trigger is a caller-supplied `fitKey` naming
+    the QUESTION the pins answer (search, group, type, expansion), never the
+    pin arrays themselves, so clicking a row, drawing a route or adding a
+    place still leaves the view exactly where the owner put it. Chosen pins
+    are excluded from the bounds: they are not type-filtered, so one saved
+    tram stop 2 km out would stretch a bus-stop frame back to uselessness.
 
 ---
 

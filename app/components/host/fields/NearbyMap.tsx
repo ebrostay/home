@@ -45,6 +45,14 @@ type NearbyMapProps = {
   activeId: string | null;
   routePolyline: string | null;
   dropMode: boolean;
+  /** Changes exactly when the pins on screen represent a different QUESTION —
+   *  a new search, another group, another type filter — and the view should
+   *  therefore be re-framed around them. It deliberately does NOT change when
+   *  the same question merely redraws (a row hovered, a place added, a route
+   *  fetched), because re-fitting then would yank the map out from under
+   *  whatever the owner is doing. The caller owns the definition; the map only
+   *  notices that it differs from the last one it fitted. */
+  fitKey: string;
   onPick: (id: string) => void;
   onDrop: (lat: number, lng: number) => void;
   className?: string;
@@ -58,6 +66,7 @@ export function NearbyMap({
   activeId,
   routePolyline,
   dropMode,
+  fitKey,
   onPick,
   onDrop,
   className = "",
@@ -78,11 +87,9 @@ export function NearbyMap({
   const leafletRef = useRef<any>(null);
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  // Whether bounds have been fit to a batch of candidates already. Reset
-  // when candidates goes back to empty, so the NEXT search fits again — a
-  // fresh search replacing a previous one should still bring its results
-  // into view.
-  const firstFitRef = useRef(false);
+  // The `fitKey` the view was last framed for. Anything else that redraws
+  // pins leaves the view exactly where the owner put it.
+  const fittedRef = useRef<string | null>(null);
 
   // Leaflet loads asynchronously (see the mount effect), so on the very
   // first render mapRef/pinsRef are still null even when `chosen` already
@@ -178,13 +185,15 @@ export function NearbyMap({
   // Redraw candidate and chosen pins whenever the lists or the active
   // selection change.
   //
-  // Bounds are fit ONCE, the first time a non-empty batch of candidates
-  // arrives, not on every redraw. This is the same trap LocationPicker's
-  // comment warns about: an interactive map that re-fits on every prop
-  // change yanks the view out from under whatever the owner is doing right
-  // now — hovering a list row, dragging to compare a route. Only a genuinely
-  // new search (candidates going empty, then non-empty again) earns another
-  // fit.
+  // Bounds are fit only when `fitKey` says the pins answer a different
+  // question, never on every redraw. This is the trap LocationPicker's
+  // comment warns about: a map that re-fits on every prop change yanks the
+  // view out from under whatever the owner is doing right now — reading a
+  // row, comparing a route. But NOT re-fitting when the question changes is
+  // its own failure, and a worse one: the groups search different distances
+  // (bus 800 m, tram 2.5 km, rail 3 km), so a view framed for bus stops has
+  // the train stations off-screen entirely, and a view framed for stations
+  // has every bus stop in one unreadable clump.
   useEffect(() => {
     const L = leafletRef.current;
     const layer = pinsRef.current;
@@ -208,23 +217,30 @@ export function NearbyMap({
     for (const c of candidates) addPin(c, "map-marker map-marker-suggested");
     for (const c of chosen) addPin(c, "map-marker map-marker-chosen");
 
-    if (candidates.length > 0) {
-      if (!firstFitRef.current) {
-        firstFitRef.current = true;
-        const bounds: [number, number][] = [
-          [home.lat, home.lng],
-          ...candidates.map((c): [number, number] => [c.lat, c.lng]),
-          ...chosen.map((c): [number, number] => [c.lat, c.lng]),
-        ];
-        mapRef.current?.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-      }
-    } else {
-      firstFitRef.current = false;
+    // Candidates frame the view, falling back to what is already chosen when
+    // a search has nothing left to offer (every result added already). Chosen
+    // pins are deliberately NOT mixed into the candidate bounds: they are not
+    // filtered by type, so one saved tram stop 2 km out would stretch the
+    // frame of a bus-stop search back to uselessness — which is the very
+    // thing this fit exists to fix.
+    const frame = candidates.length > 0 ? candidates : chosen;
+
+    if (fitKey !== "" && frame.length > 0 && fitKey !== fittedRef.current) {
+      fittedRef.current = fitKey;
+      const bounds: [number, number][] = [
+        [home.lat, home.lng],
+        ...frame.map((c): [number, number] => [c.lat, c.lng]),
+      ];
+      // maxZoom is what makes a tight cluster readable rather than absurd:
+      // three bus stops on one street would otherwise fill the viewport at
+      // building level.
+      mapRef.current?.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
     }
-    // `home` intentionally absent: it anchors the initial fit, not a reason
-    // to re-fit whenever the pin arrays themselves are merely redrawn.
+    // `home` intentionally absent: it anchors a fit, it is not a reason to
+    // re-fit whenever the pin arrays are merely redrawn. Its own effect above
+    // handles the pin moving.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candidates, chosen, activeId, mapReady]);
+  }, [candidates, chosen, activeId, mapReady, fitKey]);
 
   // Redraw the route line whenever it changes, into a layer cleared on each
   // change so a stale route from a previously active candidate never

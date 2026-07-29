@@ -1,7 +1,7 @@
 # Ebrostay v2 Target Spec — §4 Functional Flows
 
 > Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
-> v1 reference: [docs/spec/06a](../spec/06a-functional-home-property.md) / [06b](../spec/06b-functional-account-admin.md) (screen behavior), [docs/spec/05](../spec/05-business-rules.md) (all numbers). Decisions: [ADR-014, ADR-015, ADR-017, ADR-020](05-decision-log.md).
+> v1 reference: [docs/spec/06a](../spec/06a-functional-home-property.md) / [06b](../spec/06b-functional-account-admin.md) (screen behavior), [docs/spec/05](../spec/05-business-rules.md) (all numbers). Decisions: [ADR-014, ADR-015, ADR-017, ADR-020, ADR-028](05-decision-log.md).
 
 API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 
@@ -17,6 +17,10 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 | `PUT /api/host/properties/{id}/status` | auth (own) | Pause / reopen only (ADR-024). Publishing stays an admin act. |
 | `POST /api/host/properties/{id}/submit` | auth (own) | draft/rejected → `pending_review`. |
 | `POST /api/host/properties/{id}/photos` · `DELETE …/photos/{n}` | auth (own) | Photo upload/delete via Blob (§4.4). |
+| `GET /api/nearby/vocabulary` | anon | The type/group/profile vocabulary, cached 1h (§2.2.5, ADR-028). |
+| `GET /api/host/nearby/candidates` | auth (own point) | Owner's candidate search — Overpass + ORS matrix (§4.4.1). |
+| `GET /api/host/nearby/preview-route` | auth (own points) | Route preview for a not-yet-saved candidate; stores nothing (§4.4.1). |
+| `GET /api/properties/{id}/nearby/{entryId}/route` | anon | Lazy, cached route lookup by id — never coordinates (§4.2.1, ADR-028 Decision 4). |
 | `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings. |
 | `POST /api/ai-assistant` | auth (own listing) / admin | DeepSeek actions (§4.6). |
 | `GET /api/admin/review-queue` · `POST /api/admin/properties/{id}/approve` · `…/reject` | admin | Review queue (§4.5). |
@@ -73,6 +77,69 @@ payment (v1 R-CORE-2 carried).
 For anonymous visitors the Email/WhatsApp CTAs are replaced by a **"Sign in to
 book"** CTA that routes to `/.auth/login/{provider}` with a
 `post_login_redirect_uri` back to the property page (§3.1).
+
+### 4.2.1 Neighbourhood: the merged section and the lazy route ✅ (ADR-028)
+
+v1's sections 7 ("Where you'll be") and 9 ("What's nearby") are **one section**
+in v2: a `Nearby` list (`app/components/detail/Nearby.tsx`) beside a
+`NeighbourhoodMap`, because the two halves fix each other's weakness — a map
+with nothing to click is inert, a list of places with no map is abstract.
+`YourPlaces` (search-to-address, straight-line `km ÷ speed`) is deliberately
+untouched (ADR-028 "What this deliberately does not do"): it routes to
+arbitrary guest-typed addresses, which is exactly the unbounded,
+guest-triggered workload the lazy-route design below exists to avoid.
+
+**Everything a guest sees on page load is already on the document.** The
+detail response's `nearby[]` (public projection, §2.2.5) carries a group, a
+type, a name, a point and `reach` for every profile ORS could route — no
+third party is on the critical path for the list itself.
+
+```
+1. GUEST     opens the property page. Nearby renders a card per group from
+             `nearby[]`, entries ranked by the active profile's minutes;
+             a group left empty by the active profile is dropped from the
+             grid entirely (an entry ORS could route on foot but not by car
+             simply has no `reach.car`, and vice versa — never a zero).
+2. GUEST     clicks a place → the destination pin appears on
+             NeighbourhoodMap IMMEDIATELY (it is already known — same figure
+             already displayed), and the entry's row shows a loading state
+             while:
+             CLIENT  GET /api/properties/{id}/nearby/{entryId}/route?profile=
+                     — ids only, never coordinates (Decision 4 below).
+3. SERVER    PropertyNearbyRoute (anonymous) loads the PUBLISHED (or PAUSED)
+             property, then RouteCache.GetAsync:
+               - point-read `nearbyRoutes` by id "{entryId}-{profile}" in the
+                 property's partition. Hit → return it. The unknown-entry
+                 check runs BEFORE this read, so a bogus entryId 404s without
+                 ever touching ORS or the route container.
+               - Miss → call OrsClient.RouteAsync with the ORIGIN AND
+                 DESTINATION READ FROM THE STORED DOCUMENT (the property's
+                 own pin; the entry's own point) — never from the request —
+                 write-through into `nearbyRoutes`, return it.
+             Response carries `Cache-Control: public, max-age=86400`.
+4. GUEST     the polyline decodes (`decodePolyline`, `app/lib/nearby.ts`) and
+             draws on the map. A SECOND click on the same entry re-fires the
+             fetch, but it is served from the browser's HTTP cache
+             (transferSize 0) and never reaches the Function.
+5. GUEST     switches the foot/car profile toggle → step 2 re-runs for
+             whichever entry is still active (a different profile is a
+             different cached document, `"{entryId}-foot"` vs
+             `"{entryId}-car"`), so the line redraws for the new mode.
+```
+
+- **Nothing on page load depends on ORS.** Only a first-ever click on one
+  `(entry, profile)` pair can fail, and it fails to a named message
+  (`routeMissing` for 404, `routeUnavailable` for anything else) beside a
+  figure that is still correct — the distance and duration shown in the list
+  came from the document, not from this call.
+- **The public endpoint takes `(propertyId, entryId, profile)`, never a
+  coordinate.** This is the security property the whole lazy design exists
+  for: an anonymous caller cannot make the account route arbitrary points at
+  Ebrostay's expense. `RouteCache` is the only place a `from`/`to` pair is
+  ever constructed for this endpoint.
+- **A missing entry never touches ORS.** `RouteCache.GetAsync` looks the
+  `entryId` up on the loaded property document first; only a match proceeds
+  to the cache read and, on a miss, the outbound call.
 
 ## 4.3 Booking flow — login-gated, log-then-draft ✅ (ADR-015)
 
@@ -187,6 +254,7 @@ Nine sections down a sticky rail, saved by **one** whole-page diff:
 | Basics | `name`, `type`, capacity, `sizeM2`, `floorNumber` | ✅ editable |
 | Address & cadastre | `address`, `postcode`, `cadastralRef`, `lat`/`lng` | ✅ editable; Catastro queried live both ways — reference → record, and address → reference for an owner without their IBI receipt. No `MATCHED` badge, no licence field (ADR-027). An outside answer fills only an empty field and otherwise offers — **including the pin**, which a saved listing keeps until the owner accepts a move; a declined offer is remembered and not repeated until it changes (§2.2.4) |
 | Rooms & levels | — | ❌ no room entity (ADR-027) |
+| Nearby | embedded `nearby[]` — group tabs, map-assisted candidate picker, route preview | ✅ editable (ADR-028, §4.4.1 below) |
 | Photos | embedded `photos[]` — reorder, cover, floor-plan flag, remove | ⚠️ no upload (ADR-019 🔜) |
 | Floor plan | `isFloorplan` photos | ⚠️ flag only; no pins |
 | Description | `copy`/`details`/`beds` bilingual + `copyEnApproved` | ✅ editable; owner writes both languages |
@@ -232,6 +300,66 @@ history, and "keep the data, close the listing" is what `paused` means.
 
 Hosts never write `status: "published"` directly and never touch other users'
 listings — enforced in the functions (§3.5), not the UI.
+
+### 4.4.1 Nearby editor: candidate lookup, then a save that measures ✅ (ADR-028)
+
+The owner never types a distance (Decision 1). They pick a group, see real
+places around the pin, choose which to keep, and the server measures
+everything.
+
+```
+1. HOST      opens a group tab (transport | groceries | food | outdoors |
+             health) in the Nearby section →
+             CLIENT  GET /api/host/nearby/candidates?lat=&lng=&group=
+                     (the listing's OWN pin — a candidate open costs one
+                     request per profile, not one per candidate, because it
+                     is answered by a matrix, not N single routes)
+2. SERVER    HostNearbyCandidates: owner-authenticated, `NearbyGroups
+             .InZaragoza` bound, unknown group → 400 `bad_group`.
+             NearbyLookup.CandidatesAsync:
+               a. OverpassClient.FindAsync — POI search, cached per rounded
+                  CELL + group (§2.2.5); a cache hit skips Overpass entirely.
+               b. ORS MATRIX, once per profile, ALWAYS against the true pin
+                  (never the rounded cell — that would put cell-rounding
+                  error into a distance shown as precise).
+               c. a POI with no walking figure at all is dropped — it can be
+                  neither ranked nor shown; a profile with no figure (e.g.
+                  routable on foot but not by car) is simply absent from
+                  that candidate's `reach`, not zero.
+             Returns candidates ranked by walking minutes ascending.
+3. HOST      clicks a candidate to preview it before adding →
+             CLIENT  GET /api/host/nearby/preview-route?lat=&lng=&toLat=
+                      &toLng=&profile= (owner-authenticated, stores nothing —
+                      for a candidate not yet saved, so nothing here writes
+                      to `nearbyRoutes`)
+             the map draws the real routed line, same OrsClient.RouteAsync
+             the public lazy fetch uses (§4.2.1) — a preview is never a
+             straight-line guess either.
+4. HOST      clicks Add → the entry moves into the listing's chosen list
+             (client-side only; nothing is measured or saved yet). A 7th
+             pick in one group is refused client-side with the same
+             `nearby_group_full` reason the server enforces (§2.2.5 caps).
+             Focus stays in the candidate finder after Add, falling back to
+             the next addable row.
+5. HOST      clicks the page save bar → PUT /api/host/properties/{id} with
+             the WHOLE nearby list (§4.4's one-diff, one-save rule). The
+             server never trusts a client-sent reach figure (§2.2.5): it
+             matches each entry by id against the stored document, carries
+             over the figures of anything unchanged, and re-measures only
+             what is new, moved, or every entry at once if the PIN moved.
+             An entry no profile can route to blocks the WHOLE save
+             (`nearby_unroutable`) — no entry is ever written with an empty
+             `reach`. Only after the write succeeds are that property's
+             cached `nearbyRoutes` dropped (pin-move case only) so the next
+             guest click re-routes from the new pin.
+```
+
+A **custom place** (no OSM match — the type dropdown's escape hatch) skips
+steps 1–3: the owner types a name, a Spanish label required (English
+optional, falling back to Spanish with an attention flag — the `enNotApproved`
+pattern, ADR-027 Decision 4), and drops a pin by hand; it still goes through
+the same server-side measurement at step 5, because **no entry's figures are
+ever authored** (Decision 1, Decision 8).
 
 ## 4.5 Admin flow ✅ (3 invited admins — §3.3)
 

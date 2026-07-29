@@ -1238,12 +1238,14 @@ Two guardrails, and they are the load-bearing part:
 
 ## ADR-028 — "What's nearby": measured, not typed; numbers eager, geometry lazy
 
-- **Status:** ✅ locked 2026-07-28 (product owner: Raphael); 🔜 **not built**.
-  Replaces the `PLACEHOLDER_NEARBY` stand-in in
-  `app/lib/detail-placeholders.ts`, whose own header instructs its deletion
-  once the API has fields. Working notes and the full build-level design:
+- **Status:** ✅ locked and ✅ **built** 2026-07-29 (product owner: Raphael).
+  Replaced the `PLACEHOLDER_NEARBY` stand-in in
+  `app/lib/detail-placeholders.ts`, whose own header instructed its deletion
+  once the API had fields — deleted, no remaining importers. Working notes and
+  the full build-level design:
   `docs/superpowers/specs/2026-07-28-whats-nearby-design.md` — **this ADR is
-  the primary record; that document elaborates it.**
+  the primary record; that document elaborates it.** What the build settled is
+  recorded at the end of this ADR.
 - **Context.** The detail page's "What's nearby" panel shows generic Zaragoza
   facts identical for every listing, with times measured from "central
   Zaragoza" rather than from the home. It needs per-listing data, which means
@@ -1416,6 +1418,96 @@ Two guardrails, and they are the load-bearing part:
   `indexingPolicy` (excluding `/nearby/*`, the embedded array this ADR adds).
   Cosmos runs the transformation non-disruptively in the background, but it
   is not instant — expect it on the next deploy of `infra/main.bicep`.
+
+### What the build settled
+
+- **The matrix returns per-destination, not per-request.** ORS answers a
+  category's whole matrix in one call, but it returns `null` for any one
+  destination it cannot route to (no mapped footpath, an uncrossable road) —
+  that is not an outage. `OrsClient.MatrixAsync` therefore returns
+  `NearbyReach?[]`, not `NearbyReach[]` (design change during Task 4's
+  review): one unroutable POI drops out of that candidate's `reach` instead of
+  failing the whole category. The same shape is why a place can be reachable
+  on foot but genuinely absent by car, rather than showing a false zero.
+- **A duplicate entry id would have bricked a listing.** Task 7's review
+  caught that two entries sharing one `id` in a save payload wrote both under
+  that id and made every future save of that listing throw an uncaught
+  `ArgumentException` — a corrupted document with no way back. Fixed both
+  ways: validation now rejects a payload that would *create* the duplicate
+  (`nearby_duplicate_id`), and the save's own id lookup is built the same
+  defensive way as the photo merge (`GroupBy(...).First()`, not
+  `ToDictionary`), so a document that somehow already carries one is not
+  unrecoverable either.
+- **The type vocabulary being server-only (the pre-flight ruling, not a
+  build surprise) had a real corollary: an unknown type had to degrade
+  somewhere.** A type served before its translation shipped — or a
+  vocabulary key the client's build predates — needed a fallback rather than
+  a thrown `MISSING_MESSAGE` or a leaked raw machine key. `nearby.unknownType`
+  ("Place" / "Lugar") was added to both catalogues and is now the only path
+  `typeLabel()` can take for an unrecognised type, in both the editor and the
+  public page.
+- **Two culture bugs, one root cause, caught before they shipped.** `Cell()`
+  (the Overpass cache key) and the `serviceBudget` document id both format a
+  `DateTimeOffset`/coordinate into a Cosmos id — and both were originally
+  written with the current culture, which is calendar-dependent (e.g. Thai
+  Buddhist years) and would have scattered cache entries and budget counters
+  across ids that never matched each other. Both caught in review before
+  merge; the plan itself was corrected at the source so no later task could
+  copy the bug forward.
+- **"One unroutable POI shouldn't fail a category" has a save-time twin that
+  stayed a hard stop.** A *candidate* missing a profile's figure is simply
+  omitted from that profile's view. An *entry the owner is trying to save*
+  that no profile can route to is refused outright (`nearby_unroutable`) —
+  the ruling drawn during Task 7's review was that storing an entry with an
+  empty `reach` is worse than asking the owner to pick a different place, so
+  degrade-gracefully and refuse-to-save are deliberately different responses
+  to the same underlying "ORS couldn't route this" fact.
+- **`needsCheck` is earned by a measurement, not a save.** An early version of
+  the merge logic cleared the flag on any save that happened not to touch the
+  flagged entry. Fixed so the flag, like `Reach` and `MeasuredAt`, is only
+  ever set or cleared by an actual re-measurement — never as a side effect of
+  saving something else on the same listing.
+- **Flagged entries stay visible, by ruling.** A `needsCheck` entry (one that
+  re-measured beyond 1.5× its group's radius after the pin moved) is not
+  hidden from the public page: the figure is accurate, and silently dropping
+  a place the owner chose to mention would be a worse failure than showing an
+  honest number for something a bit far. It is a signal for the owner and a
+  future admin surface, never a suppression.
+- **The client keeps no copy of the type list, so the editor has to survive
+  its own network call failing.** `GET /api/nearby/vocabulary` is cached an
+  hour server-side, but the very first load still depends on it; the section
+  shows its own retry state rather than the editor assuming a static list
+  that no longer exists on the client.
+- **The neighbourhood merge (Decision 9) surfaced a second standard living
+  next to the new one.** `YourPlaces` still computes `km ÷ speed` on a
+  straight line for guest-typed addresses. Left as-is per the ADR — it solves
+  a different, unbounded problem (arbitrary destinations, not a fixed list of
+  owner-picked places) that the lazy-route design is specifically built to
+  avoid taking on.
+- **⚠️ The account's first real call surfaced a build defect that fixtures
+  structurally could not catch.** Task 13 ran the full verification list with
+  `ORS_FIXTURES` unset — the first time any request actually left the process
+  for ORS. Every one of them failed: `OrsClient.SendAsync` throws
+  `System.FormatException` while *building* the named `HttpClient`
+  (`Program.cs`, the `"ors"` registration), before a single byte reaches the
+  network. The cause is `c.DefaultRequestHeaders.Add("Authorization", key)` —
+  `HttpHeaders.Add` validates a known header against its typed parser, and
+  `Authorization` is parsed as `AuthenticationHeaderValue` (`scheme
+  credential`); ORS's bare key has no scheme token, so the parser rejects it
+  every time, for any key. **Fixture mode could never have exercised this**:
+  `Fixtures` returns before `MatrixAsync`/`RouteAsync` ever call
+  `factory.CreateClient("ors")`, so the one code path real traffic must take
+  was never built, let alone run, until this task set `ORS_FIXTURES` unset for
+  the first time. Confirmed reproducible (100%, not a flaky network symptom)
+  and confirmed to cost nothing against the real account: `OrsBudget` still
+  increments before the throw, so the local counter moved, but no request ever
+  left the machine. **Left unfixed per this task's brief** ("report it and
+  stop" rather than patch production code unasked) — recorded here rather than
+  silently patched, because the ADR is the place this class of gap belongs:
+  code review, and 12 tasks of fixture-mode testing, are not a substitute for
+  exercising the seam a design ADR calls "the ONLY class that knows
+  OpenRouteService exists." A network double proves the code that talks to the
+  double; it does not prove the code that talks to the network.
 
 ---
 

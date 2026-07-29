@@ -1,7 +1,7 @@
 # Ebrostay v2 Target Spec — §2 Data Model
 
 > Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
-> v1 reference: [docs/spec/04-data-model.md](../spec/04-data-model.md) (conceptual fields carry over; storage moves Postgres → Cosmos). Decisions: [ADR-011, ADR-014, ADR-016, ADR-019](05-decision-log.md).
+> v1 reference: [docs/spec/04-data-model.md](../spec/04-data-model.md) (conceptual fields carry over; storage moves Postgres → Cosmos). Decisions: [ADR-011, ADR-014, ADR-016, ADR-019, ADR-028](05-decision-log.md).
 
 Storage moves from Supabase Postgres to **Azure Cosmos DB (free tier,
 provisioned 1000 RU/s shared, NoSQL API)**. This is a **fresh start** (ADR-016): no v1 production data is
@@ -21,14 +21,17 @@ text uses `{ es, en }` objects instead of v1's `*_es`/`*_en` column pairs.
 
 Cosmos account **`ebrostay-cosmos`** (free tier, NoSQL, spaincentral, §1.2)
 → database **`ebrostay`** (shared **1000 RU/s** — the free-tier allowance —
-across all containers) → four containers:
+across all containers) → seven containers:
 
 | Container | Partition key | One document per | Writers (via API only) |
 | --- | --- | --- | --- |
-| `properties` | `/id` | listing (photos + availability **embedded**) | host (own, pre-publish states), admin |
+| `properties` | `/id` | listing (photos + availability + nearby **embedded**) | host (own, pre-publish states), admin |
 | `profiles` | `/id` | signed-in user (bootstrapped, §3.6) | the system (bootstrap), admin (deactivation) |
 | `bookingRequests` | `/propertyId` | logged booking request | booking function (insert), admin (status) |
 | `inquiries` | `/id` | contact-form inquiry | anyone incl. anonymous (insert), admin (read) |
+| `nearbyCandidates` | `/cell` | cached Overpass answer for one rounded cell + group | the candidate lookup (§2.2.5, ADR-028) |
+| `nearbyRoutes` | `/propertyId` | one routed geometry, `(entryId, profile)` | the anonymous public route lookup, write-through (§2.2.5, ADR-028) |
+| `serviceBudget` | `/id` | one calendar day's outbound ORS call count | `OrsBudget` (§2.2.5, ADR-028) |
 
 Partition-key rationale:
 
@@ -37,6 +40,15 @@ Partition-key rationale:
 - `bookingRequests` partitions on `/propertyId`: the hot queries are "requests
   for property X" (host dashboard) and admin listing (cross-partition, cheap at
   this volume); grouping by property keeps the host query single-partition.
+- `nearbyCandidates` partitions on `/cell` — a rounded `"lat|lng|group"` key
+  (§2.2.5) — because POIs do not move and every read and write is by that
+  exact cell.
+- `nearbyRoutes` partitions on `/propertyId`, the shape `bookingRequests`
+  already uses, because every route is always fetched or invalidated within
+  one property's set (§2.2.5, ADR-028 Decision 5).
+- `serviceBudget` partitions on `/id`, one document per calendar day, because
+  every read-then-write is a point operation against that single counter
+  (§2.2.5, ADR-028 "Consequences to watch").
 - No container for **favorites** (🚫 out of MVP scope, carried from v1),
   **bookings** (🗑️ Stripe path not carried, ADR-016), **owner_leads** (🗑️
   superseded by the self-serve host flow, ADR-014), **owner_payout_details**
@@ -146,6 +158,17 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
       "holdExpiresAt": "2026-07-20T11:30:00Z" }
   ],
 
+  // — embedded "what's nearby" entries (§2.2.5, ADR-028) —
+  "nearby": [
+    { "id": "8f2c1e4a9b7d4c3e", "group": "transport", "type": "tram",
+      "customType": null, "name": "Gran Vía", "lat": 41.6512, "lng": -0.9021,
+      // ✅ measured, never client-supplied (Decision 8 below)
+      "reach": { "foot": { "metres": 420, "minutes": 6 },
+                 "car": { "metres": 900, "minutes": 3 } },
+      "osmId": "node/612233981", "measuredAt": "2026-07-28T09:15:00Z",
+      "needsCheck": false }
+  ],
+
   "createdAt": "2026-07-19T10:00:00Z",
   "updatedAt": "2026-07-19T10:00:00Z"
 }
@@ -157,6 +180,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
 availability shape is date ranges only (`{start, end}` pairs), never user
 identifiers or notes. This resolves v1's `availability_blocks.user_id`/`note`
 world-readability leak **by design** (v1 open decision #1, docs/spec/11).
+`nearby[].osmId` / `.measuredAt` / `.needsCheck` are stripped the same way —
+they are provenance for the owner and the (planned) admin review, not a guest
+fact (§2.2.5).
 
 ### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025)
 
@@ -337,6 +363,108 @@ register live and sees the disagreement regardless (§4.5).
 its own endpoint and leaves `status` untouched. Riding the content `PUT` would
 pull a published listing back into review for dismissing a banner (ADR-027
 Decision 5), and it is absent from the editor's diff for the same reason.
+
+### 2.2.5 Embedded nearby entries, and the three containers behind them ✅ (ADR-028, built 2026-07-29)
+
+`properties.nearby[]` (shape above) is a `NearbyEntry`: a place the owner
+picked, with a group, a type, a name, a point, and **measured** figures. It
+replaces `PLACEHOLDER_NEARBY` (`app/lib/detail-placeholders.ts`, now deleted)
+and the old "central Zaragoza" figures. Capped by validation at **6 per group,
+24 per listing** — tens, not thousands, like the calendar (§2.2.3).
+
+```jsonc
+{
+  "id": "8f2c1e4a9b7d4c3e",   // server-generated (a client id only ever
+                              // MATCHES an existing entry, never creates one
+                              // under an id of the caller's choosing)
+  "group": "transport",       // closed vocabulary, §2.2.5 below
+  "type": "tram",             // vocabulary key, or null if customType is set
+  "customType": null,         // { es, en? } — the Spanish-first escape hatch
+  "name": "Gran Vía",         // a proper noun: one string, not bilingual
+  "lat": 41.6512, "lng": -0.9021,
+  "reach": {                  // ✅ NEVER accepted from a client (Decision 8)
+    "foot": { "metres": 420, "minutes": 6 },
+    "car":  { "metres": 900, "minutes": 3 }
+  },
+  "osmId": "node/612233981",  // provenance; null for a manually-added place
+  "measuredAt": "2026-07-28T09:15:00Z",
+  "needsCheck": false         // true when a re-measurement (pin moved) landed
+                              // outside the group's radius — the SELECTION is
+                              // now suspect, not just the number
+}
+```
+
+**§2.2 Public projection strips `osmId`, `measuredAt` and `needsCheck`** — see
+above. Everything else is what the guest-facing "What's nearby" section reads
+(§4.2, merged with §7 "Where you'll be" per ADR-028 Decision 9).
+
+**Reach figures are never accepted from a client, under any endpoint.** The
+owner's `PUT /api/host/properties/{id}` payload (`NearbyWrite`,
+`api/Models/HostWrites.cs`) carries no `reach`, `osmId` or `measuredAt` field
+at all — the type itself cannot express a fabricated figure. On save, an
+incoming entry is matched by id against the document already stored and its
+measured figures are carried over; a new entry, a moved entry, or **every**
+entry when the pin itself moves is re-measured server-side against the ORS
+matrix before the document is written (Decision 8). An entry no profile can
+route to is refused (`nearby_unroutable`) rather than stored with an empty
+`reach`; an entry that re-measures beyond 1.5× its group's radius is kept but
+flagged `needsCheck` — moving the pin invalidates a distance, not a choice the
+owner made, so the entry is not silently dropped either.
+
+**Groups are a closed, fixed vocabulary** — `transport`, `groceries`, `food`,
+`outdoors`, `health` — each with its own search radius (800 m–10 km,
+`NearbyGroups.RadiusMetres`), because "nearby" is not one distance. **Types**
+are a fixed, translated vocabulary **served by the API**
+(`GET /api/nearby/vocabulary`, `NearbyGroups.Vocabulary` in
+`api/Services/NearbyGroups.cs`) rather than duplicated in the client — the
+server has to validate against its own copy regardless, so a second
+hand-maintained list would only drift. `app/lib/nearby.ts` keeps only the
+**group** and **profile** names at compile time (they key the icon map and the
+segmented toggle, which cannot be built from a runtime fetch); it holds no
+type list. A type the client has never seen a translation for (served before
+its string shipped) falls back to `nearby.unknownType` in both editor and
+public page, rather than throwing or leaking a raw machine key.
+
+Three supporting containers, none embedded on `properties`:
+
+**`nearbyCandidates`** (partition key `/cell`, 30-day TTL) — the Overpass POI
+search cached per rounded cell: `Cell(lat, lng, group)` rounds to 3 decimal
+places (~110 m) and the group, e.g. `"41.648|-0.889|transport"`. POIs do not
+move, so this is safely cacheable; **the ORS matrix that ranks them is never
+cached** and always runs against the listing's true pin — rounding the origin
+to the cell would put up to ~78 m of error into a distance presented as
+precise. A genuinely empty cell is deliberately **not** cached (it is
+indistinguishable from a degraded Overpass response with no POIs and no
+`remark`), so an empty area is re-queried on every visit rather than risking a
+false "nothing here" cached for a month.
+
+**`nearbyRoutes`** (partition key `/propertyId`, id `"{entryId}-{profile}"`,
+180-day TTL) — the routed line geometry, kept out of `properties` entirely
+(ADR-028 Decision 5): it is written by an anonymous, unauthenticated lazy
+fetch, while the property document is written by the owner's authenticated
+save, and embedding would make the public path read-modify-write the hot
+document a save can be racing. Always a point read/write by that exact id. The
+indexing policy (`infra/main.bicep`) indexes only `/propertyId` and excludes
+everything else — nothing ever queries the polyline, metres or seconds
+fields. The 180-day TTL is the design, not housekeeping: it is a cache, so
+road-network changes propagate with no admin work.
+
+**`serviceBudget`** (partition key `/id`, one document per calendar day, id
+`"ors-yyyy-MM-dd"` — formatted with `CultureInfo.InvariantCulture`, the same
+fix `NearbyGroups.Cell` needed, since `DateTimeOffset`'s `yyyy` component is
+calendar-dependent under some cultures — 2-day TTL) — the cross-instance daily
+ceiling on outbound ORS calls (1500, comfortably under ORS's own ~2500/day),
+held in Cosmos with **ETag optimistic concurrency** because SWA managed
+functions on Consumption scale out and share no memory: an in-process counter
+would be one counter per instance and therefore no limit at all. **Fails
+closed** — if the count cannot be confirmed, the call does not happen.
+
+**First explicit `indexingPolicy` on `properties`.** Task 2 gave the live,
+populated `properties` container its first ever explicit policy, excluding
+`/nearby/*` (24 embedded entries would otherwise be indexed on every owner
+save for a field nothing queries) and `/"_etag"/?` (matching Cosmos's implicit
+default). Deploying it triggers a Cosmos background index transformation —
+non-disruptive, but not instant (ADR-028 "Consequences to watch").
 
 ---
 

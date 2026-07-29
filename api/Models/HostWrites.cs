@@ -268,6 +268,44 @@ public static class HostValidation
         return text > MaxCopyLength ? "copy_too_long" : null;
     }
 
+    /// Rewrites every `placeRef`/`placeCard` `entryId` through `remap`,
+    /// leaving every other node, attribute and mark untouched. Called by
+    /// `HostFunctions.UpdateDetails` AFTER `RichText` above has already
+    /// validated the incoming document against the incoming (possibly
+    /// client-temp) nearby ids, and AFTER the nearby array has been rebuilt
+    /// and its new ids are known — `remap` carries only the ids that
+    /// actually changed (a client temp id → the server-generated final id);
+    /// an id that already matched a stored entry needs no entry and is left
+    /// as-is by the `TryGetValue` fallthrough below.
+    ///
+    /// NOT a D8 violation, even though D8 says the validator "rejects, never
+    /// repairs". D8 protects the owner's WORDS: silently repairing invalid
+    /// prose would delete something the owner wrote with no explanation.
+    /// This rewrites an identifier the SERVER ITSELF minted a moment
+    /// earlier — the reference keeps pointing at the exact entry the owner
+    /// chose, and not one character of prose changes. Content the owner
+    /// wrote is never touched or reinterpreted here.
+    ///
+    /// `RichNode` is an immutable record, so this returns a rewritten tree
+    /// rather than mutating one; `doc` itself is never modified.
+    public static RichNode? RemapPlaceIds(RichNode? doc, IReadOnlyDictionary<string, string> remap)
+    {
+        if (doc is null || remap.Count == 0) return doc;
+
+        RichNode Rewrite(RichNode n)
+        {
+            var content = n.Content?.Select(Rewrite).ToArray();
+            var attrs = n.Attrs;
+            if (n.Type is "placeRef" or "placeCard" &&
+                attrs?.EntryId is { } id && remap.TryGetValue(id, out var finalId))
+                attrs = attrs with { EntryId = finalId };
+
+            return n with { Content = content, Attrs = attrs };
+        }
+
+        return Rewrite(doc);
+    }
+
     /// Returns an error code, or null when the payload is applicable. Codes are
     /// stable strings the client maps to bilingual copy — never prose.
     public static string? CheckPricing(PricingUpdate u, int maxStayMonths)

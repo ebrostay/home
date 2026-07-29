@@ -289,6 +289,15 @@ public class HostFunctions(
         var writes = update.Nearby ?? [];
         var merged = new List<NearbyEntry>(writes.Length);
         var needsMeasuring = new List<int>();
+        // Every id that changed between the incoming payload and the id this
+        // entry is actually stored under — in practice, `NearbyEditor.tsx`'s
+        // client temp id (`local-<ts>-<rand>`) for an entry added in this
+        // same save, mapped to the fresh server id just below. A `copy`
+        // document saved in the SAME request can already hold a `placeRef`
+        // to that temp id (add a place, mention it, save), so this map is
+        // what lets that reference be rewritten to something that still
+        // resolves once the entry itself is stored under its real id.
+        var idRemap = new Dictionary<string, string>(StringComparer.Ordinal);
 
         for (var i = 0; i < writes.Length; i++)
         {
@@ -325,6 +334,16 @@ public class HostFunctions(
                 // Defaulting this to false would silently clear a real flag
                 // on any save that happens not to touch this entry.
                 NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck);
+
+            // `known is null` means this write did not match a stored entry —
+            // it is new to this save — and `entry.Id` was just generated
+            // above. An entry that DID match keeps its own id (`entry.Id ==
+            // known.Id`) and needs no remap; a write with no id at all (the
+            // editor's own "brand new, never yet saved" case) has nothing a
+            // `copy` document could have referenced, so there is nothing to
+            // record either.
+            if (known is null && w.Id is not null)
+                idRemap[w.Id] = entry.Id;
 
             merged.Add(entry);
             if (entry.Reach.Count == 0) needsMeasuring.Add(i);
@@ -385,6 +404,17 @@ public class HostFunctions(
         }
 
         doc.Nearby = [.. merged];
+
+        // Rewrite `placeRef`/`placeCard` ids through the map above, now that
+        // it is complete — AFTER the rebuild, on the document `CheckDetails`
+        // already validated against the INCOMING ids, never before. This is
+        // not a D8 "repair" of invalid content: `doc.Copy` already passed
+        // validation; this only updates an identifier the server itself just
+        // minted so the reference keeps resolving, and touches no prose.
+        if (idRemap.Count > 0 && doc.Copy is not null)
+            doc.Copy = new BilingualDoc(
+                HostValidation.RemapPlaceIds(doc.Copy.Es, idRemap),
+                HostValidation.RemapPlaceIds(doc.Copy.En, idRemap));
 
         // §2.2.1: an approved listing re-enters the queue and leaves public
         // search until a reviewer sees it again. A draft stays a draft and a

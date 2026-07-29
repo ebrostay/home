@@ -57,6 +57,13 @@ const OTHER = "__other__";
 
 const tempId = () => `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+/** A candidate row's own name/select button, as a plain DOM id rather than a
+ *  collected ref: focus needs to land on a row whose osmId is only known
+ *  once an add has happened (see `focusCandidateAfterAdd`), and
+ *  `document.getElementById` needs no CSS-escaping of an osmId's characters
+ *  the way a `querySelector` would. */
+const candidateButtonId = (osmId: string) => `nearby-candidate-${osmId}`;
+
 type Vocab =
   | { kind: "loading" }
   | { kind: "error" }
@@ -113,10 +120,10 @@ export function NearbyEditor({
   const [manualEs, setManualEs] = useState("");
   const [manualEn, setManualEn] = useState("");
 
-  // Where focus returns after any add — the list of what the owner has
-  // already chosen for this group, empty state included, so it is always
-  // there to receive it.
-  const chosenListRef = useRef<HTMLDivElement>(null);
+  // The "Add manually" control itself — the fallback focus target for a
+  // manual add made while the search list is empty, so focus still lands
+  // somewhere in the finder rather than nowhere at all.
+  const manualAddButtonRef = useRef<HTMLButtonElement>(null);
 
   // The vocabulary, once. Translations for it live in the message
   // catalogues (bundled), but WHICH keys are valid per group is server data
@@ -208,6 +215,16 @@ export function NearbyEditor({
     [value, activeGroup],
   );
 
+  // Which of this group's candidates the owner has already chosen — used to
+  // grey out "Added" candidate rows, keep already-chosen pins off the
+  // candidates layer, and find the next still-addable row to focus after an
+  // add (see `focusCandidateAfterAdd`/`focusAfterManualAdd` below, both of
+  // which close over this).
+  const chosenOsmIds = useMemo(
+    () => new Set(chosenForGroup.map((e) => e.osmId).filter((id): id is string => id !== null)),
+    [chosenForGroup],
+  );
+
   // A point already on the map (candidate or already-chosen) that a click can
   // resolve to, for the route-preview effect below.
   const pinLookup = useMemo(() => {
@@ -278,8 +295,16 @@ export function NearbyEditor({
   const capped = atGroupCap || atTotalCap;
   const capMessage = atTotalCap ? t("limitReached") : atGroupCap ? t("groupFull") : null;
 
+  // Never a raw machine key: the vocabulary arrives over the wire while the
+  // labels stay in the catalogue, so a type can legitimately be served
+  // before its string ships. `unknownType` ("Place"/"Lugar") is the
+  // catch-all a person can actually read. This matters beyond the type
+  // <select> (which only ever offers pre-filtered, known keys) because a
+  // SAVED entry can carry a type this session's catalogue has no label
+  // for — the select never lets you create one, but loading a listing
+  // that already has one is exactly the case this exists for.
   const typeLabel = (key: string) =>
-    tType.has(`type.${key}` as "type.tram") ? tType(`type.${key}` as "type.tram") : key;
+    tType.has(`type.${key}` as "type.tram") ? tType(`type.${key}` as "type.tram") : tType("unknownType");
   const knownType = (key: string) => tType.has(`type.${key}` as "type.tram");
 
   const visibleTypes = useMemo(
@@ -296,30 +321,60 @@ export function NearbyEditor({
   const reachText = (metres: number, minutes: number) =>
     `${t("minutes", { count: minutes })} · ${formatDistance(metres, locale)}`;
 
-  const addEntry = (entry: HostNearbyEntry) => {
+  // What a chosen entry's type chip reads. `type` and `customType` are
+  // meant to be exclusive (the select either names a real type or reveals
+  // the custom fields), but an entry with a real `type` this catalogue
+  // cannot label still prefers its `customType` if one is somehow present
+  // before falling back to the generic `typeLabel` — belt and braces over
+  // an invariant nothing here enforces at the type level.
+  const entryTypeLabel = (entry: HostNearbyEntry) => {
+    if (entry.type && knownType(entry.type)) return typeLabel(entry.type);
+    return biText(entry.customType, locale) || (entry.type ? typeLabel(entry.type) : t("customType"));
+  };
+
+  // `addEntry` never decides where focus goes on its own — the two calling
+  // paths below (search vs. manual) have different notions of "next", and
+  // the one thing they must agree on is NOT jumping focus up to the chosen
+  // list: the list a keyboard user is IN is the finder's own candidate
+  // list (or its manual-add controls), and that is where focus has to stay
+  // for "add three in a row" to work without forcing a re-find of place.
+  const addEntry = (entry: HostNearbyEntry, focusAfter: () => void) => {
     onChange([...value, entry]);
-    // The list is the source of truth; the map only helped find this. Focus
-    // goes back to it, not to whatever pin or button was just clicked.
-    chosenListRef.current?.focus();
+    focusAfter();
+  };
+
+  // The next row worth landing on: the first candidate, in the search's own
+  // order, that is neither the one just added nor already chosen. Falls
+  // back to the just-added row's own name button when it is the last one —
+  // that button survives the Add→Added swap (only the button BESIDE it
+  // changes), so it is always there to receive focus.
+  const focusCandidateAfterAdd = (justAdded: NearbyCandidate) => {
+    const pool = search.kind === "ready" ? search.candidates : [];
+    const next = pool.find((x) => x.osmId !== justAdded.osmId && !chosenOsmIds.has(x.osmId));
+    const targetId = next?.osmId ?? justAdded.osmId;
+    document.getElementById(candidateButtonId(targetId))?.focus();
   };
 
   const addCandidate = (c: NearbyCandidate) => {
     if (capped) return;
     const draft = draftFor(c);
     if (draft.type === null && draft.es.trim() === "") return;
-    addEntry({
-      id: tempId(),
-      group: activeGroup,
-      type: draft.type,
-      customType: draft.type === null ? { es: draft.es.trim(), en: draft.en.trim() || null } : null,
-      name: c.name,
-      lat: c.lat,
-      lng: c.lng,
-      reach: c.reach,
-      osmId: c.osmId,
-      measuredAt: new Date().toISOString(),
-      needsCheck: false,
-    });
+    addEntry(
+      {
+        id: tempId(),
+        group: activeGroup,
+        type: draft.type,
+        customType: draft.type === null ? { es: draft.es.trim(), en: draft.en.trim() || null } : null,
+        name: c.name,
+        lat: c.lat,
+        lng: c.lng,
+        reach: c.reach,
+        osmId: c.osmId,
+        measuredAt: new Date().toISOString(),
+        needsCheck: false,
+      },
+      () => focusCandidateAfterAdd(c),
+    );
   };
 
   const resetManual = () => {
@@ -336,32 +391,44 @@ export function NearbyEditor({
     setMeasureAttempt((n) => n + 1);
   };
 
+  // No candidate row to land on (a manual entry has no `osmId` of its own),
+  // so this prefers the first still-addable search result — keeping focus
+  // in the same finder territory the reviewer asked for — and only falls
+  // back to the "Add manually" control itself when the list is empty.
+  const focusAfterManualAdd = () => {
+    const pool = search.kind === "ready" ? search.candidates : [];
+    const first = pool.find((x) => !chosenOsmIds.has(x.osmId));
+    if (first) {
+      document.getElementById(candidateButtonId(first.osmId))?.focus();
+      return;
+    }
+    manualAddButtonRef.current?.focus();
+  };
+
   const addManual = () => {
     if (capped || !dropPoint || measure.kind !== "ready") return;
     const name = manualName.trim();
     if (name === "" || (manualType === null && manualEs.trim() === "")) return;
-    addEntry({
-      id: tempId(),
-      group: activeGroup,
-      type: manualType,
-      customType: manualType === null ? { es: manualEs.trim(), en: manualEn.trim() || null } : null,
-      name,
-      lat: dropPoint.lat,
-      lng: dropPoint.lng,
-      reach: measure.reach,
-      osmId: null,
-      measuredAt: new Date().toISOString(),
-      needsCheck: false,
-    });
+    addEntry(
+      {
+        id: tempId(),
+        group: activeGroup,
+        type: manualType,
+        customType: manualType === null ? { es: manualEs.trim(), en: manualEn.trim() || null } : null,
+        name,
+        lat: dropPoint.lat,
+        lng: dropPoint.lng,
+        reach: measure.reach,
+        osmId: null,
+        measuredAt: new Date().toISOString(),
+        needsCheck: false,
+      },
+      focusAfterManualAdd,
+    );
     resetManual();
   };
 
   const remove = (id: string) => onChange(value.filter((e) => e.id !== id));
-
-  const chosenOsmIds = useMemo(
-    () => new Set(chosenForGroup.map((e) => e.osmId).filter((id): id is string => id !== null)),
-    [chosenForGroup],
-  );
 
   const candidatePins: NearbyMapPin[] = useMemo(
     () =>
@@ -394,7 +461,7 @@ export function NearbyEditor({
         onChange={selectGroup}
       />
 
-      <div ref={chosenListRef} tabIndex={-1} className="flex flex-col gap-2 outline-none">
+      <div className="flex flex-col gap-2">
         {chosenForGroup.length === 0 ? (
           <p className="rounded-(--radius-control) border border-dashed border-line-strong bg-surface-2 px-4 py-6 text-center text-[0.8125rem] text-muted">
             {t("empty")}
@@ -410,9 +477,7 @@ export function NearbyEditor({
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-ink">{entry.name}</span>
-                    <span className="data block text-xs text-muted">
-                      {entry.type ? typeLabel(entry.type) : biText(entry.customType, locale) || t("customType")}
-                    </span>
+                    <span className="data block text-xs text-muted">{entryTypeLabel(entry)}</span>
                   </span>
                   {entry.needsCheck && (
                     <span className="data flex shrink-0 items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-[0.59375rem] tracking-[0.06em] text-warn">
@@ -448,6 +513,7 @@ export function NearbyEditor({
           {finderOpen ? t("close") : t("find")}
         </button>
         <button
+          ref={manualAddButtonRef}
           type="button"
           disabled={capped}
           onClick={() => {
@@ -602,6 +668,7 @@ export function NearbyEditor({
                           }`}
                         >
                           <button
+                            id={candidateButtonId(c.osmId)}
                             type="button"
                             onClick={() => selectPin(c.osmId)}
                             aria-pressed={activeId === c.osmId}

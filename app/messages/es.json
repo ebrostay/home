@@ -882,6 +882,7 @@
       "dentist": "Dentista",
       "vet": "Veterinario"
     },
+    "unknownType": "Lugar",
     "attribution": "© openrouteservice by HeiGIT | Data from OpenStreetMap"
   },
   "estimate": {

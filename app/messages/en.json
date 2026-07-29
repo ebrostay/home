@@ -882,6 +882,7 @@
       "dentist": "Dentist",
       "vet": "Vet"
     },
+    "unknownType": "Place",
     "attribution": "© openrouteservice by HeiGIT | Data from OpenStreetMap"
   },
   "estimate": {

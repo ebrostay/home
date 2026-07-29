@@ -21,6 +21,7 @@ import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
+import { PreviewNotice } from "@/components/detail/PreviewNotice";
 import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
@@ -215,6 +216,11 @@ function DetailBody({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      {/* Above everything, including the way back: it is the first thing true
+          about this page. Only the owner of an unpublished listing ever gets
+          a `previewStatus` — see PreviewNotice. */}
+      {p.previewStatus && <PreviewNotice status={p.previewStatus} />}
+
       <Link
         href={back.href}
         scroll={!back.fromResults}

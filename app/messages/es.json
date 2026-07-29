@@ -865,7 +865,21 @@
       },
       "cleaningFee": "Preparación, pago único"
     },
-    "ownerView": "Estás viendo tu vivienda como la ve un huésped."
+    "ownerView": "Estás viendo tu vivienda como la ve un huésped.",
+    "preview": {
+      "title": {
+        "review": "En revisión.",
+        "changes": "Cambios solicitados.",
+        "draft": "Borrador.",
+        "paused": "En pausa."
+      },
+      "body": {
+        "review": "Los huéspedes todavía no ven esta vivienda. Así se verá cuando se apruebe.",
+        "changes": "Los huéspedes no ven esta vivienda hasta que hagas los cambios y la vuelvas a enviar a revisión.",
+        "draft": "Los huéspedes no ven esta vivienda. Envíala a revisión cuando esté lista.",
+        "paused": "Los huéspedes no ven esta vivienda. Reactívala para que vuelva a aparecer en las búsquedas."
+      }
+    }
   },
   "nearby": {
     "type": {

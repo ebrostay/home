@@ -1524,6 +1524,85 @@ Two guardrails, and they are the load-bearing part:
 
 ---
 
+## ADR-029 — The guest page answers to its own owner in every lifecycle state
+
+- **Status:** ✅ locked and ✅ **built** 2026-07-29 (product owner: Raphael).
+  **Amends the "Public projection" rule of §2.2** ("published docs only"),
+  which until now described `GET /api/properties/{id}` exactly.
+- **Context.** An owner submits a listing and cannot look at it. The guest
+  page 404s on anything but `published`, so "View as guest" was disabled in
+  the manage bar and the portfolio row, and the `review` row's own primary
+  button — labelled **View submission** — was a disabled button that had
+  never been able to show a submission. The gap fell hardest exactly where an
+  owner most wants the page: while review holds the listing they just sent,
+  and while a `rejected` listing waits for them to understand what the
+  reviewer saw.
+
+### Decision 1 — One exception, resolved from the principal, and nothing wider
+
+- `GET /api/properties/{id}` returns the **ordinary public projection** to the
+  owner of that listing in any state, marked with `previewStatus`. Ownership
+  is `doc.hostId == principal.userId`, read from `x-ms-client-principal` in
+  the Function (§3.4) — the same rule the host endpoints use.
+- The **list** endpoint is untouched. Preview is per-URL and never puts an
+  unpublished listing into search results, where the owner is not the only
+  reader.
+- Nothing about the *body* changes: an owner previewing sees precisely the
+  public projection, because a preview that differs from the page it predicts
+  is not a preview. `previewStatus` is the sole addition, and it is `null` on
+  every read a guest can perform.
+
+### Decision 2 — Everyone else gets the same flat 404, not a challenge
+
+- Anonymous callers and signed-in non-owners get **404**, byte-identical to
+  the answer for an id that never existed. Not 401, not 403.
+- Rationale: ids are guessable and the URL is public. A 401 on one id and a
+  404 on another is an existence oracle — it tells a stranger walking the id
+  space which listings are real but withheld, which is precisely the fact the
+  unpublished states exist to keep. An authentication challenge is a worse
+  leak than the page it protects.
+
+### Decision 3 — `no-store` on the preview response only
+
+- The preview body carries `Cache-Control: no-store`; the published response
+  is left as it was.
+- Rationale: this is an owner-specific body on a URL that is otherwise public,
+  anonymous and cacheable. Any shared cache between the Function and the
+  browser that kept it would serve one owner's unpublished listing to whoever
+  asked next. The published path has no such hazard and gains nothing from
+  the header.
+
+### Decision 4 — The page says why, and says it without a second request
+
+- `PreviewNotice` renders above everything from `previewStatus` alone, in the
+  words the portfolio already uses for that state (`bucketOfStatus`).
+- It is deliberately **not** merged into `OwnerBar`, which establishes
+  ownership by fetching the caller's own portfolio and swallows failures. The
+  bar may silently not render; "nobody else can see this page" may not. One
+  comes from the payload that drew the page, the other from a request allowed
+  to fail — so they stay separate components.
+- Tone follows `Badge.tsx`'s semantics (amber = waiting on review, danger =
+  rejected) rather than the portfolio pill's river-for-review, because the
+  notice sits directly above the river-toned `OwnerBar` and two soft blue
+  boxes in a stack read as one repeated thing.
+
+### Decision 5 — Reviewers are not owners, and are not in scope
+
+- Admins get no preview here. There is no review queue yet; when there is, it
+  reaches the same seam by widening the ownership test in one function, and
+  that is the moment to decide whether a reviewer sees `previewStatus` too.
+
+### Consequences
+
+- Three controls that were disabled placeholders became real links:
+  `ContextBar`'s "View as guest" in every state, the portfolio row's
+  "Preview" on `changes`, and the `review` row's "View submission".
+- **OD-5 is unaffected.** This changes who may *look* at an unpublished
+  listing, not what the public sees while an edit is in review — the question
+  of whether the prior published version stays live is still open.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

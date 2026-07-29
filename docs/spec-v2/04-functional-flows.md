@@ -8,7 +8,7 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
 | `GET /api/health` | anon | Liveness (exists ✅). |
-| `GET /api/properties` · `GET /api/properties/{id}` | anon | Published listings / detail, public projection (§2.2). |
+| `GET /api/properties` · `GET /api/properties/{id}` | anon | Published listings / detail, public projection (§2.2). The detail route also answers to the listing's **own owner** in any status, adding `previewStatus` (ADR-029); everyone else gets 404. |
 | `POST /api/inquiries` | anon | Contact inquiry (§2.5). |
 | `GET /api/me` | auth | Profile bootstrap/fetch (§3.6). |
 | `POST /api/booking-requests` | auth | Log-then-draft booking flow (§4.3). |

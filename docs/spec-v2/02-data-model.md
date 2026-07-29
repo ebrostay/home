@@ -184,6 +184,15 @@ world-readability leak **by design** (v1 open decision #1, docs/spec/11).
 they are provenance for the owner and the (planned) admin review, not a guest
 fact (§2.2.5).
 
+**One exception, `GET /api/properties/{id}` only (ADR-029):** the owner of a
+listing receives that same projection for their own listing in **any** status,
+carrying one added field — `previewStatus`, the stored lifecycle value, `null`
+on every read a guest can perform. Ownership is `hostId == principal.userId`,
+resolved in the Function; anonymous callers and signed-in non-owners still get
+a flat **404**, never a 401 or 403, so the id space stays opaque. The response
+carries `Cache-Control: no-store`. **`GET /api/properties` (the list) has no
+such exception** — an unpublished listing never appears in search.
+
 ### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025)
 
 ```

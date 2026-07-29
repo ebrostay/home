@@ -102,17 +102,18 @@ export function ContextBar({
           wrapped to three rows — a fifth of the viewport permanently spent on
           navigation, on the narrowest screen there is. */}
       <div className="ml-auto flex items-center gap-2">
-        {property.status === "published" ? (
-          <Link
-            href={{ pathname: "/property", query: { id: property.id } }}
-            className={BAR_BUTTON}
-          >
-            <Eye size={14} strokeWidth={2} aria-hidden />
-            <span className="max-[40rem]:sr-only">{t("actions.viewAsGuest")}</span>
-          </Link>
-        ) : (
-          <BarButton icon={<Eye size={14} strokeWidth={2} aria-hidden />} label={t("actions.viewAsGuest")} title={soon} />
-        )}
+        {/* Live in every state since ADR-029. It used to be disabled for
+            anything but a published listing, because the guest page answered
+            404 to its own owner — which made "view as guest" most useless
+            exactly when an owner most wants it: while review is holding the
+            listing they just submitted. */}
+        <Link
+          href={{ pathname: "/property", query: { id: property.id } }}
+          className={BAR_BUTTON}
+        >
+          <Eye size={14} strokeWidth={2} aria-hidden />
+          <span className="max-[40rem]:sr-only">{t("actions.viewAsGuest")}</span>
+        </Link>
 
         {/* The other half of the owner portal. Manage is visited weekly; the
             listing details are visited twice a year — the cross-link is how an
@@ -148,23 +149,7 @@ export function ContextBar({
   );
 }
 
-// Shared so the one Link and the disabled buttons cannot drift apart.
+// Shared so the two links cannot drift apart. Keeps the disabled styling for
+// the one control still waiting on a feature — the overflow menu.
 const BAR_BUTTON =
   "flex h-[34px] shrink-0 items-center gap-1.5 rounded-(--radius-control) border border-line bg-surface px-[13px] text-[0.8125rem] font-semibold text-ink transition-colors duration-(--dur-standard) hover:bg-page disabled:cursor-not-allowed disabled:opacity-45 max-[40rem]:px-2.5";
-
-function BarButton({
-  icon,
-  label,
-  title,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  title: string;
-}) {
-  return (
-    <button type="button" disabled title={title} aria-label={label} className={BAR_BUTTON}>
-      {icon}
-      <span className="max-[40rem]:sr-only">{label}</span>
-    </button>
-  );
-}

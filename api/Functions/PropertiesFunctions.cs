@@ -51,12 +51,30 @@ public class PropertiesFunctions(
                 id, new PartitionKey(id));
             var doc = response.Resource;
 
-            if (doc.Status != "published")
-                return new NotFoundResult(); // non-public states are invisible here
+            var detail = PublicProjection.ToDetail(
+                doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur);
 
-            return new OkObjectResult(
-                PublicProjection.ToDetail(
-                    doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur));
+            if (doc.Status == "published") return new OkObjectResult(detail);
+
+            // Owner preview (ADR-029). The one exception to "published docs
+            // only": the owner of THIS listing gets the guest's page back,
+            // marked, so they can see what review is holding — or what a
+            // paused listing would look like reopened.
+            //
+            // Everyone else gets the same flat 404 as before, and that is
+            // deliberate: not 401, not 403. A stranger walking ids must not be
+            // able to tell an unpublished listing from one that never existed,
+            // and an authentication challenge on a public URL would tell them.
+            var principal = ClientPrincipal.Parse(req);
+            if (principal is null
+                || !principal.IsAuthenticated
+                || !string.Equals(doc.HostId, principal.UserId, StringComparison.Ordinal))
+                return new NotFoundResult();
+
+            // This body is owner-only on a URL that is otherwise public and
+            // cacheable. Nothing between here and the browser may keep it.
+            req.HttpContext.Response.Headers.CacheControl = "no-store";
+            return new OkObjectResult(detail with { PreviewStatus = doc.Status });
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {

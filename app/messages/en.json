@@ -865,7 +865,21 @@
       },
       "cleaningFee": "Turnaround, one-off"
     },
-    "ownerView": "You are seeing your home as a guest sees it."
+    "ownerView": "You are seeing your home as a guest sees it.",
+    "preview": {
+      "title": {
+        "review": "Under review.",
+        "changes": "Changes requested.",
+        "draft": "Draft.",
+        "paused": "Paused."
+      },
+      "body": {
+        "review": "Guests cannot see this home yet. This is how it will look once it is approved.",
+        "changes": "Guests cannot see this home until you make the requested changes and send it back for review.",
+        "draft": "Guests cannot see this home. Send it for review when it is ready.",
+        "paused": "Guests cannot see this home. Reopen it to put it back in search."
+      }
+    }
   },
   "nearby": {
     "type": {

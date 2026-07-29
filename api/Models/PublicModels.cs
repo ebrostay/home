@@ -79,7 +79,13 @@ public record PropertyDetail(
     string? AvailableFrom,
     PublicPhoto[] Photos,
     PublicRange[] Availability,
-    PublicNearby[] Nearby);
+    PublicNearby[] Nearby,
+    /// Null for every genuine public read, and the ONLY thing that
+    /// distinguishes an owner's preview of their own unpublished listing from
+    /// the page a guest gets (ADR-029). It carries the stored lifecycle value
+    /// so the page can say *why* the listing is invisible — "under review" and
+    /// "paused" need different words and different next steps.
+    string? PreviewStatus = null);
 
 /// A photo as a visitor may see it. Narrower than the stored record on purpose:
 /// `capturedLat`/`capturedLng` are admin-only (§2.2.2), and handing the

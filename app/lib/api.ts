@@ -117,6 +117,11 @@ export type PropertyDetail = Omit<
   stayTerms: string[];
   photos: PropertyPhoto[];
   nearby: PublicNearbyEntry[];
+  /** Set only when the API handed this page back to its own owner while the
+   *  listing is not published (ADR-029) — it carries the lifecycle state that
+   *  is keeping it out of search. Null on every page a guest can reach, so
+   *  truthiness is the whole test for "this is a preview". */
+  previewStatus: Exclude<PropertyStatus, "published"> | null;
 };
 
 // The five states a listing moves through (spec-v2 §2.2.1). Stored values, not

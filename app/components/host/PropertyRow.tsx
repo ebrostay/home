@@ -254,9 +254,12 @@ export function PropertyRow({
             const label = t(`actions.${actions.primary}` as "actions.overview");
             // Live listings have somewhere to go; the rest keep the same button
             // shape, disabled, so a row does not change silhouette by state.
-            return actions.primaryManage ? (
+            return actions.primaryManage || actions.primaryHref ? (
               <Link
-                href={{ pathname: "/host/manage", query: { id: p.id } }}
+                href={{
+                  pathname: actions.primaryManage ? "/host/manage" : "/property",
+                  query: { id: p.id },
+                }}
                 className={`${primaryClass} flex items-center justify-center`}
               >
                 {label}
@@ -276,7 +279,7 @@ export function PropertyRow({
               >
                 {t(`actions.${actions.secondary}` as "actions.overview")}
               </Link>
-            ) : actions.secondaryHref && p.status === "published" ? (
+            ) : actions.secondaryHref ? (
               <Link
                 href={{ pathname: "/property", query: { id: p.id } }}
                 className="flex h-9 flex-1 items-center justify-center rounded-(--radius-control) border border-line bg-surface text-[0.8125rem] font-medium text-ink transition-colors duration-(--dur-standard) hover:bg-surface-2"
@@ -314,6 +317,9 @@ const ACTIONS: Record<
     secondary: string;
     quiet?: boolean;
     secondaryHref?: boolean;
+    /** Routes to the guest page rather than the portal — only meaningful since
+     *  ADR-029 made that page answer to its owner in every state. */
+    primaryHref?: boolean;
     primaryManage?: boolean;
     secondaryManage?: boolean;
   }
@@ -326,8 +332,13 @@ const ACTIONS: Record<
   },
   // The one quiet primary: nothing to do while review has the listing, so the
   // button must not look like the moment's action. It never hovers to brand.
-  review: { primary: "viewSubmission", secondary: "withdraw", quiet: true },
-  changes: { primary: "fix", secondary: "preview" },
+  // "View submission" is what the reviewer is looking at, which since ADR-029
+  // is a page the owner can open — the label promised this before it existed.
+  review: { primary: "viewSubmission", secondary: "withdraw", quiet: true, primaryHref: true },
+  // Preview is a real link since ADR-029: the guest page answers to its own
+  // owner in every state, so "what does the reviewer see?" is one click from
+  // the row that is asking the owner to change it.
+  changes: { primary: "fix", secondary: "preview", secondaryHref: true },
   draft: { primary: "continue", secondary: "delete" },
   // Reopening is a mutation that does not exist yet, so the route into Manage
   // is the secondary — a paused home still has a calendar and a price worth

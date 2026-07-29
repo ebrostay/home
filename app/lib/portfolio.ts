@@ -33,7 +33,14 @@ const BUCKET: Record<PropertyStatus, Exclude<Tab, "all">> = {
   paused: "paused",
 };
 
-export const bucketOf = (p: HostProperty) => BUCKET[p.status] ?? "draft";
+/** The mapping on its own, for surfaces that hold a status without a listing
+ *  behind it — the guest page previewing an unpublished home knows only what
+ *  the public projection told it (ADR-029). Same words as the portfolio pill,
+ *  which is the point: an owner should not meet a second vocabulary for the
+ *  state they were just looking at. */
+export const bucketOfStatus = (status: PropertyStatus) => BUCKET[status] ?? "draft";
+
+export const bucketOf = (p: HostProperty) => bucketOfStatus(p.status);
 
 /** In review and paused listings are shown dimmed — neither is takeable today. */
 export const isDimmed = (p: HostProperty) =>

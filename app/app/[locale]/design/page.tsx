@@ -28,6 +28,12 @@ import {
 import { BudgetBand } from "@/components/search/BudgetBand";
 import { BudgetCurve } from "@/components/search/BudgetCurve";
 import { BudgetTiers } from "@/components/search/BudgetTiers";
+import { RichTextEditor } from "@/components/host/fields/RichTextEditor";
+import { PhotoPicker } from "@/components/host/fields/PhotoPicker";
+import { PlacePicker } from "@/components/host/fields/PlacePicker";
+import { RichText } from "@/components/ui/RichText";
+import { paragraphDoc, type RichNode } from "@/lib/rich-text";
+import type { HostPhoto, HostNearbyEntry } from "@/lib/api";
 
 // A plausible Zaragoza mid-term market (26 homes): the four real listings are
 // too few to show what these controls do at a normal catalogue size.
@@ -84,6 +90,122 @@ function sampleMonths(
       newYear: d.getMonth() === 0 ? d.getFullYear() % 100 : undefined,
     };
   });
+}
+
+// --- Description editor (design 2026-07-29, checkpoint 1) -------------------
+// Fixtures, not real data: the point of this section is to judge the NODE SET
+// before the C# validator is written against it. English throughout — this
+// page is the internal style book and never shown to a guest; Task 10 is
+// where translated copy replaces these literals.
+
+const RICH_TEXT_PHOTOS: HostPhoto[] = [
+  { url: "/brand/sample-home-1.jpg", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0 },
+  { url: "/brand/sample-home-2.jpg", cardUrl: null, detailUrl: null, isFloorplan: true, sortOrder: 1 },
+];
+
+const RICH_TEXT_PLACES: HostNearbyEntry[] = [
+  {
+    id: "e1",
+    group: "transport",
+    type: "tram",
+    customType: null,
+    name: "Tranvía L1 · Plaza España",
+    lat: 41.6528,
+    lng: -0.8829,
+    reach: { foot: { metres: 340, minutes: 4 } },
+    osmId: null,
+    measuredAt: null,
+    needsCheck: false,
+  },
+  {
+    id: "e2",
+    group: "outdoors",
+    type: "park",
+    customType: null,
+    name: "Parque del Agua",
+    lat: 41.6702,
+    lng: -0.9011,
+    reach: { foot: { metres: 480, minutes: 6 } },
+    osmId: null,
+    measuredAt: null,
+    needsCheck: false,
+  },
+];
+
+function RichTextDemo() {
+  const [doc, setDoc] = useState<RichNode | null>(
+    paragraphDoc("A quiet third-floor flat in El Arrabal, five minutes from the river."),
+  );
+  const [photoPick, setPhotoPick] = useState<((url: string, asFigure: boolean) => void) | null>(null);
+  const [placePick, setPlacePick] = useState<((id: string, asCard: boolean) => void) | null>(null);
+
+  return (
+    <div className="grid gap-6 min-[64rem]:grid-cols-2">
+      <RichTextEditor
+        value={doc}
+        onChange={setDoc}
+        label="Description"
+        tag="EN"
+        placeholder="What makes this home worth living in?"
+        onInsertPhoto={(insert) => setPhotoPick(() => insert)}
+        onInsertPlace={(insert) => setPlacePick(() => insert)}
+        strings={{
+          bold: "Bold",
+          italic: "Italic",
+          heading: "Heading",
+          bullet: "Bulleted list",
+          ordered: "Numbered list",
+          note: "Good to know",
+          photo: "Insert photo",
+          place: "Insert place",
+        }}
+      />
+
+      <div className="rounded-(--radius-control) border border-line p-4">
+        <p className="data mb-3 text-[0.65625rem] tracking-[0.1em] text-muted">AS A GUEST SEES IT</p>
+        <RichText
+          doc={doc}
+          photos={RICH_TEXT_PHOTOS}
+          nearby={RICH_TEXT_PLACES}
+          profile="foot"
+          onPhoto={(url) => console.log("open gallery at", url)}
+          onPlace={(id) => console.log("select place", id)}
+        />
+      </div>
+
+      <PhotoPicker
+        open={photoPick !== null}
+        photos={RICH_TEXT_PHOTOS}
+        onClose={() => setPhotoPick(null)}
+        onPick={(url, asFigure) => photoPick?.(url, asFigure)}
+        onUpload={async () => {
+          throw new Error("no upload in the style book");
+        }}
+        strings={{
+          title: "Insert a photo",
+          asChip: "As a chip",
+          asFigure: "As a figure",
+          upload: "Upload",
+          alsoInGallery: "Also show in the gallery",
+          uploading: "Uploading…",
+          failed: "Upload failed",
+          empty: "No photos on this listing yet.",
+        }}
+      />
+      <PlacePicker
+        open={placePick !== null}
+        entries={RICH_TEXT_PLACES}
+        onClose={() => setPlacePick(null)}
+        onPick={(id, asCard) => placePick?.(id, asCard)}
+        strings={{
+          title: "Insert a place",
+          asChip: "As a chip",
+          asCard: "As a card",
+          empty: "No nearby places on this listing yet.",
+        }}
+      />
+    </div>
+  );
 }
 
 export default function DesignPage() {
@@ -531,6 +653,22 @@ export default function DesignPage() {
               <Button onClick={() => setDialogOpen(false)}>{ta("book")}</Button>
             </div>
           </Dialog>
+        </div>
+      </section>
+
+      {/* Description editor */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>description editor</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          Checkpoint 1: the node set the C# validator will be written against.
+          Try every toolbar button, the <code>- </code>/<code>1. </code>/
+          <code>**bold**</code>/<code>### </code> input rules, both pickers,
+          undo/redo, and paste from a page with a script tag, an iframe, an
+          external image and coloured text — only representable content should
+          survive.
+        </p>
+        <div className="mt-6">
+          <RichTextDemo />
         </div>
       </section>
 

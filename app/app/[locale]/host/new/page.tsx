@@ -208,14 +208,26 @@ function NewPropertyContent() {
   // What stops the primary button, whichever button it is. On the last step it
   // is Send, and Send answers to the SUBMIT list, not to the step's own —
   // paperwork gates nothing, so without this the button would be live with
-  // seven things outstanding and do nothing at all when pressed.
+  // seven things outstanding and do nothing at all when pressed. One missing
+  // thing is named; several become a count, because a footer naming only the
+  // first reads as a one-item list.
   const gate = last
     ? blockers.length > 0
       ? tn("remaining", { count: blockers.length })
       : undefined
-    : stepBlocked.length > 0
-      ? tn(`blocked.${stepBlocked[0]}` as "blocked.street")
-      : undefined;
+    : stepBlocked.length > 1
+      ? tn("requiredCount", { count: stepBlocked.length })
+      : stepBlocked.length === 1
+        ? tn(`blocked.${stepBlocked[0]}` as "blocked.street")
+        : undefined;
+  // What THIS step still owes submit, beyond what gates Continue. Blocking
+  // belongs at submit (ADR-030 Decision 4) — but an owner should not have to
+  // reach the last step to learn the description still wants its English, or
+  // the address its zone. Continue stays live; the count does not.
+  const pending =
+    !last && !gate
+      ? blockers.filter((b) => STEP_OF[b.key] === key).length
+      : 0;
 
   const band = useMemo(
     () => priceBandFor(published, { id: saved?.property.id ?? "", bedrooms: listing.bedrooms }),
@@ -450,6 +462,7 @@ function NewPropertyContent() {
                   save={save}
                   errorText={error}
                   blocked={gate}
+                  pending={pending > 0 ? tn("requiredCount", { count: pending }) : undefined}
                   onBack={() => go(step - 1)}
                   onSkip={() => go(step + 1)}
                   onNext={() => (last ? submit() : go(step + 1))}

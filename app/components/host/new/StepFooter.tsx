@@ -15,6 +15,7 @@ export function StepFooter({
   save,
   errorText,
   blocked,
+  pending,
   onBack,
   onSkip,
   onNext,
@@ -26,6 +27,10 @@ export function StepFooter({
   errorText?: string;
   /** Why Continue is unavailable, already localized. Empty means it is. */
   blocked?: string;
+  /** What this step still owes SUBMIT, when Continue itself is free to go —
+   *  e.g. "2 required fields missing". Same amber mark, live button: blocking
+   *  belongs at submit, but learning about the gap belongs here. */
+  pending?: string;
   onBack: () => void;
   onSkip: () => void;
   onNext: () => void;
@@ -52,11 +57,12 @@ export function StepFooter({
 
       {/* The icon carries the amber, the words do not: `--warn` is 3.66:1 on
           this bar in light mode, which is fine for a 13px glyph (3:1) and not
-          fine for 11px mono (4.5:1). */}
-      {blocked && (
+          fine for 11px mono (4.5:1). One slot for both kinds of warning —
+          whether Continue is held is the buttons' difference to show. */}
+      {(blocked ?? pending) && (
         <p className="data flex items-center gap-1.5 text-[0.6875rem] tracking-[0.06em] text-body">
           <TriangleAlert size={13} strokeWidth={2} className="shrink-0 text-warn" aria-hidden />
-          {blocked}
+          {blocked ?? pending}
         </p>
       )}
 

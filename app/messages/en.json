@@ -96,6 +96,7 @@
       "needsAddressFirst": "The address comes first: photos are stored on the listing, and it does not exist yet.",
       "readyToSend": "All done. You can send it for review.",
       "remaining": "{count, plural, one {# THING LEFT} other {# THINGS LEFT}}",
+      "requiredCount": "{count, plural, one {# required field still missing} other {# required fields still missing}}",
       "step": {
         "address": {
           "name": "Address",

@@ -96,6 +96,7 @@
       "needsAddressFirst": "Primero la dirección: las fotos se guardan en el anuncio y todavía no existe.",
       "readyToSend": "Todo listo. Puedes enviarlo a revisión.",
       "remaining": "{count, plural, one {FALTA # COSA} other {FALTAN # COSAS}}",
+      "requiredCount": "{count, plural, one {# dato obligatorio pendiente} other {# datos obligatorios pendientes}}",
       "step": {
         "address": {
           "name": "Dirección",

@@ -12,6 +12,7 @@ import {
   formatDistance,
   geocode,
   metresBetween,
+  reverseArea,
   type GeoCandidate,
 } from "@/lib/geocode";
 import { CadastreFinder } from "./CadastreFinder";
@@ -165,7 +166,8 @@ export function AddressFields({
   const apply = (c: GeoCandidate, respectPlacedPin: boolean) => {
     const next: HostListing = { ...value };
     if (c.postcode && !value.postcode?.trim()) next.postcode = c.postcode;
-    if (c.area && !value.area?.es?.trim() && !value.area?.en?.trim()) {
+    const areaEmpty = !value.area?.es?.trim() && !value.area?.en?.trim();
+    if (c.area && areaEmpty) {
       // Both languages from the Spanish call. Most Zaragoza neighbourhoods are
       // proper nouns that do not translate — the seed data's areas are
       // identical in ES and EN — so a second request to maybe improve a
@@ -183,7 +185,44 @@ export function AddressFields({
     // Whether it was filled or moved, there is a pin now.
     if (!keepPin) placePin();
     setChosenId(c.placeId);
+
+    // The forward answer sometimes carries no neighbourhood at all — a house
+    // node's hierarchy can jump from `road` to `city` even inside a mapped
+    // barrio. One reverse lookup at the pin recovers it (see `reverseArea`).
+    // Asked at the pin actually in effect: a kept pin is the home, and the
+    // candidate merely agrees about the street.
+    if (!c.area && areaEmpty) {
+      fillAreaFromReverse(keepPin ? value.lat : c.lat, keepPin ? value.lng : c.lng);
+    }
   };
+
+  // The reverse fill's answer arrives AFTER `apply` returned, so it must not
+  // write through the closure it was created in — a spread of that stale
+  // `value` would undo whatever the owner typed while Nominatim thought. It
+  // re-reads the live listing through a ref and fills only a still-empty area:
+  // the same only-what-is-empty rule as the synchronous path, re-checked at
+  // the moment it acts.
+  const live = useRef(value);
+  useEffect(() => {
+    live.current = value;
+  });
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+  const reverseLookup = useRef<AbortController | null>(null);
+  const fillAreaFromReverse = (lat: number, lng: number) => {
+    reverseLookup.current?.abort();
+    const controller = new AbortController();
+    reverseLookup.current = controller;
+    reverseArea(lat, lng, controller.signal).then((name) => {
+      if (controller.signal.aborted || !name) return;
+      const v = live.current;
+      if (v.area?.es?.trim() || v.area?.en?.trim()) return;
+      onChangeRef.current({ ...v, area: { es: name, en: name } });
+    });
+  };
+  useEffect(() => () => reverseLookup.current?.abort(), []);
 
   // In an effect, not during render: a ref is not render output.
   useEffect(() => {

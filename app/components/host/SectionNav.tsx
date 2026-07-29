@@ -232,25 +232,42 @@ function FittingNav<K extends string>({
       className={`sticky z-20 -mx-6 min-w-0 border-b border-line-strong px-6 transition-colors duration-(--dur-standard) ${
         // Unstuck it is a rule drawn across the page; stuck it takes a surface
         // and a shadow so it stops looking like part of what it now covers.
-        stuck ? "bg-surface shadow-[0_6px_14px_-12px_rgba(21,37,31,0.5)]" : "bg-transparent"
+        stuck
+          ? "bg-surface shadow-[0_6px_14px_-12px_rgba(21,37,31,0.5)]"
+          : "bg-transparent"
       }`}
     >
       {/* Never visible, never announced. Its only job is to keep reporting the
-          width the bar wants, including while the bar is not on screen. */}
+          width the bar wants, including while the bar is not on screen.
+
+          The wrapper is a clip, and it is why the ruler cannot be a bare
+          absolute box: `w-max` makes it as wide as every label on one line —
+          1007px against a 375px phone — and an unclipped absolute element
+          still counts toward the document's scrollable overflow even while
+          `invisible`. That was a horizontal scrollbar on every owner page at
+          phone widths, for an element nobody could see.
+
+          Zero height and `overflow-hidden`, positioned so it is the ruler's
+          containing block: the ruler overflows it and is clipped, but keeps
+          its own geometry. `getBoundingClientRect()` reports the border box
+          regardless of what an ancestor clips — which matters, because the
+          measurement below is deliberately fractional and would break if the
+          ruler itself were constrained. */}
       <div
-        ref={ruler}
         aria-hidden
-        className="pointer-events-none invisible absolute left-6 top-0 flex w-max gap-x-[26px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-0 overflow-hidden"
       >
-        {sections.map((key) => (
-          <span
-            key={key}
-            className="data flex items-center gap-2 whitespace-nowrap py-3 text-[0.6875rem] tracking-[0.11em]"
-          >
-            {status && <Disc state={status[key]} />}
-            {labels[key]}
-          </span>
-        ))}
+        <div ref={ruler} className="invisible flex w-max gap-x-[26px]">
+          {sections.map((key) => (
+            <span
+              key={key}
+              className="data flex items-center gap-2 whitespace-nowrap py-3 text-[0.6875rem] tracking-[0.11em]"
+            >
+              {status && <Disc state={status[key]} />}
+              {labels[key]}
+            </span>
+          ))}
+        </div>
       </div>
 
       {fits ? (
@@ -314,7 +331,9 @@ function Sheet<K extends string>({
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
-  const changed = status ? sections.filter((k) => status[k] === "edited").length : 0;
+  const changed = status
+    ? sections.filter((k) => status[k] === "edited").length
+    : 0;
 
   useEffect(() => {
     if (!open) return;
@@ -341,7 +360,12 @@ function Sheet<K extends string>({
         aria-expanded={open}
         className="flex w-full items-center gap-2 py-2.5 text-left"
       >
-        <ListChecks size={15} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
+        <ListChecks
+          size={15}
+          strokeWidth={2}
+          className="shrink-0 text-muted"
+          aria-hidden
+        />
         <span className="data flex-1 truncate text-[0.6875rem] tracking-[0.11em] text-ink">
           {summary}
         </span>
@@ -494,10 +518,16 @@ function Disc({ state, big = false }: { state: SectionStatus; big?: boolean }) {
       }`}
     >
       {state === "edited" && (
-        <Check size={big ? 10 : 8} strokeWidth={big ? 3.5 : 4} className="text-white" />
+        <Check
+          size={big ? 10 : 8}
+          strokeWidth={big ? 3.5 : 4}
+          className="text-white"
+        />
       )}
       {state === "needs" && (
-        <span className={`rounded-full bg-warn ${big ? "h-[5px] w-[5px]" : "h-[4px] w-[4px]"}`} />
+        <span
+          className={`rounded-full bg-warn ${big ? "h-[5px] w-[5px]" : "h-[4px] w-[4px]"}`}
+        />
       )}
     </span>
   );

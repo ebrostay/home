@@ -13,7 +13,9 @@ import { useAuth } from "./AuthProvider";
 // is the portfolio. Signed out it is the pitch, because /host is role-gated
 // (staticwebapp.config.json) and bouncing a curious owner straight into a
 // sign-in screen answers a question they have not asked yet.
-const ITEMS = [
+// Exported because the compact menu below 60rem offers the same three
+// destinations. One list, so the two shapes of the nav cannot drift apart.
+export const NAV_ITEMS = [
   { key: "find", href: () => "/", match: (p: string) => p === "/" },
   {
     key: "list",
@@ -29,11 +31,17 @@ export function MainNav() {
   const { me } = useAuth();
 
   return (
+    // 60rem, not md. The pill is 420px wide and the header also has to hold a
+    // 113px wordmark and a ~305px control cluster: 918px of content plus the
+    // container's own padding. At md (768px) it did not fit, and what "not
+    // fitting" looked like was the language switcher clipped to a 2px sliver
+    // by its own overflow-hidden. Below 60rem the same three destinations are
+    // in CompactNav.
     <nav
       aria-label={t("mainNav")}
-      className="hidden items-center gap-[3px] rounded-full border border-line bg-surface-2 p-1 md:flex"
+      className="hidden shrink-0 items-center gap-[3px] rounded-full border border-line bg-surface-2 p-1 min-[60rem]:flex"
     >
-      {ITEMS.map((item) => {
+      {NAV_ITEMS.map((item) => {
         const active = item.match(pathname);
         return (
           <Link

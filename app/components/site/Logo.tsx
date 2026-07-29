@@ -34,7 +34,10 @@ export function Wordmark() {
   return (
     <span className="group flex items-center gap-2">
       <LogoMark className="transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-px group-hover:-rotate-2" />
-      <span className="font-display text-xl font-semibold tracking-tight text-ink">
+      {/* The word costs 81px. It stays down to 384px — where the header still
+          has 27px to spare — and drops below that so the mark alone carries
+          the brand on a 320px phone rather than the bar overflowing. */}
+      <span className="hidden font-display text-xl font-semibold tracking-tight text-ink min-[24rem]:inline">
         Ebro<span className="text-brand">stay</span>
       </span>
     </span>

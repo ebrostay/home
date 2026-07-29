@@ -42,7 +42,8 @@
       "find": "Find a home",
       "list": "Manage Property",
       "how": "How it works"
-    }
+    },
+    "menu": "Menu"
   },
   "host": {
     "eyebrow": "OWNER",
@@ -654,7 +655,8 @@
   },
   "theme": {
     "switchToLight": "Switch to light mode",
-    "switchToDark": "Switch to dark mode"
+    "switchToDark": "Switch to dark mode",
+    "label": "Theme"
   },
   "monthBand": {
     "stayLength": "Stay length",

@@ -5,6 +5,25 @@ import { useTranslations } from "next-intl";
 
 type Theme = "light" | "dark";
 
+// The header renders this twice — in the bar from sm up, inside CompactNav's
+// popover below it — and only ever shows one. But both mount, and two copies
+// of useState are two answers to the same question: toggle on a phone, widen
+// past 640px, and the bar's copy is still drawing yesterday's icon. So the
+// document attribute is the truth and this event is how the copies hear about
+// a change. dispatchEvent is synchronous, so the instance that was clicked
+// updates through the same path as its sibling.
+const THEME_EVENT = "ebrostay-theme-change";
+
+function applyTheme(next: Theme) {
+  document.documentElement.dataset.theme = next;
+  try {
+    localStorage.setItem("ebrostay-theme", next);
+  } catch {
+    // private mode: theme just won't persist
+  }
+  window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: next }));
+}
+
 export function ThemeToggle() {
   const t = useTranslations("theme");
   // The bootstrap script stamps <html data-theme> pre-paint on full loads,
@@ -29,15 +48,14 @@ export function ThemeToggle() {
     setTheme(resolved);
   }, []);
 
+  useEffect(() => {
+    const onChange = (e: Event) => setTheme((e as CustomEvent<Theme>).detail);
+    window.addEventListener(THEME_EVENT, onChange);
+    return () => window.removeEventListener(THEME_EVENT, onChange);
+  }, []);
+
   function toggle() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("ebrostay-theme", next);
-    } catch {
-      // private mode: theme just won't persist
-    }
-    setTheme(next);
+    applyTheme(theme === "dark" ? "light" : "dark");
   }
 
   return (

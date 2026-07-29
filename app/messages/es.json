@@ -42,7 +42,8 @@
       "find": "Buscar vivienda",
       "list": "Gestiona tu vivienda",
       "how": "Cómo funciona"
-    }
+    },
+    "menu": "Menú"
   },
   "host": {
     "eyebrow": "PROPIETARIO",
@@ -654,7 +655,8 @@
   },
   "theme": {
     "switchToLight": "Cambiar a modo claro",
-    "switchToDark": "Cambiar a modo oscuro"
+    "switchToDark": "Cambiar a modo oscuro",
+    "label": "Tema"
   },
   "monthBand": {
     "stayLength": "Duración de la estancia",

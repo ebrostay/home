@@ -24,7 +24,12 @@ export function LanguageSwitch() {
     <div
       role="group"
       aria-label="Idioma / Language"
-      className="flex h-9 items-stretch overflow-hidden rounded-(--radius-control) border border-line"
+      /* shrink-0 because overflow-hidden makes this element's automatic
+         minimum size 0: as a flex item it would rather clip ES and EN away
+         entirely than refuse to shrink, and it did — down to 2px of border on
+         every viewport under 1110px. The rounding needs the clip; the layout
+         needs the floor. */
+      className="flex h-9 shrink-0 items-stretch overflow-hidden rounded-(--radius-control) border border-line"
     >
       {routing.locales.map((l) => (
         <button

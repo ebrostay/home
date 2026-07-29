@@ -13,7 +13,7 @@ export function AuthMenu() {
   const [open, setOpen] = useState(false);
 
   if (loading) {
-    return <div className="skeleton h-9 w-20 rounded-(--radius-control)" />;
+    return <div className="skeleton h-9 w-9 shrink-0 rounded-(--radius-control) sm:w-20" />;
   }
 
   const go = (href: string) => {
@@ -21,7 +21,7 @@ export function AuthMenu() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
         type="button"
         aria-haspopup="menu"
@@ -38,7 +38,10 @@ export function AuthMenu() {
             <span className="grid h-5 w-5 place-items-center rounded-full bg-brand-soft text-[0.625rem] font-bold text-brand-strong">
               {(me.name ?? "?").slice(0, 1).toUpperCase()}
             </span>
-            <span className="max-w-28 truncate">{me.name}</span>
+            {/* Avatar only below sm. The name costs up to 120px of a 343px
+                bar, and it is the one thing there that the person reading it
+                already knows. */}
+            <span className="hidden max-w-28 truncate sm:inline">{me.name}</span>
           </>
         ) : (
           tn("signIn")

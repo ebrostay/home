@@ -98,6 +98,16 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   (OD-4) — `pg_dump` + storage bucket archive, verify, then delete.
 - **[O][S]** Cosmos free tier → paid/serverless when real users arrive
   (Raphael's call). Currently 1000 RU/s shared = €0.
+- **[O][S]** Add a **Content-Security-Policy** — `app/public/staticwebapp.config.json`
+  defines no `globalHeaders`, so the site ships none. Nothing depends on it
+  today: the rich-text design stores JSON and never builds an HTML string, and
+  `dangerouslySetInnerHTML` appears nowhere in the app. That is exactly why it
+  is worth having — a CSP is the backstop for the bug class those choices make
+  unreachable, not a substitute for them. Watch out for Leaflet's inline styles
+  and the pre-paint theme bootstrap in `app/app/[locale]/layout.tsx`, which is
+  an inline `<script>` and will need a hash or a nonce. Raised 2026-07-29 while
+  designing the description editor
+  ([design §8](superpowers/specs/2026-07-29-rich-text-editor-design.md)).
 
 ## Legal & content
 - **[L][S]** Privacy: lawyer to confirm the data-location wording — the policy

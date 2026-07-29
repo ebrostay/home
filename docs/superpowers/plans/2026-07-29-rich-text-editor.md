@@ -1961,6 +1961,7 @@ Anywhere the page or `Gallery.tsx` builds the gallery list, exclude `hiddenFromG
 
 1. `app/app/[locale]/property/page.tsx:125` filters the gallery on `isFloorplan` alone — add the new flag.
 2. **`PublicProjection.ToSummary` in `api/Models/PublicModels.cs` picks a listing's cover photo without excluding `HiddenFromGallery`.** This is the one that actually bites: a photo an owner deliberately kept out of the gallery — a close-up of a hob, a diagram — could become the cover image on a search card, which is the most prominent photo on the site. Fix it in the same pass, and note it is an API change, so it belongs in this task's commit even though the rest of the task is frontend.
+3. **`HostProjection.ToHostProperty` in `api/Models/HostModels.cs:208-212` has the identical bug on the owner's side** — it computes `CoverUrl` filtering on `!IsFloorplan` alone, so a hidden photo sorted first becomes the owner's own portfolio-row thumbnail. Found by Task 8's reviewer, not by Task 8's own survey, which additionally misattributed `PropertyRow.tsx` as reading `PropertySummary` when it reads `HostProperty`. Lower severity than the guest-facing one — no visitor sees it — but it is the same bug class and both cover selections should be fixed together, not one now and one when someone notices.
 
 - [ ] **Step 4: Verify**
 

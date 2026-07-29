@@ -326,10 +326,15 @@ const ACTIONS: Record<
   // "View submission" is what the reviewer is looking at, which since ADR-029
   // is a page the owner can open — the label promised this before it existed.
   review: { primary: "viewSubmission", secondary: "withdraw", quiet: true, primaryTo: "/property" },
-  // Preview is a real link since ADR-029: the guest page answers to its own
-  // owner in every state, so "what does the reviewer see?" is one click from
-  // the row that is asking the owner to change it.
-  changes: { primary: "fix", secondary: "preview", secondaryTo: "/property" },
+  // Fix reopens the wizard, the one surface with a Send-for-review button —
+  // the editor can change a rejected listing but deliberately never resubmits
+  // it (a save must not re-queue a listing as a side effect). A rejected
+  // listing is usually complete, so the wizard resumes on its last step:
+  // the Send button beside the list of anything still missing. Preview is a
+  // real link since ADR-029: the guest page answers to its own owner in every
+  // state, so "what does the reviewer see?" is one click from the row that is
+  // asking the owner to change it.
+  changes: { primary: "fix", secondary: "preview", primaryTo: "/host/new", secondaryTo: "/property" },
   // Continue reopens the wizard, which restores the draft and lands on its
   // first unfinished step (ADR-030). Delete stays disabled: there is no
   // delete endpoint, and "keep the data, close the listing" is `paused`.

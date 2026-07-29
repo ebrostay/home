@@ -69,6 +69,10 @@ const candidateButtonId = (osmId: string) => `nearby-candidate-${osmId}`;
  *  first screenful, and "Show all" reveals the rest without another request. */
 const PREVIEW_PER_TYPE = 3;
 
+/** The "all types" chip's value. A radio group cannot carry `null`, and no OSM
+ *  type can collide with it — same trick, same reason, as `OTHER` above. */
+const ALL_TYPES = "__all__";
+
 type Vocab =
   | { kind: "loading" }
   | { kind: "error" }
@@ -119,6 +123,8 @@ export function NearbyEditor({
   const [vocab, setVocab] = useState<Vocab>({ kind: "loading" });
   const [search, setSearch] = useState<Search>({ kind: "idle" });
   const [showAll, setShowAll] = useState(false);
+  /** Which found type the candidate list is filtered to; null is "all of them". */
+  const [activeType, setActiveType] = useState<string | null>(null);
   const [searchAttempt, setSearchAttempt] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 
@@ -211,6 +217,7 @@ export function NearbyEditor({
     if (!finderOpen) setSearch({ kind: "loading" });
     setFinderOpen(true);
     setShowAll(false);
+    setActiveType(null);
   };
   const closeFinder = () => {
     setFinderOpen(false);
@@ -222,6 +229,7 @@ export function NearbyEditor({
     setMeasure({ kind: "idle" });
     setDrafts({});
     setShowAll(false);
+    setActiveType(null);
   };
   const retrySearch = () => {
     setSearch({ kind: "loading" });
@@ -231,13 +239,22 @@ export function NearbyEditor({
     setActiveGroup(g);
     setActiveId(null);
     setRoutePolyline(null);
-    // Each group is its own search and its own list length: an owner who
-    // expanded Transport has said nothing about Restaurants.
+    // Each group is its own search, its own list length and its own set of
+    // types: an owner who expanded Transport, or filtered it to Tram, has
+    // said nothing about Restaurants.
     setShowAll(false);
+    setActiveType(null);
     if (finderOpen) setSearch({ kind: "loading" });
   };
   const selectPin = (id: string | null) => {
     setActiveId(id);
+    setRoutePolyline(null);
+  };
+  const selectType = (type: string) => {
+    setActiveType(type === ALL_TYPES ? null : type);
+    // The routed pin is very likely about to be filtered out, and a route
+    // line to a place no longer in the list is a line to nowhere.
+    setActiveId(null);
     setRoutePolyline(null);
   };
 
@@ -486,26 +503,65 @@ export function NearbyEditor({
 
   const remove = (id: string) => onChange(value.filter((e) => e.id !== id));
 
-  // What the list actually shows. The server sends up to 30 with its own
-  // per-type quotas; three of each is what fits on screen without the densest
-  // type burying the rest — around a city-centre pin the honest answer to
-  // "what transport is nearby" is four bus stops and the tram, not the
-  // fifteen nearest bus stops.
+  // The types this search actually turned up, with how many of each. Ordered
+  // by the vocabulary, not by distance: a row of filters that reshuffles
+  // itself every time the pin moves is a row you have to re-read every time.
+  // (Vocabulary order is the server's, from `fetchNearbyVocabulary`; before
+  // it arrives, first-appearance order is a stable enough stand-in.)
+  const foundTypes = useMemo(() => {
+    if (visibleSearch.kind !== "ready") return [];
+    const counts = new Map<string, number>();
+    for (const c of visibleSearch.candidates)
+      counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
+    const order = vocab.kind === "ready" ? (vocab.types[activeGroup] ?? []) : [];
+    const ranked = [...counts.keys()].sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      // Anything the vocabulary does not list (a type added server-side
+      // before its catalogue entry existed) sorts after everything it does.
+      return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+    });
+    return ranked.map((type) => ({ type, count: counts.get(type)! }));
+  }, [visibleSearch, vocab, activeGroup]);
+
+  // A type filter only means anything while that type is still on offer. When
+  // the group changes or the pin moves it may not be, and deriving that beats
+  // an effect that reaches in and clears the state after the fact.
+  const effectiveType =
+    activeType !== null && foundTypes.some((t) => t.type === activeType)
+      ? activeType
+      : null;
+
+  // What the list actually shows.
+  //
+  // With no type selected the server's 30 are previewed three per type, so the
+  // densest type cannot bury the rest — around a city-centre pin the honest
+  // answer to "what transport is nearby" is four bus stops and the tram, not
+  // the fifteen nearest bus stops.
+  //
+  // With a type selected there is nothing left to bury, so the cap comes off
+  // entirely: the whole point of clicking "Supermarket" is that supermarkets
+  // are sparser and further out than corner shops, and asking for them should
+  // not then hand you three of them and a button.
   const shownCandidates = useMemo(() => {
     if (visibleSearch.kind !== "ready") return [];
-    if (showAll) return visibleSearch.candidates;
+    const pool = effectiveType
+      ? visibleSearch.candidates.filter((c) => c.type === effectiveType)
+      : visibleSearch.candidates;
+    if (effectiveType || showAll) return pool;
     const used = new Map<string, number>();
-    return visibleSearch.candidates.filter((c) => {
+    return pool.filter((c) => {
       const n = used.get(c.type) ?? 0;
       if (n >= PREVIEW_PER_TYPE) return false;
       used.set(c.type, n + 1);
       return true;
     });
-  }, [visibleSearch, showAll]);
+  }, [visibleSearch, showAll, effectiveType]);
 
   const hiddenCount =
-    (visibleSearch.kind === "ready" ? visibleSearch.candidates.length : 0) -
-    shownCandidates.length;
+    (visibleSearch.kind === "ready" && !effectiveType
+      ? visibleSearch.candidates.length
+      : shownCandidates.length) - shownCandidates.length;
 
   // The map draws exactly what the list offers. A pin with no row behind it
   // can be clicked and routed but never added, which is a map that promises
@@ -626,6 +682,39 @@ export function NearbyEditor({
       {finderOpen && (
         <div className="flex flex-col gap-3.5 rounded-(--radius-control) border border-line-strong bg-surface-2 p-3.5">
           <p className="data text-[0.65625rem] tracking-[0.1em] text-muted">{t("title")}</p>
+
+          {/* One chip per type this search actually found, because a single
+              distance-sorted list buries whatever is naturally furthest away:
+              corner shops sit at the top and the supermarket — the one an
+              owner most wants to name — is at the bottom under a dozen of
+              them. Only found types get a chip, so the row never offers a
+              filter that would empty the list. Below one type there is
+              nothing to filter, so it does not appear at all. */}
+          {foundTypes.length > 1 && (
+            <ChipGroup
+              label={t("typesLabel")}
+              name="nearby-type"
+              variant="quiet"
+              value={effectiveType ?? ALL_TYPES}
+              options={[
+                {
+                  value: ALL_TYPES,
+                  label: `${t("allTypes")} ${
+                    visibleSearch.kind === "ready" ? visibleSearch.candidates.length : 0
+                  }`,
+                },
+                ...foundTypes.map((f) => ({
+                  value: f.type,
+                  // The raw key, not `typeLabel`'s "Other", for a type with no
+                  // catalogue entry yet: two unlabelled types would otherwise
+                  // both render as "Other" and neither chip would say which
+                  // it filters to.
+                  label: `${knownType(f.type) ? typeLabel(f.type) : f.type} ${f.count}`,
+                })),
+              ]}
+              onChange={selectType}
+            />
+          )}
 
           {/* Container query, not a media query: the edit page grows a rail
               at 64rem, so this card's own width is not a function of the

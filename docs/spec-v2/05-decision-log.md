@@ -1588,6 +1588,17 @@ Two guardrails, and they are the load-bearing part:
     on one payload, not a paged endpoint: an ORS matrix costs the same single
     request whether it carries 20 destinations or 30, so paging would double
     what browsing spends against the 1,500/day ceiling for nothing.
+  - A second chip row **filters to one found type** — "All 30 · Supermarket 7
+    · Market 7 · Bakery 8 · Corner shop 8". Quotas fixed what the search
+    *returns*; this fixes what the owner can *reach* in it, because one
+    distance-sorted list still buries whatever is naturally furthest away —
+    corner shops are on every street and the supermarket, the one worth
+    naming, sits at the bottom under a dozen of them. Chips exist only for
+    types this search actually found, so no chip ever empties the list, and
+    the row is hidden below two types. Selecting a type lifts the three-per-
+    type cap entirely: with one type on screen there is nothing left to bury,
+    and answering "show me supermarkets" with three of them and a button
+    would be the same burial in a smaller box.
 
 ---
 

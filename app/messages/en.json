@@ -488,6 +488,8 @@
         "noResults": "Nothing found nearby. You can still add a place by hand.",
         "showAll": "Show {count, plural, one {# more place} other {# more places}}",
         "showFewer": "Show fewer",
+        "typesLabel": "Filter by type",
+        "allTypes": "All",
         "retry": "Try again",
         "dropHint": "Click the map where the place is.",
         "measuring": "Measuring the walk from your home…",

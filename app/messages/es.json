@@ -488,6 +488,8 @@
         "noResults": "No hemos encontrado nada cerca. Aun así puedes añadir un sitio a mano.",
         "showAll": "Ver {count, plural, one {# sitio más} other {# sitios más}}",
         "showFewer": "Ver menos",
+        "typesLabel": "Filtrar por tipo",
+        "allTypes": "Todos",
         "retry": "Reintentar",
         "dropHint": "Toca el mapa donde está el sitio.",
         "measuring": "Midiendo el camino a pie desde tu vivienda…",

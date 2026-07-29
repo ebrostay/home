@@ -300,8 +300,16 @@ async function get<T>(path: string): Promise<T> {
 }
 
 async function put<T>(path: string, body: unknown): Promise<T> {
+  return write<T>("PUT", path, body);
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  return write<T>("POST", path, body);
+}
+
+async function write<T>(method: string, path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, {
-    method: "PUT",
+    method,
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
@@ -336,6 +344,23 @@ export const fetchProperty = (id: string) =>
 
 export const fetchHostProperty = (id: string) =>
   get<HostPropertyDetail>(`/host/properties/${encodeURIComponent(id)}`);
+
+/** Bring a listing into existence (ADR-030). No body: the wizard's first step
+ *  is the address, and it saves that through the same content endpoint the
+ *  editor uses — a create that also took content would be a second way to
+ *  write the same fields, validated in a second place. Answers with the same
+ *  detail a GET returns, so the wizard holds exactly what the editor holds. */
+export const createHostProperty = () =>
+  post<HostPropertyDetail>("/host/properties", {});
+
+/** Send a finished draft to the review queue. The API accepts this from
+ *  `draft` and `rejected` alone, and only when the listing meets all eleven
+ *  completeness checks — `submitBlockers` in lib/wizard.ts is the client's
+ *  copy of that list, so this should never be reached while it is non-empty. */
+export const submitHostProperty = (id: string) =>
+  put<HostProperty>(`/host/properties/${encodeURIComponent(id)}/status`, {
+    status: "pending_review",
+  });
 
 export const saveHostPricing = (
   id: string,

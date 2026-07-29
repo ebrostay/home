@@ -59,6 +59,149 @@
     "error": "Your homes could not be loaded.",
     "retry": "Retry",
     "soon": "The listing editor is coming next.",
+    "blocker": {
+      "noPhotos": "No photos yet",
+      "noAddress": "The address is missing",
+      "noAmenities": "Nothing ticked under what the home offers",
+      "missingTranslation": "{count, plural, one {# field is untranslated} other {# fields are untranslated}}",
+      "enNotApproved": "The English description needs your approval",
+      "nearbyTypeEnMissing": "A nearby place's custom type has no English yet",
+      "nearbyNeedsCheck": "A nearby place needs a check after the pin moved",
+      "noName": "The home has no title yet",
+      "noCapacity": "The floor area, rooms or sleeps are missing",
+      "noPrice": "There is no price for thirty days",
+      "noDeposit": "The deposit is missing"
+    },
+    "new": {
+      "title": "New property",
+      "draftPill": "DRAFT · SAVED AS YOU GO",
+      "saveExit": "Save and exit",
+      "railLabel": "{count} steps",
+      "counter": "Step {position} of {total}",
+      "minutesLeft": "{minutes} min left",
+      "whyWeAsk": "WHY WE ASK",
+      "back": "Back",
+      "continue": "Continue",
+      "skip": "Do this later",
+      "submit": "Send for review",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "savesAsYouGo": "Saved each time you move on",
+      "saveFailed": "That did not save",
+      "reassurance": "Nothing is published until you send it for review, and we answer within one working day.",
+      "needsAddressFirst": "The address comes first: photos are stored on the listing, and it does not exist yet.",
+      "readyToSend": "All done. You can send it for review.",
+      "remaining": "{count, plural, one {# THING LEFT} other {# THINGS LEFT}}",
+      "step": {
+        "address": {
+          "name": "Address",
+          "head": "Where is the home?",
+          "lede": "Street and postcode. We look up the rest as you type — the postcode, the neighbourhood and the pin — and you correct anything that looks wrong.",
+          "why": "The address decides the neighbourhood guests filter by, and it is the one thing that sends an approved listing back to review whenever you change it."
+        },
+        "nearby": {
+          "name": "What's nearby",
+          "head": "What is around it?",
+          "lede": "Pick the places that matter to someone living here for six months. We measure the distances ourselves, from your pin.",
+          "why": "A company housing someone for six months asks about the tram and the supermarket before it asks about the terrace."
+        },
+        "basics": {
+          "name": "The home",
+          "head": "What kind of home is it?",
+          "lede": "The numbers guests filter by. Nothing here is a guess we make for you.",
+          "why": "Bedrooms, bathrooms and floor area are the three filters almost every company uses when searching for staff housing."
+        },
+        "photos": {
+          "name": "Photos",
+          "head": "Show us the home",
+          "lede": "One gallery, in the order a guest swipes through it. Take the widest shot you can from each doorway.",
+          "why": "The first photo that is not a floor plan becomes your cover — on the search card and at the top of your listing. The order you set here is the ranking."
+        },
+        "description": {
+          "name": "Description",
+          "head": "Tell guests about it",
+          "lede": "Write it in Spanish, then in English. We do not translate for you yet, so both are yours — and you approve the English before it goes live.",
+          "why": "Companies read this to judge whether their person will be comfortable there for six months. Both languages, because half our tenants read English first."
+        },
+        "amenities": {
+          "name": "Amenities",
+          "head": "What does it come with?",
+          "lede": "Pick everything the home actually has. Fifteen things, and every one of them is a filter.",
+          "why": "Each chip is a filter on the search page. An amenity you leave off is a search you never appear in."
+        },
+        "pricing": {
+          "name": "Price & availability",
+          "head": "What does it cost?",
+          "lede": "Your price is for thirty days — not for a calendar month, so the daily rate never swings with February. Then bills, the deposit, the turnaround and the shortest stay you accept.",
+          "why": "A thirty-day price plus real availability is what turns a view into a request. Our commission comes off once per stay, from the first month — never again for that tenant."
+        },
+        "rules": {
+          "name": "Rules & terms",
+          "head": "Your rules and terms",
+          "lede": "Be specific. We answer every tenant question for you, so a clear no is worth more than a vague maybe.",
+          "why": "We handle every tenant conversation — but only from what you tell us here. A missing rule is the usual cause of a cancelled stay."
+        },
+        "paperwork": {
+          "name": "Paperwork",
+          "head": "Last part: the paperwork",
+          "lede": "Five things, once. We check them before your listing goes live, and guests never see them.",
+          "why": "Verification is why companies book here at all. The green badge is the whole reason your listing is trusted."
+        }
+      },
+      "blocked": {
+        "street": "The street is missing",
+        "postcode": "A postcode is five digits",
+        "pin": "The pin is not placed yet",
+        "name": "The title is missing",
+        "size": "The floor area is missing",
+        "bedrooms": "The number of bedrooms is missing",
+        "bathrooms": "The number of bathrooms is missing",
+        "copyEs": "The Spanish description is missing",
+        "price": "The price is missing"
+      },
+      "payout": {
+        "label": "YOUR PAYOUT",
+        "firstMonth": "FIRST MONTH OF A STAY",
+        "laterMonths": "EVERY MONTH AFTER",
+        "working": "{rent} € − {commission} € commission (15%, capped at thirty days' rent)",
+        "plusCleaning": "+ {amount} € your cleaning fee",
+        "note": "Commission is charged once per stay, not every month — a six-month tenant costs you it once. Utilities are metered and settled in the final bill after move-out, with the deposit. We pay you on the 5th."
+      },
+      "paperwork": {
+        "visionBadge": "NOT BUILT YET · DESIGN INTENT",
+        "visionNote": "This part is designed but does not work yet — there is nowhere to store the documents. It is not required to send your listing for review, and we will ask you for them before it goes live.",
+        "documents": "Documents",
+        "ready": "{done} OF {total} READY",
+        "addFile": "ADD FILE",
+        "terms": "I own this property or I am authorised to let it, and I accept the host agreement — Ebrostay's 15% commission on rent, capped at thirty days' rent and charged once per stay; rent pro-rated daily and collected per calendar month; stays of 31 days up to just under a year; and free tenant cancellation up to 48 hours before check-in.",
+        "doc": {
+          "id": { "name": "Photo ID or NIE", "hint": "Both sides, of the owner named on the deed" },
+          "deed": { "name": "Proof of ownership", "hint": "Nota simple, deed, or latest IBI receipt" },
+          "energy": { "name": "Energy certificate", "hint": "Required by law for any let in Spain" },
+          "cadastre": { "name": "Cadastral reference", "hint": "We only check the shape of it — nothing verifies it against the register yet" },
+          "iban": { "name": "IBAN for payouts", "hint": "Must belong to the owner or their company" }
+        }
+      },
+      "sent": {
+        "title": "Sent for review",
+        "body": "We check the address, the pin and the photos before the listing appears in search. You can keep editing the draft while we look at it.",
+        "toPortfolio": "Back to my properties",
+        "addAnother": "Add another home",
+        "step": {
+          "sent": { "name": "Draft sent", "when": "JUST NOW" },
+          "checking": { "name": "We check the address, the pin and the photos", "when": "WITHIN 1 WORKING DAY" },
+          "live": { "name": "Live in search · companies can request it", "when": "AFTER APPROVAL" }
+        }
+      },
+      "error": {
+        "generic": "That did not save. Try again in a moment.",
+        "too_many_drafts": "You have too many unfinished drafts. Finish or remove one before starting another.",
+        "listing_incomplete": "Something is still missing. Check the steps marked amber.",
+        "stale_write": "Someone saved this listing while you were editing. Reload the page.",
+        "status_not_allowed": "This listing cannot be sent for review from its current state.",
+        "ors_unavailable": "We could not measure the distances just now. Try again in a moment."
+      }
+    },
     "signedOut": {
       "title": "Sign in to manage your homes",
       "body": "Your listings, requests and availability live behind your account."
@@ -592,16 +735,7 @@
         "saving": "Saving…",
         "discard": "Discard",
         "reviewNote": "Saving sends the listing back for review. It leaves search until we approve it.",
-        "liveNote": "These changes take effect as soon as you save.",
-        "blocker": {
-          "noPhotos": "No photos yet",
-          "noAddress": "The address is missing",
-          "noAmenities": "Nothing ticked under what the home offers",
-          "missingTranslation": "{count, plural, one {# field is untranslated} other {# fields are untranslated}}",
-          "enNotApproved": "The English description needs your approval",
-          "nearbyTypeEnMissing": "A nearby place's custom type has no English yet",
-          "nearbyNeedsCheck": "A nearby place needs a check after the pin moved"
-        }
+        "liveNote": "These changes take effect as soon as you save."
       },
       "error": {
         "generic": "That did not save. Try again in a moment.",

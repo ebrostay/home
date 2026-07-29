@@ -1699,6 +1699,21 @@ git commit -m "feat(api): a photo can be kept out of the gallery"
 
 `PropertyDoc.Copy`, `PublicListing.Copy` and the `Copy` member of the host update record all change from `Bilingual?`/`BilingualWrite?` to `BilingualDoc?`. `Bilingual` itself is untouched — `Details`, `Beds` and `PriceNote` keep it.
 
+**Every call site, enumerated after the `feat/property-wizard` merge** (2026-07-29). This list is exhaustive as of that merge — verify with `grep -rn "\.Copy\b" api/` before starting, since the wizard added three of these:
+
+| Site | What it needs |
+|---|---|
+| `api/Models/HostModels.cs:100` | record member → `BilingualDoc?` |
+| **`api/Models/HostModels.cs:162`** | **`p => Both(p.Copy)`** — the wizard's section-completeness check. See below. |
+| `api/Models/HostModels.cs:236` | projection, pass through |
+| `api/Models/HostWrites.cs:68` | `BilingualWrite? Copy` → `BilingualDoc?` |
+| `api/Models/HostWrites.cs:244` | `TooLong(u.Copy, MaxCopyLength)` — delete; Step 2 replaces it |
+| `api/Models/PublicModels.cs:47` | record member → `BilingualDoc?` |
+| `api/Models/PublicModels.cs:182` | projection, pass through |
+| `api/Functions/HostFunctions.cs:223` | `doc.Copy = ToBilingual(update.Copy)` — needs a document equivalent |
+
+**`Both(p.Copy)` is the one that needs a decision, not just a retype.** It decides whether the description section counts as *done* for the wizard's progress bar and for whether a draft may be submitted. `Both` currently means "both locales are non-empty strings". The document equivalent must mean **both locales contain actual words** — use `textLength(doc) > 0`, not merely "the document exists". A `doc` node with an empty `content` array, or one holding only a photo chip, is not a written description, and letting either satisfy the check would let an owner submit a listing whose description is blank or wordless. This is the same text-versus-structure distinction that cost Task 4 two fix rounds; here the text-only reading is the correct one.
+
 - [ ] **Step 2: Replace the old length check with the walk**
 
 In `HostValidation`, the existing `TooLong(u.Copy, MaxCopyLength)` term (around line 227) no longer type-checks. Remove it and call the walk instead, **after** the photo and nearby loops so their sets are already built:

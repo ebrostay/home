@@ -787,7 +787,10 @@
     },
     "nearby": {
       "title": "What's nearby",
-      "subtitle": "Indicative times from central Zaragoza.",
+      "subtitle": {
+        "foot": "Walking times from this address.",
+        "car": "Driving times from this address."
+      },
       "minutes": "{count} min",
       "category": {
         "transport": "Public transport",
@@ -795,7 +798,15 @@
         "food": "Restaurants",
         "outdoors": "Weekend & outdoors",
         "health": "Health & care"
-      }
+      },
+      "profileLabel": "Travel mode",
+      "profile": {
+        "foot": "On foot",
+        "car": "By car"
+      },
+      "loadingRoute": "Loading the route…",
+      "routeUnavailable": "We couldn't load the route just now. Try again.",
+      "routeMissing": "This place's route isn't available anymore."
     },
     "places": {
       "title": "Your places",

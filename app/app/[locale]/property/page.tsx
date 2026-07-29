@@ -13,14 +13,13 @@ import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
 import { formatEuro } from "@/lib/pricing";
-import { PLACEHOLDER_NEARBY } from "@/lib/detail-placeholders";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { DateRange } from "@/components/ui/DateRangePicker";
-import { ListingsMap } from "@/components/ListingsMap";
 import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
+import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
@@ -124,6 +123,16 @@ function DetailBody({
 
   const gallery = p.photos.filter((ph) => !ph.isFloorplan);
   const floorplan = p.photos.find((ph) => ph.isFloorplan);
+
+  // Which nearby entry Nearby.tsx currently has active, and the route line
+  // (if any) it resolved for it — the two things NeighbourhoodMap needs.
+  // Lifted here because the map and the list that drives it are siblings in
+  // the merged section below (Task 12: the whole reason they were merged is
+  // that a route has to draw in the same viewport as the list it came from).
+  const [nearbyDestination, setNearbyDestination] = useState<NeighbourhoodMapDestination | null>(
+    null,
+  );
+  const [nearbyRoute, setNearbyRoute] = useState<string | null>(null);
 
   const booked: DateRange[] = useMemo(
     () =>
@@ -363,29 +372,46 @@ function DetailBody({
             </dl>
           </Section>
 
-          {/* 7 — Where you'll be */}
+          {/* 7 — Where you'll be, merged with what used to be a separate
+              "Nearby" section (9): the route line a click on the list below
+              draws has to land in the same viewport as the list itself, so
+              the map and the list are now siblings in one section instead of
+              two apart. */}
           <Section title={td("whereYouWillBe")}>
-            <ListingsMap
-              pins={[{ id: p.id, lat: p.lat, lng: p.lng, label: p.name }]}
+            <NeighbourhoodMap
+              home={{ lat: p.lat, lng: p.lng }}
+              homeLabel={p.name}
+              mapLabel={td("location")}
+              destination={nearbyDestination}
+              routePolyline={nearbyRoute}
               className="h-60"
             />
+            <p className="mt-2 text-xs text-muted">{t("nearby.attribution")}</p>
             {p.address && (
               <p className="mt-3 flex items-center gap-1.5 text-sm text-body">
                 <MapPin size={15} strokeWidth={2} aria-hidden />
                 {p.address}
               </p>
             )}
+            {p.nearby.length > 0 && (
+              <div className="mt-8">
+                <Nearby
+                  propertyId={p.id}
+                  entries={p.nearby}
+                  locale={locale}
+                  onRouteChange={(destination, polyline) => {
+                    setNearbyDestination(destination);
+                    setNearbyRoute(polyline);
+                  }}
+                />
+              </div>
+            )}
           </Section>
 
           {/* 8 — Your places */}
           <YourPlaces />
 
-          {/* 9 — Nearby (placeholder content) */}
-          <Section title={td("nearby.title")} subtitle={td("nearby.subtitle")}>
-            <Nearby categories={PLACEHOLDER_NEARBY} />
-          </Section>
-
-          {/* 10 — Floor plan */}
+          {/* 9 — Floor plan */}
           {floorplan && (
             <Section id="floor-plan" title={td("floorPlan")}>
               <p className="data text-xs text-muted">

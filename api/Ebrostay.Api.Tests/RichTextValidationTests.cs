@@ -94,4 +94,42 @@ public class RichTextValidationTests
 
     [Fact]
     public void AcceptsEmptyDocument() => Assert.Null(Check(Doc()));
+
+    // --- Fix round 1: boundaries an independent review found unpinned. ---
+
+    // A typed record cannot distinguish JSON `"text": null` from an absent
+    // key — both deserialize to a null `Text`. That is the reason the server
+    // cannot be made to reject this the way validateDoc originally did;
+    // instead app/lib/rich-text.ts was relaxed to `!= null` so the two agree.
+    // This pins the server's half of that agreement.
+    [Fact]
+    public void AcceptsExplicitNullTextOnContainer() =>
+        Assert.Null(Check(Doc(new RichNode("paragraph", null, null, null, null))));
+
+    // `"content":[null]` deserializes to a RichNode[] holding a null element.
+    // Before the fix, `child.Type` threw a NullReferenceException here instead
+    // of failing closed with a 400.
+    [Fact]
+    public void RejectsNullContentElement() =>
+        // `Doc(null!)` would bind to the params array itself being null (an
+        // empty, accepted document) rather than a one-element array holding
+        // null — spelled out explicitly to get the shape the bug is about.
+        Assert.Equal("copy_bad_node", Check(Doc(new RichNode[] { null! })));
+
+    // `"marks":[null]` is the same shape of bug one level down.
+    [Fact]
+    public void RejectsNullMarkElement() =>
+        Assert.Equal("copy_bad_mark", Check(Doc(P(new RichNode("text", null, "x", [null!], null)))));
+
+    // `Url` present but empty must not fall through to `photoUrls.Contains`,
+    // where it could only ever coincidentally agree with the set.
+    [Fact]
+    public void RejectsEmptyStringPhotoUrl() =>
+        Assert.Equal("copy_photo_unknown",
+            Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "", null, null)))));
+
+    [Fact]
+    public void RejectsEmptyStringEntryId() =>
+        Assert.Equal("copy_place_unknown",
+            Check(Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, ""))))));
 }

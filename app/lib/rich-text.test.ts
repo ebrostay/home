@@ -167,6 +167,39 @@ describe("validateDoc", () => {
   it("accepts an empty document", () => {
     expect(ok(doc())).toBeNull();
   });
+
+  // --- Fix round 1: boundaries an independent review found unpinned. ---
+
+  // The API's typed record cannot tell JSON `"text": null` apart from an
+  // absent key, so this walk was relaxed from `!== undefined` to `!= null`
+  // to agree with HostValidation.RichText on that input rather than being
+  // stricter than a server that structurally cannot match it.
+  it("accepts an explicit null text on a container", () => {
+    expect(ok(doc({ type: "paragraph", text: null as unknown as undefined, content: [] }))).toBeNull();
+  });
+
+  // `"content":[null]` used to throw a TypeError reading `child.type`
+  // instead of failing closed with copy_bad_node.
+  it("rejects a null content element", () => {
+    expect(ok(doc(null as unknown as RichNode))).toBe("copy_bad_node");
+  });
+
+  // Same bug, one level down: `"marks":[null]`.
+  it("rejects a null mark element", () => {
+    expect(ok(doc(p({ type: "text", text: "x", marks: [null as unknown as { type: "bold" }] })))).toBe(
+      "copy_bad_mark",
+    );
+  });
+
+  // `url`/`entryId` present but empty must not fall through to `Set.has`,
+  // where it could only ever coincidentally agree with the set.
+  it("rejects an empty string photo url", () => {
+    expect(ok(doc({ type: "photoFigure", attrs: { url: "" } }))).toBe("copy_photo_unknown");
+  });
+
+  it("rejects an empty string entry id", () => {
+    expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "" } })))).toBe("copy_place_unknown");
+  });
 });
 
 describe("reference extraction", () => {

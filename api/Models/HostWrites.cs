@@ -208,7 +208,10 @@ public static class HostValidation
     /// through while DropBlobsAsync deletes the blob underneath it.
     ///
     /// Depth and node count are checked DURING the walk, so a nesting bomb is
-    /// refused rather than fully parsed.
+    /// refused as soon as the walk reaches it rather than after the tree is
+    /// fully validated. (System.Text.Json still has to deserialize the whole
+    /// body first — its own MaxDepth of 64 is the backstop for a JSON literal
+    /// deep enough to matter before this walk ever starts.)
     public static string? RichText(RichNode? doc, IReadOnlySet<string> photoUrls, IReadOnlySet<string> entryIds)
     {
         if (doc is null) return null;
@@ -228,20 +231,29 @@ public static class HostValidation
             if (n.Type != "text" && n.Text is not null) return "copy_bad_node";
             if (n.Type == "text") text += n.Text?.Length ?? 0;
 
+            // `m?.Type is null` also catches a null array element (`"marks":[null]`
+            // deserializes to a null RichMark) — without it that shape throws
+            // instead of failing closed with a 400.
             foreach (var m in n.Marks ?? [])
-                if (m.Type is null || !CopyMarks.Contains(m.Type, StringComparer.Ordinal)) return "copy_bad_mark";
+                if (m?.Type is null || !CopyMarks.Contains(m.Type, StringComparer.Ordinal)) return "copy_bad_mark";
 
             if (n.Type == "heading" && n.Attrs?.Level != 3) return "copy_bad_heading";
             if ((n.Attrs?.Caption?.Length ?? 0) > MaxCaptionLength) return "copy_bad_caption";
 
+            // IsNullOrEmpty, not `is null`: an owner cannot construct a photo
+            // whose url is genuinely the empty string, but a payload that
+            // claims one must still be refused rather than falling through to
+            // a set lookup that happens to agree.
             if (n.Type is "photoRef" or "photoFigure")
-                if (n.Attrs?.Url is null || !photoUrls.Contains(n.Attrs.Url)) return "copy_photo_unknown";
+                if (string.IsNullOrEmpty(n.Attrs?.Url) || !photoUrls.Contains(n.Attrs.Url)) return "copy_photo_unknown";
             if (n.Type is "placeRef" or "placeCard")
-                if (n.Attrs?.EntryId is null || !entryIds.Contains(n.Attrs.EntryId)) return "copy_place_unknown";
+                if (string.IsNullOrEmpty(n.Attrs?.EntryId) || !entryIds.Contains(n.Attrs.EntryId)) return "copy_place_unknown";
 
+            // `child?.Type is null` also catches a null array element
+            // (`"content":[null]`) for the same reason as the marks guard above.
             foreach (var child in n.Content ?? [])
             {
-                if (child.Type is null || !allowed.Contains(child.Type, StringComparer.Ordinal)) return "copy_bad_node";
+                if (child?.Type is null || !allowed.Contains(child.Type, StringComparer.Ordinal)) return "copy_bad_node";
                 var err = Walk(child, depth + 1);
                 if (err is not null) return err;
             }

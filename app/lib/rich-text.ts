@@ -147,12 +147,18 @@ export function validateDoc(node: RichNode, refs: RichRefs): RichError | null {
     if (!RICH_NODES.includes(n.type)) return "copy_bad_node";
 
     const allowed = CONTENT_MODEL[n.type];
-    if (allowed === null && (n.content?.length || (n.type !== "text" && n.text !== undefined)))
+    // `!= null` rather than `!== undefined`: a server payload's JSON `null`
+    // and an absent key both deserialize to C# `null` on a typed record — the
+    // API cannot tell them apart, so neither can this walk if the two are to
+    // agree on every input (D9 follow-up, fix-round 1).
+    if (allowed === null && (n.content?.length || (n.type !== "text" && n.text != null)))
       return "copy_bad_node";
-    if (allowed !== null && n.text !== undefined) return "copy_bad_node";
+    if (allowed !== null && n.text != null) return "copy_bad_node";
 
+    // `!m` also catches a null array element (`"marks":[null]`) — without it
+    // that shape throws instead of failing closed with copy_bad_mark.
     for (const m of n.marks ?? [])
-      if (!RICH_MARKS.includes(m.type)) return "copy_bad_mark";
+      if (!m || !RICH_MARKS.includes(m.type)) return "copy_bad_mark";
 
     if (n.type === "heading" && n.attrs?.level !== 3) return "copy_bad_heading";
     if ((n.attrs?.caption?.length ?? 0) > RICH_LIMITS.maxCaption) return "copy_bad_caption";
@@ -162,8 +168,10 @@ export function validateDoc(node: RichNode, refs: RichRefs): RichError | null {
     if (n.type === "placeRef" || n.type === "placeCard")
       if (!n.attrs?.entryId || !refs.entryIds.has(n.attrs.entryId)) return "copy_place_unknown";
 
+    // `!child` also catches a null array element (`"content":[null]`), same
+    // reasoning as the marks guard above.
     for (const child of n.content ?? []) {
-      if (allowed === null || !allowed.includes(child.type)) return "copy_bad_node";
+      if (!child || allowed === null || !allowed.includes(child.type)) return "copy_bad_node";
       const err = walk(child, depth + 1);
       if (err) return err;
     }

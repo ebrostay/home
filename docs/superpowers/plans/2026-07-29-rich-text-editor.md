@@ -15,7 +15,7 @@
 - **Bilingual ES/EN is a hard requirement.** Every user-facing string goes in `app/messages/es.json` **and** `app/messages/en.json`. Checkpoint 1 (Tasks 1–5) is English-only by explicit decision and adds no message keys; Task 10 adds every key in both locales.
 - **Light and dark mode both first-class.** Theme is `data-theme` on `<html>`; use the Tailwind `dark:` variant. Never `@media (prefers-color-scheme)`.
 - **Static export.** No middleware, no route handlers, no server components at runtime. Dynamic data is fetched client-side from `/api/*`.
-- **No HTML strings.** `dangerouslySetInnerHTML` appears zero times in the app and must stay at zero. `@tiptap/html` / `generateHTML` must never be imported.
+- **No HTML strings.** `dangerouslySetInnerHTML` appears exactly once in the app — `app/app/not-found.tsx:40`, for the theme bootstrap, whose content is a project-authored constant. No user content may reach it or any new one. `@tiptap/html` / `generateHTML` must never be imported.
 - **No links.** No `href` may be authorable anywhere in this feature.
 - **Authorization is enforced in the C# functions**, never only in the UI.
 - **Never import `Link`/`useRouter` from `next/link`/`next/navigation`** — use `@/i18n/navigation`.

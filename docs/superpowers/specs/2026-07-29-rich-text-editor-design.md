@@ -377,8 +377,10 @@ representations do not exist.
 
 **No HTML is ever constructed.** The editor produces a JSON tree; the server
 validates a JSON tree; the renderer maps it to React elements.
-`dangerouslySetInnerHTML` appears **zero times** in the codebase today and this
-feature must not be the first. `@tiptap/html`'s `generateHTML` is deliberately
+`dangerouslySetInnerHTML` appears **exactly once** in the app today —
+`app/app/not-found.tsx:40`, injecting the pre-paint theme bootstrap, whose
+content is a project-authored constant. **No user content reaches it, and this
+feature must not add the first that does.** `@tiptap/html`'s `generateHTML` is deliberately
 unused. Consequently `<script>`, `<iframe>`, `<object>`, `javascript:`,
 `data:`, `srcdoc`, `onerror=` and the mXSS family have nowhere to be written
 down — this is not a blocklist, it is an absence of the field.

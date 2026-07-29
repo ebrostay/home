@@ -121,15 +121,32 @@ public class RichTextValidationTests
     public void RejectsNullMarkElement() =>
         Assert.Equal("copy_bad_mark", Check(Doc(P(new RichNode("text", null, "x", [null!], null)))));
 
+    // Fix round 2: the fixture below deliberately contains "" itself. The
+    // original version of this test used `Photos`/`Entries`, which do NOT
+    // contain "" — so it passed against the pre-fix `is null` check too, by
+    // the same coincidence documented in the task-7 report (falling through
+    // to `!Contains("")`, true only because "" happened to be absent). With
+    // "" actually in the set, a `Contains` fallback would ACCEPT instead of
+    // reject, so this version only passes when the empty-string check runs
+    // before the set lookup.
+    private static readonly HashSet<string> PhotosWithEmptyString =
+        new(StringComparer.Ordinal) { "/p/1.jpg", "" };
+    private static readonly HashSet<string> EntriesWithEmptyString =
+        new(StringComparer.Ordinal) { "e1", "" };
+
     // `Url` present but empty must not fall through to `photoUrls.Contains`,
     // where it could only ever coincidentally agree with the set.
     [Fact]
     public void RejectsEmptyStringPhotoUrl() =>
         Assert.Equal("copy_photo_unknown",
-            Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "", null, null)))));
+            HostValidation.RichText(
+                Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "", null, null))),
+                PhotosWithEmptyString, Entries));
 
     [Fact]
     public void RejectsEmptyStringEntryId() =>
         Assert.Equal("copy_place_unknown",
-            Check(Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, ""))))));
+            HostValidation.RichText(
+                Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, "")))),
+                Photos, EntriesWithEmptyString));
 }

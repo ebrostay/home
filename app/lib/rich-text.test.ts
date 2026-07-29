@@ -80,7 +80,7 @@ describe("paragraphDoc", () => {
 });
 
 const refs = { photoUrls: new Set(["/p/1.jpg"]), entryIds: new Set(["e1"]) };
-const ok = (n: RichNode) => validateDoc(n, refs);
+const ok = (n: RichNode | null) => validateDoc(n, refs);
 
 describe("validateDoc", () => {
   it("accepts a document using every node type", () => {
@@ -191,14 +191,27 @@ describe("validateDoc", () => {
     );
   });
 
-  // `url`/`entryId` present but empty must not fall through to `Set.has`,
-  // where it could only ever coincidentally agree with the set.
+  // `url`/`entryId` present but empty must not fall through to `Set.has`. On
+  // this side `!n.attrs?.url` is a plain falsy check that short-circuits
+  // BEFORE `.has()` runs, so — unlike the C# version before fix round 1 —
+  // this was never dependent on whether "" happened to be in the fixture
+  // set. Ran with `refs.photoUrls` swapped for a set containing "" to
+  // confirm: still rejects, because the falsy check never reaches `.has()`.
   it("rejects an empty string photo url", () => {
     expect(ok(doc({ type: "photoFigure", attrs: { url: "" } }))).toBe("copy_photo_unknown");
   });
 
   it("rejects an empty string entry id", () => {
     expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "" } })))).toBe("copy_place_unknown");
+  });
+
+  // Fix round 2, finding C: HostValidation.RichText has always accepted a
+  // null document (BilingualDoc.Es/En are nullable, and the editor can hold
+  // no document for a language). validateDoc used to throw a TypeError on
+  // null instead — unreachable until Task 10 wires an editor that can pass
+  // one. Widened the parameter to `RichNode | null` to match.
+  it("accepts a null document", () => {
+    expect(ok(null)).toBeNull();
   });
 });
 

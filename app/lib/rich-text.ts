@@ -135,9 +135,16 @@ export type RichRefs = { photoUrls: ReadonlySet<string>; entryIds: ReadonlySet<s
  *  repair would delete an owner's words with no explanation, and the editor
  *  makes every rejection here unreachable, so one means a bug or tampering.
  *
- *  Depth and node count are checked DURING the walk, so a nesting bomb is
- *  refused rather than fully parsed. */
-export function validateDoc(node: RichNode, refs: RichRefs): RichError | null {
+ *  Depth and node count are checked as soon as the walk reaches them, so a
+ *  nesting bomb is refused mid-walk rather than after the tree is fully
+ *  validated. (The JSON itself is still parsed in full first — this is
+ *  about the walk, not about deserialization.)
+ *
+ *  `node` is nullable to match `HostValidation.RichText`: `BilingualDoc.Es`/
+ *  `.En` are nullable, and an editor holding no document for a language is a
+ *  legitimate state, not a malformed one (fix round 2). */
+export function validateDoc(node: RichNode | null, refs: RichRefs): RichError | null {
+  if (node === null) return null;
   if (node.type !== "doc") return "copy_bad_root";
   let budget = RICH_LIMITS.maxNodes;
 

@@ -2,31 +2,27 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
-import { useAuth } from "./AuthProvider";
+import { Link } from "@/i18n/navigation";
 import { NAV_ITEMS } from "./MainNav";
+import { LanguageSwitch } from "./LanguageSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
-// The nav pill needs 420px and the header only has room for it from 60rem up.
-// Below that the same three destinations live here, in a popover shaped like
-// AuthMenu's — the header's one existing popover, so this adds a second
-// instance of a pattern rather than a second pattern.
+// The overflow of the header bar, and only the overflow: every row here is
+// hidden at exactly the width where the bar takes that thing back, so the two
+// never offer the same control at the same time. Below 54rem that is the
+// language switch and the theme; below 46rem "How it works" joins them.
 //
-// It also carries the theme toggle below sm. That is not a home for stray
-// controls: at 375px the bar holds a logo, ES|EN, an account button and this
-// button, and a fifth 36px control is what pushed the row past the edge. The
-// language switch stays in the bar at every width because ES/EN is a hard
-// requirement of the product, and a hard requirement does not live one tap
-// deep.
+// Shaped like AuthMenu's popover — the header's one existing overlay — so
+// this adds a second instance of a pattern rather than a second pattern.
 export function CompactNav() {
   const t = useTranslations("nav");
   const tt = useTranslations("theme");
-  const pathname = usePathname();
-  const { me } = useAuth();
   const [open, setOpen] = useState(false);
 
+  const how = NAV_ITEMS.find((i) => i.key === "how")!;
+
   return (
-    <div className="relative shrink-0 min-[60rem]:hidden">
+    <div className="relative shrink-0 min-[54rem]:hidden">
       <button
         type="button"
         aria-haspopup="menu"
@@ -57,34 +53,34 @@ export function CompactNav() {
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <nav
-            aria-label={t("mainNav")}
-            className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-(--radius-card) border border-line bg-surface p-1 shadow-(--shadow-pop)"
+          <div
+            role="menu"
+            className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-(--radius-card) border border-line bg-surface p-1 shadow-(--shadow-pop)"
           >
-            {NAV_ITEMS.map((item) => {
-              const active = item.match(pathname);
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href(me.authenticated)}
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => setOpen(false)}
-                  className={`block rounded-(--radius-control) px-2.5 py-2 text-sm transition-colors duration-(--dur-standard) ${
-                    active
-                      ? "bg-brand-soft font-semibold text-brand-strong"
-                      : "text-body hover:bg-surface-2 hover:text-ink"
-                  }`}
-                >
-                  {t(`pill.${item.key}`)}
-                </Link>
-              );
-            })}
+            <Link
+              role="menuitem"
+              href={how.href()}
+              aria-current={how.match() ? "page" : undefined}
+              onClick={() => setOpen(false)}
+              className="block rounded-(--radius-control) px-2.5 py-2 text-sm text-body transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-ink min-[46rem]:hidden"
+            >
+              {t("pill.how")}
+            </Link>
 
-            <div className="mt-1 flex items-center justify-between gap-3 border-t border-line px-2.5 pb-1 pt-2.5 sm:hidden">
-              <span className="text-sm text-body">{tt("label")}</span>
-              <ThemeToggle />
+            {/* The divider belongs to the rows below it, so it goes when they
+                do — otherwise a popover holding one link opens with a rule
+                under it and nothing after. */}
+            <div className="mt-1 border-t border-line pt-1 min-[46rem]:mt-0 min-[46rem]:border-t-0 min-[46rem]:pt-0">
+              <div className="flex items-center justify-between gap-3 px-2.5 py-1.5">
+                <span className="text-sm text-body">{t("language")}</span>
+                <LanguageSwitch />
+              </div>
+              <div className="flex items-center justify-between gap-3 px-2.5 py-1.5">
+                <span className="text-sm text-body">{tt("label")}</span>
+                <ThemeToggle />
+              </div>
             </div>
-          </nav>
+          </div>
         </>
       )}
     </div>

@@ -21,13 +21,14 @@ import { CompactNav } from "./CompactNav";
 // sits optically centred whenever the header has room to centre it, and when
 // it does not the pill drifts left instead of the controls disappearing.
 //
-// The template is declared twice because a `display:none` MainNav is not a
-// grid item at all — with three columns declared, the control cluster would
-// slide into the middle one and sit centred with an empty track beside it.
+// One template, because MainNav is now present at every width — it shrinks
+// rather than leaving (see the ladder there). A `display:none` grid item is
+// not a grid item at all, and had it kept vanishing the control cluster would
+// slide into the middle column and sit centred beside an empty track.
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/92 backdrop-blur-md">
-      <div className="mx-auto grid h-(--header-h) max-w-7xl grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 min-[60rem]:grid-cols-[1fr_auto_1fr]">
+      <div className="mx-auto grid h-(--header-h) max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 sm:gap-4 sm:px-6">
         <div className="flex items-center">
           <Link href="/" className="shrink-0">
             <Wordmark />
@@ -36,12 +37,13 @@ export function Header() {
 
         <MainNav />
 
-        {/* gap-2 below sm: four controls and three gaps on a 343px phone, and
-            8px a side is enough to separate them. */}
         <div className="flex items-center justify-end gap-2 sm:gap-3">
-          <LanguageSwitch />
-          {/* In CompactNav's popover below sm — see the note there. */}
-          <div className="hidden shrink-0 sm:block">
+          {/* Both move into CompactNav's popover below 54rem — the width where
+              the bar can no longer hold them and the full pill at once. */}
+          <div className="hidden shrink-0 min-[54rem]:block">
+            <LanguageSwitch />
+          </div>
+          <div className="hidden shrink-0 min-[54rem]:block">
             <ThemeToggle />
           </div>
           <AuthMenu />

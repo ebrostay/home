@@ -13,7 +13,7 @@ export function AuthMenu() {
   const [open, setOpen] = useState(false);
 
   if (loading) {
-    return <div className="skeleton h-9 w-9 shrink-0 rounded-(--radius-control) sm:w-20" />;
+    return <div className="skeleton h-9 w-9 shrink-0 rounded-(--radius-control)" />;
   }
 
   const go = (href: string) => {
@@ -29,20 +29,19 @@ export function AuthMenu() {
         onClick={() => setOpen((o) => !o)}
         className={
           me.authenticated
-            ? "flex h-9 items-center gap-2 rounded-(--radius-control) border border-line px-3 text-sm font-medium text-ink transition-colors hover:border-line-strong"
+            ? "grid h-9 w-9 place-items-center rounded-(--radius-control) border border-line text-ink transition-colors hover:border-line-strong"
             : "h-9 rounded-(--radius-control) bg-brand px-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong"
         }
       >
+        {/* The initial, never the name. The name cost up to 120px of the bar
+            and was the one thing in it that the person reading it already
+            knew — so it moved into the menu, where it answers a question
+            someone might actually have (which account is this?) instead of
+            occupying the width the nav needs. */}
         {me.authenticated ? (
-          <>
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-brand-soft text-[0.625rem] font-bold text-brand-strong">
-              {(me.name ?? "?").slice(0, 1).toUpperCase()}
-            </span>
-            {/* Avatar only below sm. The name costs up to 120px of a 343px
-                bar, and it is the one thing there that the person reading it
-                already knows. */}
-            <span className="hidden max-w-28 truncate sm:inline">{me.name}</span>
-          </>
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-brand-soft text-[0.625rem] font-bold text-brand-strong">
+            {(me.name ?? "?").slice(0, 1).toUpperCase()}
+          </span>
         ) : (
           tn("signIn")
         )}
@@ -62,6 +61,9 @@ export function AuthMenu() {
           >
             {me.authenticated ? (
               <>
+                <p className="truncate border-b border-line px-2.5 pb-2 pt-1.5 text-sm font-semibold text-ink">
+                  {me.name}
+                </p>
                 {me.isDeactivated && (
                   <p className="m-1 rounded-(--radius-control) bg-danger-soft px-2.5 py-2 text-xs text-danger">
                     {t("deactivated")}

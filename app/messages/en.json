@@ -43,7 +43,12 @@
       "list": "Manage Property",
       "how": "How it works"
     },
-    "menu": "Menu"
+    "menu": "Menu",
+    "language": "Language",
+    "pillShort": {
+      "find": "Find",
+      "list": "Manage"
+    }
   },
   "host": {
     "eyebrow": "OWNER",

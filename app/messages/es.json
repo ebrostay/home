@@ -43,7 +43,12 @@
       "list": "Gestiona tu vivienda",
       "how": "Cómo funciona"
     },
-    "menu": "Menú"
+    "menu": "Menú",
+    "language": "Idioma",
+    "pillShort": {
+      "find": "Buscar",
+      "list": "Gestionar"
+    }
   },
   "host": {
     "eyebrow": "PROPIETARIO",

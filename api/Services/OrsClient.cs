@@ -33,8 +33,27 @@ public sealed class OrsClient(
     /// Checked BEFORE any budget consumption or network call, in both public
     /// methods, so fixture-mode UI work never costs quota or depends on ORS
     /// being reachable.
+    ///
+    /// Under ORS_FIXTURES=1 ALONE, every destination in a matrix comes back
+    /// routable — this is the well-trodden path, and it must stay boring: an
+    /// owner adding two or more places and saving once is ordinary use, and
+    /// the server always re-measures every new/moved entry together (see
+    /// HostFunctions), so if any one of them came back unroutable by default
+    /// the save would be refused every time under fixtures, for no reason a
+    /// real host would ever hit.
+    ///
+    /// Set ORS_FIXTURES_UNROUTABLE=1 as well to deliberately exercise the path
+    /// real ORS data rarely produces: with more than one destination in a
+    /// matrix, the LAST one comes back null, the same shape ORS uses for a POI
+    /// it cannot route to. That is what lets NearbyLookup's foot-less-candidate
+    /// filter and HostFunctions' `nearby_unroutable` refusal be tested on
+    /// purpose, on demand — without also breaking the ordinary multi-entry
+    /// save every other fixture-mode session relies on.
     private static bool Fixtures =>
         Environment.GetEnvironmentVariable("ORS_FIXTURES") == "1";
+
+    private static bool FixturesUnroutable =>
+        Environment.GetEnvironmentVariable("ORS_FIXTURES_UNROUTABLE") == "1";
 
     public async Task<NearbyReach?[]> MatrixAsync(
         GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile,
@@ -46,15 +65,18 @@ public sealed class OrsClient(
             log.LogWarning(
                 "ORS_FIXTURES=1: serving canned matrix data, not calling ORS. " +
                 "This must never be set outside local development.");
-            // A single destination is a route preview: keep it non-null so
-            // that flow still works locally. With more than one destination,
-            // exercise the nullable-reach contract for real — a fully
-            // populated fixture array meant NearbyLookup's foot-less-candidate
-            // filter and the save path's `nearby_unroutable` refusal never
-            // ran during local work. The LAST destination in the batch is
-            // "unroutable", same as ORS returning null for one POI it cannot
-            // reach.
-            if (destinations.Count == 1) return [new NearbyReach(200, 3)];
+            // Every destination routable by default (see the comment on
+            // `Fixtures`/`FixturesUnroutable` above) — this is the path an
+            // ordinary multi-entry add-and-save exercises, and it must not be
+            // refused by fixture data alone. Only with ORS_FIXTURES_UNROUTABLE
+            // also set, and only with more than one destination (a single one
+            // is a route preview, and stays non-null so that flow still works
+            // locally), does the LAST destination in the batch come back null
+            // — "unroutable", the same shape ORS uses for one POI it cannot
+            // reach — so the foot-less-candidate filter and the save path's
+            // `nearby_unroutable` refusal can be exercised on purpose.
+            if (destinations.Count == 1 || !FixturesUnroutable)
+                return [.. destinations.Select((_, i) => new NearbyReach(200 + i * 90, 3 + i))];
             var fixtureReach = new NearbyReach?[destinations.Count];
             for (var i = 0; i < destinations.Count; i++)
                 fixtureReach[i] = i == destinations.Count - 1

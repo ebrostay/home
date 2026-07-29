@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  EyeOff,
   ImageUp,
   Loader2,
   Map,
@@ -13,6 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { ApiError, uploadHostPhoto, type HostListing, type HostPhoto } from "@/lib/api";
 import { ACCEPT, shrink } from "@/lib/photos";
+import { referencedPhotoUrls } from "@/lib/rich-text";
 
 // The gallery, in the order a guest will swipe through it.
 //
@@ -115,6 +117,17 @@ export function PhotoManager({
   // a photo is deleted.
   const coverIndex = photos.findIndex((p) => !p.isFloorplan);
 
+  // "Used in the description" is DERIVED, never stored — storing it is a
+  // denormalised copy that goes stale on the next edit. Walked from both
+  // documents on every render, not just once, so a chip removed a moment ago
+  // in the description editor is reflected here immediately.
+  const referenced = useMemo(() => {
+    const out = new Set<string>();
+    for (const d of [value.copy?.es, value.copy?.en])
+      if (d) for (const url of referencedPhotoUrls(d)) out.add(url);
+    return out;
+  }, [value.copy]);
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[0.84375rem] leading-relaxed text-body">{t("intro")}</p>
@@ -148,6 +161,28 @@ export function PhotoManager({
                     {t("planBadge")}
                   </span>
                 )}
+                {/* Usage badges, on the right so they never collide with the
+                    cover/plan badges on the left. Three mutually exclusive
+                    states, in order of how much attention each wants: an
+                    ORPHAN — hidden from the gallery AND unreferenced, so it is
+                    stored, counted against the photo cap, and shown nowhere —
+                    is exactly the silent-storage-leak state D11 exists to
+                    surface, so it gets the loudest treatment. */}
+                {photo.hiddenFromGallery && referenced.has(photo.url) && (
+                  <span className="data absolute right-2 top-2 rounded-full bg-brand px-2 py-0.5 text-[0.59375rem] tracking-[0.08em] text-white">
+                    {t("descriptionOnlyBadge")}
+                  </span>
+                )}
+                {photo.hiddenFromGallery && !referenced.has(photo.url) && (
+                  <span className="data absolute right-2 top-2 rounded-full bg-warn px-2 py-0.5 text-[0.59375rem] tracking-[0.08em] text-white">
+                    {t("orphanBadge")}
+                  </span>
+                )}
+                {!photo.hiddenFromGallery && referenced.has(photo.url) && (
+                  <span className="data absolute right-2 top-2 rounded-full bg-surface px-2 py-0.5 text-[0.59375rem] tracking-[0.08em] text-ink shadow-[0_0_0_1px_var(--line)]">
+                    {t("usedBadge")}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-1">
@@ -177,6 +212,19 @@ export function PhotoManager({
                   }
                 >
                   <Map size={14} strokeWidth={2} aria-hidden />
+                </TileButton>
+                <TileButton
+                  label={t("toggleGallery", { n: i + 1 })}
+                  pressed={photo.hiddenFromGallery}
+                  onClick={() =>
+                    setPhotos(
+                      photos.map((p, j) =>
+                        j === i ? { ...p, hiddenFromGallery: !p.hiddenFromGallery } : p,
+                      ),
+                    )
+                  }
+                >
+                  <EyeOff size={14} strokeWidth={2} aria-hidden />
                 </TileButton>
                 <TileButton
                   label={t("remove", { n: i + 1 })}

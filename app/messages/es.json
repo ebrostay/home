@@ -672,6 +672,10 @@
         "moveEarlier": "Adelantar la foto {n}",
         "moveLater": "Atrasar la foto {n}",
         "togglePlan": "Marcar la foto {n} como plano",
+        "toggleGallery": "Ocultar la foto {n} de la galería",
+        "usedBadge": "EN LA DESCRIPCIÓN",
+        "descriptionOnlyBadge": "SOLO EN LA DESCRIPCIÓN",
+        "orphanBadge": "SIN USAR",
         "remove": "Quitar la foto {n}",
         "upload": "Añadir fotos",
         "uploading": "Subiendo {done} de {total}…",
@@ -692,7 +696,34 @@
         "detailsHint": "Lo concreto: electrodomésticos, calefacción, qué hay en el edificio.",
         "beds": "Camas",
         "bedsPlaceholder": "2 camas dobles y 1 individual",
-        "bedsHint": "Cuántas camas y de qué tipo."
+        "bedsHint": "Cuántas camas y de qué tipo.",
+        "aboutPlaceholder": "¿Qué hace que merezca la pena vivir aquí?",
+        "toolbar": {
+          "bold": "Negrita",
+          "italic": "Cursiva",
+          "heading": "Encabezado",
+          "bullet": "Lista con viñetas",
+          "ordered": "Lista numerada",
+          "note": "Bueno saberlo",
+          "photo": "Insertar foto",
+          "place": "Insertar lugar"
+        },
+        "photoPicker": {
+          "title": "Insertar una foto",
+          "asChip": "Como etiqueta",
+          "asFigure": "Como imagen",
+          "upload": "Subir una foto",
+          "alsoInGallery": "Mostrar también en la galería",
+          "uploading": "Subiendo…",
+          "failed": "La subida ha fallado. Inténtalo de nuevo.",
+          "empty": "Esta vivienda aún no tiene fotos."
+        },
+        "placePicker": {
+          "title": "Insertar un lugar",
+          "asChip": "Como etiqueta",
+          "asCard": "Como tarjeta",
+          "empty": "Añade primero lugares cercanos en la sección anterior."
+        }
       },
       "amenities": {
         "intro": "Marca lo que tiene la vivienda. Es con esto con lo que se filtra en el buscador.",

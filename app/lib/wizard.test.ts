@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { HostListing, HostPricing } from "@/lib/api";
+import { paragraphDoc } from "@/lib/rich-text";
 import {
   STEPS,
   STEP_OF,
@@ -23,7 +24,7 @@ const complete = (over: Partial<HostListing> = {}): HostListing => ({
   lat: 41.6289,
   lng: -0.8812,
   area: { es: "Torrero", en: "Torrero" },
-  copy: { es: "Un ático", en: "A top-floor flat" },
+  copy: { es: paragraphDoc("Un ático"), en: paragraphDoc("A top-floor flat") },
   copyEnApproved: true,
   details: { es: "Detalles", en: "Details" },
   beds: { es: "1 cama doble", en: "1 double bed" },
@@ -32,7 +33,16 @@ const complete = (over: Partial<HostListing> = {}): HostListing => ({
   bathrooms: 1,
   sizeM2: 60,
   amenities: ["wifi"],
-  photos: [{ url: "a.webp", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0 }],
+  photos: [
+    {
+      url: "a.webp",
+      cardUrl: null,
+      detailUrl: null,
+      isFloorplan: false,
+      sortOrder: 0,
+      hiddenFromGallery: false,
+    },
+  ],
   ...over,
 });
 
@@ -72,10 +82,29 @@ describe("stepBlockers", () => {
   });
 
   it("gates description on Spanish alone", () => {
-    const es = complete({ copy: { es: "Hola", en: null }, copyEnApproved: false });
+    const es = complete({ copy: { es: paragraphDoc("Hola"), en: null }, copyEnApproved: false });
     expect(stepBlockers("description", es, priced())).toEqual([]);
-    const en = complete({ copy: { es: null, en: "Hello" } });
+    const en = complete({ copy: { es: null, en: paragraphDoc("Hello") } });
     expect(stepBlockers("description", en, priced())).toEqual(["copyEs"]);
+  });
+
+  // A document object existing is not the same as a written description —
+  // mirrors the server's `Both(BilingualDoc?)` (api/Models/HostModels.cs),
+  // which counts WORDS. A doc holding only a photo chip has a non-empty
+  // `content` array but zero text, so a presence check (`!!listing.copy?.es`)
+  // would wrongly wave this step through.
+  it("treats a document holding only a photo chip as no description", () => {
+    const chipOnly = {
+      type: "doc" as const,
+      content: [
+        {
+          type: "paragraph" as const,
+          content: [{ type: "photoRef" as const, attrs: { url: "a.webp" } }],
+        },
+      ],
+    };
+    const l = complete({ copy: { es: chipOnly, en: null } });
+    expect(stepBlockers("description", l, priced())).toEqual(["copyEs"]);
   });
 
   it("gates pricing on a price", () => {
@@ -112,7 +141,7 @@ describe("submitBlockers", () => {
   });
 
   it("does not ask for English approval before there is English", () => {
-    const noEn = complete({ copy: { es: "Un ático", en: null }, copyEnApproved: false });
+    const noEn = complete({ copy: { es: paragraphDoc("Un ático"), en: null }, copyEnApproved: false });
     const keys = submitBlockers(noEn, priced()).map((b) => b.key);
     expect(keys).toContain("untransCopy");
     expect(keys).not.toContain("enNotApproved");

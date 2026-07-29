@@ -655,7 +655,14 @@ function Step({
       );
 
     case "description":
-      return <DescriptionFields value={listing} onChange={setListing} />;
+      // Same guard as photos: the draft exists by now (address created it),
+      // but the type does not know that, and a placeholder id would try to
+      // upload description photos into nothing.
+      return property ? (
+        <DescriptionFields value={listing} onChange={setListing} propertyId={property.id} />
+      ) : (
+        <p className="text-sm text-muted">{tn("needsAddressFirst")}</p>
+      );
 
     case "amenities":
       return <AmenityPicker value={listing} onChange={setListing} />;

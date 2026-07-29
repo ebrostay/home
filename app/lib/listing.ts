@@ -1,5 +1,6 @@
 import type { Bilingual, HostListing } from "@/lib/api";
 import { AMENITY_KEYS } from "@/lib/amenity-icons";
+import { canonical, isEmptyDoc, type BilingualDoc } from "@/lib/rich-text";
 
 // ============================================================
 // The diff IS the page (ADR-027).
@@ -64,9 +65,17 @@ const FIELDS: Record<SectionKey, (l: HostListing) => unknown[]> = {
       .sort(),
   // Order is content: it decides the cover photo and the order a guest swipes
   // through the gallery, so a reorder is a change like any other.
-  photos: (l) => l.photos.map((p) => `${p.url}|${p.isFloorplan}`),
+  // `hiddenFromGallery` is owner intent, like `isFloorplan` — without it here
+  // an owner's toggle in `PhotoManager` never marks this section dirty and is
+  // dropped on save.
+  photos: (l) => l.photos.map((p) => `${p.url}|${p.isFloorplan}|${p.hiddenFromGallery}`),
   description: (l) => [
-    ...bi(l.copy),
+    // Documents, not strings: raw JSON.stringify would depend on key order and
+    // on absent-versus-undefined at EVERY node — the hazard `bi()` documents
+    // for a two-key record, multiplied by the tree. Without the canonical form
+    // the "changed" indicator lights on a freshly opened page.
+    canonical(l.copy?.es),
+    canonical(l.copy?.en),
     l.copyEnApproved,
     ...bi(l.details),
     ...bi(l.beds),
@@ -115,7 +124,7 @@ export type BilingualField = (typeof BILINGUAL)[number];
  *  untranslated" while pointing at the wrong step is a dead end an owner
  *  cannot get out of. */
 export const untranslated = (l: HostListing): BilingualField[] =>
-  BILINGUAL.filter((key) => !bothLanguages(l[key]));
+  BILINGUAL.filter((key) => !fieldHasBothLanguages(l, key));
 
 export type Completeness = {
   photos: number;
@@ -131,7 +140,7 @@ export function completenessOf(l: HostListing): Completeness {
   return {
     photos: l.photos.filter((p) => !p.isFloorplan).length,
     floorplans: l.photos.filter((p) => p.isFloorplan).length,
-    bilingual: BILINGUAL.filter((key) => bothLanguages(l[key] as Bilingual | null)).length,
+    bilingual: BILINGUAL.filter((key) => fieldHasBothLanguages(l, key)).length,
     bilingualTotal: BILINGUAL.length,
     amenities: l.amenities.length,
     amenitiesTotal: AMENITY_KEYS.length,
@@ -140,6 +149,22 @@ export function completenessOf(l: HostListing): Completeness {
 
 const bothLanguages = (b: Bilingual | null) =>
   !!b?.es?.trim() && !!b?.en?.trim();
+
+/** The document equivalent of `bothLanguages` — mirrors the server's
+ *  `Both(BilingualDoc?)` in `api/Models/HostModels.cs`: existing is not
+ *  enough, a `doc` with an empty `content` array, or one holding only a photo
+ *  chip, is not a written description, so this counts WORDS, not presence.
+ *  `isEmptyDoc` is exactly that test (`textLength() === 0`), applied per
+ *  language. Client and server disagreeing about whether a listing is
+ *  complete would be a bad bug. */
+const bothLanguagesDoc = (d: BilingualDoc | null) =>
+  !isEmptyDoc(d?.es) && !isEmptyDoc(d?.en);
+
+/** `copy` is a document; the other three `BILINGUAL` fields are plain
+ *  strings. One list drives both `untranslated` and `completenessOf`, so the
+ *  runtime check lives here rather than duplicated at each call site. */
+const fieldHasBothLanguages = (l: HostListing, key: BilingualField): boolean =>
+  key === "copy" ? bothLanguagesDoc(l.copy) : bothLanguages(l[key] as Bilingual | null);
 
 // ------------------------------------------------------------
 // Blockers — what still stands between this and a listing worth publishing.
@@ -182,8 +207,9 @@ export function blockersOf(l: HostListing): Blocker[] {
   const missing = untranslated(l).length;
   if (missing > 0) out.push({ key: "missingTranslation", count: missing });
 
-  // Only worth saying once there is English to approve.
-  if (l.copy?.en?.trim() && !l.copyEnApproved) out.push({ key: "enNotApproved" });
+  // Only worth saying once there is English to approve — words, not merely a
+  // document object (same test `bothLanguagesDoc` makes).
+  if (!isEmptyDoc(l.copy?.en) && !l.copyEnApproved) out.push({ key: "enNotApproved" });
 
   if (nearbyTypeEnMissing(l)) out.push({ key: "nearbyTypeEnMissing" });
   if (nearbyNeedsCheck(l)) out.push({ key: "nearbyNeedsCheck" });
@@ -204,10 +230,10 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
     out.add("address");
   if (l.photos.every((p) => p.isFloorplan)) out.add("photos");
   if (
-    !bothLanguages(l.copy) ||
+    !bothLanguagesDoc(l.copy) ||
     !bothLanguages(l.details) ||
     !bothLanguages(l.beds) ||
-    (!!l.copy?.en?.trim() && !l.copyEnApproved)
+    (!isEmptyDoc(l.copy?.en) && !l.copyEnApproved)
   )
     out.add("description");
   if (l.amenities.length === 0) out.add("amenities");

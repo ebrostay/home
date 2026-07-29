@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SECTIONS, attentionOf, blockersOf, changedSections } from "./listing";
-import type { HostListing, HostNearbyEntry } from "./api";
+import type { HostListing, HostNearbyEntry, HostPhoto } from "./api";
+import type { RichNode } from "./rich-text";
 
 // A listing with only the fields the diff reads. Cast once here so each test
 // stays about the rule under test rather than about fixture plumbing.
@@ -77,6 +78,64 @@ describe("changedSections", () => {
     const a = entry({ id: "a" });
     const b = entry({ id: "b", name: "Bus Ci1" });
     expect(changedSections(base({ nearby: [b, a] }), base({ nearby: [a, b] }))).toEqual([]);
+  });
+});
+
+describe("changedSections – description document", () => {
+  // Raw JSON.stringify depends on key order, and a document round-tripped
+  // through the API can emit its keys in a different order than the one
+  // Tiptap just built while meaning exactly the same thing. Without
+  // `canonical()` the differ would light "description" as changed on a
+  // freshly opened, untouched page.
+  it("does not flag a document that differs only in key order", () => {
+    const built: RichNode = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "Hola" }] }],
+    };
+    const roundTripped: RichNode = {
+      content: [{ content: [{ text: "Hola", type: "text" }], type: "paragraph" }],
+      type: "doc",
+    };
+    const a = base({ copy: { es: built, en: null } });
+    const b = base({ copy: { es: roundTripped, en: null } });
+    expect(changedSections(a, b)).toEqual([]);
+  });
+
+  it("still flags a document whose text actually changed", () => {
+    const a = base({
+      copy: {
+        es: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Hola" }] }] },
+        en: null,
+      },
+    });
+    const b = base({
+      copy: {
+        es: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Adiós" }] }] },
+        en: null,
+      },
+    });
+    expect(changedSections(a, b)).toEqual(["description"]);
+  });
+});
+
+describe("changedSections – photos", () => {
+  const photo = (over: Partial<HostPhoto> = {}): HostPhoto => ({
+    url: "a.webp",
+    cardUrl: null,
+    detailUrl: null,
+    isFloorplan: false,
+    sortOrder: 0,
+    hiddenFromGallery: false,
+    ...over,
+  });
+
+  // `hiddenFromGallery` is owner intent, like `isFloorplan` — without it in
+  // the differ, toggling the gallery checkbox never marks the section dirty
+  // and the toggle is silently dropped on save.
+  it("flags a toggled hiddenFromGallery as changed", () => {
+    const a = base({ photos: [photo({ hiddenFromGallery: true })] });
+    const b = base({ photos: [photo({ hiddenFromGallery: false })] });
+    expect(changedSections(a, b)).toEqual(["photos"]);
   });
 });
 

@@ -672,6 +672,10 @@
         "moveEarlier": "Move photo {n} earlier",
         "moveLater": "Move photo {n} later",
         "togglePlan": "Mark photo {n} as a floor plan",
+        "toggleGallery": "Hide photo {n} from the gallery",
+        "usedBadge": "IN DESCRIPTION",
+        "descriptionOnlyBadge": "DESCRIPTION ONLY",
+        "orphanBadge": "UNUSED",
         "remove": "Remove photo {n}",
         "upload": "Add photos",
         "uploading": "Uploading {done} of {total}…",
@@ -692,7 +696,34 @@
         "detailsHint": "The specifics: appliances, heating, what is in the building.",
         "beds": "Beds",
         "bedsPlaceholder": "2 double beds and 1 single",
-        "bedsHint": "How many beds, and of what kind."
+        "bedsHint": "How many beds, and of what kind.",
+        "aboutPlaceholder": "What makes this home worth living in?",
+        "toolbar": {
+          "bold": "Bold",
+          "italic": "Italic",
+          "heading": "Heading",
+          "bullet": "Bulleted list",
+          "ordered": "Numbered list",
+          "note": "Good to know",
+          "photo": "Insert photo",
+          "place": "Insert place"
+        },
+        "photoPicker": {
+          "title": "Insert a photo",
+          "asChip": "As a chip",
+          "asFigure": "As a figure",
+          "upload": "Upload a photo",
+          "alsoInGallery": "Also show in the gallery",
+          "uploading": "Uploading…",
+          "failed": "That upload failed. Try again.",
+          "empty": "This listing has no photos yet."
+        },
+        "placePicker": {
+          "title": "Insert a place",
+          "asChip": "As a chip",
+          "asCard": "As a card",
+          "empty": "Add nearby places in the section above first."
+        }
       },
       "amenities": {
         "intro": "Tick what the home has. This is what guests filter search by.",

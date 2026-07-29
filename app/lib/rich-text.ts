@@ -1,5 +1,3 @@
-import { LIMITS } from "./listing";
-
 // The listing description document (ADR pending; design 2026-07-29).
 //
 // This module is PURE — no React, no fetching, no Tiptap. It is the shared
@@ -37,7 +35,13 @@ export type RichNode = {
 export type BilingualDoc = { es: RichNode | null; en: RichNode | null };
 
 export const RICH_LIMITS = {
-  maxText: LIMITS.maxCopy,
+  // Mirrors `LIMITS.maxCopy` in `lib/listing.ts`, duplicated rather than
+  // imported: `lib/listing.ts`'s differ needs `canonical()`/`isEmptyDoc()`
+  // from this file, and importing `LIMITS` back from there would make the two
+  // modules import each other — this file is meant to be the pure base the
+  // editor, the renderer AND the differ all sit on top of, so the dependency
+  // only runs one way.
+  maxText: 4_000,
   maxCaption: 200,
   maxNodes: 400,
   maxDepth: 5,

@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Bilingual, HostListing } from "@/lib/api";
+import { uploadHostPhoto, type Bilingual, type HostListing } from "@/lib/api";
+import { isEmptyDoc, type RichNode } from "@/lib/rich-text";
 import { LIMITS } from "@/lib/listing";
 import { TextAreaField, TextField } from "./TextField";
+import { RichTextEditor, type RichTextEditorProps } from "./RichTextEditor";
+import { PhotoPicker } from "./PhotoPicker";
+import { PlacePicker } from "./PlacePicker";
 
 // The words a guest reads. Bilingual is a hard requirement in this product,
 // so the two languages sit side by side and neither is a second-class field.
@@ -12,7 +17,10 @@ import { TextAreaField, TextField } from "./TextField";
 // The English description carries an approval gate the other fields don't
 // (ADR-027). It is the one paragraph read as the owner's own voice, and the
 // only one long enough for a bad rendering to mislead — "beds: 2 dobles" says
-// the same thing however it is translated; a paragraph does not.
+// the same thing however it is translated; a paragraph does not. That
+// rationale applies more strongly to a FORMATTED paragraph, not less — a
+// bold claim or a bulleted list is even easier to render wrong than plain
+// text — so the gate stays exactly where it was.
 //
 // 🔜 The handoff has this text machine-translated with the owner approving the
 // result. The gate ships; the translation does not — there is no translate
@@ -22,13 +30,15 @@ import { TextAreaField, TextField } from "./TextField";
 export function DescriptionFields({
   value,
   onChange,
+  propertyId,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
+  propertyId: string;
 }) {
   const t = useTranslations("host.edit.description");
 
-  const setBi = (key: "copy" | "details" | "beds", locale: "es" | "en", next: string) => {
+  const setBi = (key: "details" | "beds", locale: "es" | "en", next: string) => {
     const current = value[key];
     const merged: Bilingual = { es: current?.es ?? null, en: current?.en ?? null };
     merged[locale] = next.trim() === "" ? null : next;
@@ -38,18 +48,65 @@ export function DescriptionFields({
     });
   };
 
+  // `copy` holds documents, not strings, so it gets its own setter rather
+  // than sharing `setBi`.
+  const setCopyDoc = (locale: "es" | "en", next: RichNode) =>
+    onChange({
+      ...value,
+      copy: { es: value.copy?.es ?? null, en: value.copy?.en ?? null, [locale]: next },
+    });
+
   const approved = value.copyEnApproved;
-  const hasEnglish = !!value.copy?.en?.trim();
+  // Presence is not enough: a document holding only a photo chip has no
+  // words, and approving nothing would satisfy the gate without anyone
+  // having written a sentence.
+  const hasEnglish = !isEmptyDoc(value.copy?.en);
+
+  // Both editors — ES and EN — share one pair of pickers, held here. Only one
+  // can be open at a time; which editor asked is remembered as the `insert`
+  // callback itself.
+  const [photoPick, setPhotoPick] = useState<((url: string, asFigure: boolean) => void) | null>(
+    null,
+  );
+  const [placePick, setPlacePick] = useState<((entryId: string, asCard: boolean) => void) | null>(
+    null,
+  );
+
+  const upload = async (file: File, alsoInGallery: boolean) => {
+    // The existing endpoint — the only path by which bytes reach storage.
+    const photos = await uploadHostPhoto(propertyId, file, false);
+    const added = photos[photos.length - 1];
+    onChange({
+      ...value,
+      photos: photos.map((p) =>
+        p.url === added.url ? { ...p, hiddenFromGallery: !alsoInGallery } : p,
+      ),
+    });
+    return added.url;
+  };
+
+  const toolbarStrings: RichTextEditorProps["strings"] = {
+    bold: t("toolbar.bold"),
+    italic: t("toolbar.italic"),
+    heading: t("toolbar.heading"),
+    bullet: t("toolbar.bullet"),
+    ordered: t("toolbar.ordered"),
+    note: t("toolbar.note"),
+    photo: t("toolbar.photo"),
+    place: t("toolbar.place"),
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      <TextAreaField
+      <RichTextEditor
+        value={value.copy?.es ?? null}
+        onChange={(next) => setCopyDoc("es", next)}
         label={t("about")}
         tag={t("aboutTagEs")}
-        value={value.copy?.es ?? ""}
-        onChange={(v) => setBi("copy", "es", v)}
-        maxLength={LIMITS.maxCopy}
-        hint={t("aboutHint")}
+        placeholder={t("aboutPlaceholder")}
+        onInsertPhoto={(insert) => setPhotoPick(() => insert)}
+        onInsertPlace={(insert) => setPlacePick(() => insert)}
+        strings={toolbarStrings}
       />
 
       {/* River, not brand: this panel is informational — it is where the two
@@ -64,12 +121,15 @@ export function DescriptionFields({
           </span>
         </div>
 
-        <TextAreaField
+        <RichTextEditor
+          value={value.copy?.en ?? null}
+          onChange={(next) => setCopyDoc("en", next)}
           label={t("about")}
           tag="EN"
-          value={value.copy?.en ?? ""}
-          onChange={(v) => setBi("copy", "en", v)}
-          maxLength={LIMITS.maxCopy}
+          placeholder={t("aboutPlaceholder")}
+          onInsertPhoto={(insert) => setPhotoPick(() => insert)}
+          onInsertPlace={(insert) => setPlacePick(() => insert)}
+          strings={toolbarStrings}
         />
 
         <button
@@ -128,6 +188,36 @@ export function DescriptionFields({
           maxLength={LIMITS.maxBeds}
         />
       </div>
+
+      <PhotoPicker
+        open={photoPick !== null}
+        photos={value.photos}
+        onClose={() => setPhotoPick(null)}
+        onPick={(url, asFigure) => photoPick?.(url, asFigure)}
+        onUpload={upload}
+        strings={{
+          title: t("photoPicker.title"),
+          asChip: t("photoPicker.asChip"),
+          asFigure: t("photoPicker.asFigure"),
+          upload: t("photoPicker.upload"),
+          alsoInGallery: t("photoPicker.alsoInGallery"),
+          uploading: t("photoPicker.uploading"),
+          failed: t("photoPicker.failed"),
+          empty: t("photoPicker.empty"),
+        }}
+      />
+      <PlacePicker
+        open={placePick !== null}
+        entries={value.nearby}
+        onClose={() => setPlacePick(null)}
+        onPick={(entryId, asCard) => placePick?.(entryId, asCard)}
+        strings={{
+          title: t("placePicker.title"),
+          asChip: t("placePicker.asChip"),
+          asCard: t("placePicker.asCard"),
+          empty: t("placePicker.empty"),
+        }}
+      />
     </div>
   );
 }

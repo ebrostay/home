@@ -82,7 +82,12 @@ public record HostPhoto(
     string? CardUrl,
     string? DetailUrl,
     bool IsFloorplan,
-    int SortOrder);
+    int SortOrder,
+    /// A photo kept out of the gallery — it exists only to be referenced from
+    /// the description. Mirrors `PropertyPhoto.HiddenFromGallery`; the owner
+    /// needs to read and set it here or `PhotoPicker`'s "also show in the
+    /// gallery" checkbox has nothing to write to.
+    bool HiddenFromGallery);
 
 /// Everything the listing editor edits — the half of the document that changes
 /// once or twice a year, and the half whose change is a new claim about the
@@ -272,7 +277,8 @@ public static class HostProjection
         [.. p.Photos
             .OrderBy(ph => ph.SortOrder)
             .Select(ph => new HostPhoto(
-                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder))],
+                ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder,
+                ph.HiddenFromGallery))],
         p.Nearby);
 
     public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(

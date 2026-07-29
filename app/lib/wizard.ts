@@ -1,5 +1,6 @@
 import type { HostListing, HostPricing } from "@/lib/api";
 import { blockersOf, untranslated, type Blocker } from "@/lib/listing";
+import { isEmptyDoc } from "@/lib/rich-text";
 
 // ============================================================
 // "Add a property" — the order of the questions, what each one needs before
@@ -137,7 +138,12 @@ export function stepBlockers(
   // Spanish only. The English is gated at submit, where the approval it needs
   // can also be asked for — requiring both here would strand an owner who
   // writes the Spanish now and the English tonight.
-  if (step === "description" && !listing.copy?.es?.trim()) out.push("copyEs");
+  //
+  // Present is not enough: a document with an empty `content` array, or one
+  // holding only a photo chip, is not a written description, so this counts
+  // WORDS (`isEmptyDoc`/`textLength`), matching `Both(BilingualDoc?)` on the
+  // server (`api/Models/HostModels.cs`) and `bothLanguagesDoc` in lib/listing.
+  if (step === "description" && isEmptyDoc(listing.copy?.es)) out.push("copyEs");
 
   if (step === "pricing" && pricing.priceNumber <= 0) out.push("price");
 

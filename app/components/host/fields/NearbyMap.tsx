@@ -14,6 +14,14 @@ import { decodePolyline } from "@/lib/nearby";
 // "committed", but a plain dot with no halo so the one true home pin never
 // gets lost among the entries added to its own listing).
 //
+// `homeLabel` names the home pin itself (title/alt). It is a caller-supplied
+// prop rather than another `useTranslations` call in here, because this map
+// now carries many pins with their own `label`s — reusing the ADDRESS
+// section's `mapLabel` for the home pin too (as this component briefly did)
+// made the map region and the home pin announce the identical sentence.
+// `mapLabel` stays exactly what it was: the container's own `aria-label`,
+// describing what the whole map shows.
+//
 // Follows LocationPicker's lifecycle exactly: Leaflet is loaded inside an
 // effect, never as a module import, because it touches `window` while
 // loading and this page is prerendered in Node (output: "export") where
@@ -29,6 +37,9 @@ export type NearbyMapPin = { id: string; lat: number; lng: number; label: string
 
 type NearbyMapProps = {
   home: { lat: number; lng: number };
+  /** The home pin's own accessible name (title/alt) — short, e.g. "Home". Not
+   *  the map region's aria-label, which stays `mapLabel` below. */
+  homeLabel: string;
   candidates: NearbyMapPin[];
   chosen: NearbyMapPin[];
   activeId: string | null;
@@ -41,6 +52,7 @@ type NearbyMapProps = {
 
 export function NearbyMap({
   home,
+  homeLabel,
   candidates,
   chosen,
   activeId,
@@ -113,8 +125,8 @@ export function NearbyMap({
       // never moves and must survive pinsRef.clearLayers() on every
       // candidate/chosen redraw.
       L.marker([home.lat, home.lng], {
-        title: t("mapLabel"),
-        alt: t("mapLabel"),
+        title: homeLabel,
+        alt: homeLabel,
         icon: L.divIcon({
           className: "",
           html: `<div class="map-marker"></div>`,
@@ -135,7 +147,9 @@ export function NearbyMap({
       cancelled = true;
     };
     // Mount once. `home` is the STARTING position — re-running on every
-    // change would rebuild the map out from under the owner.
+    // change would rebuild the map out from under the owner. `homeLabel` is
+    // omitted the same way `t` always has been: a translated string does not
+    // change within one page life, so there is nothing to react to.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [home.lat, home.lng]);
 
@@ -218,12 +232,21 @@ export function NearbyMap({
     [],
   );
 
+  // The size/border/cursor classes live on a WRAPPER, never on the div
+  // Leaflet itself owns. `dropMode` makes the cursor class change across
+  // renders, and React writes a changed `className` straight onto the DOM
+  // node it thinks it owns — which, on `containerRef`'s element, would wipe
+  // out `leaflet-container` and friends the moment `L.map()` added them,
+  // since React has no idea Leaflet also touched that attribute. Splitting
+  // the two elements means React freely rewrites the wrapper every render
+  // while the inner div's className stays the one static string it started
+  // with, so React never touches it again after the first paint and
+  // Leaflet's own classes survive every drop-mode toggle.
   return (
     <div
-      ref={containerRef}
-      role="application"
-      aria-label={t("mapLabel")}
-      className={`z-0 rounded-(--radius-card) border border-line ${dropMode ? "cursor-crosshair" : ""} ${className}`}
-    />
+      className={`z-0 overflow-hidden rounded-(--radius-card) border border-line ${dropMode ? "cursor-crosshair" : ""} ${className}`}
+    >
+      <div ref={containerRef} role="application" aria-label={t("mapLabel")} className="h-full w-full" />
+    </div>
   );
 }

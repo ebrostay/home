@@ -463,6 +463,46 @@
         "finderDoor": "Puerta {value}",
         "finderWhole": "Toda la finca"
       },
+      "nearby": {
+        "hint": "Elige lo que de verdad está cerca, a pie. Busca por grupo o coloca tú un punto en el mapa.",
+        "title": "BUSCAR SITIOS CERCANOS",
+        "homeLabel": "Vivienda",
+        "groupsLabel": "Grupos",
+        "find": "Buscar cerca",
+        "addManually": "Añadir a mano",
+        "close": "Cerrar",
+        "cancel": "Cancelar",
+        "add": "Añadir",
+        "added": "Añadido",
+        "remove": "Quitar {name}",
+        "groupFull": "Este grupo ya tiene sus 6 sitios. Quita uno para añadir otro.",
+        "limitReached": "Este anuncio ya tiene el máximo de 24 sitios cercanos.",
+        "needsCheck": "Más lejos desde que moviste el punto",
+        "typeLabel": "Tipo",
+        "customType": "Otro…",
+        "customEs": "¿Qué es? (en español)",
+        "customEn": "¿Qué es? (en inglés, opcional)",
+        "searching": "Buscando cerca…",
+        "lookupFailed": "La búsqueda no ha respondido. Aun así puedes añadir un sitio a mano.",
+        "noResults": "No hemos encontrado nada cerca. Aun así puedes añadir un sitio a mano.",
+        "retry": "Reintentar",
+        "dropHint": "Toca el mapa donde está el sitio.",
+        "measuring": "Midiendo el camino a pie desde tu vivienda…",
+        "orsDown": "No hemos podido medir ese punto. Inténtalo de nuevo en un momento.",
+        "typesUnavailable": "La lista de tipos no se ha cargado. Descríbelo tú mismo.",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Panadería de la esquina",
+        "empty": "Todavía no has añadido ningún sitio en este grupo.",
+        "count": "{count, plural, =0 {SIN SITIOS} one {# SITIO} other {# SITIOS}}",
+        "minutes": "{count} min",
+        "group": {
+          "transport": "Transporte",
+          "groceries": "Compras",
+          "food": "Restaurantes",
+          "outdoors": "Aire libre",
+          "health": "Salud"
+        }
+      },
       "photos": {
         "intro": "El orden es lo que ve el huésped: la primera foto que no sea un plano es la portada.",
         "none": "Todavía no hay fotos en este anuncio.",
@@ -581,7 +621,17 @@
         "declined_duplicate": "Esa sugerencia ya estaba descartada. Recarga para ver el estado actual.",
         "status_invalid": "Desde aquí solo puedes pausar o reabrir el anuncio.",
         "status_not_allowed": "Este anuncio no se puede pausar ni reabrir en su estado actual.",
-        "stale_write": "Esta vivienda ha cambiado en otro sitio mientras editabas. Recarga para ver la versión actual."
+        "stale_write": "Esta vivienda ha cambiado en otro sitio mientras editabas. Recarga para ver la versión actual.",
+        "nearby_too_many": "Un anuncio admite 24 sitios cercanos como máximo.",
+        "nearby_group_full": "Ese grupo ya tiene 6 sitios. Quita uno para añadir otro.",
+        "nearby_bad_group": "Uno de esos sitios no pertenece a un grupo reconocido. Recarga la página.",
+        "nearby_duplicate_id": "El mismo sitio aparece dos veces. Recarga la página e inténtalo de nuevo.",
+        "nearby_bad_name": "Pon un nombre de menos de 80 caracteres a ese sitio.",
+        "nearby_out_of_area": "Ese punto queda fuera de Zaragoza.",
+        "nearby_bad_type": "Uno de esos tipos no se reconoce. Recarga la página.",
+        "nearby_bad_custom": "Un tipo personalizado necesita un nombre en español de menos de 40 caracteres.",
+        "nearby_unroutable": "No hemos encontrado una ruta hasta uno de esos sitios. Quítalo e inténtalo con otro.",
+        "ors_unavailable": "El servicio de rutas no responde ahora mismo. Prueba a guardar de nuevo en un momento."
       }
     }
   },
@@ -805,7 +855,34 @@
     "ownerView": "Estás viendo tu vivienda como la ve un huésped."
   },
   "nearby": {
-    "type": {}
+    "type": {
+      "tram": "Tranvía",
+      "bus": "Autobús",
+      "rail": "Tren",
+      "metro": "Metro",
+      "bikeshare": "Bicicleta compartida",
+      "taxi": "Taxi",
+      "supermarket": "Supermercado",
+      "market": "Mercado",
+      "bakery": "Panadería",
+      "convenience": "Tienda de barrio",
+      "mall": "Centro comercial",
+      "restaurant": "Restaurante",
+      "tapas": "Tapas",
+      "cafe": "Café",
+      "bar": "Bar",
+      "park": "Parque",
+      "river": "Río",
+      "sports": "Centro deportivo",
+      "pool": "Piscina",
+      "playground": "Zona infantil",
+      "pharmacy": "Farmacia",
+      "clinic": "Clínica",
+      "hospital": "Hospital",
+      "dentist": "Dentista",
+      "vet": "Veterinario"
+    },
+    "attribution": "© openrouteservice by HeiGIT | Data from OpenStreetMap"
   },
   "estimate": {
     "title": "Calcula tu estancia",

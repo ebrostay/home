@@ -463,6 +463,46 @@
         "finderDoor": "Door {value}",
         "finderWhole": "The whole property"
       },
+      "nearby": {
+        "hint": "Choose what's genuinely nearby, on foot. Search a group below, or drop a pin yourself.",
+        "title": "FIND NEARBY PLACES",
+        "homeLabel": "Home",
+        "groupsLabel": "Groups",
+        "find": "Find nearby",
+        "addManually": "Add manually",
+        "close": "Close",
+        "cancel": "Cancel",
+        "add": "Add",
+        "added": "Added",
+        "remove": "Remove {name}",
+        "groupFull": "This group already has 6 places. Remove one to add another.",
+        "limitReached": "This listing already has the maximum of 24 nearby places.",
+        "needsCheck": "Farther since the pin moved",
+        "typeLabel": "Type",
+        "customType": "Other…",
+        "customEs": "What is it? (Spanish)",
+        "customEn": "What is it? (English, optional)",
+        "searching": "Searching nearby…",
+        "lookupFailed": "The search did not answer. You can still add a place by hand.",
+        "noResults": "Nothing found nearby. You can still add a place by hand.",
+        "retry": "Try again",
+        "dropHint": "Click the map where the place is.",
+        "measuring": "Measuring the walk from your home…",
+        "orsDown": "We could not measure that point. Try again in a moment.",
+        "typesUnavailable": "The type list did not load. Describe it yourself instead.",
+        "nameLabel": "Name",
+        "namePlaceholder": "Corner bakery",
+        "empty": "No places added yet in this group.",
+        "count": "{count, plural, =0 {NO PLACES} one {# PLACE} other {# PLACES}}",
+        "minutes": "{count} min",
+        "group": {
+          "transport": "Transport",
+          "groceries": "Groceries",
+          "food": "Restaurants",
+          "outdoors": "Outdoors",
+          "health": "Health"
+        }
+      },
       "photos": {
         "intro": "The order is what a guest sees: the first photo that is not a floor plan is the cover.",
         "none": "This listing has no photos yet.",
@@ -581,7 +621,17 @@
         "declined_duplicate": "That suggestion is already dismissed. Reload to see the current state.",
         "status_invalid": "From here you can only pause or reopen the listing.",
         "status_not_allowed": "This listing cannot be paused or reopened in its current state.",
-        "stale_write": "This home changed somewhere else while you were editing. Reload to see the current version."
+        "stale_write": "This home changed somewhere else while you were editing. Reload to see the current version.",
+        "nearby_too_many": "A listing can have 24 nearby places at most.",
+        "nearby_group_full": "That group already has 6 places. Remove one to add another.",
+        "nearby_bad_group": "One of those places is not in a group we recognise. Reload the page.",
+        "nearby_duplicate_id": "The same place appears twice. Reload the page and try again.",
+        "nearby_bad_name": "Give that place a name under 80 characters.",
+        "nearby_out_of_area": "That point is outside Zaragoza.",
+        "nearby_bad_type": "One of those types is not recognised. Reload the page.",
+        "nearby_bad_custom": "A custom type needs a Spanish name, under 40 characters.",
+        "nearby_unroutable": "We could not find a route to one of those places. Remove it and try another.",
+        "ors_unavailable": "The routing service is not answering right now. Try saving again shortly."
       }
     }
   },
@@ -805,7 +855,34 @@
     "ownerView": "You are seeing your home as a guest sees it."
   },
   "nearby": {
-    "type": {}
+    "type": {
+      "tram": "Tram",
+      "bus": "Bus",
+      "rail": "Train",
+      "metro": "Metro",
+      "bikeshare": "Bike share",
+      "taxi": "Taxi",
+      "supermarket": "Supermarket",
+      "market": "Market",
+      "bakery": "Bakery",
+      "convenience": "Corner shop",
+      "mall": "Shopping centre",
+      "restaurant": "Restaurant",
+      "tapas": "Tapas",
+      "cafe": "Café",
+      "bar": "Bar",
+      "park": "Park",
+      "river": "River",
+      "sports": "Sports centre",
+      "pool": "Pool",
+      "playground": "Playground",
+      "pharmacy": "Pharmacy",
+      "clinic": "Clinic",
+      "hospital": "Hospital",
+      "dentist": "Dentist",
+      "vet": "Vet"
+    },
+    "attribution": "© openrouteservice by HeiGIT | Data from OpenStreetMap"
   },
   "estimate": {
     "title": "Price your stay",

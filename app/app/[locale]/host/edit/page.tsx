@@ -47,6 +47,7 @@ import { SaveBar, type SaveState } from "@/components/host/edit/SaveBar";
 import { DangerZone } from "@/components/host/edit/DangerZone";
 import { BasicsFields } from "@/components/host/fields/BasicsFields";
 import { AddressFields } from "@/components/host/fields/AddressFields";
+import { NearbyEditor } from "@/components/host/fields/NearbyEditor";
 import { PhotoManager } from "@/components/host/fields/PhotoManager";
 import { DescriptionFields } from "@/components/host/fields/DescriptionFields";
 import { AmenityPicker } from "@/components/host/fields/AmenityPicker";
@@ -386,6 +387,19 @@ function EditContent() {
               onChange={setListing}
               declined={declined}
               onDecline={decline}
+            />
+          </SectionCard>
+
+          <SectionCard
+            id="nearby"
+            label={te("nav.nearby")}
+            figure={te("nearby.count", { count: listing.nearby.length })}
+          >
+            <NearbyEditor
+              value={listing.nearby}
+              lat={listing.lat}
+              lng={listing.lng}
+              onChange={(nearby) => setListing({ ...listing, nearby })}
             />
           </SectionCard>
 

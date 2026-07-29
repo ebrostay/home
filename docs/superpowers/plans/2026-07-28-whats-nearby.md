@@ -853,7 +853,12 @@ services.AddHttpClient("ors", c =>
     // Required by ORS. A browser will not let us set this, which is one of the
     // three reasons this call cannot be client-direct.
     c.DefaultRequestHeaders.UserAgent.ParseAdd("ebrostay/2.0 (info@ebrostay.com)");
-    c.DefaultRequestHeaders.Add("Authorization",
+    // TryAddWithoutValidation, NOT Add. .NET parses Authorization as
+    // "scheme credential" and ORS sends a bare key with no scheme, so Add
+    // throws FormatException while BUILDING the client — before any request is
+    // made. Fixture mode returns before the client is built, so this failure is
+    // invisible until the first real call.
+    c.DefaultRequestHeaders.TryAddWithoutValidation("Authorization",
         Environment.GetEnvironmentVariable("ORS_API_KEY") ?? "");
 });
 

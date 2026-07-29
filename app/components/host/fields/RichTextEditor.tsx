@@ -13,7 +13,7 @@ import History from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
 import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, StickyNote } from "lucide-react";
-import { EMPTY_DOC, isEmptyDoc, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
+import { EMPTY_DOC, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
 
 // The ONLY file in the app that imports Tiptap. Everything downstream — the
 // renderer, the differ, the C# walk — reads the plain JSON tree, so replacing
@@ -189,17 +189,23 @@ export function RichTextEditor({
   // Re-sync when the parent replaces the document wholesale — a discard
   // (including back to `null`, which means "no document", not "no change"),
   // or a reload after save. `null` is normalized to `EMPTY_DOC` so a discard
-  // actually clears the editor instead of leaving the discarded text on
-  // screen. Skipped only when both sides are already empty — a `null` value
-  // arriving on an editor nobody has typed into yet must not trigger a
-  // pointless `setContent`. Otherwise guarded by a content comparison, or
-  // every keystroke would reset the cursor.
+  // actually clears the editor instead of leaving the discarded text (or a
+  // lone reference chip — see below) on screen. Deliberately NOT
+  // short-circuited by any notion of "is this empty": a document holding
+  // only a `photoRef`/`photoFigure`/`placeRef`/`placeCard` and no words has
+  // `textLength() === 0`, so any text-based emptiness check (e.g.
+  // `isEmptyDoc`) would call it empty and skip clearing it on discard — the
+  // exact bug this effect exists to prevent, just for chips instead of text.
+  // The plain content comparison below is sufficient on its own: when the
+  // incoming document and the editor's current document already agree
+  // (including "both hold nothing," typing that just round-tripped back
+  // through the parent, or a still-untouched editor seeing `null`),
+  // `JSON.stringify` matches and `setContent` is skipped — that's what stops
+  // every keystroke from resetting the cursor. No separate guard is needed.
   useEffect(() => {
     if (!editor) return;
     const next = value ?? EMPTY_DOC;
-    const current = editor.getJSON() as RichNode;
-    if (isEmptyDoc(next) && isEmptyDoc(current)) return;
-    if (JSON.stringify(current) !== JSON.stringify(next)) {
+    if (JSON.stringify(editor.getJSON()) !== JSON.stringify(next)) {
       editor.commands.setContent(next, { emitUpdate: false });
     }
   }, [editor, value]);

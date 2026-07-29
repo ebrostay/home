@@ -64,7 +64,7 @@ export function PerformanceSection({
 
   return (
     <SectionCard id="performance" label={t("label")}>
-      <div className="grid gap-3.5 min-[30rem]:grid-cols-2 min-[62rem]:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3.5 min-[30rem]:grid-cols-2 min-[62rem]:grid-cols-4">
         {tiles.map((tile) => (
           <div
             key={tile.key}

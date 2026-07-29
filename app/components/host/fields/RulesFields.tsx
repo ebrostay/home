@@ -48,7 +48,7 @@ export function RulesFields({
         <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">
           {t("policyHeading")}
         </span>
-        <div className="grid gap-3 min-[34rem]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 min-[34rem]:grid-cols-2">
           <PolicyRow
             label={t("policyStay")}
             value={t("policyStayValue", { days: MIN_STAY_DAYS, months: 12 })}
@@ -63,7 +63,7 @@ export function RulesFields({
         </p>
       )}
 
-      <div className="grid gap-3 min-[34rem]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 min-[34rem]:grid-cols-2">
         {RULES.map((rule) => {
           const key = FIELD[rule];
           const on = value[key] as boolean;

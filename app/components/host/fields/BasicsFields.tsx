@@ -58,7 +58,7 @@ export function BasicsFields({
         />
       </div>
 
-      <div className="grid gap-3.5 min-[34rem]:grid-cols-2 min-[52rem]:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3.5 min-[34rem]:grid-cols-2 min-[52rem]:grid-cols-4">
         <UnitField
           label={t("size")}
           unit="m²"

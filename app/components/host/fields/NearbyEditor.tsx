@@ -848,7 +848,7 @@ export function NearbyEditor({
                       <p className="text-xs text-muted">{t("typesUnavailable")}</p>
                     )}
                     {(manualType === null || vocab.kind !== "ready") && (
-                      <div className="grid gap-2 min-[24rem]:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-2 min-[24rem]:grid-cols-2">
                         <TextField
                           label={t("customEs")}
                           value={manualEs}
@@ -972,7 +972,7 @@ export function NearbyEditor({
                           </div>
 
                           {draft.type === null && !already && (
-                            <div className="grid gap-2 min-[24rem]:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-2 min-[24rem]:grid-cols-2">
                               <TextField
                                 label={t("customEs")}
                                 value={draft.es}

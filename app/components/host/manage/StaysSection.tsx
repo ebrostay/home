@@ -23,8 +23,31 @@ const PILL: Record<Stay["status"], string> = {
   completed: "bg-surface-2 text-muted",
 };
 
-const COLUMNS =
-  "grid grid-cols-[minmax(0,1.6fr)_90px_minmax(0,1fr)_110px] gap-3.5 min-[52rem]:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_90px_minmax(0,1fr)_130px]";
+// Three shapes, not two. The columns are what the table wants; below 38rem it
+// cannot have them, and squeezing was the wrong answer.
+//
+// The arithmetic: status 110 + length 90 + three 14px gaps = 242 fixed, and
+// the two flexible tracks split 1.6/1 — so "20 Jun – 23 Jun 2026" (~135px)
+// and "950 €" (~46px) together need about 220 of free space, i.e. ~462px of
+// card content. On a 375px phone there are 351, and what that bought was a
+// date truncated to "20 Jun…" — the end of the stay, silently dropped — over
+// a rent wrapping under its own euro sign.
+//
+// So below 38rem a stay stops being a row and becomes a block: the dates on
+// their own line at full length, then length, rent and status beneath. Every
+// value survives, none is truncated, and the header disappears with the
+// columns it was labelling.
+//
+// 38rem and not less because the card's content width is NOT monotonic in the
+// viewport: at 29rem the card is full-bleed and holds 455px, at 30rem it goes
+// back to being inset and holds 384. The stacked rung has to cover that dip.
+const ROW =
+  "flex flex-col gap-1.5 min-[38rem]:grid min-[38rem]:grid-cols-[minmax(0,1.6fr)_90px_minmax(0,1fr)_110px] min-[38rem]:gap-3.5 min-[52rem]:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_90px_minmax(0,1fr)_130px]";
+
+// Its own string rather than `${ROW} max-[38rem]:hidden`: both would be
+// setting `display`, and which won would come down to stylesheet order.
+const HEAD_ROW =
+  "hidden min-[38rem]:grid min-[38rem]:grid-cols-[minmax(0,1.6fr)_90px_minmax(0,1fr)_110px] min-[38rem]:gap-3.5 min-[52rem]:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_90px_minmax(0,1fr)_130px]";
 
 export function StaysSection({
   stays,
@@ -54,7 +77,7 @@ export function StaysSection({
       ) : (
         <div>
           <div
-            className={`${COLUMNS} border-b border-line px-1 pb-2.5`}
+            className={`${HEAD_ROW} border-b border-line px-1 pb-2.5`}
             role="row"
           >
             <Head className="max-[52rem]:hidden">{t("colStay")}</Head>
@@ -67,7 +90,7 @@ export function StaysSection({
           {stays.map((s) => (
             <div
               key={`${s.start}-${s.end}`}
-              className={`${COLUMNS} items-center border-b border-line px-1 py-[13px]`}
+              className={`${ROW} border-b border-line px-1 py-[13px] min-[38rem]:items-center`}
             >
               <div className="min-w-0 max-[52rem]:hidden">
                 <p className="truncate text-[0.84375rem] font-semibold text-ink">
@@ -77,20 +100,29 @@ export function StaysSection({
                   {t("stayTotal", { amount: formatEuro(s.rent, locale) })}
                 </p>
               </div>
-              <span className="data min-w-0 truncate text-[0.8125rem] text-ink">
+              {/* Not truncated below 38rem — it has the line to itself there,
+                  and the end of a stay is not a detail worth an ellipsis. */}
+              <span className="data text-[0.8125rem] text-ink min-[38rem]:min-w-0 min-[38rem]:truncate">
                 {dates(s, locale)}
               </span>
-              <span className="data text-right text-[0.8125rem] text-body">
-                {t("days", { count: s.days })}
-              </span>
-              <span className="data text-right text-[0.8125rem] text-ink">
-                {formatEuro(price, locale)} €
-              </span>
-              <span
-                className={`data justify-self-end whitespace-nowrap rounded-full px-2.5 py-1 text-[0.625rem] font-semibold tracking-[0.08em] ${PILL[s.status]}`}
-              >
-                {t(`status.${s.status}` as "status.inStay")}
-              </span>
+              {/* `contents` puts these three back in the grid as its own items
+                  at 38rem — same DOM order as the columns, which is why the
+                  status pill sits at the end of the second line rather than
+                  opposite the dates. Grouping it with the dates would have
+                  meant reordering the grid to match. */}
+              <div className="flex items-center gap-3 min-[38rem]:contents">
+                <span className="data text-[0.8125rem] text-body min-[38rem]:text-right">
+                  {t("days", { count: s.days })}
+                </span>
+                <span className="data text-[0.8125rem] text-ink min-[38rem]:text-right">
+                  {formatEuro(price, locale)} €
+                </span>
+                <span
+                  className={`data ml-auto whitespace-nowrap rounded-full px-2.5 py-1 text-[0.625rem] font-semibold tracking-[0.08em] min-[38rem]:justify-self-end ${PILL[s.status]}`}
+                >
+                  {t(`status.${s.status}` as "status.inStay")}
+                </span>
+              </div>
             </div>
           ))}
         </div>

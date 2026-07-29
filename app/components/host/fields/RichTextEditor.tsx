@@ -13,7 +13,7 @@ import History from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
 import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, StickyNote } from "lucide-react";
-import { EMPTY_DOC, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
+import { canonical, EMPTY_DOC, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
 
 // The ONLY file in the app that imports Tiptap. Everything downstream — the
 // renderer, the differ, the C# walk — reads the plain JSON tree, so replacing
@@ -199,13 +199,21 @@ export function RichTextEditor({
   // The plain content comparison below is sufficient on its own: when the
   // incoming document and the editor's current document already agree
   // (including "both hold nothing," typing that just round-tripped back
-  // through the parent, or a still-untouched editor seeing `null`),
-  // `JSON.stringify` matches and `setContent` is skipped — that's what stops
-  // every keystroke from resetting the cursor. No separate guard is needed.
+  // through the parent, or a still-untouched editor seeing `null`), the
+  // comparison matches and `setContent` is skipped — that's what stops every
+  // keystroke from resetting the cursor. No separate guard is needed.
+  //
+  // Compared via `canonical()`, not raw `JSON.stringify`: a document that has
+  // round-tripped through the API (Task 10's caller) can differ from what
+  // Tiptap emits in key order and in absent-vs-null attrs while still
+  // meaning the same document — `canonical()` exists precisely to make that
+  // kind of difference invisible (see its comment in `lib/rich-text.ts`).
+  // Comparing raw JSON here would treat those as real changes and fire
+  // `setContent` mid-typing, resetting the cursor for no reason.
   useEffect(() => {
     if (!editor) return;
     const next = value ?? EMPTY_DOC;
-    if (JSON.stringify(editor.getJSON()) !== JSON.stringify(next)) {
+    if (canonical(editor.getJSON() as RichNode) !== canonical(next)) {
       editor.commands.setContent(next, { emitUpdate: false });
     }
   }, [editor, value]);

@@ -116,10 +116,17 @@ export function PropertyCard({
       } ${active ? "border-brand" : "border-line hover:shadow-(--shadow-pop)"}`}
     >
       <div
+        /* The cap is the point. Everything below the photo is a fixed ~192px —
+           name, area, specs, band, button — but an uncapped 16/11 box grows
+           with the column, so the wider the card the more of it is picture: at
+           605px (two columns of an unbroken 1280 page) the photo alone was
+           406px tall. Capped, the photo's share FALLS as the card widens,
+           which is the direction it should move, and a card is a stable
+           ~420px object at every width instead of one that balloons. */
         className={`relative shrink-0 overflow-hidden rounded-[0.625rem] bg-surface-2 ${
           list
             ? "aspect-[16/11] sm:aspect-auto sm:max-h-[22rem] sm:w-[300px]"
-            : "aspect-[16/11]"
+            : "aspect-[16/11] max-h-[13.5rem]"
         }`}
       >
         {/* Absolutely positioned so the photo NEVER dictates the card's height —

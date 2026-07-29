@@ -33,6 +33,23 @@ import {
   takeFocus,
 } from "@/components/search/resultsHandoff";
 
+// How many cards fit across, asked of the results column rather than the
+// window — because the window cannot tell this column's widths apart. At
+// 1024px the map leaves it 504px; at 1280 it is 760 whether the map is wide
+// or fitted; at 834 there is no map beside it at all and it is 786.
+//
+// The thresholds come from the narrowest thing on a card: the month band,
+// whose min-content is 219px with its labels on, inside 14px of card padding.
+// Two columns from 31rem leaves each card 237px (223 of content), three from
+// 48rem leaves 241 (227) — the same margin the two-column rung has been
+// shipping at 1024 all along. Both figures are locale-proof: the labels are
+// three characters of Spline Sans Mono in either language.
+//
+// Both the skeleton and the results use it, so the placeholder cannot lay out
+// differently from the thing it stands in for.
+const GRID = "grid grid-cols-1 gap-[22px] @min-[31rem]:grid-cols-2 @min-[48rem]:grid-cols-3";
+const COLUMN = "grid grid-cols-1 gap-[22px]";
+
 export default function HomePage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -250,8 +267,13 @@ export default function HomePage() {
           wide ? "w-screen ml-[calc(50%-50vw)]" : "mx-auto max-w-7xl"
         }`}
       >
+        {/* `@container`, because the viewport cannot tell this column's two
+            widths apart: at 1280 it is 760px wide in wide mode and 1232 in
+            narrow. A viewport breakpoint that gave three columns to one would
+            give three to the other, and three columns of 239px do not hold a
+            month band. The grids below ask this element how wide it is. */}
         <div
-          className={`min-w-0 px-4 py-6 sm:px-6 ${
+          className={`@container min-w-0 px-4 py-6 sm:px-6 ${
             wide ? "lg:w-[808px] lg:flex-none" : "flex-1"
           }`}
         >
@@ -275,14 +297,16 @@ export default function HomePage() {
             </div>
           ) : all === null ? (
             <div
-              className={`grid grid-cols-1 gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
+              className={view === "grid" ? GRID : COLUMN}
             >
               {Array.from({ length: 4 }, (_, i) => (
                 <div
                   key={i}
                   className="rounded-(--radius-card) border border-line bg-surface p-3.5"
                 >
-                  <div className="skeleton aspect-[16/11] rounded-[0.625rem]" />
+                  {/* Same cap as the card's photo, or the list jumps when the
+                      skeletons are replaced by the homes they stood in for. */}
+                  <div className="skeleton aspect-[16/11] max-h-[13.5rem] rounded-[0.625rem]" />
                   <div className="mt-3.5 space-y-2.5">
                     <div className="skeleton h-4 w-32" />
                     <div className="skeleton h-3 w-24" />
@@ -300,7 +324,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div
-              className={`grid grid-cols-1 gap-[22px] ${view === "grid" ? "sm:grid-cols-2" : ""}`}
+              className={view === "grid" ? GRID : COLUMN}
             >
               {cards.map((c) => (
                 <PropertyCard

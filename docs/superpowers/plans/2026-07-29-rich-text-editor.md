@@ -2064,3 +2064,35 @@ git commit -m "feat: seed description documents, and record the decision"
 - **Spec coverage:** §5.1 → Tasks 6, 9. §5.2 → Task 8. §6 → Tasks 1, 4, 7. §7.1 → Tasks 4, 5, 10. §7.2 → Tasks 3, 11. §7.3 → Tasks 3, 4. §8 → Tasks 2, 7. §9 → Tasks 5, 7, 10, 12. §10 → the checkpoint split. §11 → Task 12 step 5. §13's deferred items are correctly absent.
 - **Known soft spots, flagged rather than hidden:** the Tailwind token names in Tasks 3–5 and the Tiptap 3 list-package layout in Task 4 are the two places this plan guesses at facts it could not verify without running the code. Both have an explicit verification step attached rather than being presented as settled.
 - **Type consistency:** `RichNode`/`RichAttrs`/`BilingualDoc` are named identically in TS and C#; the ten error codes are one list used by both sides; `hiddenFromGallery`/`HiddenFromGallery` is the single spelling throughout.
+
+---
+
+## Addendum, 2026-07-30 — remapping nearby ids on save (Task 9)
+
+**The bug.** `NearbyEditor` mints client temp ids (`local-…`). On save,
+`HostFunctions.cs` assigns a fresh server id to any entry it does not already
+know, discarding the temp id. The description validator builds its reference
+set from the *incoming* payload (D9), so a `placeRef` to a just-added place
+passes validation, is stored holding the temp id, and then matches nothing.
+Silent orphaning on the most ordinary flow there is: add a place, mention it,
+save. Photos are unaffected — their identity is a URL the server assigns at
+upload and never re-mints.
+
+**The decision (user, 2026-07-30): the server remaps.** While rebuilding the
+nearby array, record `incoming id → final id` for every entry whose id was
+newly generated. Then rewrite `placeRef`/`placeCard` `entryId` attributes in
+both `Copy.Es` and `Copy.En` through that map before storing.
+
+**Why this does not violate D8 (reject, never repair).** D8 protects the
+owner's *words* — silently repairing invalid content would delete what someone
+wrote, with no explanation. This rewrites an identifier the server itself
+minted, to point at the entry the owner actually chose. The prose is untouched
+and the reference keeps its meaning; without the remap it would lose it.
+
+**Why not accept the client's id.** ADR-028 makes entry ids server-generated so
+a caller cannot point the route cache at an entry it does not own. That rule
+stands; the remap works with it rather than around it.
+
+**Order.** Validation still runs first, against the incoming ids — so a
+reference to an entry that is not in the payload at all is still rejected with
+`copy_place_unknown`. The remap runs after the rebuild, on already-valid data.

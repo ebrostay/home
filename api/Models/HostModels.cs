@@ -167,6 +167,13 @@ public static class HostProjection
 
     public static int SectionsTotal => Sections.Length;
 
+    /// How many of them this document meets. Public because two callers need
+    /// the same answer: the portfolio's draft progress bar, and the check that
+    /// decides whether a draft may be submitted (ADR-030). The comment on
+    /// `HostProperty.SectionsDone` promised they could never drift — one
+    /// function is how that is kept true.
+    public static int SectionsDone(PropertyDoc p) => Sections.Count(check => check(p));
+
     private static bool Both(Bilingual? b) =>
         !string.IsNullOrWhiteSpace(b?.Es) && !string.IsNullOrWhiteSpace(b?.En);
 
@@ -199,7 +206,7 @@ public static class HostProjection
                 .Select(ph => ph.Url)
                 .FirstOrDefault(),
             p.Photos.Length,
-            Sections.Count(check => check(p)),
+            SectionsDone(p),
             Sections.Length,
             requestCount,
             oldestRequestAt,

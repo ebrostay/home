@@ -76,6 +76,86 @@ public class HostFunctions(
     }
 
     // ------------------------------------------------------------------
+    // Bringing a listing into existence (ADR-030).
+    //
+    // Empty on purpose: the payload is nothing at all. The wizard's first step
+    // is the address, and it saves through the same content endpoint the editor
+    // uses — so a create that also accepted content would be a second way to
+    // write the same fields, validated in a second place. What this does is
+    // mint an owned, empty `draft` and hand back the identical
+    // `HostPropertyDetail` the editor loads, which is what lets the wizard
+    // compose the editor's own field components against real state from its
+    // second step onwards.
+    // ------------------------------------------------------------------
+
+    [Function("HostPropertyCreate")]
+    public async Task<IActionResult> Create(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "host/properties")]
+        HttpRequest req)
+    {
+        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        if (error is not null) return error;
+
+        int open;
+        try
+        {
+            // Cross-partition, and deliberately so: it counts a hostId across a
+            // container partitioned on /id. It runs once per listing an owner
+            // ever creates, against a handful of documents, and the alternative
+            // — a per-host partition, or a counter document to maintain — would
+            // reshape the container for a query nobody makes twice a year.
+            var query = new QueryDefinition(
+                    "SELECT VALUE COUNT(1) FROM c WHERE c.hostId = @hostId AND c.status = 'draft'")
+                .WithParameter("@hostId", profile!.Id);
+            using var feed = Properties.GetItemQueryIterator<int>(query);
+            open = feed.HasMoreResults ? (await feed.ReadNextAsync()).FirstOrDefault() : 0;
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error counting drafts");
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
+
+        if (open >= HostValidation.MaxOpenDrafts) return BadRequest("too_many_drafts");
+
+        var now = DateTimeOffset.UtcNow.ToString("o");
+        var doc = new PropertyDoc
+        {
+            Id = Guid.NewGuid().ToString("n"),
+            HostId = profile!.Id,
+            Status = "draft",
+            CreatedAt = now,
+            UpdatedAt = now,
+            // Reference stays null. It is the number an owner quotes at us in a
+            // support thread, and a draft nobody has looked at has nothing to
+            // quote — the portfolio and the editor both already render the
+            // no-reference case. It is assigned when the listing becomes real.
+        };
+
+        try
+        {
+            await Properties.CreateItemAsync(doc, new PartitionKey(doc.Id));
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error creating draft property");
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
+
+        // 201 with the body a GET would return: the wizard then holds exactly
+        // what the editor holds, and there is one shape of owner state.
+        return new ObjectResult(new HostPropertyDetail(
+            HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null),
+            HostProjection.ToPricing(doc, platform.CleaningFeeEur),
+            HostProjection.ToListing(doc),
+            doc.DeclinedSuggestions,
+            []))
+        {
+            StatusCode = StatusCodes.Status201Created,
+        };
+    }
+
+    // ------------------------------------------------------------------
     // One listing — the "Manage property" surface (spec-v2 §4.4).
     // ------------------------------------------------------------------
 
@@ -129,7 +209,10 @@ public class HostFunctions(
         var pinMoved = Math.Abs(doc!.Lat - update.Lat) > 0.000001
             || Math.Abs(doc.Lng - update.Lng) > 0.000001;
 
-        doc!.Name = update.Name!.Trim();
+        // Not `update.Name!`: since ADR-030 a draft may legitimately arrive
+        // with no name at all, and the null-forgiving that was safe while
+        // `name_required` rejected every such payload would now be a 500.
+        doc!.Name = update.Name?.Trim() ?? "";
         doc.Type = update.Type!;
         doc.Address = Clean(update.Address);
         doc.Postcode = Clean(update.Postcode);
@@ -366,10 +449,16 @@ public class HostFunctions(
         var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
         if (loadError is not null) return loadError;
 
-        var invalid = HostValidation.CheckStatus(update.Status, doc!.Status);
+        var invalid = HostValidation.CheckStatus(update.Status, doc!);
         if (invalid is not null) return BadRequest(invalid);
 
-        doc.Status = update.Status!;
+        // A resubmitted listing carries no reviewer's note. The note answers
+        // "why was this rejected", and the owner has just changed the thing it
+        // was about — leaving it would have the portfolio explain a rejection
+        // that no longer applies to what is in the queue.
+        if (update.Status == "pending_review") doc!.ReviewNote = null;
+
+        doc!.Status = update.Status!;
 
         return await SaveAsync(doc, etag, () => new OkObjectResult(
             HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null)));

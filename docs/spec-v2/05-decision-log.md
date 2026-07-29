@@ -1706,6 +1706,145 @@ Two guardrails, and they are the load-bearing part:
 
 ---
 
+## ADR-030 — "Add a property": a wizard over the editor's own components
+
+- **Status:** ✅ locked and ✅ **built** 2026-07-29 (product owner: Raphael).
+  Completes steps 1 and 4 of the lifecycle §4.4 has described since v2 began
+  ("Create listing → `draft`", "Submit → `pending_review`") and never had a
+  route or an endpoint for.
+- **Context.** A listing could be edited, priced, paused, previewed and
+  reviewed — but not *created*. There was no `/host/new`, no
+  `POST /api/host/properties`, and `CheckStatus` accepted only
+  `published ⇄ paused`, so nothing an owner could press brought a listing into
+  existence or put one in front of a reviewer. Both "Add a property" buttons
+  on the portfolio were rendered `disabled`. Every home in the system arrived
+  by seed script.
+
+### Decision 1 — The wizard owns no fields
+
+Nine steps, and every one but Paperwork is a step-shaped wrapper around a
+component in `app/components/host/fields/` that the editor already uses. The
+wizard holds **one draft `HostListing`**, plus a `HostPricing` and a
+`HostRange[]`, and hands the whole object to each step — which is the shape
+those components were written for, and said so in their comments a year before
+this page existed.
+
+The alternative — a create form with its own fields — would have been a second
+place to spell every rule the editor already spells: the geocoder's
+proposal-not-overwrite posture, the cadastral tri-state, the sequential
+uploader, the English approval gate. Two spellings of one rule diverge on the
+first bug fixed in only one of them.
+
+**Consequence:** a change to any field component lands on both surfaces at
+once, and neither page can drift into asking for a home differently than the
+other asks about it.
+
+### Decision 2 — The document is created on leaving step 1, not on arrival
+
+`POST /api/host/properties` takes **no body** and mints an empty owned
+`draft`. It is called when the owner completes the address step.
+
+- Not on arrival: an owner who opens the page and closes the tab would leave
+  an empty `Draft` row in their portfolio, and the portfolio is a list of
+  homes, not of intentions.
+- Not later: photo uploads are live writes that need a real id (ADR-019), and
+  the promise on screen — *"DRAFT · SAVED AS YOU GO"* — has to be true before
+  the owner has typed enough to mind losing it.
+
+`MaxOpenDrafts = 8` bounds what one button can create. It is not a limit on
+how many homes anyone may list: finishing a draft frees its slot.
+
+**A draft may be nameless, and only a draft.** The wizard asks *where* before
+it asks *what to call it*, so its first save carries no name — and
+`CheckDetails` used to reject that outright. The rule now applies to every
+status but `draft`, which puts it on the line the two check sets already draw:
+an empty name makes a listing **incomplete**, which `HostProjection.Sections`
+counts and submit enforces; it does not make the payload **unsafe**.
+
+### Decision 3 — Submit is a status transition, gated by the same eleven checks the progress bar counts
+
+`PUT …/status` accepts `pending_review` from `draft` or `rejected` alone, and
+only when `HostProjection.SectionsDone(doc) == SectionsTotal`. That function
+already existed and already fed the portfolio's draft progress bar; making it
+the submit gate is what stops a bar reading 11/11 from coexisting with a
+submit that bounces.
+
+Resubmitting **clears `reviewNote`**: the note explains a rejection, and the
+owner has just changed the thing it was about.
+
+Hosts still never write `published` (ADR-024, §3.5). Nothing here is a new
+power — it is the one transition an owner always had on paper.
+
+### Decision 4 — Blocking belongs at submit; steps gate only what the next step needs
+
+Two different questions, and the handoff conflated them. A step gates on what
+makes the *following* steps work — an address before the nearby search that
+measures from its pin, a pin before photos are worth taking — and everything
+else is reported at submit by `blockersOf` from `lib/listing.ts`, the same
+list the editor's save bar shows. Unmet requirements surface on the **rail**,
+never in a modal: a wizard that stops you at step 4 for something you meant to
+do at step 8 is a wizard you fight.
+
+Photos and Nearby carry a **skip** link. It advances exactly like Continue —
+the difference is permission, not behaviour.
+
+### Decision 5 — Saved on leaving a step, not on every keystroke
+
+The handoff asked for autosave "on every field change". A content `PUT` is not
+a cheap write: it re-measures every nearby entry when the pin has moved
+(ADR-028) and it is the call that moves an approved listing back into review.
+Fired per keystroke it would be both.
+
+So the draft persists when a step is **left** — Continue, Skip, a rail jump,
+or Save and exit — through the same three endpoints the editor and Manage use
+(`PUT …`, `PUT …/pricing`, `PUT …/availability`). Photo uploads remain the
+exception they already are: bytes are stored the moment they arrive.
+
+### Decision 6 — Nearby is a step, and Paperwork is a picture of one
+
+**Nearby** joins as a skippable step directly after Address, where the pin it
+measures from has just been placed. It is in `SECTIONS` for the editor and
+`NearbyEditor` ships; a listing created without it would go live missing the
+section ADR-028 built.
+
+**Paperwork** ships inside its `NOT BUILT YET · DESIGN INTENT` frame, exactly
+as the prototype marks it. There is no document model, no upload endpoint and
+no terms record — so the five rows are inert and submit does not require them.
+It is shown rather than dropped because the five documents are what an owner
+will be asked for, and knowing that at the point of listing is worth more than
+a tidy page. It is the one place in the product where design intent is on
+screen, and it is labelled as such.
+
+### Decision 7 — One nav, extended, not a second one
+
+The step rail is `SectionNav` with an `onSelect` prop and a
+`done`/`now`/`ahead` disc set. That component already climbs rail → bar →
+sheet by **measuring** whether the row fits rather than by guessing a
+breakpoint, which is what makes it right in both languages; the wizard's rail
+has the same problem and would have solved it the same way. A copy would have
+undone the consolidation that produced it.
+
+### What this deliberately does not do
+
+- **No reference until the listing is real.** `EBR-P-####` is what an owner
+  quotes at us in a support thread, and a draft nobody has looked at has
+  nothing to quote. Both surfaces already render the no-reference case.
+- **No documents, no terms record, no `MATCHED` badge** — see Decision 6 and
+  ADR-027.
+- **No bulk import and no duplicate-a-listing.** "Add another home" restarts
+  the same single-property wizard.
+
+### Consequences
+
+- Both disabled "Add a property" buttons became real links to
+  `/{locale}/host/new`.
+- `HostProjection.SectionsDone` is public: one function answers "how complete
+  is this listing" for the progress bar and for the submit gate.
+- A `rejected` listing now has a way back into the queue from the owner's
+  side, which ADR-029 gave them the ability to *look* at but not to act on.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

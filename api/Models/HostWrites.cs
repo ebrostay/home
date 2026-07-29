@@ -155,9 +155,18 @@ public static class HostValidation
     private static readonly string[] CleaningParties = ["host", "platform"];
     private static readonly string[] PropertyTypes = ["apartment", "room", "home"];
     private static readonly string[] EnergyRatings = ["A", "B", "C", "D", "E", "F", "G"];
-    /// The only status an owner may set themselves. `published` is reachable
-    /// only through Reopen below, and only from `paused` (ADR-024).
-    private static readonly string[] OwnerStatuses = ["paused", "published"];
+    /// The only statuses an owner may set themselves. `published` is reachable
+    /// only through Reopen below, and only from `paused` (ADR-024);
+    /// `pending_review` only by submitting a finished draft (ADR-030). Nothing
+    /// here lets an owner publish their own listing.
+    private static readonly string[] OwnerStatuses = ["paused", "published", "pending_review"];
+
+    /// Open drafts one owner may hold at once. Not a business rule about how
+    /// many homes anyone may list — it is the ceiling on how many EMPTY
+    /// documents a single "Add a property" button can create, since the wizard
+    /// writes one the moment an address is entered and an owner who opens and
+    /// abandons it leaves one behind. Finishing a draft frees the slot.
+    public const int MaxOpenDrafts = 8;
 
     /// Returns an error code, or null when the payload is applicable. Codes are
     /// stable strings the client maps to bilingual copy — never prose.
@@ -196,8 +205,16 @@ public static class HostValidation
     public static string? CheckDetails(DetailsUpdate u, PropertyDoc doc)
     {
         var name = u.Name?.Trim();
-        if (string.IsNullOrEmpty(name)) return "name_required";
-        if (name.Length > MaxNameLength) return "name_too_long";
+        // A draft may be nameless, and only a draft (ADR-030). The wizard asks
+        // for the address before it asks what to call the home, so its first
+        // save carries no name — and refusing that would make the product's
+        // "saved as you go" promise false for exactly one step. This is the
+        // completeness/safety line the two check sets already draw: an empty
+        // name makes a listing INCOMPLETE, which `HostProjection.Sections`
+        // counts and submit-for-review enforces; it does not make the payload
+        // unsafe. Length is capped either way, because that one is about bytes.
+        if (string.IsNullOrEmpty(name) && doc.Status != "draft") return "name_required";
+        if (name is { Length: > MaxNameLength }) return "name_too_long";
 
         if (!PropertyTypes.Contains(u.Type ?? "")) return "type_invalid";
 
@@ -306,15 +323,32 @@ public static class HostValidation
         return null;
     }
 
-    /// Owners close and reopen; only an admin publishes. Reopening is allowed
-    /// from `paused` alone — a draft that could publish itself would be a
-    /// listing that never met a reviewer.
-    public static string? CheckStatus(string? next, string current)
+    /// Owners close, reopen and submit; only an admin publishes. Reopening is
+    /// allowed from `paused` alone — a draft that could publish itself would be
+    /// a listing that never met a reviewer.
+    ///
+    /// Submitting (ADR-030) takes the whole document rather than its status,
+    /// because "may this be submitted" is a question about what is IN the
+    /// listing, not about which state it is in. The completeness test is
+    /// `HostProjection`'s, the same eleven checks the portfolio's draft
+    /// progress bar counts — so a bar reading 11/11 and a submit that bounces
+    /// cannot both happen.
+    public static string? CheckStatus(string? next, PropertyDoc doc)
     {
+        var current = doc.Status;
         if (!OwnerStatuses.Contains(next ?? "")) return "status_invalid";
         if (next == "published" && current != "paused") return "status_not_allowed";
         if (next == "paused" && current is not ("published" or "paused"))
             return "status_not_allowed";
+        if (next == "pending_review")
+        {
+            // Resubmitting a rejected listing is the same act as submitting a
+            // draft; a listing already in the queue, published or paused has
+            // nothing to submit.
+            if (current is not ("draft" or "rejected")) return "status_not_allowed";
+            if (HostProjection.SectionsDone(doc) < HostProjection.SectionsTotal)
+                return "listing_incomplete";
+        }
         return null;
     }
 

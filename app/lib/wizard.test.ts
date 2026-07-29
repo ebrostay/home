@@ -1,0 +1,163 @@
+import { describe, expect, it } from "vitest";
+import type { HostListing, HostPricing } from "@/lib/api";
+import {
+  STEPS,
+  STEP_OF,
+  attentionSteps,
+  blankListing,
+  blankPricing,
+  clampStep,
+  progressAt,
+  stepBlockers,
+  submitBlockers,
+} from "./wizard";
+
+// A listing that would pass every check, to be broken one field at a time.
+// Built from the blank one so a new required field shows up here as a failing
+// test rather than as a submit button that never enables.
+const complete = (over: Partial<HostListing> = {}): HostListing => ({
+  ...blankListing(),
+  name: "Ático en Movera",
+  address: "Calle Movera 7",
+  postcode: "50007",
+  lat: 41.6289,
+  lng: -0.8812,
+  area: { es: "Torrero", en: "Torrero" },
+  copy: { es: "Un ático", en: "A top-floor flat" },
+  copyEnApproved: true,
+  details: { es: "Detalles", en: "Details" },
+  beds: { es: "1 cama doble", en: "1 double bed" },
+  guests: 2,
+  bedrooms: 1,
+  bathrooms: 1,
+  sizeM2: 60,
+  amenities: ["wifi"],
+  photos: [{ url: "a.webp", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0 }],
+  ...over,
+});
+
+const priced = (over: Partial<HostPricing> = {}): HostPricing => ({
+  ...blankPricing(),
+  priceNumber: 950,
+  depositAmount: 950,
+  ...over,
+});
+
+describe("stepBlockers", () => {
+  it("lets a finished address through", () => {
+    expect(stepBlockers("address", complete(), priced())).toEqual([]);
+  });
+
+  it("names each missing part of the address separately", () => {
+    const out = stepBlockers(
+      "address",
+      complete({ address: "", postcode: "5007", lat: 0, lng: 0 }),
+      priced(),
+    );
+    expect(out).toEqual(["street", "postcode", "pin"]);
+  });
+
+  it("treats a pin at 0,0 as no pin at all", () => {
+    expect(stepBlockers("address", complete({ lat: 0, lng: 0 }), priced())).toEqual(["pin"]);
+  });
+
+  it("does not gate the skippable steps", () => {
+    expect(stepBlockers("nearby", blankListing(), blankPricing())).toEqual([]);
+    expect(stepBlockers("photos", blankListing(), blankPricing())).toEqual([]);
+  });
+
+  it("asks basics for a name and three numbers", () => {
+    const out = stepBlockers("basics", blankListing(), blankPricing());
+    expect(out).toEqual(["name", "size", "bedrooms", "bathrooms"]);
+  });
+
+  it("gates description on Spanish alone", () => {
+    const es = complete({ copy: { es: "Hola", en: null }, copyEnApproved: false });
+    expect(stepBlockers("description", es, priced())).toEqual([]);
+    const en = complete({ copy: { es: null, en: "Hello" } });
+    expect(stepBlockers("description", en, priced())).toEqual(["copyEs"]);
+  });
+
+  it("gates pricing on a price", () => {
+    expect(stepBlockers("pricing", complete(), priced({ priceNumber: 0 }))).toEqual(["price"]);
+    expect(stepBlockers("pricing", complete(), priced())).toEqual([]);
+  });
+});
+
+describe("submitBlockers", () => {
+  it("clears on a listing that meets every check", () => {
+    expect(submitBlockers(complete(), priced())).toEqual([]);
+  });
+
+  it("carries the editor's own blockers through", () => {
+    const keys = submitBlockers(complete({ amenities: [] }), priced()).map((b) => b.key);
+    expect(keys).toContain("noAmenities");
+  });
+
+  it("adds the four the editor has no reason to check", () => {
+    const keys = submitBlockers(
+      complete({ name: "  ", bedrooms: 0 }),
+      priced({ priceNumber: 0, depositAmount: null }),
+    ).map((b) => b.key);
+    expect(keys).toEqual(
+      expect.arrayContaining(["noName", "noCapacity", "noPrice", "noDeposit"]),
+    );
+  });
+
+  it("wants the cap whenever bills are capped", () => {
+    const capped = priced({ billsPolicy: "capped", utilitiesCapEur: null });
+    expect(submitBlockers(complete(), capped).map((b) => b.key)).toContain("noDeposit");
+    const withCap = priced({ billsPolicy: "capped", utilitiesCapEur: 90 });
+    expect(submitBlockers(complete(), withCap)).toEqual([]);
+  });
+
+  it("does not ask for English approval before there is English", () => {
+    const noEn = complete({ copy: { es: "Un ático", en: null }, copyEnApproved: false });
+    const keys = submitBlockers(noEn, priced()).map((b) => b.key);
+    expect(keys).toContain("missingTranslation");
+    expect(keys).not.toContain("enNotApproved");
+  });
+
+  it("routes every blocker it can produce to a real step", () => {
+    for (const step of Object.values(STEP_OF)) expect(STEPS).toContain(step);
+  });
+});
+
+describe("attentionSteps", () => {
+  it("collapses several blockers on one step to one disc", () => {
+    const steps = attentionSteps(submitBlockers(complete({ name: "", bedrooms: 0 }), priced()));
+    expect([...steps]).toEqual(["basics"]);
+  });
+});
+
+describe("progressAt", () => {
+  it("fills to the whole track on the last step", () => {
+    expect(progressAt(STEPS.length - 1).percent).toBe(100);
+    expect(progressAt(STEPS.length - 1).position).toBe(STEPS.length);
+  });
+
+  it("counts from one", () => {
+    expect(progressAt(0).position).toBe(1);
+    expect(progressAt(0).total).toBe(STEPS.length);
+  });
+
+  it("never promises zero minutes while a step is still on screen", () => {
+    for (let i = 0; i < STEPS.length; i++) {
+      expect(progressAt(i).minutesLeft).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("counts the estimate down", () => {
+    const all = STEPS.map((_, i) => progressAt(i).minutesLeft);
+    expect(all[0]).toBeGreaterThan(all[all.length - 1]);
+    expect([...all]).toEqual([...all].sort((a, b) => b - a));
+  });
+});
+
+describe("clampStep", () => {
+  it("holds an index on the rail", () => {
+    expect(clampStep(-3)).toBe(0);
+    expect(clampStep(99)).toBe(STEPS.length - 1);
+    expect(clampStep(2)).toBe(2);
+  });
+});

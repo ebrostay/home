@@ -823,6 +823,10 @@
       "routeUnavailable": "No hemos podido cargar la ruta. Inténtalo de nuevo.",
       "routeMissing": "La ruta a este lugar ya no está disponible."
     },
+    "richText": {
+      "photo": "foto",
+      "floorplan": "plano"
+    },
     "places": {
       "title": "Tus sitios",
       "intro": "Guarda los sitios a los que irás a menudo — la oficina, el gimnasio, el colegio — y verás el trayecto desde cada vivienda que mires. Se guardan en este navegador.",

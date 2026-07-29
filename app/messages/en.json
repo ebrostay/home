@@ -823,6 +823,10 @@
       "routeUnavailable": "We couldn't load the route just now. Try again.",
       "routeMissing": "This place's route isn't available anymore."
     },
+    "richText": {
+      "photo": "photo",
+      "floorplan": "floorplan"
+    },
     "places": {
       "title": "Your places",
       "intro": "Save the places you'll go often — the office, the gym, school — and see the trip from every home you look at. They're kept in this browser.",

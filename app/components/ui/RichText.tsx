@@ -2,7 +2,9 @@
 
 import { Fragment } from "react";
 import { Image as ImageIcon, MapPin } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { PropertyPhoto, PublicNearbyEntry } from "@/lib/api";
+import { formatDistance } from "@/lib/geocode";
 import { reachFor, type NearbyProfile } from "@/lib/nearby";
 import type { RichNode } from "@/lib/rich-text";
 
@@ -27,10 +29,16 @@ export type RichTextProps = {
 };
 
 export function RichText({ doc, photos, nearby, profile, onPhoto, onPlace }: RichTextProps) {
+  // Same two namespaces Nearby.tsx (the sibling section this component sits
+  // beside) reads from: "minutes" is shared verbatim, and "richText" holds
+  // the two chip labels this module owns.
+  const t = useTranslations("detail.nearby");
+  const tr = useTranslations("detail.richText");
+  const locale = useLocale();
   if (!doc?.content?.length) return null;
   const byUrl = new Map(photos.map((p) => [p.url, p]));
   const byId = new Map(nearby.map((n) => [n.id, n]));
-  const ctx = { byUrl, byId, profile, onPhoto, onPlace };
+  const ctx = { byUrl, byId, profile, onPhoto, onPlace, t, tr, locale };
   return <div className="flex flex-col gap-3">{doc.content.map((n, i) => <Block key={i} node={n} ctx={ctx} />)}</div>;
 }
 
@@ -40,6 +48,9 @@ type Ctx = {
   profile: NearbyProfile;
   onPhoto?: (url: string) => void;
   onPlace?: (entryId: string) => void;
+  t: ReturnType<typeof useTranslations>;
+  tr: ReturnType<typeof useTranslations>;
+  locale: string;
 };
 
 const PROSE = "text-[0.96875rem] leading-relaxed";
@@ -113,7 +124,7 @@ function Block({ node, ctx }: { node: RichNode; ctx: Ctx }) {
           </span>
           {reach && (
             <span className="data text-xs text-muted">
-              {reach.minutes} min · {reach.metres} m
+              {ctx.t("minutes", { count: reach.minutes })} · {formatDistance(reach.metres, ctx.locale)}
             </span>
           )}
         </button>
@@ -157,7 +168,7 @@ function Inline({ nodes, ctx }: { nodes?: RichNode[]; ctx: Ctx }) {
               className="mx-0.5 inline-flex items-baseline gap-1 rounded-(--radius-control) bg-surface-2 px-1.5 py-0.5 text-[0.875em] text-ink transition-[filter] duration-(--dur-standard) hover:brightness-95"
             >
               <ImageIcon size={12} strokeWidth={2} aria-hidden />
-              {photo.isFloorplan ? "floorplan" : "photo"}
+              {photo.isFloorplan ? ctx.tr("floorplan") : ctx.tr("photo")}
             </button>
           );
         }
@@ -175,7 +186,7 @@ function Inline({ nodes, ctx }: { nodes?: RichNode[]; ctx: Ctx }) {
             >
               <MapPin size={12} strokeWidth={2} aria-hidden />
               {place.name}
-              {reach && <span className="data opacity-70">{reach.minutes} min</span>}
+              {reach && <span className="data opacity-70">{ctx.t("minutes", { count: reach.minutes })}</span>}
             </button>
           );
         }

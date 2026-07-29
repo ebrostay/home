@@ -721,7 +721,15 @@ export function NearbyEditor({
               viewport, and a media query would be wrong in exactly that
               case. */}
           <div className="@container">
-            <div className="grid gap-3.5 @min-[34rem]:grid-cols-[15rem_minmax(0,1fr)]">
+            {/* The list is the column with a ceiling, the map is the one that
+                grows. A candidate row is a name, a duration and a select —
+                it stopped getting more readable somewhere around 26rem, and
+                on a wide screen the old fixed-15rem map left it sprawling to
+                654 px beside a 240 px map. The minmax on the first track is
+                what keeps the narrow case exactly as it was: below about
+                42rem of container the map cannot give up any more width, so
+                the list takes the squeeze instead. */}
+            <div className="grid gap-3.5 @min-[34rem]:grid-cols-[minmax(15rem,1fr)_minmax(0,26rem)]">
               <NearbyMap
                 home={{ lat, lng }}
                 homeLabel={t("homeLabel")}
@@ -736,7 +744,12 @@ export function NearbyEditor({
                   setMeasure({ kind: "measuring" });
                   setDropPoint({ lat: dLat, lng: dLng });
                 }}
-                className="h-64 w-full"
+                // Taller once it is also wider, or a map with room to grow
+                // sideways just becomes a letterbox. A FIXED height on
+                // purpose: Leaflet needs `invalidateSize()` when its
+                // container changes size, and it only listens for window
+                // resize — which is the one event that can change this.
+                className="h-64 w-full @min-[34rem]:h-[22rem]"
               />
 
               <div className="flex flex-col gap-3">

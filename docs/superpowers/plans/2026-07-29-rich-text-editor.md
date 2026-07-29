@@ -1788,6 +1788,8 @@ And `FIELDS.photos` gains the new flag, which is owner intent like `isFloorplan`
 
 - [ ] **Step 2: Add every string to both locales**
 
+Note: `detail.richText.photo` / `detail.richText.floorplan` were already added in **both** locales during Task 3, when the renderer's guest-facing chip labels needed them. Do not duplicate them here.
+
 Add under `host.edit.description` in **both** `app/messages/es.json` and `app/messages/en.json`. English:
 
 ```json

@@ -12,7 +12,13 @@ import {
   type NearbyCandidate,
   type NearbyReachMap,
 } from "@/lib/api";
-import { NEARBY_GROUPS, NEARBY_PROFILES, reachFor, type NearbyGroup } from "@/lib/nearby";
+import {
+  NEARBY_GROUPS,
+  NEARBY_PROFILES,
+  memoizedCandidates,
+  reachFor,
+  type NearbyGroup,
+} from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
 import { ChipGroup } from "./ChipGroup";
 import { NearbyMap, type NearbyMapPin } from "./NearbyMap";
@@ -174,7 +180,12 @@ export function NearbyEditor({
   useEffect(() => {
     if (!finderOpen) return;
     const controller = new AbortController();
-    fetchNearbyCandidates(lat, lng, activeGroup, controller.signal)
+    // Memoized on the exact pin and group, so reopening the finder or
+    // revisiting a group costs nothing — see `memoizedCandidates`. An aborted
+    // request never reaches the memo, because the fetch rejects.
+    memoizedCandidates(lat, lng, activeGroup, () =>
+      fetchNearbyCandidates(lat, lng, activeGroup, controller.signal),
+    )
       .then((candidates) => {
         if (controller.signal.aborted) return;
         setSearch({ kind: "ready", candidates, lat, lng });

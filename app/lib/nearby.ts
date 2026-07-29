@@ -65,3 +65,59 @@ export function decodePolyline(encoded: string, precision = 5): [number, number]
   }
   return points;
 }
+
+// ---------------------------------------------------------------------------
+// Candidate memo
+// ---------------------------------------------------------------------------
+//
+// One category open costs TWO OpenRouteService matrix requests — one per
+// profile — against a 1,500/day account ceiling, and the editor asks again
+// every time the finder is reopened or a group is revisited. Flipping
+// Transport → Groceries → Transport spends four requests to learn two things.
+//
+// So the same question is answered from memory. "The same question" is an
+// EXACT pin plus a group: the pin is not rounded here the way the server
+// rounds it for its Overpass cell (~110 m), because a rounded origin puts up
+// to ~78 m of error into a distance we present as precise — ADR-028's reason
+// for caching the place search but never the measurement. A key built from
+// the full-precision pin has no such problem: a hit is the answer the server
+// would have given.
+//
+// Deliberately small in scope:
+//   · module-level, so it dies on reload — no eviction policy to get wrong,
+//     and nothing to go stale over a session's length;
+//   · successes only, so a failed lookup always retries;
+//   · results, not in-flight promises. Two simultaneous asks for one key is
+//     not a case this editor can produce (the finder shows one group).
+//
+// It does nothing for a second owner, a second listing, or a reload. Those
+// want the server-side cache this deliberately is not.
+
+const candidateMemo = new Map<string, unknown>();
+
+/** Exact pin, never rounded — see above. `toString()` rather than a fixed
+ *  precision so two pins that differ at all are two keys. */
+export const candidateKey = (lat: number, lng: number, group: string) =>
+  `${lat}|${lng}|${group}`;
+
+/** Wraps a candidate fetch with the memo. The fetcher is a parameter so the
+ *  memo is testable without a network, and so this module keeps knowing
+ *  nothing about `lib/api`. */
+export async function memoizedCandidates<T>(
+  lat: number,
+  lng: number,
+  group: string,
+  fetcher: () => Promise<T[]>,
+): Promise<T[]> {
+  const key = candidateKey(lat, lng, group);
+  const hit = candidateMemo.get(key);
+  if (hit !== undefined) return hit as T[];
+  const fresh = await fetcher();
+  candidateMemo.set(key, fresh);
+  return fresh;
+}
+
+/** Tests only — the memo outlives any single component by design. */
+export function resetCandidateMemo() {
+  candidateMemo.clear();
+}

@@ -1611,6 +1611,19 @@ Two guardrails, and they are the load-bearing part:
     place still leaves the view exactly where the owner put it. Chosen pins
     are excluded from the bounds: they are not type-filtered, so one saved
     tram stop 2 km out would stretch a bus-stop frame back to uselessness.
+  - **The editor memoizes candidate lookups on the exact pin and group.** A
+    category open costs two matrix requests (one per profile), and the search
+    re-ran on every finder reopen and every revisited group: Transport →
+    Groceries → Transport → Groceries, close, reopen was 5 lookups = **10
+    matrix requests**; measured in the browser it is now 2 lookups = 4. The
+    pin is NOT rounded the way the server rounds its Overpass cell — that
+    rounding is exactly what Decision 2 refuses for a measurement, and a
+    full-precision key needs no such compromise: a hit is the answer the
+    server would have given. Successes only, so the retry button still
+    retries; module-level, so it dies on reload rather than needing an
+    eviction policy. It does nothing for a second owner, a second listing or
+    a reload — a server-side matrix cache keyed the same way would, and stays
+    open alongside the budget question below.
 
 ---
 

@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect } from "react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { Node, mergeAttributes } from "@tiptap/core";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import Bold from "@tiptap/extension-bold";
+import Italic from "@tiptap/extension-italic";
+import Heading from "@tiptap/extension-heading";
+import History from "@tiptap/extension-history";
+import Placeholder from "@tiptap/extension-placeholder";
+import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
+import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, StickyNote } from "lucide-react";
+import { RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
+
+// The ONLY file in the app that imports Tiptap. Everything downstream — the
+// renderer, the differ, the C# walk — reads the plain JSON tree, so replacing
+// the editor library would change this file and nothing else.
+//
+// The schema here IS the allowlist. A node type with no definition cannot be
+// held by the document, so pasted <script>, <iframe>, <img> and styled Word
+// content are coerced away at the door rather than filtered afterwards.
+
+const Callout = Node.create({
+  name: "callout",
+  group: "block",
+  content: "paragraph+",
+  parseHTML: () => [{ tag: "div[data-callout]" }],
+  renderHTML: ({ HTMLAttributes }) => [
+    "div",
+    mergeAttributes(HTMLAttributes, {
+      "data-callout": "",
+      class: "rounded-(--radius-control) border-l-2 border-river bg-river-soft py-2 pl-3 pr-2.5 text-river-deep",
+    }),
+    0,
+  ],
+});
+
+/** Both reference nodes are ATOMS carrying an identifier and nothing else.
+ *  There is no href, no src and no free-text attribute — the label a guest
+ *  sees is resolved from the listing at render time. */
+const PhotoRef = Node.create({
+  name: "photoRef",
+  group: "inline",
+  inline: true,
+  atom: true,
+  addAttributes: () => ({ url: { default: null } }),
+  parseHTML: () => [{ tag: "span[data-photo-ref]" }],
+  renderHTML: ({ HTMLAttributes }) => [
+    "span",
+    mergeAttributes({ "data-photo-ref": HTMLAttributes.url, class: chipClass("bg-surface-2 text-ink") }),
+    "▣ photo",
+  ],
+});
+
+const PlaceRef = Node.create({
+  name: "placeRef",
+  group: "inline",
+  inline: true,
+  atom: true,
+  addAttributes: () => ({ entryId: { default: null } }),
+  parseHTML: () => [{ tag: "span[data-place-ref]" }],
+  renderHTML: ({ HTMLAttributes }) => [
+    "span",
+    // brand tones, not "meadow" (that token doesn't exist — see globals.css) —
+    // matches the placeRef chip RichText.tsx renders for guests, so the
+    // editing surface and the guest page read as the same colour.
+    mergeAttributes({ "data-place-ref": HTMLAttributes.entryId, class: chipClass("bg-brand-soft text-brand-strong") }),
+    // No label attribute exists on this atom (see the comment above), so the
+    // editor shows a generic tag rather than pretending to resolve a name.
+    "◎ place",
+  ],
+});
+
+const PhotoFigure = Node.create({
+  name: "photoFigure",
+  group: "block",
+  atom: true,
+  draggable: true,
+  addAttributes: () => ({ url: { default: null }, caption: { default: null } }),
+  parseHTML: () => [{ tag: "figure[data-photo-figure]" }],
+  renderHTML: ({ HTMLAttributes }) => [
+    "figure",
+    mergeAttributes({ "data-photo-figure": HTMLAttributes.url, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
+    "▣ photo",
+  ],
+});
+
+const PlaceCard = Node.create({
+  name: "placeCard",
+  group: "block",
+  atom: true,
+  draggable: true,
+  addAttributes: () => ({ entryId: { default: null } }),
+  parseHTML: () => [{ tag: "div[data-place-card]" }],
+  renderHTML: ({ HTMLAttributes }) => [
+    "div",
+    mergeAttributes({ "data-place-card": HTMLAttributes.entryId, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
+    "◎ place",
+  ],
+});
+
+const chipClass = (tone: string) => `mx-0.5 inline-flex items-baseline gap-1 rounded-(--radius-control) px-1.5 py-0.5 text-[0.875em] ${tone}`;
+
+// `CONTENT_MODEL` in lib/rich-text.ts is the shared contract with the C#
+// validator: `heading` may only hold `text`, and `listItem` may only hold a
+// single `paragraph` (so lists can't nest). Tiptap's stock extensions don't
+// match that — `Heading` defaults to `content: "inline*"` (it would happily
+// take a photo or place chip), and `ListItem` defaults to
+// `content: "paragraph block*"` with Tab bound to `sinkListItem` (it would
+// happily nest a bulletList inside a bulletList). Left alone, a normal
+// keystroke (Tab in a list) or toolbar click (insert photo with the caret in
+// a heading) would build a document the server rejects on save with no
+// warning in the editor. Narrowing the content expression here makes both
+// actions no-ops instead — ProseMirror simply won't apply a transaction the
+// schema disallows.
+const RestrictedHeading = Heading.extend({ content: "text*" }).configure({ levels: [3] });
+const RestrictedListItem = ListItem.extend({ content: "paragraph" });
+
+export type RichTextEditorProps = {
+  value: RichNode | null;
+  onChange: (next: RichNode) => void;
+  label: string;
+  tag?: string;
+  placeholder?: string;
+  /** Opens the pickers. The parent owns them so both editors share one. */
+  onInsertPhoto: (insert: (url: string, asFigure: boolean) => void) => void;
+  onInsertPlace: (insert: (entryId: string, asCard: boolean) => void) => void;
+  /** Toolbar button labels, so this component holds no untranslated copy. */
+  strings: Record<"bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place", string>;
+};
+
+export function RichTextEditor({
+  value, onChange, label, tag, placeholder, onInsertPhoto, onInsertPlace, strings,
+}: RichTextEditorProps) {
+  const editor = useEditor({
+    // Static export: the editor must not render on the server.
+    immediatelyRender: false,
+    extensions: [
+      Document, Paragraph, Text, Bold, Italic,
+      RestrictedHeading,
+      BulletList, OrderedList, RestrictedListItem, History,
+      Placeholder.configure({ placeholder: placeholder ?? "" }),
+      Callout, PhotoRef, PlaceRef, PhotoFigure, PlaceCard,
+    ],
+    content: value ?? { type: "doc", content: [] },
+    editorProps: {
+      attributes: {
+        class: "min-h-40 px-3.5 py-3 text-[0.9375rem] leading-relaxed outline-none [&_h3]:text-[1.0625rem] [&_h3]:font-semibold [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5",
+      },
+    },
+    onUpdate: ({ editor: e }) => onChange(e.getJSON() as RichNode),
+  });
+
+  // Re-sync when the parent replaces the document wholesale — a discard, or a
+  // reload after save. Guarded, or every keystroke would reset the cursor.
+  useEffect(() => {
+    if (!editor || !value) return;
+    if (JSON.stringify(editor.getJSON()) !== JSON.stringify(value)) {
+      editor.commands.setContent(value, { emitUpdate: false });
+    }
+  }, [editor, value]);
+
+  if (!editor) return null;
+
+  const used = textLength(editor.getJSON() as RichNode);
+  const over = used > RICH_LIMITS.maxText;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">{label}</span>
+        {tag && <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">{tag}</span>}
+      </div>
+
+      <div className="overflow-hidden rounded-(--radius-control) border border-line focus-within:border-brand">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-line px-2 py-1.5">
+          <Tool editor={editor} active="bold" label={strings.bold} onClick={() => editor.chain().focus().toggleBold().run()}><BoldIcon size={14} strokeWidth={2.5} /></Tool>
+          <Tool editor={editor} active="italic" label={strings.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><ItalicIcon size={14} strokeWidth={2.5} /></Tool>
+          <Divider />
+          <Tool editor={editor} active="heading" label={strings.heading} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} strokeWidth={2} /></Tool>
+          <Tool editor={editor} active="bulletList" label={strings.bullet} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={14} strokeWidth={2} /></Tool>
+          <Tool editor={editor} active="orderedList" label={strings.ordered} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} strokeWidth={2} /></Tool>
+          <Tool editor={editor} active="callout" label={strings.note} onClick={() => editor.chain().focus().toggleWrap("callout").run()}><StickyNote size={14} strokeWidth={2} /></Tool>
+          <Divider />
+          <Tool editor={editor} label={strings.photo} onClick={() => onInsertPhoto((url, asFigure) =>
+            editor.chain().focus().insertContent(asFigure ? { type: "photoFigure", attrs: { url } } : { type: "photoRef", attrs: { url } }).run())}><ImageIcon size={14} strokeWidth={2} /></Tool>
+          <Tool editor={editor} label={strings.place} onClick={() => onInsertPlace((entryId, asCard) =>
+            editor.chain().focus().insertContent(asCard ? { type: "placeCard", attrs: { entryId } } : { type: "placeRef", attrs: { entryId } }).run())}><MapPin size={14} strokeWidth={2} /></Tool>
+          <span className={`data ml-auto text-[0.65625rem] ${over ? "text-danger" : "text-muted"}`}>
+            {used.toLocaleString()} / {RICH_LIMITS.maxText.toLocaleString()}
+          </span>
+        </div>
+
+        {/* The `Placeholder` extension (@tiptap/extensions under the hood in
+            v3) decorates the empty node with `is-editor-empty`/`is-empty`
+            classes and a `data-placeholder` attribute — it renders no CSS of
+            its own. `.rte-empty` scopes the rule to this wrapper so it can't
+            leak onto an unrelated element elsewhere in the app that happens
+            to share the (very generic) upstream class names. */}
+        <div className="rte-empty">
+          <style>{`
+            .rte-empty :where(.is-editor-empty):before {
+              content: attr(data-placeholder);
+              float: left;
+              height: 0;
+              pointer-events: none;
+              color: var(--muted);
+            }
+          `}</style>
+          <EditorContent editor={editor} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Divider = () => <span className="mx-1 h-4 w-px bg-line" aria-hidden />;
+
+function Tool({ editor, active, label, onClick, children }: {
+  editor: Editor; active?: string; label: string; onClick: () => void; children: React.ReactNode;
+}) {
+  const on = active ? editor.isActive(active) : false;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-pressed={active ? on : undefined}
+      className={`rounded-(--radius-control) px-2 py-1.5 transition-[background-color] duration-(--dur-standard) hover:bg-surface-2 ${on ? "bg-surface-2 text-ink" : "text-muted"}`}
+    >
+      {children}
+    </button>
+  );
+}

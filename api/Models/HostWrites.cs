@@ -123,6 +123,13 @@ public static class HostValidation
     public const int MaxAreaLength = 120;
     public const int MaxCopyLength = 4_000;
     public const int MaxDetailsLength = 2_000;
+    /// Caps for the description document walked by `RichText` below. Mirror
+    /// `RICH_LIMITS` in `app/lib/rich-text.ts` exactly — the two are the same
+    /// rule stated twice, and a drift between them is either a lost save or a
+    /// hole, never a harmless difference.
+    public const int MaxCopyNodes = 400;
+    public const int MaxCopyDepth = 5;
+    public const int MaxCaptionLength = 200;
     public const int MaxBedsLength = 400;
     public const int MaxAmenities = 40;
     public const int MaxPhotos = 40;
@@ -167,6 +174,87 @@ public static class HostValidation
     /// writes one the moment an address is entered and an owner who opens and
     /// abandons it leaves one behind. Finishing a draft frees the slot.
     public const int MaxOpenDrafts = 8;
+
+    private static readonly string[] CopyMarks = ["bold", "italic"];
+
+    /// What each node may contain. An empty array is an ATOM — no children at
+    /// all — which is why a photo reference can never hold text.
+    private static readonly Dictionary<string, string[]> CopyModel = new(StringComparer.Ordinal)
+    {
+        ["doc"] = ["paragraph", "heading", "bulletList", "orderedList", "callout", "photoFigure", "placeCard"],
+        ["paragraph"] = ["text", "photoRef", "placeRef"],
+        ["heading"] = ["text"],
+        ["bulletList"] = ["listItem"],
+        ["orderedList"] = ["listItem"],
+        // Paragraphs only, so lists cannot nest.
+        ["listItem"] = ["paragraph"],
+        ["callout"] = ["paragraph"],
+        ["photoFigure"] = [],
+        ["placeCard"] = [],
+        ["text"] = [],
+        ["photoRef"] = [],
+        ["placeRef"] = [],
+    };
+
+    /// Walks a description document, returning an error code or null.
+    ///
+    /// REJECTS, never repairs (design D8): silent repair would delete an
+    /// owner's words with no explanation, and the editor makes every rejection
+    /// here unreachable — so one means a bug or a tampered payload.
+    ///
+    /// `photoUrls` and `entryIds` MUST come from the INCOMING payload, not the
+    /// stored document (D9). One save can both delete a photo and reference
+    /// it; validating against the stored arrays would let a dangling reference
+    /// through while DropBlobsAsync deletes the blob underneath it.
+    ///
+    /// Depth and node count are checked DURING the walk, so a nesting bomb is
+    /// refused rather than fully parsed.
+    public static string? RichText(RichNode? doc, IReadOnlySet<string> photoUrls, IReadOnlySet<string> entryIds)
+    {
+        if (doc is null) return null;
+        if (doc.Type != "doc") return "copy_bad_root";
+
+        var budget = MaxCopyNodes;
+        var text = 0;
+
+        string? Walk(RichNode n, int depth)
+        {
+            if (depth > MaxCopyDepth) return "copy_too_deep";
+            if (--budget < 0) return "copy_too_many_nodes";
+            if (n.Type is null || !CopyModel.TryGetValue(n.Type, out var allowed)) return "copy_bad_node";
+
+            var isAtom = allowed.Length == 0;
+            if (isAtom && n.Content is { Length: > 0 }) return "copy_bad_node";
+            if (n.Type != "text" && n.Text is not null) return "copy_bad_node";
+            if (n.Type == "text") text += n.Text?.Length ?? 0;
+
+            foreach (var m in n.Marks ?? [])
+                if (m.Type is null || !CopyMarks.Contains(m.Type, StringComparer.Ordinal)) return "copy_bad_mark";
+
+            if (n.Type == "heading" && n.Attrs?.Level != 3) return "copy_bad_heading";
+            if ((n.Attrs?.Caption?.Length ?? 0) > MaxCaptionLength) return "copy_bad_caption";
+
+            if (n.Type is "photoRef" or "photoFigure")
+                if (n.Attrs?.Url is null || !photoUrls.Contains(n.Attrs.Url)) return "copy_photo_unknown";
+            if (n.Type is "placeRef" or "placeCard")
+                if (n.Attrs?.EntryId is null || !entryIds.Contains(n.Attrs.EntryId)) return "copy_place_unknown";
+
+            foreach (var child in n.Content ?? [])
+            {
+                if (child.Type is null || !allowed.Contains(child.Type, StringComparer.Ordinal)) return "copy_bad_node";
+                var err = Walk(child, depth + 1);
+                if (err is not null) return err;
+            }
+            return null;
+        }
+
+        var result = Walk(doc, 1);
+        if (result is not null) return result;
+        // Text only — references and captions are NOT charged, because their
+        // labels live on other records and renaming one must not change the
+        // length of a description nobody touched.
+        return text > MaxCopyLength ? "copy_too_long" : null;
+    }
 
     /// Returns an error code, or null when the payload is applicable. Codes are
     /// stable strings the client maps to bilingual copy — never prose.

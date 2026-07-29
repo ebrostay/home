@@ -477,6 +477,34 @@
   background: var(--river-deep);
 }
 
+/* Nearby editor pins (NearbyMap). Candidates reuse map-marker-suggested
+   as-is — a search result not yet added IS a proposal, the same meaning the
+   class already carries for the geocoder's guess, just a different source.
+   Chosen entries get their own modifier: brand green like the home pin
+   (both are "committed"), but a plain dot with no halo, so the one true
+   home pin never gets lost among the entries added to its own listing. */
+.map-marker-chosen {
+  background: transparent;
+}
+.map-marker-chosen::after {
+  width: 14px;
+  height: 14px;
+}
+
+/* The entry currently focused in the list beside the map (activeId) — same
+   scale-and-elevate treatment map-pin.is-active uses for the results map. */
+.map-marker.is-active {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+.leaflet-marker-icon:has(.map-marker.is-active) {
+  z-index: 500 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-marker.is-active {
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* Budget controls. The drawing IS the track: a native range input is laid over
    the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
    and touch come from the platform rather than a hand-rolled pointer handler.

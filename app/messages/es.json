@@ -678,7 +678,8 @@
     "showOnMap": "Ver en el mapa",
     "refundableDeposit": "Fianza reembolsable",
     "closePreview": "Cerrar la vista previa",
-    "selectOnMap": "Ver {name} en el mapa"
+    "selectOnMap": "Ver {name} en el mapa",
+    "pinGroup": "{count} viviendas desde {price}"
   },
   "filters": {
     "city": "Ciudad",

@@ -678,7 +678,8 @@
     "showOnMap": "Show on map",
     "refundableDeposit": "Refundable deposit",
     "closePreview": "Close preview",
-    "selectOnMap": "Show {name} on the map"
+    "selectOnMap": "Show {name} on the map",
+    "pinGroup": "{count} homes from {price}"
   },
   "filters": {
     "city": "City",

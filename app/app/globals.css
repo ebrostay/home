@@ -425,6 +425,44 @@
 .map-pin.is-dim {
   opacity: 0.45;
 }
+/* A group of homes at one address. The badge rides on the corner rather than
+   going into the label, because a wider pill collides with more of its
+   neighbours — the fix for overlapping pins must not make pins bigger. The
+   price shown is the group's lowest; the count is what makes it read as
+   "from". Both are spelled out in the pill's aria-label. */
+.map-pin {
+  position: relative;
+}
+.map-pin-count {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  /* --brand-strong against --surface, not white against --brand. The brand
+     tokens flip direction between themes (--brand-strong is DARKER than
+     --brand in light and LIGHTER in dark), so this is the one pairing that
+     clears 4.5:1 in both — measured 6.1 and 7.12. White on --brand managed
+     4.35 and 3.0, and a 9px count is small text, not large. */
+  background: var(--brand-strong);
+  color: var(--surface);
+  border: 1px solid var(--surface);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Swapped once the pill itself goes brand-green, or the badge disappears into
+   it. Same two tokens, so the contrast holds in both themes. */
+.map-pin.is-active .map-pin-count,
+.map-pin.is-selected .map-pin-count {
+  background: var(--surface);
+  color: var(--brand-strong);
+}
 /* Leaflet stacks markers by latitude; a focused pin must beat that. */
 .leaflet-marker-icon:has(.map-pin.is-active),
 .leaflet-marker-icon:has(.map-pin.is-selected) {

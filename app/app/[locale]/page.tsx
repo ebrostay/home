@@ -66,8 +66,10 @@ export default function HomePage() {
 
   const [view, setView] = useState<CardView>("grid");
   const [wide, setWide] = useState(false);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Sets, not single ids: a map pin can stand for several homes at one
+  // address, and clicking it has to be able to mark all of them.
+  const [hovered, setHovered] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
 
   // Restore from the URL AFTER mount, not during the first render. This page is
   // prerendered at build time with the defaults above — its hero is the site's
@@ -144,7 +146,7 @@ export default function HomePage() {
       // Instant, not smooth: this is a restoration, not a journey. A long
       // animated scroll from the top would also trip prefers-reduced-motion.
       el.scrollIntoView({ block: "center", behavior: "auto" });
-      setSelectedId(id);
+      setSelected([id]);
     });
   }, [all]);
 
@@ -226,6 +228,7 @@ export default function HomePage() {
         lat: p.lat,
         lng: p.lng,
         label: `${formatEuro(p.priceNumber, locale)} €`,
+        price: p.priceNumber,
       })),
     [results, locale],
   );
@@ -345,10 +348,10 @@ export default function HomePage() {
                      above runs on every state change), so its query string
                      IS this list. */
                   onOpen={(id) => rememberResults(id, window.location.search)}
-                  active={hoveredId === c.id || selectedId === c.id}
-                  selected={selectedId === c.id}
-                  onHover={setHoveredId}
-                  onSelect={setSelectedId}
+                  active={hovered.includes(c.id) || selected.includes(c.id)}
+                  selected={selected.includes(c.id)}
+                  onHover={(id) => setHovered(id ? [id] : [])}
+                  onSelect={(id) => setSelected([id])}
                 />
               ))}
             </div>
@@ -365,10 +368,10 @@ export default function HomePage() {
           >
             <ResultsMap
               pins={pins}
-              hoveredId={hoveredId}
-              selectedId={selectedId}
-              onHover={setHoveredId}
-              onSelect={setSelectedId}
+              hoveredIds={hovered}
+              selectedIds={selected}
+              onHover={setHovered}
+              onSelect={setSelected}
               /* Sticky sidebar. Height TRACKS the results (h-full fills the
                  column, which items-stretch sizes to the cards), so a short
                  list gets a short map. It is only CAPPED at the visible strip

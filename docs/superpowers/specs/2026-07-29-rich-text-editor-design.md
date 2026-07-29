@@ -303,9 +303,13 @@ show in the gallery"*, **not pre-ticked** — an upload begun inside the
 description is a description photo until someone says otherwise, and the
 checkbox is the moment the owner thinks about it at all.
 
-**Character count** is over text nodes only; markup and references are not
-charged against the owner's 4,000. A place reference counts as its rendered
-name, since that is what a guest reads.
+**Character count is over text nodes only.** Markup is not charged, and
+**neither are references** — even though a guest reads a place chip as its name.
+Charging them looks fairer and is a trap: the name lives on the nearby entry, so
+renaming a place in the section above would silently change the length of a
+description written weeks ago, and could push it past the cap and make an
+unrelated save fail with an error pointing at the wrong section. Bounding
+reference count is the node cap's job (§8), not the character counter's.
 
 **Input rules** carry most of what "pleasant to write in" means: `- ` starts a
 bullet, `1. ` a numbered list, `**x**` bolds, `###` makes the heading. Free with

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { uploadHostPhoto, type Bilingual, type HostListing } from "@/lib/api";
+import { uploadHostPhoto, type Bilingual, type HostListing, type HostPhoto } from "@/lib/api";
 import { isEmptyDoc, type RichNode } from "@/lib/rich-text";
 import { LIMITS } from "@/lib/listing";
+import { shrink } from "@/lib/photos";
 import { TextAreaField, TextField } from "./TextField";
 import { RichTextEditor, type RichTextEditorProps } from "./RichTextEditor";
 import { PhotoPicker } from "./PhotoPicker";
@@ -31,10 +32,19 @@ export function DescriptionFields({
   value,
   onChange,
   propertyId,
+  onUploaded,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
   propertyId: string;
+  /** The server's photo list right after an upload — mirrors `PhotoManager`'s
+   *  prop of the same name, and exists for the same reason: the page holds a
+   *  SAVED baseline separate from the working listing (`detail.listing` /
+   *  `saved.listing`), and an upload applies live, so the baseline needs the
+   *  new photo too. Without this, Discard would remove a photo the server
+   *  already has, and an in-flight reorder elsewhere on the page would snap
+   *  back to storage order the moment this fires. */
+  onUploaded: (photos: HostPhoto[]) => void;
 }) {
   const t = useTranslations("host.edit.description");
 
@@ -48,13 +58,38 @@ export function DescriptionFields({
     });
   };
 
+  // Tiptap's onUpdate (which calls setCopyDoc, below) and upload() (further
+  // below) can BOTH end up calling `onChange` — and `onChange` here IS the
+  // page's `setListing`, a plain (non-functional) state setter. PhotoPicker
+  // calls onPick — which inserts the chip, synchronously firing onUpdate —
+  // right after onUpload resolves, with no further `await` in between, so
+  // both onChange calls land in the SAME React batch, both closing over the
+  // SAME pre-batch `value`. Neither is a functional updater, so the SECOND
+  // call's spread of that stale `value` overwrites everything the FIRST one
+  // changed: without this, a just-uploaded photo would vanish from `photos`
+  // the instant its chip lands in the text (upload's own onChange, fired
+  // first, gets clobbered by setCopyDoc's), and the next Save would be
+  // rejected server-side with `copy_photo_unknown` (HostWrites.cs) — with
+  // nothing on screen to say why.
+  //
+  // Fixed by merging into ONE onChange call rather than racing two: upload()
+  // stages the working list's new photo here (with the owner's gallery
+  // choice already applied) instead of writing it itself, and setCopyDoc —
+  // always the very next write, since PhotoPicker calls onPick unconditionally
+  // right after a successful upload — folds it into its own single call.
+  const pendingPhotosRef = useRef<HostPhoto[] | null>(null);
+
   // `copy` holds documents, not strings, so it gets its own setter rather
   // than sharing `setBi`.
-  const setCopyDoc = (locale: "es" | "en", next: RichNode) =>
+  const setCopyDoc = (locale: "es" | "en", next: RichNode) => {
+    const photos = pendingPhotosRef.current;
+    pendingPhotosRef.current = null;
     onChange({
       ...value,
+      ...(photos ? { photos } : {}),
       copy: { es: value.copy?.es ?? null, en: value.copy?.en ?? null, [locale]: next },
     });
+  };
 
   const approved = value.copyEnApproved;
   // Presence is not enough: a document holding only a photo chip has no
@@ -74,14 +109,22 @@ export function DescriptionFields({
 
   const upload = async (file: File, alsoInGallery: boolean) => {
     // The existing endpoint — the only path by which bytes reach storage.
-    const photos = await uploadHostPhoto(propertyId, file, false);
-    const added = photos[photos.length - 1];
-    onChange({
-      ...value,
-      photos: photos.map((p) =>
-        p.url === added.url ? { ...p, hiddenFromGallery: !alsoInGallery } : p,
-      ),
-    });
+    // Shrunk client-side first, exactly like PhotoManager's own upload: a
+    // description photo is no less likely to be a full-size camera capture,
+    // and the API re-encodes regardless (lib/photos.ts).
+    const uploaded = await uploadHostPhoto(propertyId, await shrink(file), false);
+    const added = uploaded[uploaded.length - 1];
+    // The SAVED baseline first, exactly like PhotoManager: an upload applies
+    // live, so the server already has this photo whether or not the working
+    // listing is ever saved again.
+    onUploaded(uploaded);
+    // "Also show in the gallery" IS owner intent, though — like isFloorplan,
+    // it stays in the diff and only takes effect on Save. Staged rather than
+    // written directly: see the comment on pendingPhotosRef/setCopyDoc above.
+    pendingPhotosRef.current = [
+      ...value.photos,
+      { ...added, hiddenFromGallery: !alsoInGallery },
+    ];
     return added.url;
   };
 
@@ -104,6 +147,7 @@ export function DescriptionFields({
         label={t("about")}
         tag={t("aboutTagEs")}
         placeholder={t("aboutPlaceholder")}
+        hint={t("aboutHint")}
         onInsertPhoto={(insert) => setPhotoPick(() => insert)}
         onInsertPlace={(insert) => setPlacePick(() => insert)}
         strings={toolbarStrings}

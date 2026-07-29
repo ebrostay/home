@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import type { HostPhoto } from "@/lib/api";
+import { ACCEPT } from "@/lib/photos";
 
 // Picks a photo already on the listing, or uploads a new one through the
 // EXISTING endpoint. There is deliberately no second upload path: a second
@@ -82,7 +83,7 @@ export function PhotoPicker({ open, photos, onClose, onPick, onUpload, strings }
           <input
             ref={file}
             type="file"
-            accept="image/*"
+            accept={ACCEPT}
             hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }}
           />

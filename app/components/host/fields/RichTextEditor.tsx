@@ -153,6 +153,10 @@ export type RichTextEditorProps = {
   label: string;
   tag?: string;
   placeholder?: string;
+  /** A persistent caption below the editor — mirrors `TextAreaField`'s
+   *  `hint`. Distinct from `placeholder`, which only shows while empty and
+   *  disappears the moment there is a single character. */
+  hint?: string;
   /** Opens the pickers. The parent owns them so both editors share one. */
   onInsertPhoto: (insert: (url: string, asFigure: boolean) => void) => void;
   onInsertPlace: (insert: (entryId: string, asCard: boolean) => void) => void;
@@ -161,7 +165,7 @@ export type RichTextEditorProps = {
 };
 
 export function RichTextEditor({
-  value, onChange, label, tag, placeholder, onInsertPhoto, onInsertPlace, strings,
+  value, onChange, label, tag, placeholder, hint, onInsertPhoto, onInsertPlace, strings,
 }: RichTextEditorProps) {
   const editor = useEditor({
     // Static export: the editor must not render on the server.
@@ -268,6 +272,7 @@ export function RichTextEditor({
           <EditorContent editor={editor} />
         </div>
       </div>
+      {hint && <p className="text-xs leading-[1.4] text-muted">{hint}</p>}
     </div>
   );
 }

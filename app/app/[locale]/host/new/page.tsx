@@ -659,7 +659,12 @@ function Step({
       // but the type does not know that, and a placeholder id would try to
       // upload description photos into nothing.
       return property ? (
-        <DescriptionFields value={listing} onChange={setListing} propertyId={property.id} />
+        <DescriptionFields
+          value={listing}
+          onChange={setListing}
+          propertyId={property.id}
+          onUploaded={onUploaded}
+        />
       ) : (
         <p className="text-sm text-muted">{tn("needsAddressFirst")}</p>
       );

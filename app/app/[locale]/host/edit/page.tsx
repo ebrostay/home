@@ -436,7 +436,12 @@ function EditContent() {
               stats.bilingual === stats.bilingualTotal ? "text-brand-strong" : "text-warn"
             }
           >
-            <DescriptionFields value={listing} onChange={setListing} propertyId={property.id} />
+            <DescriptionFields
+              value={listing}
+              onChange={setListing}
+              propertyId={property.id}
+              onUploaded={photosUploaded}
+            />
           </SectionCard>
 
           <SectionCard

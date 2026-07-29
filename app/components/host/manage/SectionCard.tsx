@@ -33,7 +33,18 @@ export function SectionCard({
     <section
       id={`sec-${id}`}
       aria-labelledby={`rule-${id}`}
-      className="flex scroll-mt-(--section-anchor-top) flex-col gap-4 rounded-(--radius-card) border border-line bg-surface px-6 py-[1.375rem] shadow-(--shadow-card)"
+      // Full-bleed on a phone. Measured at 375 px, the old chain spent 24 px
+      // of page gutter plus 24 px of card padding on each side — 96 px of
+      // 375, a quarter of the screen — to put a text field in 277 px. The
+      // card now cancels the page gutter (`-mx-6` against the owner pages'
+      // `px-6`, which both mains carry) and halves its own padding, giving
+      // the controls 351 px.
+      //
+      // Losing the side border and the radius with it is not decoration: a
+      // rounded, bordered card pressed against the glass reads as a layout
+      // bug. A band that runs edge to edge reads as a decision. The top and
+      // bottom borders stay, so the sections are still separable.
+      className="-mx-6 flex scroll-mt-(--section-anchor-top) flex-col gap-4 rounded-none border border-x-0 border-line bg-surface px-3 py-[1.375rem] shadow-(--shadow-card) min-[30rem]:mx-0 min-[30rem]:rounded-(--radius-card) min-[30rem]:border-x min-[30rem]:px-6"
     >
       <div className="flex items-center gap-3">
         <h2 id={`rule-${id}`} className="ledger-rule m-0 flex-1">

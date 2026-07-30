@@ -3,7 +3,7 @@
 // at the local func host (func start --cors http://localhost:3000).
 
 import type { NearbyGroup, NearbyProfile, Reach } from "@/lib/nearby";
-import type { BilingualDoc, RichNode } from "@/lib/rich-text";
+import { isEmptyDoc, type BilingualDoc, type RichNode } from "@/lib/rich-text";
 
 export type Bilingual = { es: string | null; en: string | null };
 export type PublicRange = { start: string; end: string }; // end exclusive
@@ -518,6 +518,26 @@ export const biText = (b: Bilingual | null | undefined, locale: string) =>
  *  English guests something, exactly as `biText` already does for `details`
  *  one field over. Nothing gates `copy` on `CopyEnApproved` at read time, so
  *  this is the only thing standing between an unwritten translation and a
- *  blank About section. */
-export const biDoc = (d: BilingualDoc | null | undefined, locale: string): RichNode | null =>
-  (locale === "en" ? d?.en ?? d?.es : d?.es ?? d?.en) ?? null;
+ *  blank About section.
+ *
+ *  Falls back on EMPTY, not just `null` — a plain `??` (what `biText` gets
+ *  away with) is not enough here. `biText`'s fallback is safe because
+ *  `setBi` (`DescriptionFields.tsx`) normalises an emptied string back to
+ *  `null` before it can reach a reader; the document path has no equivalent
+ *  normalisation anywhere in the save path (client or server), so an owner
+ *  who types something and then deletes it all leaves `copy.en` a real,
+ *  non-null `{type:"doc",content:[]}` — present by `??`'s reckoning, empty
+ *  by any reader's. `isEmptyDoc` is the same predicate the completeness gate
+ *  already uses for exactly this question (`bothLanguagesDoc`,
+ *  `lib/listing.ts`), so the read side and the gate side agree on what "has
+ *  a description" means. Deliberately NOT fixed by normalising on save
+ *  instead: rewriting an owner's stored document out from under them is the
+ *  quiet repair this design avoids everywhere else (`validateDoc` rejects
+ *  rather than repairs); the question of "empty counts as absent" belongs at
+ *  the point where it's actually asked. */
+export const biDoc = (d: BilingualDoc | null | undefined, locale: string): RichNode | null => {
+  const own = locale === "en" ? d?.en : d?.es;
+  const other = locale === "en" ? d?.es : d?.en;
+  if (own && !isEmptyDoc(own)) return own;
+  return other && !isEmptyDoc(other) ? other : null;
+};

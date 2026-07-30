@@ -1,7 +1,19 @@
 // Ebrostay v2 infrastructure — desired state for resource group `ebrostay`.
 //
-//   deploy:  az deployment group create -g ebrostay -f infra/main.bicep
-//   preview: az deployment group what-if -g ebrostay -f infra/main.bicep
+//   preview: az deployment group what-if -g ebrostay -f infra/main.bicep \
+//              -p orsApiKey="$ORS_KEY"
+//   deploy:  az deployment group create  -g ebrostay -f infra/main.bicep \
+//              -p orsApiKey="$ORS_KEY"
+//
+// ⚠️ `swaAppSettings` is a WHOLE-COLLECTION PUT: any app setting that exists on
+// the SWA but is absent from this template is DELETED by the deployment. Before
+// deploying, diff the live settings against this file and add anything missing
+// as a parameter — do not assume this file is complete:
+//
+//   az staticwebapp appsettings list -n ebrostay-v2 -g ebrostay \
+//     --query "properties" -o json | jq -r 'keys[]'
+//
+// That is also where the current ORS key comes from; it has never lived here.
 //
 // Covers: SWA (ebrostay-v2), Cosmos DB free tier + database/containers,
 // photo storage + container, and the SWA app settings (secrets wired by
@@ -29,6 +41,18 @@ param photosContainerName string = 'property-photos'
 // The database holds the full 1000 RU/s SHARED across containers => bill is 0.
 // "Go paid when we get real users": raise throughput here, redeploy (ADR-019).
 param sharedDatabaseThroughput int = 1000
+
+// OpenRouteService key for the nearby-routing calls (api/Program.cs reads
+// ORS_API_KEY). Deliberately REQUIRED and without a default: `swaAppSettings`
+// below is a whole-collection PUT, so every setting absent from it is DELETED
+// from the SWA on deploy. This key has never been in this file — it was set by
+// hand — which means every deployment of this template before now would have
+// silently wiped it and broken every route measurement on the site. A required
+// parameter turns that silent wipe into a deployment that refuses to start.
+// Read the current value out before deploying (see the header comment).
+@description('OpenRouteService API key. Never stored in this file or in a parameters file — pass it at deploy time.')
+@secure()
+param orsApiKey string
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: cosmosAccountName
@@ -215,6 +239,7 @@ resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
     PHOTOS_CONNECTION: storageConnectionString
     IMPORTS_CONNECTION: storageConnectionString
     PHOTOS_CONTAINER: photosContainerName
+    ORS_API_KEY: orsApiKey
     PIPELINE_WAKEUP_URL: ''
     IMPORT_CALLBACK_BASE_URL: 'https://${swa.properties.defaultHostname}'
   }

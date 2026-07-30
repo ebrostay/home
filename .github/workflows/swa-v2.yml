@@ -34,8 +34,19 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      # SWA caps managed-function content at 104857600 bytes. A RID-agnostic
+      # publish ships SkiaSharp's native binaries for every runtime it knows
+      # (~20 RIDs, 477 MB) and the content server rejects the upload outright —
+      # which is what happened on 2026-07-28, leaving the site stuck on the
+      # 07-27 build. SWA runs these functions on Windows, so pin the RID; the
+      # native debug symbols are another 85 MB (libSkiaSharp.pdb) and buy
+      # nothing in a deployed function. Result: 40 MB published, 15 MB zipped.
+      # `--self-contained false` keeps worker.config.json's `dotnet
+      # Ebrostay.Api.dll` launch valid — do not drop it.
       - name: Publish API (.NET 9 isolated)
-        run: dotnet publish api -c Release -o api/bin/publish
+        run: |
+          dotnet publish api -c Release -r win-x64 --self-contained false -o api/bin/publish
+          find api/bin/publish -name '*.pdb' -delete
 
       # Both app and api are prebuilt; the action only uploads. The API runtime
       # comes from platform.apiRuntime in staticwebapp.config.json.

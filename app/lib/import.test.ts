@@ -14,7 +14,10 @@ import {
   matchSource,
   mergeImport,
   pollDelay,
+  shouldRetryPoll,
   stageLine,
+  POLL_CEILING_MS,
+  POLL_MAX_FAILURES,
 } from "./import";
 import { blankListing, blankPricing } from "./wizard";
 import { paragraphDoc } from "./rich-text";
@@ -127,6 +130,7 @@ describe("bannerVariant", () => {
       expect(v("basics", ["name"], ["name"], true).eyebrow).toBe("justLanded");
       expect(v("basics", ["name"], ["name"], false).eyebrow).toBe("from");
     });
+
   });
 
   describe("resumed draft — the arrival set is gone", () => {
@@ -404,6 +408,30 @@ describe("pollDelay", () => {
   it("is 2s early and 5s after the first minute", () => {
     expect(pollDelay(1_000)).toBe(2_000);
     expect(pollDelay(90_000)).toBe(5_000);
+  });
+});
+
+describe("shouldRetryPoll", () => {
+  it("rides out a short run of dropped responses", () => {
+    // One transient failure used to end the read for good — the poll
+    // scheduled no further round and left `jobId` set, so the chain could not
+    // restart, the owner was evicted to the start screen, and a job still
+    // running on the server was abandoned with nothing left to poll or reap
+    // it.
+    expect(shouldRetryPoll(1, 5_000)).toBe(true);
+    expect(shouldRetryPoll(POLL_MAX_FAILURES, 5_000)).toBe(true);
+  });
+
+  it("gives up once the run gets long enough to mean something", () => {
+    expect(shouldRetryPoll(POLL_MAX_FAILURES + 1, 5_000)).toBe(false);
+  });
+
+  it("never outlives the ceiling, however few the failures", () => {
+    // A read that has been going five minutes is over regardless of why the
+    // last round failed.
+    expect(shouldRetryPoll(1, POLL_CEILING_MS)).toBe(false);
+    expect(shouldRetryPoll(1, POLL_CEILING_MS + 1)).toBe(false);
+    expect(shouldRetryPoll(1, POLL_CEILING_MS - 1)).toBe(true);
   });
 });
 

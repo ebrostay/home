@@ -178,7 +178,6 @@ export function bannerVariant(
 
   const here = (keys: string[]) => keys.some((k) => IMPORT_STEP_OF[k as ImportKey] === step);
   const unreviewed = here(imported);
-
   return {
     eyebrow: justLanded ? "justLanded" : unreviewed ? "from" : "nothing",
     body:
@@ -405,6 +404,29 @@ export function stageLine(stage: ImportStage, elapsedMs: number): StageLine {
 
 export const POLL_MS = 2_000;
 export const POLL_CEILING_MS = 5 * 60_000;
+
+/** How many CONSECUTIVE failed polls the read survives. */
+export const POLL_MAX_FAILURES = 2;
+
+/** Does a failed poll get another round?
+ *
+ *  A single dropped response is not a dead read. The job is running on the
+ *  server whatever the browser just failed to hear, and the failures this sees
+ *  are overwhelmingly transient — a mobile handoff, a throttled background
+ *  tab, a Functions cold start. Giving up on the first one evicts the owner to
+ *  the start screen and ABANDONS a job that is still going: `?import=` is
+ *  dropped, so nothing polls it again, so the reaper (which only runs on a
+ *  poll) never sees it either, and it holds one of the owner's two running
+ *  slots until its deadline.
+ *
+ *  `consecutiveFailures` counts the run, not the total: any successful poll
+ *  resets it, so a read that limps through an hour of flaky network is not
+ *  killed by the third failure of the hour.
+ *
+ *  The ceiling still wins. A poll that has been going five minutes is over
+ *  regardless of why the last round failed. */
+export const shouldRetryPoll = (consecutiveFailures: number, elapsedMs: number) =>
+  consecutiveFailures <= POLL_MAX_FAILURES && elapsedMs < POLL_CEILING_MS;
 
 /** 2s while the wait is still short, 5s after the first minute. A read that is
  *  going to take fifty seconds does not need twenty-five polls in its last

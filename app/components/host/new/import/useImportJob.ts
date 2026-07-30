@@ -12,7 +12,13 @@ import {
   type ImportResult,
   type ImportStage,
 } from "@/lib/api";
-import { POLL_CEILING_MS, importErrorKey, isTerminalStage, pollDelay } from "@/lib/import";
+import {
+  POLL_CEILING_MS,
+  importErrorKey,
+  isTerminalStage,
+  pollDelay,
+  shouldRetryPoll,
+} from "@/lib/import";
 
 // The read, as a state machine (ADR-033). It lives here rather than in the
 // wizard page because it is one self-contained thing — three phases, one job,
@@ -108,6 +114,9 @@ export function useImportJob({
     // The job's OWN start, not this component's — so a reload mid-read resumes
     // the real clock instead of restarting the stage lines from zero.
     let began = 0;
+    // CONSECUTIVE failed rounds. Reset by any success below, so this is the
+    // length of the current run of failures and not a budget for the session.
+    let failures = 0;
 
     // The read is over, however it ended.
     //
@@ -133,6 +142,7 @@ export function useImportJob({
       try {
         const job = await fetchImportJob(jobId);
         if (stopped) return;
+        failures = 0;
         const created = Date.parse(job.createdAt);
         if (!began) began = Number.isFinite(created) ? created : Date.now();
         const elapsed = Date.now() - began;
@@ -164,6 +174,25 @@ export function useImportJob({
         timer = setTimeout(tick, pollDelay(elapsed));
       } catch (err) {
         if (stopped) return;
+        // A dropped RESPONSE is not a dead read: the job is running on the
+        // server whatever this round failed to hear. Giving up on the first
+        // failure evicted the owner to the start screen AND abandoned the
+        // job — no round was scheduled and `jobId` stayed set, so the effect's
+        // dependencies never moved and the chain could not restart. Nothing
+        // polled it again, so the reaper (which only runs on a poll) never saw
+        // it, and it held a running slot until its deadline.
+        //
+        // So a short run of consecutive failures is ridden out. Every other
+        // guarantee is untouched: `stopped` still wins (unmount, and the
+        // terminal/ceiling exits above have already returned), the ceiling is
+        // still enforced by `shouldRetryPoll`, and this schedules the same
+        // single `timer` the success path does — never a second chain.
+        failures += 1;
+        const elapsed = began ? Date.now() - began : 0;
+        if (shouldRetryPoll(failures, elapsed)) {
+          timer = setTimeout(tick, pollDelay(elapsed));
+          return;
+        }
         setError(fallback(err));
         setPhase((p) => (p === "reading" ? "start" : p));
       }

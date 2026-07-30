@@ -311,6 +311,62 @@ export type HostListingSaved = {
  *  `confirmed`; holds belong to the booking flow and survive a save. */
 export type AvailabilityWrite = { start: string; end: string; note: string | null };
 
+// ---------------------------------------------------------------------------
+// The AI-assisted import (ADR-033). `api/Models/ImportModels.cs` is the
+// server's copy of this vocabulary.
+// ---------------------------------------------------------------------------
+
+/** A partial listing from an import. Every field is optional and absent means
+ *  "the portal did not say" — which is NOT "the portal said empty". There is
+ *  no `en` anywhere: the English is never imported (§10.5), and the server's
+ *  DTO has no member for it either. */
+export type ImportListingPatch = {
+  address?: string; postcode?: string; cadastralRef?: string;
+  lat?: number; lng?: number; areaEs?: string;
+  copyEs?: string; detailsEs?: string; bedsEs?: string;
+  name?: string; type?: string;
+  guests?: number; bedrooms?: number; bathrooms?: number; sizeM2?: number;
+  floorNumber?: number; energyRating?: string;
+  amenities?: string[];
+  petsAllowed?: boolean; smokingAllowed?: boolean;
+  couplesAllowed?: boolean; selfCheckin?: boolean;
+};
+
+export type ImportPricingPatch = {
+  priceNumber?: number; depositAmount?: number; billsPolicy?: string;
+  utilitiesCapEur?: number; minStayMonths?: number;
+};
+
+/** `imported` is authoritative — never derived from "which fields are set". */
+export type ImportResult = {
+  listing: ImportListingPatch;
+  pricing: ImportPricingPatch;
+  imported: string[];
+};
+
+export type ImportStage =
+  | "queued" | "fetching" | "reading" | "matching"
+  | "done" | "failed" | "cancelled";
+
+export type ImportJobView = {
+  jobId: string;
+  kind: string;
+  host: string;
+  stage: ImportStage;
+  createdAt: string;
+  result: ImportResult | null;
+  error: { code: string } | null;
+};
+
+export const startImport = (url: string) =>
+  post<{ jobId: string; stage: ImportStage }>("/import", { url });
+
+export const fetchImportJob = (jobId: string) =>
+  get<ImportJobView>(`/import/${encodeURIComponent(jobId)}`);
+
+export const cancelImport = (jobId: string) =>
+  del<void>(`/import/${encodeURIComponent(jobId)}`);
+
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 async function get<T>(path: string): Promise<T> {
@@ -329,13 +385,25 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return write<T>("POST", path, body);
 }
 
+/** The cancel endpoint has no request body and answers 204. */
+async function del<T>(path: string): Promise<T> {
+  return write<T>("DELETE", path, undefined);
+}
+
 async function write<T>(method: string, path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}/api${path}`, {
+  const init: RequestInit = {
     method,
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(body),
-  });
+  };
+  // A body-less write (e.g. `del`) must send no body at all — not the string
+  // "undefined", which `JSON.stringify` would otherwise never produce either,
+  // but this keeps the intent explicit rather than relying on that quirk.
+  if (body !== undefined) init.body = JSON.stringify(body);
+
+  const res = await fetch(`${BASE}/api${path}`, init);
   if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  // A 204 No Content (the cancel endpoint) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 

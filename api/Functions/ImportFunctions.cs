@@ -49,6 +49,23 @@ public class ImportFunctions(
         var host = ImportSources.Match(body?.Url);
         if (host is null) return Bad("unsupported_host");
 
+        // CONFIGURATION, never inferred from the request. `req.Host` is a
+        // client-controlled header: falling back to it would let an
+        // authenticated owner send `Host: attacker.example` and have this
+        // job's callback token written into the queue message pointed at
+        // their own host, for the pipeline to then POST the token to. Blast
+        // radius is one job, and the only thing standing in the way would be
+        // an app setting somebody remembered to set.
+        //
+        // So it throws, the way Program.cs treats COSMOS_ENDPOINT: a missing
+        // setting is a deployment fault and a 500 that says so is strictly
+        // safer than a request that succeeds by guessing. Read HERE, before
+        // the budget is consumed and before the job document exists, so a
+        // misconfigured deployment leaves nothing behind on its way out.
+        var baseUrl = (Environment.GetEnvironmentVariable("IMPORT_CALLBACK_BASE_URL")
+            ?? throw new InvalidOperationException("IMPORT_CALLBACK_BASE_URL not set"))
+            .TrimEnd('/');
+
         int runningCount;
         try
         {
@@ -78,9 +95,10 @@ public class ImportFunctions(
             Error: null,
             Ttl: 604800);
 
+        ItemResponse<ImportJobDoc> created;
         try
         {
-            await Jobs.CreateItemAsync(job, new PartitionKey(job.Id), cancellationToken: ct);
+            created = await Jobs.CreateItemAsync(job, new PartitionKey(job.Id), cancellationToken: ct);
         }
         catch (CosmosException ex)
         {
@@ -88,11 +106,31 @@ public class ImportFunctions(
             return new StatusCodeResult(StatusCodes.Status502BadGateway);
         }
 
-        var baseUrl = Environment.GetEnvironmentVariable("IMPORT_CALLBACK_BASE_URL")
-            ?? $"{req.Scheme}://{req.Host}";
-        await queue.EnqueueAsync(new ImportQueueMessage(
-            job.Id, job.Source, $"{baseUrl}/api/import/{job.Id}/callback",
-            job.CallbackToken, job.DeadlineAt), ct);
+        try
+        {
+            await queue.EnqueueAsync(new ImportQueueMessage(
+                job.Id, job.Source, $"{baseUrl}/api/import/{job.Id}/callback",
+                job.CallbackToken, job.DeadlineAt), ct);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            // The document exists and no pipeline will ever see it. Worse, the
+            // owner never learns the job id — they are getting a 502, not the
+            // 202 that carries it — so nothing will ever poll this job, and
+            // the reaper only runs on a poll. Left alone it would sit at
+            // `queued` looking runnable for its whole seven-day TTL.
+            //
+            // Marked failed here rather than left to the deadline: the
+            // deadline clause in the cap query already stops it from locking
+            // the owner out past its five minutes, so this is not what makes
+            // the cap correct — it is what makes the DOCUMENT honest for the
+            // week it then sits there, and it frees the slot now instead of
+            // in five minutes. Best-effort by design (see MarkFailedAsync):
+            // the owner is getting a 502 either way.
+            logger.LogError(ex, "Could not enqueue import job {JobId}", job.Id);
+            await MarkFailedAsync(job, "pipeline_error", created.ETag, ct);
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
 
         return new ObjectResult(new { jobId = job.Id, stage = job.Stage })
         {
@@ -293,6 +331,23 @@ public class ImportFunctions(
             logger.LogError(ex, "Cosmos error replacing import job {JobId}", job.Id);
             return ReplaceOutcome.Error;
         }
+    }
+
+    // Best effort, and deliberately so: every caller is already returning a
+    // 502, and a failure to write the failure changes nothing the owner sees.
+    // Conditional on the etag from the write that created the document, so a
+    // callback that somehow got there first is never clobbered.
+    private async Task MarkFailedAsync(ImportJobDoc job, string code, string etag, CancellationToken ct)
+    {
+        var failed = job with
+        {
+            Stage = ImportStage.Failed,
+            Error = new ImportError(code),
+            UpdatedAt = DateTimeOffset.UtcNow.ToString("o"),
+        };
+
+        if (await ReplaceAsync(failed, etag, ct) != ReplaceOutcome.Ok)
+            logger.LogWarning("Could not mark orphaned import job {JobId} failed", job.Id);
     }
 
     private async Task<int> RunningCountAsync(string ownerId, CancellationToken ct)

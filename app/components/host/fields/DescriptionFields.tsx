@@ -104,9 +104,11 @@ export function DescriptionFields({
     // live, so the server already has this photo whether or not the working
     // listing is ever saved again. A SEPARATE write (the page's own
     // onUploaded/photosUploaded, to the same underlying state) — called
-    // before the functional update below so that even where it is not
-    // itself functional (host/edit/page.tsx), the upsert that follows still
-    // lands last and wins.
+    // before the functional update below. Both sides are functional updaters
+    // over the previous state (host/edit/page.tsx's photosUploaded included),
+    // so this ordering only decides which one composes on top of the other;
+    // it is not what protects the rest of the listing from a stale snapshot —
+    // that guarantee has to come from onUploaded/photosUploaded itself.
     onUploaded(uploaded);
     // "Also show in the gallery" IS owner intent, though — like isFloorplan,
     // it stays in the diff and only takes effect on Save. Applied via the

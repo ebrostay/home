@@ -209,19 +209,31 @@ function EditContent() {
   // did while the transfer was in flight — a reorder would snap back to
   // storage order, and a photo they had just removed would reappear, because
   // the server still has it until the content save goes through.
+  //
+  // Both updates below are functional: this fires after an `await`, so the
+  // render-time `listing`/`state` are a stale snapshot from before the
+  // upload started. Writing through it would revert whatever happened during
+  // the transfer — text typed into the other locale's editor, an approve
+  // toggle, a `PhotoManager` delete, or a second upload finishing first —
+  // and in that last case would also drop the concurrent upload's photos
+  // from the saved baseline, so a later Save would delete them from storage.
   const photosUploaded = (stored: HostPhoto[]) => {
     const before = new Set(detail.listing.photos.map((p) => p.url));
     const added = stored.filter((p) => !before.has(p.url));
     if (added.length === 0) return;
 
-    setListing({ ...listing, photos: [...listing.photos, ...added] });
-    setState({
-      ...state,
-      detail: {
-        ...detail,
-        listing: { ...detail.listing, photos: [...detail.listing.photos, ...added] },
-      },
-    });
+    setLoadedListing((l) => ({ ...l, photos: [...l.photos, ...added] }));
+    setState((s) =>
+      s.kind === "ready"
+        ? {
+            ...s,
+            detail: {
+              ...s.detail,
+              listing: { ...s.detail.listing, photos: [...s.detail.listing.photos, ...added] },
+            },
+          }
+        : s,
+    );
   };
 
   // "Keep mine". Applied on screen first and written after, because the whole

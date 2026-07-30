@@ -115,6 +115,10 @@ var containers = [
   // Cross-instance daily call budget for the ORS matrix (Consumption plan
   // scales out, so an in-process counter would not be a limit at all).
   { name: 'serviceBudget', partitionKey: '/id', defaultTtl: 172800, indexingPolicy: null }
+  // Import jobs (ADR-033). Partitioned on /id: the only access pattern is a
+  // point read by job id, which is what makes a 2s poll cost 1 RU. Seven-day
+  // TTL — a job is a transaction, not a record.
+  { name: 'importJobs', partitionKey: '/id', defaultTtl: 604800, indexingPolicy: null }
 ]
 
 resource sqlContainers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = [
@@ -164,6 +168,16 @@ resource photosContainer 'Microsoft.Storage/storageAccounts/blobServices/contain
   }
 }
 
+resource queueService 'Microsoft.Storage/storageAccounts/queueServices@2023-01-01' = {
+  parent: storage
+  name: 'default'
+}
+
+resource importQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = {
+  parent: queueService
+  name: 'import-jobs'
+}
+
 // Unlinked SWA — deploys happen via deployment token from CI, no repo binding.
 resource swa 'Microsoft.Web/staticSites@2023-01-01' = {
   name: swaName
@@ -189,6 +203,8 @@ resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
     COSMOS_DATABASE: databaseName
     STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
     PHOTOS_CONTAINER: photosContainerName
+    PIPELINE_WAKEUP_URL: ''
+    IMPORT_CALLBACK_BASE_URL: 'https://${swa.properties.defaultHostname}'
   }
 }
 

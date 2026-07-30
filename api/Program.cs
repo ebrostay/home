@@ -57,6 +57,28 @@ builder.Services.AddSingleton(_ =>
     return new BlobServiceClient(connection);
 });
 
+// Queue client. Same singleton rule as Blob and Cosmos — it pools connections.
+// Falls back to AzureWebJobsStorage so a local run needs one setting, not two.
+builder.Services.AddSingleton(_ =>
+{
+    var connection = Environment.GetEnvironmentVariable("IMPORTS_CONNECTION")
+        ?? Environment.GetEnvironmentVariable("AzureWebJobsStorage")
+        ?? throw new InvalidOperationException("IMPORTS_CONNECTION not set");
+    return new Azure.Storage.Queues.QueueServiceClient(connection);
+});
+
+builder.Services.AddHttpClient("wakeup", c =>
+{
+    // Short on purpose. The ping is advisory; the queue already holds the job,
+    // so waiting on an unresponsive third party would only delay the owner's
+    // 202 for nothing.
+    c.Timeout = TimeSpan.FromSeconds(2);
+});
+
+builder.Services.AddSingleton<Ebrostay.Api.Services.ImportQueue>();
+builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.ImportBudget(
+    sp.GetRequiredService<Database>().GetContainer("serviceBudget")));
+
 builder.Services.AddSingleton<Ebrostay.Api.Services.ProfileService>();
 builder.Services.AddSingleton<Ebrostay.Api.Services.PlatformSettings>();
 builder.Services.AddSingleton<Ebrostay.Api.Services.PhotoStore>();

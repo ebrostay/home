@@ -4,6 +4,8 @@ import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import type { Matcher } from "react-day-picker";
 import { useLocale, useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import {
   SplitRangeCalendars,
   addMonths,
@@ -95,14 +97,9 @@ export function SplitDateRangeField({
   const navStart = allowPast ? undefined : startOfMonth(startOfToday());
   const navEnd = navStart ? addMonths(navStart, 18) : undefined;
 
+  const months = useShortMonths();
   const fmt = (d?: Date) =>
-    d
-      ? new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }).format(d)
-      : placeholder;
+    d ? shortDate(d, months, { locale, day: true, year: true }) : placeholder;
 
   const error = rangeError(value, minDays, maxDays);
   const toggle = () => setOpen((o) => !o);

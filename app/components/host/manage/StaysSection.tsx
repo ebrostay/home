@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { CalendarPlus } from "lucide-react";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate, type ShortMonths } from "@/lib/dates";
 import type { Occupancy, Stay } from "@/lib/manage";
 import { formatEuro } from "@/lib/pricing";
 import { SectionCard } from "./SectionCard";
@@ -61,6 +63,7 @@ export function StaysSection({
   locale: string;
 }) {
   const t = useTranslations("host.manage.stays");
+  const months = useShortMonths();
   const booked = stays.filter((s) => s.status !== "completed").length;
 
   return (
@@ -103,7 +106,7 @@ export function StaysSection({
               {/* Not truncated below 38rem — it has the line to itself there,
                   and the end of a stay is not a detail worth an ellipsis. */}
               <span className="data text-[0.8125rem] text-ink min-[38rem]:min-w-0 min-[38rem]:truncate">
-                {dates(s, locale)}
+                {dates(s, locale, months)}
               </span>
               {/* `contents` puts these three back in the grid as its own items
                   at 38rem — same DOM order as the columns, which is why the
@@ -168,14 +171,11 @@ function Head({
   );
 }
 
-function dates(s: Stay, locale: string): string {
-  const fmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+function dates(s: Stay, locale: string, months: ShortMonths): string {
+  const fmt = (d: Date) => shortDate(d, months, { locale, day: true });
   const at = (iso: string) => new Date(`${iso}T12:00:00`);
   const endInclusive = new Date(at(s.end).getTime() - 86_400_000);
-  return `${fmt.format(at(s.start))} – ${fmt.format(endInclusive)} ${endInclusive.getFullYear()}`;
+  return `${fmt(at(s.start))} – ${fmt(endInclusive)} ${endInclusive.getFullYear()}`;
 }
 
 // The number the table is really about: what the open months are worth. Priced

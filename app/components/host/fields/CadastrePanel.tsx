@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { BadgeCheck, Loader2, RotateCw, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate, type ShortMonths } from "@/lib/dates";
 import type { Declined, HostListing } from "@/lib/api";
 import { cadastreChecksum } from "@/lib/listing";
 import { lookupCadastre, type CadastreRecord } from "@/lib/catastro";
@@ -42,11 +44,8 @@ type State =
 
 /** A stored `YYYY-MM-DD` as a short date. Parsed as UTC, which is how the API
  *  stamped it — a day is precise enough that a timezone cannot move it. */
-const onDate = (at: string, locale: string) =>
-  new Date(`${at}T00:00:00Z`).toLocaleDateString(locale, {
-    day: "numeric",
-    month: "short",
-  });
+const onDate = (at: string, locale: string, months: ShortMonths) =>
+  shortDate(new Date(`${at}T00:00:00Z`), months, { locale, day: true });
 
 export function CadastrePanel({
   value,
@@ -69,6 +68,7 @@ export function CadastrePanel({
 }) {
   const t = useTranslations("host.edit.address");
   const locale = useLocale();
+  const months = useShortMonths();
   const [result, setResult] = useState<State>({ kind: "idle", ref: "" });
   // Bumped by the retry button. `lib/catastro.ts` retries once by itself, so
   // the button only appears after two failures — at which point asking again
@@ -281,7 +281,7 @@ export function CadastrePanel({
                 {d.label}
                 {d.verdict === "settled" && d.at && (
                   <span className="block text-xs text-muted">
-                    {t("reviewedOn", { date: onDate(d.at, locale) })}
+                    {t("reviewedOn", { date: onDate(d.at, locale, months) })}
                   </span>
                 )}
                 {d.verdict === "changed" && (

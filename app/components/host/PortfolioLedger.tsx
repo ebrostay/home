@@ -1,6 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import type { PortfolioStats } from "@/lib/portfolio";
 import { LedgerStrip, type LedgerCell } from "@/components/host/LedgerStrip";
 
@@ -19,6 +21,7 @@ export function PortfolioLedger({
 }) {
   const t = useTranslations("host.ledger");
   const intl = locale === "es" ? "es-ES" : "en-GB";
+  const months = useShortMonths();
 
   const month = new Intl.DateTimeFormat(intl, {
     month: "long",
@@ -58,9 +61,10 @@ export function PortfolioLedger({
           ? t("vacancyNone")
           : vacancy.kind === "openNow"
             ? t("vacancyOpen")
-            : new Intl.DateTimeFormat(intl, { month: "short", year: "numeric" })
-                .format(vacancy.date)
-                .toUpperCase(),
+            : shortDate(vacancy.date, months, {
+                locale,
+                year: true,
+              }).toUpperCase(),
       tone: "text-river-deep",
       note:
         vacancy === null

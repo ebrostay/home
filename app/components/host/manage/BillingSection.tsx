@@ -2,6 +2,8 @@
 
 import { CreditCard } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import type { PayoutRow } from "@/lib/manage";
 import { formatEuro } from "@/lib/pricing";
 import { SectionCard } from "./SectionCard";
@@ -38,14 +40,9 @@ export function BillingSection({
   now: Date;
 }) {
   const t = useTranslations("host.manage.billing");
-  const monthFmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    month: "short",
-    year: "numeric",
-  });
-  const dayFmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+  const months = useShortMonths();
+  const monthFmt = (d: Date) => shortDate(d, months, { locale, year: true });
+  const dayFmt = (d: Date) => shortDate(d, months, { locale, day: true });
 
   const upcoming = rows.filter((r) => r.paidOn >= now);
   const total = upcoming.reduce((sum, r) => sum + r.payout, 0);
@@ -92,7 +89,7 @@ export function BillingSection({
               className={`${COLUMNS} items-center border-b border-line px-1 py-3`}
             >
               <span className="data min-w-0 truncate text-[0.8125rem] font-semibold text-ink">
-                {monthFmt.format(r.month)}
+                {monthFmt(r.month)}
               </span>
               <span className="data text-right text-[0.8125rem] text-body max-[52rem]:hidden">
                 {r.days}
@@ -113,7 +110,7 @@ export function BillingSection({
                     : "bg-surface-2 text-muted"
                 }`}
               >
-                {dayFmt.format(r.paidOn)}
+                {dayFmt(r.paidOn)}
               </span>
             </div>
           ))}

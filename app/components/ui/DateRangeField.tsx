@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { useLocale } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import { DateRangePicker, type DateRange } from "./DateRangePicker";
 import type { Matcher } from "react-day-picker";
 
@@ -32,14 +34,9 @@ export function DateRangeField({
   const locale = useLocale();
   const [open, setOpen] = useState(false);
 
+  const months = useShortMonths();
   const fmt = (d: Date | undefined) =>
-    d
-      ? new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }).format(d)
-      : placeholder;
+    d ? shortDate(d, months, { locale, day: true, year: true }) : placeholder;
 
   return (
     <div className="relative">

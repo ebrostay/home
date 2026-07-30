@@ -12,6 +12,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate, type ShortMonths } from "@/lib/dates";
 import {
   ApiError,
   biText,
@@ -78,6 +80,7 @@ function ManageContent() {
   const t = useTranslations("host");
   const tm = useTranslations("host.manage");
   const locale = useLocale();
+  const months = useShortMonths();
   const id = useSearchParams().get("id") ?? "";
 
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -232,7 +235,12 @@ function ManageContent() {
     {
       key: "vacancy",
       label: tm("ledger.vacancyLabel"),
-      value: vacancyValue(derived.occupancy.next, intl, tm("ledger.vacancyNone")),
+      value: vacancyValue(
+        derived.occupancy.next,
+        locale,
+        months,
+        tm("ledger.vacancyNone"),
+      ),
       tone: "text-river-deep",
       note: derived.occupancy.next
         ? tm("ledger.vacancyNote", { count: derived.occupancy.next.months })
@@ -396,17 +404,16 @@ const toValue = (d: HostPropertyDetail): PricingValue => ({
 /** "OCT 2026" for a single month, "OCT–NOV 2026" for a run. */
 function vacancyValue(
   next: { from: Date; months: number } | null,
-  intl: string,
+  locale: string,
+  months: ShortMonths,
   none: string,
 ): string {
   if (!next) return none;
-  const short = new Intl.DateTimeFormat(intl, { month: "short" });
-  const withYear = new Intl.DateTimeFormat(intl, { month: "short", year: "numeric" });
   const last = new Date(next.from.getFullYear(), next.from.getMonth() + next.months - 1, 1, 12);
   const clean = (s: string) => s.replace(/\./g, "").toUpperCase();
   return next.months === 1
-    ? clean(withYear.format(next.from))
-    : `${clean(short.format(next.from))}–${clean(withYear.format(last))}`;
+    ? clean(shortDate(next.from, months, { locale, year: true }))
+    : `${clean(shortDate(next.from, months, { locale }))}–${clean(shortDate(last, months, { locale, year: true }))}`;
 }
 
 function Skeleton() {

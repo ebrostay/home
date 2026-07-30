@@ -8,6 +8,8 @@ import { useSearchParams } from "next/navigation";
 import { MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import { ApiError, biDoc, biText, fetchProperty, type PropertyDetail, type PropertyPhoto } from "@/lib/api";
 import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
@@ -125,6 +127,8 @@ function DetailBody({
 }) {
   const t = useTranslations();
   const td = useTranslations("detail");
+  // `months` is taken here — it is the availability band below.
+  const monthNames = useShortMonths();
 
   // `hiddenFromGallery` photos exist only to be referenced from the
   // description (Task 11) — they must never show up in the mosaic or the
@@ -388,10 +392,11 @@ function DetailBody({
             {p.availableFrom && (
               <p className="data mt-4 text-xs text-muted">
                 {td("openFrom", {
-                  date: new Intl.DateTimeFormat(
-                    locale === "es" ? "es-ES" : "en-GB",
-                    { month: "short", year: "numeric" },
-                  ).format(new Date(`${p.availableFrom}T00:00:00`)),
+                  date: shortDate(
+                    new Date(`${p.availableFrom}T00:00:00`),
+                    monthNames,
+                    { locale, year: true },
+                  ),
                 })}
               </p>
             )}

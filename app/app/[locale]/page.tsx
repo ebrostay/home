@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import { fetchProperties, biText, type PropertySummary } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
 import { monthStates, stayFits } from "@/lib/availability";
@@ -53,6 +55,7 @@ const COLUMN = "grid grid-cols-1 gap-[22px]";
 export default function HomePage() {
   const t = useTranslations();
   const locale = useLocale();
+  const months = useShortMonths();
 
   const [all, setAll] = useState<PropertySummary[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -190,11 +193,8 @@ export default function HomePage() {
 
   // "1 sept → 20 nov" — the ledger voice for a stay, no year unless it matters.
   const formatRange = (q: SearchQuery) => {
-    const fmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-      day: "numeric",
-      month: "short",
-    });
-    const at = (iso: string) => fmt.format(new Date(`${iso}T00:00:00`));
+    const at = (iso: string) =>
+      shortDate(new Date(`${iso}T00:00:00`), months, { locale, day: true });
     return `${at(q.moveIn)} → ${at(q.moveOut)}`;
   };
 

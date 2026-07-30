@@ -908,6 +908,9 @@
     "switchToDark": "Switch to dark mode",
     "label": "Theme"
   },
+  "date": {
+    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
+  },
   "monthBand": {
     "stayLength": "Stay length",
     "monthCount": "{count, plural, one {# month} other {# months}}",

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Info, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate } from "@/lib/dates";
 import type { PropertyDetail } from "@/lib/api";
 import { stayFits } from "@/lib/availability";
 import {
@@ -44,6 +46,7 @@ export function BookingPanel({
   searched?: { moveIn: string; moveOut: string };
 }) {
   const t = useTranslations("detail.booking");
+  const months = useShortMonths();
   const tc = useTranslations("estimate");
 
   // The listing may cap the stay tighter than the law does.
@@ -82,11 +85,11 @@ export function BookingPanel({
 
   const eur = (v: number) => `${formatEuro(v, locale)} €`;
   const fmtDate = (iso: string) =>
-    new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(`${iso}T00:00:00`));
+    shortDate(new Date(`${iso}T00:00:00`), months, {
+      locale,
+      day: true,
+      year: true,
+    });
 
   const blocked = !available || estimate.tooShort || estimate.tooLong;
 
@@ -113,10 +116,7 @@ export function BookingPanel({
   // Instalment dates: day + month is enough inside a schedule whose year the
   // stay row above already establishes.
   const fmtDay = (iso: string) =>
-    new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-      day: "numeric",
-      month: "short",
-    }).format(new Date(`${iso}T00:00:00`));
+    shortDate(new Date(`${iso}T00:00:00`), months, { locale, day: true });
 
   const summary = t("requestSummary", {
     name: p.name,

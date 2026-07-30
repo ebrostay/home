@@ -908,6 +908,9 @@
     "switchToDark": "Cambiar a modo oscuro",
     "label": "Tema"
   },
+  "date": {
+    "monthsShort": ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"]
+  },
   "monthBand": {
     "stayLength": "Duración de la estancia",
     "monthCount": "{count, plural, one {# mes} other {# meses}}",

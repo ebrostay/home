@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CalendarPlus, Lock, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useShortMonths } from "@/i18n/dates";
+import { shortDate, type ShortMonths } from "@/lib/dates";
 import type { HostRange, PublicRange } from "@/lib/api";
 import { addDays, rangesOverlap, stayDays } from "@/lib/pricing";
 import { monthStates, turnaroundRanges, withTurnover } from "@/lib/availability";
@@ -75,6 +77,7 @@ export function AvailabilityEditor({
   now: Date;
 }) {
   const t = useTranslations("host.manage.availability");
+  const months = useShortMonths();
   const [range, setRange] = useState<SplitRange>({});
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -212,7 +215,7 @@ export function AvailabilityEditor({
                   aria-hidden
                 />
                 <span className="data min-w-0 flex-1 truncate text-[0.8125rem] text-muted">
-                  {rangeLabel(h.start, h.end, locale)}
+                  {rangeLabel(h.start, h.end, locale, months)}
                 </span>
                 <span className="shrink-0 text-xs text-muted">{t("held")}</span>
               </li>
@@ -224,7 +227,7 @@ export function AvailabilityEditor({
                 className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2.5"
               >
                 <span className="data text-[0.8125rem] text-ink">
-                  {rangeLabel(b.start, b.end, locale)}
+                  {rangeLabel(b.start, b.end, locale, months)}
                 </span>
                 <span className="data text-xs text-muted">
                   {t("days", { count: stayDays(b.start, b.end) })}
@@ -258,7 +261,7 @@ export function AvailabilityEditor({
                     type="button"
                     onClick={() => setConfirming(keyOf(b))}
                     aria-label={t("remove", {
-                      range: rangeLabel(b.start, b.end, locale),
+                      range: rangeLabel(b.start, b.end, locale, months),
                     })}
                     className="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-(--radius-control) text-muted transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-ink"
                   >
@@ -343,7 +346,7 @@ export function AvailabilityEditor({
             ? t("conflict")
             : selection
               ? t("selected", {
-                  range: rangeLabel(selection.start, selection.end, locale),
+                  range: rangeLabel(selection.start, selection.end, locale, months),
                   days: stayDays(selection.start, selection.end),
                 })
               : t("selectPrompt")}
@@ -406,11 +409,12 @@ const day = (iso: string) => new Date(`${iso}T12:00:00`);
 
 /** Inclusive on both ends for the reader — nobody reads "to 1 Oct" as
  *  "through 30 Sep", however the range is stored. */
-function rangeLabel(start: string, end: string, locale: string): string {
-  const fmt = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  return `${fmt.format(day(start))} – ${fmt.format(day(addDays(end, -1)))}`;
+function rangeLabel(
+  start: string,
+  end: string,
+  locale: string,
+  months: ShortMonths,
+): string {
+  const fmt = (d: Date) => shortDate(d, months, { locale, day: true, year: true });
+  return `${fmt(day(start))} – ${fmt(day(addDays(end, -1)))}`;
 }

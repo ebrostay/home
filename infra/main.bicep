@@ -15,9 +15,10 @@
 //
 // That is also where the current ORS key comes from; it has never lived here.
 //
-// Covers: SWA (ebrostay-v2), Cosmos DB free tier + database/containers,
-// photo storage + container, and the SWA app settings (secrets wired by
-// reference — nothing sensitive lives in this file or in parameters).
+// Covers: Cosmos DB free tier + database/containers, photo storage + container,
+// the import queue, and the SWA's app settings (secrets wired by reference —
+// nothing sensitive lives in this file or in parameters). The SWA RESOURCE
+// itself is referenced, not managed — see the `swa` resource below for why.
 //
 // NOT covered (see infra/provision.sh + docs/spec-v2/01-architecture.md):
 // GitHub secret AZURE_STATIC_WEB_APPS_API_TOKEN_V2, GoDaddy DNS, SWA role
@@ -28,9 +29,9 @@
 @description('Region for data resources (Cosmos, Storage).')
 param dataLocation string = 'spaincentral'
 
-@description('Region for the Static Web App (SWA offers no eligible EU region; only places the managed functions).')
-param swaLocation string = 'eastus2'
-
+// The SWA's own region (eastus2 — SWA offers no eligible EU region, and the
+// region only places the managed functions) is not a parameter here: the SWA is
+// referenced, not managed. See the `swa` resource below and ADR-021.
 param swaName string = 'ebrostay-v2'
 param cosmosAccountName string = 'ebrostay-cosmos'
 param databaseName string = 'ebrostay'
@@ -61,6 +62,12 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   properties: {
     databaseAccountOfferType: 'Standard'
     enableFreeTier: true
+    // Both of these are LIVE on the account and absent from this template until
+    // now, which meant a deploy would have silently turned automatic failover
+    // off and dropped the TLS floor. Declared so the template preserves them
+    // rather than regressing them (`az deployment group what-if` showed both).
+    enableAutomaticFailover: true
+    minimalTlsVersion: 'Tls12'
     locations: [
       {
         locationName: dataLocation
@@ -206,18 +213,22 @@ resource importQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@202
 // string built once and handed to both settings below.
 var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 
-// Unlinked SWA — deploys happen via deployment token from CI, no repo binding.
-resource swa 'Microsoft.Web/staticSites@2023-01-01' = {
+// REFERENCED, NOT MANAGED. The SWA resource itself is provisioned and wired by
+// hand (infra/provision.sh) and its GitHub binding — repositoryUrl
+// `ebrostay/home`, branch `redesign/v2`, provider GitHub — plus the deployment
+// token in the AZURE_STATIC_WEB_APPS_API_TOKEN_V2 GitHub secret live entirely
+// outside this template.
+//
+// It used to be declared here as a managed resource carrying only
+// `allowConfigFileUpdates`/`stagingEnvironmentPolicy` and the comment "unlinked
+// SWA … no repo binding". That comment was simply wrong about the live resource,
+// and `what-if` proved the cost: deploying would have nulled repositoryUrl,
+// branch and provider, unbinding the SWA from the repository that deploys to it.
+// Declaring it `existing` means this template reads its hostname and attaches
+// app settings without ever rewriting the resource. If the SWA ever does become
+// bicep-managed, the binding properties must be declared here first.
+resource swa 'Microsoft.Web/staticSites@2023-01-01' existing = {
   name: swaName
-  location: swaLocation
-  sku: {
-    name: 'Free'
-    tier: 'Free'
-  }
-  properties: {
-    allowConfigFileUpdates: true
-    stagingEnvironmentPolicy: 'Enabled'
-  }
 }
 
 // App settings for the managed functions; secrets referenced at deploy time,

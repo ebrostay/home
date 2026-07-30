@@ -74,6 +74,9 @@ import {
 import { SectionNav, type SectionStatus } from "@/components/host/SectionNav";
 import { usePublishedBarHeight } from "@/components/host/manage/ContextBar";
 import { StepCard } from "@/components/host/new/StepCard";
+import { StartScreen } from "@/components/host/new/import/StartScreen";
+import { ReadingScreen } from "@/components/host/new/import/ReadingScreen";
+import { useImportJob } from "@/components/host/new/import/useImportJob";
 import { StepFooter, type SaveState } from "@/components/host/new/StepFooter";
 import { PayoutCard } from "@/components/host/new/PayoutCard";
 import { PaperworkStep } from "@/components/host/new/PaperworkStep";
@@ -149,6 +152,11 @@ function NewPropertyContent() {
     },
     [tn],
   );
+
+  // The offer, the wait and the read that outlives both (ADR-033). The whole
+  // state machine is one hook: the nine steps below are its third phase, not
+  // its only one.
+  const imp = useImportJob({ skipOffer: !!resumeId, fallback: message });
 
   // The comparables feed the rent hint. A failure there costs a sentence,
   // never the page — so it resolves to an empty list rather than rejecting.
@@ -466,16 +474,36 @@ function NewPropertyContent() {
 
   return (
     <main
-      className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-20"
+      className={`mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-20${
+        imp.phase === "wizard" ? "" : " pt-8"
+      }`}
       style={
         {
           "--section-nav-top": "calc(var(--header-h) + var(--context-bar-h, 3.4375rem))",
         } as React.CSSProperties
       }
     >
-      <DraftBar onExit={exit} busy={save === "saving"} sent={sent} />
+      {/* No draft bar on the offer or the wait: there is no draft to save and
+          no step to be on, and a DRAFT pill over the offer would be describing
+          a document that does not exist yet. */}
+      {imp.phase === "wizard" && <DraftBar onExit={exit} busy={save === "saving"} sent={sent} />}
 
-      {sent ? (
+      {imp.phase === "start" ? (
+        <StartScreen
+          onStart={imp.start}
+          onBlank={imp.toWizard}
+          error={imp.error}
+          busy={imp.starting}
+        />
+      ) : imp.phase === "reading" ? (
+        <ReadingScreen
+          host={imp.host}
+          stage={imp.stage}
+          elapsedMs={imp.elapsedMs}
+          onMeanwhile={imp.meanwhile}
+          onStop={imp.stop}
+        />
+      ) : sent ? (
         <SentPanel
           onAddAnother={() => {
             // A genuinely fresh draft, not a cleared form: the previous one is
@@ -506,6 +534,18 @@ function NewPropertyContent() {
           />
 
           <div className="flex min-w-0 flex-col gap-5">
+            {/* What the import still has to say once the wait is behind us —
+                today only the case that matters: a Stop reading that lost its
+                race and did not stop. */}
+            {imp.error && (
+              <p
+                role="status"
+                className="rounded-(--radius-card) border border-line bg-surface-2 px-[18px] py-3 text-[0.8125rem] leading-[1.5] text-ink"
+              >
+                {imp.error}
+              </p>
+            )}
+
             <StepCard
               progress={progress}
               head={tn(`step.${key}.head` as "step.address.head")}

@@ -125,7 +125,9 @@ const ROUTES: RouteCase[] = [
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },
   { path: "/host", expect: { es: /vivienda/i, en: /home/i } },
-  { path: "/host/new", expect: { es: /direcci/i, en: /address/i } },
+  // The offer, not step 1 (ADR-033): /host/new opens on the import start
+  // screen now, and the nine steps sit behind "Start with a blank form".
+  { path: "/host/new", expect: { es: /anunciada/i, en: /listed/i } },
   { path: "/host/manage?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
   // The listing in review: the state whose "submitted on <date>" line is what
   // crashed the portfolio. Worth its own case, not just a row in the list.

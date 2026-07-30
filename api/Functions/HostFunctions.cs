@@ -112,7 +112,7 @@ public class HostFunctions(
         var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
-        int open;
+        var open = 0;
         try
         {
             // Cross-partition, and deliberately so: it counts a hostId across a
@@ -124,7 +124,13 @@ public class HostFunctions(
                     "SELECT VALUE COUNT(1) FROM c WHERE c.hostId = @hostId AND c.status = 'draft'")
                 .WithParameter("@hostId", profile!.Id);
             using var feed = Properties.GetItemQueryIterator<int>(query);
-            open = feed.HasMoreResults ? (await feed.ReadNextAsync()).FirstOrDefault() : 0;
+            // DRAINED, not first-page. Being cross-partition is what makes this
+            // necessary: the SDK's aggregate pipeline can hand back an EMPTY
+            // first page while it is still fanning out, and `FirstOrDefault()`
+            // on that page is 0 — the draft cap silently disabled for that
+            // request. Invisible on a single-physical-partition serverless
+            // account, and it appears the day the container splits.
+            while (feed.HasMoreResults) open += (await feed.ReadNextAsync()).Sum();
         }
         catch (CosmosException ex)
         {

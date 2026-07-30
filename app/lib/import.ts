@@ -1,4 +1,5 @@
 import type { HostListing, HostPricing, ImportResult, ImportStage } from "@/lib/api";
+import { AMENITY_KEYS } from "@/lib/amenity-icons";
 import { canonical, paragraphDoc } from "@/lib/rich-text";
 
 // ============================================================
@@ -93,6 +94,9 @@ export const IMPORT_STEP_OF: Record<ImportKey, string> = {
   selfCheckin: "rules",
 };
 
+/** The amenity vocabulary, as a lookup. Ours, not any portal's. */
+const KNOWN_AMENITIES = new Set<string>(AMENITY_KEYS);
+
 /** An arriving import MERGES, never overwrites: only fields the owner has not
  *  touched may be filled. This is the whole reason "Start filling it in
  *  meanwhile" is safe to offer.
@@ -142,7 +146,20 @@ export function mergeImport(
   take("details", l.detailsEs, (v) => (next.details = { es: v, en: null }));
   take("beds", l.bedsEs, (v) => (next.beds = { es: v, en: null }));
 
-  take("amenities", l.amenities, (v) => (next.amenities = v));
+  // The vocabulary is OURS, and a portal's word for a washing machine is not
+  // in it. An unknown key is DROPPED rather than stored, because the server
+  // deliberately checks an amenity's SHAPE and not its membership
+  // (`api/Models/HostWrites.cs` — "shipping a new amenity never needs an API
+  // deploy"), so a lowercase stray like `elevator` passes validation, is
+  // written to the document, and then renders as nothing anywhere: it matches
+  // no icon, no translation and no search filter. Silent loss on a field whose
+  // whole purpose is being filterable.
+  //
+  // And if nothing survives the filter there is no MARK either — `undefined`
+  // takes `take`'s early return. A glyph on an untouched grid would claim we
+  // filled something we did not, which is the one thing the marks may never do.
+  const amenities = l.amenities?.filter((a) => KNOWN_AMENITIES.has(a));
+  take("amenities", amenities?.length ? amenities : undefined, (v) => (next.amenities = v));
   take("petsAllowed", l.petsAllowed, (v) => (next.petsAllowed = v));
   take("smokingAllowed", l.smokingAllowed, (v) => (next.smokingAllowed = v));
   take("couplesAllowed", l.couplesAllowed, (v) => (next.couplesAllowed = v));
@@ -167,6 +184,38 @@ export function mergeImport(
  *  the whole trust mechanism. */
 export const clearMark = (imported: string[] | null, key: string): string[] =>
   (imported ?? []).filter((k) => k !== key);
+
+/**
+ * Do these two listings disagree about the import?
+ *
+ * A cleared mark is a fact the SERVER has to learn, and it is the only kind of
+ * change to a listing that moves no field. `changedSections` cannot answer
+ * this and must not learn to: it drives the editor's dirty indicator and
+ * `goesBackToReview`, and neither has any business reacting to a glyph.
+ *
+ * Without this the wizard's save gate silently drops three cases, all of which
+ * come back as a re-marked field on the next reload:
+ *   · a PRICING edit — it clears a mark that lives on the listing, but only
+ *     trips `pricingDirty`, and the pricing endpoint carries no marks;
+ *   · an exact revert — type a character and delete it, and the mark is gone
+ *     while every section is identical to the baseline again;
+ *   · an import that filled ONLY pricing keys — `imported` and `importSource`
+ *     are set with no listing section dirty, so the banner does not survive
+ *     the first reload either.
+ *
+ * Order-insensitive: `mergeImport` emits its keys in a fixed order and the
+ * round trip has no reason to reorder them, but a save gate that fires forever
+ * because the server sorted an array is a worse failure than the one this
+ * prevents. Duplicates cannot occur — `mergeImport` appends each key once.
+ */
+export function marksDiffer(a: HostListing, b: HostListing): boolean {
+  if (a.importSource !== b.importSource) return true;
+  const left = a.imported ?? [];
+  const right = b.imported ?? [];
+  if (left.length !== right.length) return true;
+  const seen = new Set(left);
+  return right.some((k) => !seen.has(k));
+}
 
 /** Where each key's value LIVES, so an edit to it can be recognised.
  *

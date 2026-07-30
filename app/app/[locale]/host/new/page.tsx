@@ -60,6 +60,7 @@ import {
   clearMark,
   editedListingKeys,
   editedPricingKeys,
+  marksDiffer,
   mergeImport,
 } from "@/lib/import";
 import { adoptNearbyIds, changedSections, richTextError } from "@/lib/listing";
@@ -182,6 +183,14 @@ function NewPropertyContent() {
    *  case gets the louder eyebrow — fields moving under someone's hands is a
    *  different event from fields being there when they arrive. */
   const [justLanded, setJustLanded] = useState(false);
+  /** What the read ACTUALLY filled, kept beside `listing.imported` and never
+   *  cleared. The two answer different questions — this one "did the portal
+   *  send anything for this step", the marks "is any of it still unread" — and
+   *  the banner needs both. Null until a read lands in this session, including
+   *  on a resumed draft, where the arrival set is simply not knowable: it is
+   *  not persisted, and `imported` alone cannot tell a step that received
+   *  nothing from a step the owner has already been through. */
+  const [arrived, setArrived] = useState<string[] | null>(null);
 
   /** What the read found, handed over by the poll at the one moment it is
    *  readable (see `useImportJob`'s `onResult`). MERGES, never overwrites. */
@@ -193,6 +202,7 @@ function NewPropertyContent() {
       // filled field as an edit and clear the mark it just made.
       setListing({ ...merged.listing, importSource: host });
       setPricing(merged.pricing);
+      setArrived(merged.imported);
       setJustLanded(inWizard);
     },
     [listing, pricing],
@@ -404,7 +414,20 @@ function NewPropertyContent() {
       let nextPricing = base.pricing;
       let nextBlocks = base.blocks;
 
-      if (changedSections(listing, base.listing).length > 0) {
+      // `marksDiffer` is the second half of the gate, and it is not optional:
+      // clearing a mark moves no FIELD, so `changedSections` cannot see it,
+      // and a clear that never reaches the server comes back as a re-marked
+      // field on the next reload — which is the one thing the marks may never
+      // do. It catches the pricing-only edit (whose clear lands on the
+      // listing while the write goes to the pricing endpoint), the exact
+      // revert, and an import that filled nothing but pricing. Safe to send:
+      // this page only ever edits a draft or a rejected listing, so the
+      // content PUT's "takes an approved listing back into review" cannot
+      // apply here.
+      if (
+        changedSections(listing, base.listing).length > 0 ||
+        marksDiffer(listing, base.listing)
+      ) {
         // Same pre-empt as the editor's own `save()`: judged from the form
         // itself, before the round trip, wherever the answer is already
         // knowable. Thrown rather than returned so the catch below — which
@@ -632,6 +655,7 @@ function NewPropertyContent() {
             // else; these two live outside it and would otherwise describe
             // the listing that has just gone to the queue.
             touchedRef.current = new Set<string>();
+            setArrived(null);
             setJustLanded(false);
           }}
         />
@@ -692,6 +716,7 @@ function NewPropertyContent() {
                   step={key}
                   source={listing.importSource}
                   imported={listing.imported ?? []}
+                  arrived={arrived}
                   justLanded={justLanded}
                 />
               )}

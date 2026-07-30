@@ -8,6 +8,7 @@ import {
   editedListingKeys,
   editedPricingKeys,
   importErrorKey,
+  marksDiffer,
   isTerminalStage,
   matchSource,
   mergeImport,
@@ -74,6 +75,88 @@ describe("mergeImport", () => {
       new Set());
     expect(listing.copy?.es?.type).toBe("doc");
     expect(listing.copy?.en).toBeNull();
+  });
+});
+
+// A portal's vocabulary is not ours, and the server checks an amenity's SHAPE
+// and deliberately not its membership — so an unknown key that happens to be
+// lowercase (`elevator`) sails through validation, is stored, and then renders
+// as nothing anywhere. Dropped here instead.
+describe("mergeImport — the amenity vocabulary", () => {
+  const amenityResult = (amenities: string[]): ImportResult => ({
+    listing: { amenities },
+    pricing: {},
+    imported: ["amenities"],
+  });
+
+  it("keeps what is ours and drops what is not", () => {
+    const merged = mergeImport(
+      blankListing(),
+      blankPricing(),
+      // `elevator` and `washingMachine` are a portal's words for `lift` and
+      // `washer`. Only the second is caught by the server's shape check; the
+      // first would be written to the document and shown to nobody.
+      amenityResult(["wifi", "elevator", "heating", "washingMachine"]),
+      new Set(),
+    );
+    expect(merged.listing.amenities).toEqual(["wifi", "heating"]);
+    // Something survived, so the group was answered and the mark stands.
+    expect(merged.imported).toEqual(["amenities"]);
+  });
+
+  it("withholds the mark entirely when nothing survives", () => {
+    const merged = mergeImport(
+      blankListing(),
+      blankPricing(),
+      amenityResult(["elevator", "airConditioning"]),
+      new Set(),
+    );
+    // Untouched, and — the point — UNMARKED. A glyph on a grid we did not
+    // fill claims an answer nobody gave.
+    expect(merged.listing.amenities).toEqual([]);
+    expect(merged.imported).toEqual([]);
+  });
+
+  it("withholds the mark for a claimed-but-empty list", () => {
+    const merged = mergeImport(blankListing(), blankPricing(), amenityResult([]), new Set());
+    expect(merged.imported).toEqual([]);
+  });
+});
+
+// A cleared mark moves no field, so the wizard's save gate cannot see it with
+// `changedSections` alone — and a clear that never reaches the server comes
+// back as a re-marked field on the next reload.
+describe("marksDiffer", () => {
+  const withMarks = (imported: string[] | null, importSource: string | null = "idealista") => ({
+    ...blankListing(),
+    imported,
+    importSource,
+  });
+
+  it("is false for two listings that agree", () => {
+    expect(marksDiffer(withMarks(["name", "price"]), withMarks(["name", "price"]))).toBe(false);
+    expect(marksDiffer(withMarks(null, null), withMarks(null, null))).toBe(false);
+  });
+
+  it("sees a mark that has been cleared", () => {
+    expect(marksDiffer(withMarks(["name"]), withMarks(["name", "price"]))).toBe(true);
+    expect(marksDiffer(withMarks([]), withMarks(["name"]))).toBe(true);
+  });
+
+  it("sees an import arriving on a listing that had none", () => {
+    expect(marksDiffer(withMarks(["price"]), withMarks(null, null))).toBe(true);
+    // …including the source alone, for a read that filled only pricing keys.
+    expect(marksDiffer(withMarks([], "idealista"), withMarks([], null))).toBe(true);
+  });
+
+  it("treats null and empty as the same absence of marks", () => {
+    expect(marksDiffer(withMarks(null), withMarks([]))).toBe(false);
+  });
+
+  it("does not fire on order alone", () => {
+    // Otherwise a server that sorted the array would make every Continue
+    // write the listing again, for ever.
+    expect(marksDiffer(withMarks(["name", "price"]), withMarks(["price", "name"]))).toBe(false);
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { ImportMark } from "./ImportMark";
-import { IMPORT_STEP_OF, type ImportKey } from "@/lib/import";
+import { IMPORT_KEYS, IMPORT_STEP_OF, type ImportKey } from "@/lib/import";
 import type { StepKey } from "@/lib/wizard";
 
 // The only change an import makes to the nine steps. No step's fields, order,
@@ -26,15 +26,29 @@ import type { StepKey } from "@/lib/wizard";
  *  says the same thing here rather than inventing a shorter version of it. */
 const POLICY_STEPS = new Set<StepKey>(["photos", "paperwork"]);
 
+/** The steps an import can reach at all. `nearby` is absent by design — no key
+ *  maps to it, because nothing an advert publishes belongs in a measured
+ *  walking time — so there, "the portal had nothing" is true whether or not we
+ *  watched the read land. */
+const IMPORTABLE_STEPS = new Set<string>(IMPORT_KEYS.map((k) => IMPORT_STEP_OF[k]));
+
 export function ImportBanner({
   step,
   source,
   imported,
+  arrived,
   justLanded,
 }: {
   step: StepKey;
   source: string;
+  /** What is still MARKED — i.e. what nobody has looked at yet. Shrinks as the
+   *  owner works. */
   imported: string[];
+  /** What ARRIVED, which is a different question and never shrinks. Null on a
+   *  resumed draft: the arrival set is not persisted, so after a reload we know
+   *  an import happened and what is still marked, but not what has since been
+   *  reviewed away. */
+  arrived: string[] | null;
   /** The result arrived while the owner was already in the form — they took
    *  "Start filling it in meanwhile" and fields moved under them. Someone who
    *  watched the wait to the end is not startled and does not need shouting at. */
@@ -43,13 +57,31 @@ export function ImportBanner({
   const t = useTranslations("host.import");
   const named = source ? source[0].toUpperCase() + source.slice(1) : source;
   const policy = POLICY_STEPS.has(step);
-  const touched = imported.some((k) => IMPORT_STEP_OF[k as ImportKey] === step);
+  const here = (keys: string[]) => keys.some((k) => IMPORT_STEP_OF[k as ImportKey] === step);
+
+  // Is there still something on this step nobody has read? That is a question
+  // about REVIEW, and the eyebrow is the only line entitled to answer it.
+  const unreviewed = here(imported);
+
+  // Did the portal send anything for this step? A question about ARRIVAL, and
+  // the answer must not change because the owner did their job: the body line
+  // for "no" says the portal had nothing, and once the last mark on a step
+  // clears — the normal end state of using this feature, which every step
+  // reaches — reading that off the live set turns it into a lie about a step
+  // the owner has just finished reviewing.
+  //
+  // With the arrival set gone (a resumed draft) the honest answer is "we
+  // cannot tell", so it falls back to what is knowable without it: whether an
+  // import COULD have landed here. That keeps the true sentence on `nearby`
+  // and, on a step that can take an import, prefers the line that only
+  // explains the glyph over the one that would assert something false.
+  const arrivedHere = arrived === null ? IMPORTABLE_STEPS.has(step) : here(arrived);
 
   const eyebrow = policy
     ? t("bannerPolicy")
     : justLanded
       ? t("bannerJustLanded", { source: named })
-      : touched
+      : unreviewed
         ? t("bannerFrom", { source: named })
         : t("bannerNothing");
 
@@ -70,7 +102,7 @@ export function ImportBanner({
             ) : (
               t("neverPaperwork")
             )
-          ) : touched ? (
+          ) : arrivedHere ? (
             <>
               <ImportMark /> {t("bannerKey", { source: named })}
             </>
@@ -81,8 +113,11 @@ export function ImportBanner({
         {/* The price is carried across UNCHANGED — a portal quotes a calendar
             month and this field is thirty days flat (ADR-023). Multiplying by
             30/31 would be a guess about the owner's intent landing in the one
-            field with contract consequences, so the caution says it instead. */}
-        {step === "pricing" && touched && (
+            field with contract consequences, so the caution says it instead.
+            On `unreviewed`, not `arrivedHere`: it is a thing to go and check,
+            and once every price on the step has been looked at there is
+            nothing left to check it against. */}
+        {step === "pricing" && unreviewed && (
           <p className="mt-1 text-[0.78125rem] leading-[1.5] text-body">
             {t("bannerPricingCaution")}
           </p>

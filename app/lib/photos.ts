@@ -15,9 +15,11 @@
  *  more than the master will ever be is pure upload time. */
 export const UPLOAD_EDGE = 2560;
 
-/** The widths the server writes (`PhotoPipeline`). Used to describe a `srcset`
- *  honestly — a width descriptor the file does not have is how the browser
- *  ends up choosing the wrong one. */
+/** The long EDGE of each variant the server writes (`PhotoPipeline.Encode`
+ *  scales by `Math.Max(width, height)`), used here as if it were the width.
+ *  Those are the same number only for a landscape photo whose source is at
+ *  least as big as the cap. See `srcSet` for when they diverge and what it
+ *  costs — the mismatch is deliberate for now, not overlooked. */
 const WIDTHS = { card: 800, detail: 1600, full: 2560 } as const;
 
 /** A photo in any of the shapes the API hands out. Both the public and the
@@ -31,10 +33,33 @@ type Sized = { url: string; cardUrl?: string | null; detailUrl?: string | null }
  * this returns undefined rather than a single-entry srcset — one candidate
  * tells the browser nothing it does not already get from `src`.
  *
- * The width descriptors are approximate for a portrait photo, whose LONG edge
- * is its height: a 2560-tall portrait is 1707 wide, so `2560w` overstates it.
- * That is the right way to be wrong — the browser errs toward the larger file
- * on a wide layout, and never toward a card image stretched over a hero.
+ * The width descriptors are OVERSTATED whenever the variant is not a landscape
+ * photo at or above the cap, because `WIDTHS` are long edges. A 2560-tall
+ * portrait is 1920 wide but declared `2560w`; and since the pipeline never
+ * upscales, a source smaller than a cap makes two candidates the same file
+ * while they keep different descriptors.
+ *
+ * This used to claim the error was safe because "the browser errs toward the
+ * larger file". It errs the other way. Inflating every candidate tells the
+ * browser each file holds more pixels than it does, so for a given slot it
+ * picks a SMALLER file than it needs and upscales — soft, never wasteful.
+ * (Understating is the direction that over-fetches; that is not what happens
+ * here.) Correcting the descriptors would make images sharper and downloads
+ * bigger, not the reverse.
+ *
+ * Live example, staging 2026-07-31: the sample photos are 978x1536, so `card`
+ * is 509 px wide but declared `800w`. `SIZES.tile` asks for 25vw, which on a
+ * 1280-1440 viewport at DPR 2 wants ~640-720 px — and gets the 509 px file
+ * stretched over it. Only that one band differs; every other slot lands on
+ * `detail` either way.
+ *
+ * Fixing it means storing each variant's real width on the photo record
+ * (`PhotoPipeline.Encode` computes it and discards it) and collapsing
+ * candidates that turn out to be the same width, which is a schema change
+ * across the document, both projections and the summary's flattened cover
+ * fields. Deliberately deferred until the gallery control is rebuilt: `SIZES`
+ * below is half of this calculation, and fixing descriptors against a layout
+ * that is about to change means measuring twice.
  */
 export function srcSet(photo: Sized): string | undefined {
   const entries = [

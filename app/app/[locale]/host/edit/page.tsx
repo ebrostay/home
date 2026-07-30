@@ -46,6 +46,7 @@ import {
   changedSections,
   completenessOf,
   goesBackToReview,
+  richTextError,
   type SectionKey,
 } from "@/lib/listing";
 import { ContextBar } from "@/components/host/manage/ContextBar";
@@ -183,6 +184,20 @@ function EditContent() {
   const setLoadedListing = setListing as Dispatch<SetStateAction<HostListing>>;
 
   const save = async () => {
+    // Pre-empts the server's own description walk (`HostValidation.RichText`)
+    // where it can be judged from what the form already holds — an owner
+    // sees a specific, translated reason immediately, rather than a generic
+    // one after a round trip whose 400 code has no message wired for it.
+    // What the server would still catch and this cannot (a photo or place
+    // deleted server-side between load and save, D9) still comes back as the
+    // same code through the normal catch below — this only skips the trip
+    // when the answer is already knowable.
+    const copyError = richTextError(listing);
+    if (copyError) {
+      setError(message(new ApiError(400, copyError)));
+      setSaveState("error");
+      return;
+    }
     setSaveState("saving");
     try {
       const next = await saveHostListing(property.id, listing);

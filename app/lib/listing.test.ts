@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { SECTIONS, applyDescriptionEdit, attentionOf, blockersOf, changedSections } from "./listing";
+import {
+  SECTIONS,
+  applyDescriptionEdit,
+  attentionOf,
+  blockersOf,
+  changedSections,
+  completenessOf,
+  richTextError,
+} from "./listing";
 import type { HostListing, HostNearbyEntry, HostPhoto } from "./api";
 import { paragraphDoc, type RichNode } from "./rich-text";
 
@@ -250,5 +258,92 @@ describe("nearby attention flags", () => {
   it("attentionOf leaves the nearby section alone when nothing is flagged", () => {
     const l = base({ nearby: [entry()] });
     expect(attentionOf(l).has("nearby")).toBe(false);
+  });
+});
+
+// Final-review finding (2026-07-30): completenessOf/blockersOf/attentionOf
+// filtered only isFloorplan, so a listing whose only non-floorplan photo was
+// hidden from the gallery (description-only) read as having a photo — it
+// could be submitted and would publish with a null cover and an empty
+// gallery. Same rule the server's `HostProjection.Sections` now enforces
+// (`CoverPhotoTests.SectionsDoneDoesNotCountAHiddenPhotoAsAPhoto` on the API
+// side): client and server are the same question asked twice.
+describe("a photo hidden from the gallery does not count as a photo", () => {
+  it("completenessOf counts neither a floorplan nor a hidden photo", () => {
+    const l = base({ photos: [photo({ hiddenFromGallery: true })] });
+    expect(completenessOf(l).photos).toBe(0);
+  });
+
+  it("completenessOf counts an ordinary visible photo", () => {
+    const l = base({ photos: [photo({ hiddenFromGallery: false })] });
+    expect(completenessOf(l).photos).toBe(1);
+  });
+
+  it("blockersOf flags noPhotos when the listing's only photo is hidden", () => {
+    const l = base({ photos: [photo({ hiddenFromGallery: true })] });
+    expect(blockersOf(l)).toContainEqual({ key: "noPhotos" });
+  });
+
+  it("blockersOf does not flag noPhotos once a visible photo joins the hidden one", () => {
+    const l = base({
+      photos: [photo({ hiddenFromGallery: true }), photo({ url: "b.webp", hiddenFromGallery: false })],
+    });
+    expect(blockersOf(l)).not.toContainEqual({ key: "noPhotos" });
+  });
+
+  it("attentionOf marks the photos section when the listing's only photo is hidden", () => {
+    const l = base({ photos: [photo({ hiddenFromGallery: true })] });
+    expect(attentionOf(l).has("photos")).toBe(true);
+  });
+});
+
+// Final-review finding (2026-07-30): `validateDoc`'s ten rejection codes had
+// no client-side caller at all — every save round-tripped to the server even
+// where the answer was already knowable from the form. `richTextError` is
+// that pre-empt; these pin it against the same reference universe the server
+// builds from the incoming payload (`HostWrites.CheckDetails`'s `photoUrls`/
+// `entryIds`), not the stored document.
+describe("richTextError", () => {
+  const photoRef = (url: string): RichNode => ({
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "photoRef", attrs: { url } }] }],
+  });
+  const placeRef = (entryId: string): RichNode => ({
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "placeRef", attrs: { entryId } }] }],
+  });
+
+  it("is null for a listing with no description yet", () => {
+    expect(richTextError(base())).toBeNull();
+  });
+
+  it("is null for an ordinary paragraph", () => {
+    const l = base({ copy: { es: paragraphDoc("Living here is quiet."), en: null } });
+    expect(richTextError(l)).toBeNull();
+  });
+
+  it("flags a photo reference the listing's photos do not have", () => {
+    const l = base({ copy: { es: photoRef("missing.jpg"), en: null } });
+    expect(richTextError(l)).toBe("copy_photo_unknown");
+  });
+
+  it("accepts a photo reference that matches one of the listing's own photos", () => {
+    const l = base({ photos: [photo({ url: "a.webp" })], copy: { es: photoRef("a.webp"), en: null } });
+    expect(richTextError(l)).toBeNull();
+  });
+
+  it("flags a place reference the listing's nearby entries do not have", () => {
+    const l = base({ copy: { es: placeRef("nope"), en: null } });
+    expect(richTextError(l)).toBe("copy_place_unknown");
+  });
+
+  it("accepts a place reference that matches one of the listing's own nearby entries", () => {
+    const l = base({ nearby: [entry({ id: "e1" })], copy: { es: placeRef("e1"), en: null } });
+    expect(richTextError(l)).toBeNull();
+  });
+
+  it("checks both languages, Es short-circuiting En exactly like the server", () => {
+    const l = base({ copy: { es: null, en: photoRef("missing.jpg") } });
+    expect(richTextError(l)).toBe("copy_photo_unknown");
   });
 });

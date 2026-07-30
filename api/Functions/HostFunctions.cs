@@ -530,6 +530,7 @@ public class HostFunctions(
         var token = req.HttpContext.RequestAborted;
         byte[] bytes;
         bool isFloorplan;
+        bool hiddenFromGallery;
         try
         {
             if (!req.HasFormContentType) return BadRequest("bad_request");
@@ -545,6 +546,7 @@ public class HostFunctions(
             await file.CopyToAsync(buffer, token);
             bytes = buffer.ToArray();
             isFloorplan = form["isFloorplan"] == "true";
+            hiddenFromGallery = form["hiddenFromGallery"] == "true";
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException)
         {
@@ -597,11 +599,11 @@ public class HostFunctions(
                 // Last, so a new photo joins the end of the gallery rather
                 // than displacing the cover the owner chose.
                 SortOrder: doc.Photos.Length == 0 ? 0 : doc.Photos.Max(p => p.SortOrder) + 1,
-                // Not yet settable from this endpoint (ADR-019's original
-                // upload path) — every photo uploaded here lands visible in
-                // the gallery. A description-editor upload wants the opposite
-                // default; that wiring is a later task, not this one.
-                HiddenFromGallery: false,
+                // The caller's own intent, exactly like `isFloorplan` above —
+                // a description-editor upload wants this true by default
+                // (the photo exists only to be referenced from the text), and
+                // PhotoManager's gallery upload always sends false.
+                HiddenFromGallery: hiddenFromGallery,
                 CardUrl: urls["card"],
                 DetailUrl: urls["detail"],
                 CapturedLat: processed.Capture.Lat,

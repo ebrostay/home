@@ -83,7 +83,9 @@ export function PhotoManager({
     // one — a queue that arrives in order also lands in the gallery in order.
     for (const [i, file] of batch.entries()) {
       try {
-        latest = await uploadHostPhoto(propertyId, await shrink(file), false);
+        // Every gallery upload wants both flags off: not a floor plan, and
+        // visible — the ordinary case this whole picker exists for.
+        latest = await uploadHostPhoto(propertyId, await shrink(file), false, false);
       } catch (err) {
         const code = err instanceof ApiError ? (err.code ?? "generic") : "generic";
         rejected.push({

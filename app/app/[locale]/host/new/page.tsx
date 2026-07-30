@@ -55,7 +55,7 @@ import {
   type PropertySummary,
 } from "@/lib/api";
 import { stamped, withDecline } from "@/lib/declined";
-import { changedSections } from "@/lib/listing";
+import { changedSections, richTextError } from "@/lib/listing";
 import { blocksDirty, isOwnerBlock, priceBandFor, pricingDirty } from "@/lib/manage";
 import {
   CREATES_DRAFT,
@@ -286,6 +286,13 @@ function NewPropertyContent() {
       let nextBlocks = base.blocks;
 
       if (changedSections(listing, base.listing).length > 0) {
+        // Same pre-empt as the editor's own `save()`: judged from the form
+        // itself, before the round trip, wherever the answer is already
+        // knowable. Thrown rather than returned so the catch below — which
+        // already turns an `ApiError` into a translated message — handles it
+        // with no second error surface.
+        const copyError = richTextError(listing);
+        if (copyError) throw new ApiError(400, copyError);
         const result = await saveHostListing(id, listing);
         property = result.property;
         nextListing = result.listing;

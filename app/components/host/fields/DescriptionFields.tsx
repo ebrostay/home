@@ -59,6 +59,11 @@ export function DescriptionFields({
   onUploaded: (photos: HostPhoto[]) => void;
 }) {
   const t = useTranslations("host.edit.description");
+  // The one word guests actually read on a photoRef/photoFigure chip
+  // (`components/ui/RichText.tsx`) — reused here rather than the toolbar's
+  // own "Insert photo" instruction, which is a different piece of copy for a
+  // different purpose (see `RichTextEditorProps.strings`'s own comment).
+  const trChip = useTranslations("detail.richText");
 
   const setBi = (key: "details" | "beds", locale: "es" | "en", next: string) =>
     onChange((prev) => {
@@ -95,7 +100,13 @@ export function DescriptionFields({
     // Shrunk client-side first, exactly like PhotoManager's own upload: a
     // description photo is no less likely to be a full-size camera capture,
     // and the API re-encodes regardless (lib/photos.ts).
-    const uploaded = await uploadHostPhoto(propertyId, await shrink(file), false);
+    //
+    // `hiddenFromGallery` travels to the server on this same request, exactly
+    // like `isFloorplan` — the upload is what makes the photo live, so a flag
+    // corrected only on the working copy would leave a description-only photo
+    // publicly visible in the gallery from the moment it lands until the next
+    // Save, and stranded there for good if the owner presses Discard instead.
+    const uploaded = await uploadHostPhoto(propertyId, await shrink(file), false, !alsoInGallery);
     const added = uploaded[uploaded.length - 1];
     // Validated before anything touches state: an empty response must fail
     // into the picker's own error handling, not stage a url-less photo.
@@ -110,16 +121,10 @@ export function DescriptionFields({
     // it is not what protects the rest of the listing from a stale snapshot —
     // that guarantee has to come from onUploaded/photosUploaded itself.
     onUploaded(uploaded);
-    // "Also show in the gallery" IS owner intent, though — like isFloorplan,
-    // it stays in the diff and only takes effect on Save. Applied via the
-    // shared reducer's upsert, so it is correct whether or not onUploaded's
-    // own append (above) has been reflected in `prev` yet.
-    onChange((prev) =>
-      applyDescriptionEdit(prev, {
-        type: "uploaded",
-        photo: { ...added, hiddenFromGallery: !alsoInGallery },
-      }),
-    );
+    // `added` already carries the right flag — the server was told above —
+    // so this is a plain upsert via the shared reducer, correct whether or
+    // not onUploaded's own append has been reflected in `prev` yet.
+    onChange((prev) => applyDescriptionEdit(prev, { type: "uploaded", photo: added }));
     return added.url;
   };
 
@@ -132,6 +137,7 @@ export function DescriptionFields({
     note: t("toolbar.note"),
     photo: t("toolbar.photo"),
     place: t("toolbar.place"),
+    photoChip: trChip("photo"),
   };
 
   return (

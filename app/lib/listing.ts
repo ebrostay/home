@@ -1,6 +1,14 @@
 import type { Bilingual, HostListing, HostPhoto } from "@/lib/api";
 import { AMENITY_KEYS } from "@/lib/amenity-icons";
-import { canonical, isEmptyDoc, type BilingualDoc, type RichNode } from "@/lib/rich-text";
+import {
+  canonical,
+  isEmptyDoc,
+  validateDoc,
+  type BilingualDoc,
+  type RichError,
+  type RichNode,
+  type RichRefs,
+} from "@/lib/rich-text";
 
 // ============================================================
 // The diff IS the page (ADR-027).
@@ -138,7 +146,10 @@ export type Completeness = {
 
 export function completenessOf(l: HostListing): Completeness {
   return {
-    photos: l.photos.filter((p) => !p.isFloorplan).length,
+    // A photo hidden from the gallery (description-only) counts no more than
+    // a floor plan does — otherwise a listing whose only non-floorplan photo
+    // is hidden reads complete here while the gallery it describes is empty.
+    photos: l.photos.filter((p) => !p.isFloorplan && !p.hiddenFromGallery).length,
     floorplans: l.photos.filter((p) => p.isFloorplan).length,
     bilingual: BILINGUAL.filter((key) => fieldHasBothLanguages(l, key)).length,
     bilingualTotal: BILINGUAL.length,
@@ -198,7 +209,9 @@ const nearbyNeedsCheck = (l: HostListing) => l.nearby.some((n) => n.needsCheck);
 
 export function blockersOf(l: HostListing): Blocker[] {
   const out: Blocker[] = [];
-  if (l.photos.every((p) => p.isFloorplan)) out.push({ key: "noPhotos" });
+  // A photo hidden from the gallery is no more "a photo" here than a floor
+  // plan is — same fix as `completenessOf` above, same reason.
+  if (l.photos.every((p) => p.isFloorplan || p.hiddenFromGallery)) out.push({ key: "noPhotos" });
   // A pin at 0,0 is in the Gulf of Guinea, and it is what an ungeocoded
   // listing carries — so it counts as no address, not as an address.
   if (!l.address?.trim() || (l.lat === 0 && l.lng === 0)) out.push({ key: "noAddress" });
@@ -228,7 +241,8 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
   if (!l.name.trim() || l.sizeM2 === 0 || l.bedrooms === 0) out.add("basics");
   if (!l.address?.trim() || (l.lat === 0 && l.lng === 0) || !bothLanguages(l.area))
     out.add("address");
-  if (l.photos.every((p) => p.isFloorplan)) out.add("photos");
+  // Same fix as `completenessOf`/`blockersOf`: a hidden photo does not count.
+  if (l.photos.every((p) => p.isFloorplan || p.hiddenFromGallery)) out.add("photos");
   if (
     !bothLanguagesDoc(l.copy) ||
     !bothLanguages(l.details) ||
@@ -296,6 +310,31 @@ export function applyDescriptionEdit(listing: HostListing, edit: DescriptionEdit
       };
   }
 }
+
+/** The reference universe `validateDoc` checks a description's photo/place
+ *  chips against — every photo and nearby id already on the INCOMING listing.
+ *  Mirrors `HostWrites.CheckDetails`'s own `photoUrls`/`entryIds`, built from
+ *  the payload rather than the stored document (D9): one save can both delete
+ *  a photo and reference it, and validating against anything else would let
+ *  a dangling reference through or refuse one this very save is about to make
+ *  valid. */
+export const richRefsFor = (l: HostListing): RichRefs => ({
+  photoUrls: new Set(l.photos.map((p) => p.url)),
+  entryIds: new Set(l.nearby.map((n) => n.id)),
+});
+
+/** Pre-empts the server's own walk (`HostValidation.RichText`, invoked from
+ *  `CheckDetails` as `RichText(Es,...) ?? RichText(En,...)`) so a save can be
+ *  refused before the round trip, with the same code the server would have
+ *  answered — `ApiError`-driven message lookup (`host/edit/page.tsx`,
+ *  `host/new/page.tsx`) handles it with no second error surface. Checks
+ *  BOTH languages, same short-circuit order as the server, so a client-side
+ *  pre-empt and a server 400 are never distinguishable by which document was
+ *  at fault. */
+export const richTextError = (l: HostListing): RichError | null => {
+  const refs = richRefsFor(l);
+  return validateDoc(l.copy?.es ?? null, refs) ?? validateDoc(l.copy?.en ?? null, refs);
+};
 
 // ------------------------------------------------------------
 // Limits — mirrored from api/Models/HostWrites.cs.

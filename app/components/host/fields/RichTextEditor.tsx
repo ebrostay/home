@@ -160,8 +160,17 @@ export type RichTextEditorProps = {
   /** Opens the pickers. The parent owns them so both editors share one. */
   onInsertPhoto: (insert: (url: string, asFigure: boolean) => void) => void;
   onInsertPlace: (insert: (entryId: string, asCard: boolean) => void) => void;
-  /** Toolbar button labels, so this component holds no untranslated copy. */
-  strings: Record<"bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place", string>;
+  /** Toolbar button labels, so this component holds no untranslated copy.
+   *  `photo`/`place` are the TOOLBAR's own words ("Insert photo"); `photoChip`
+   *  is a separate key on purpose — it labels the reference chip a photoRef/
+   *  photoFigure node renders IN the document, which guests read too
+   *  (`detail.richText.photo`/`.floorplan`, `components/ui/RichText.tsx`).
+   *  Reusing `photo` there would print the toolbar's own instruction
+   *  ("Insert photo") as if it were the chip's content. */
+  strings: Record<
+    "bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place" | "photoChip",
+    string
+  >;
 };
 
 export function RichTextEditor({
@@ -176,9 +185,9 @@ export function RichTextEditor({
       BulletList, OrderedList, RestrictedListItem, History,
       Placeholder.configure({ placeholder: placeholder ?? "" }),
       Callout,
-      PhotoRef.configure({ label: strings.photo }),
+      PhotoRef.configure({ label: strings.photoChip }),
       PlaceRef.configure({ label: strings.place }),
-      PhotoFigure.configure({ label: strings.photo }),
+      PhotoFigure.configure({ label: strings.photoChip }),
       PlaceCard.configure({ label: strings.place }),
     ],
     content: value ?? { type: "doc", content: [] },

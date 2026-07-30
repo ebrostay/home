@@ -4,7 +4,6 @@ import {
   RICH_MARKS,
   canonical,
   paragraphDoc,
-  referencedEntryIds,
   referencedPhotoUrls,
   textLength,
   validateDoc,
@@ -224,9 +223,5 @@ describe("reference extraction", () => {
 
   it("finds photo urls in both node types", () => {
     expect([...referencedPhotoUrls(d)].sort()).toEqual(["/p/1.jpg", "/p/2.jpg"]);
-  });
-
-  it("finds entry ids in both node types", () => {
-    expect([...referencedEntryIds(d)].sort()).toEqual(["e1", "e2"]);
   });
 });

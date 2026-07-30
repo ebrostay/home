@@ -209,6 +209,3 @@ const collect = (node: RichNode, types: RichNodeType[], key: "url" | "entryId"):
  *  on the next edit. */
 export const referencedPhotoUrls = (node: RichNode): Set<string> =>
   collect(node, ["photoRef", "photoFigure"], "url");
-
-export const referencedEntryIds = (node: RichNode): Set<string> =>
-  collect(node, ["placeRef", "placeCard"], "entryId");

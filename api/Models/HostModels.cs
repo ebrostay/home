@@ -172,7 +172,13 @@ public static class HostProjection
         p => p.PriceNumber > 0,
         p => p.DepositAmount is > 0 &&
              (p.BillsPolicy != "capped" || p.UtilitiesCapEur is > 0),
-        p => p.Photos.Length > 0,
+        // Same bug class as the two cover picks and the portfolio thumbnail
+        // above: a photo hidden from the gallery (description-only) does not
+        // count as "this listing has a photo" any more than a floor plan
+        // does — otherwise a listing whose only non-floorplan photo is
+        // hidden reads complete, submits, and publishes with a null cover
+        // and an empty gallery.
+        p => p.Photos.Any(ph => !ph.IsFloorplan && !ph.HiddenFromGallery),
     ];
 
     public static int SectionsTotal => Sections.Length;

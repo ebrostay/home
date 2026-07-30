@@ -66,4 +66,27 @@ public class CoverPhotoTests
 
         Assert.Null(summary.CoverUrl);
     }
+
+    // A fourth site of the same bug (final-review finding, 2026-07-30):
+    // `HostProjection.Sections`' own "at least one photo" completeness check
+    // filtered only `!IsFloorplan`, so a listing whose only non-floorplan
+    // photo was hidden from the gallery read as complete, could be submitted,
+    // and published with a null cover and an empty gallery — the client
+    // (`completenessOf`/`blockersOf`/`attentionOf` in `app/lib/listing.ts`)
+    // and the server must agree on this, since it is the same question asked
+    // twice. Isolated from the other ten Sections checks by varying ONLY
+    // `Photos` across three otherwise-identical documents, so this fails on
+    // the bug regardless of what any other section happens to require.
+    [Fact]
+    public void SectionsDoneDoesNotCountAHiddenPhotoAsAPhoto()
+    {
+        PropertyDoc Bare(PropertyPhoto[] photos) => new() { Id = "p3", Name = "Bare", Photos = photos };
+
+        var none = Bare([]);
+        var hiddenOnly = Bare([new PropertyPhoto("hidden.jpg", IsFloorplan: false, SortOrder: 0, HiddenFromGallery: true)]);
+        var visible = Bare([new PropertyPhoto("visible.jpg", IsFloorplan: false, SortOrder: 0, HiddenFromGallery: false)]);
+
+        Assert.Equal(HostProjection.SectionsDone(none), HostProjection.SectionsDone(hiddenOnly));
+        Assert.Equal(HostProjection.SectionsDone(hiddenOnly) + 1, HostProjection.SectionsDone(visible));
+    }
 }

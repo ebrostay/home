@@ -389,17 +389,25 @@ export const saveHostListing = (id: string, listing: HostListing) =>
  *  is bytes; the API answers with the listing's whole photo list, so the
  *  caller never has to guess where the new one landed or what the server named
  *  it. Applies live and does not move `status` — the content save that follows
- *  is what carries a listing back into review. */
+ *  is what carries a listing back into review.
+ *
+ *  `hiddenFromGallery` travels the same way `isFloorplan` always has —
+ *  caller-supplied, not a server default — because it is the SAME kind of
+ *  fact: what the owner intends this photo for. `PhotoManager`'s gallery
+ *  upload always sends `false`; the description editor's upload sends the
+ *  owner's "also show in the gallery" choice, inverted. */
 export async function uploadHostPhoto(
   id: string,
   file: Blob,
   isFloorplan: boolean,
+  hiddenFromGallery: boolean,
 ): Promise<HostPhoto[]> {
   const body = new FormData();
   // The name is the server's to choose; this one only rides along so the
   // request is a well-formed file part.
   body.append("photo", file, "photo");
   body.append("isFloorplan", String(isFloorplan));
+  body.append("hiddenFromGallery", String(hiddenFromGallery));
 
   const res = await fetch(`${BASE}/api/host/properties/${encodeURIComponent(id)}/photos`, {
     method: "POST",

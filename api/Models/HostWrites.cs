@@ -81,7 +81,12 @@ public record DetailsUpdate(
     bool CouplesAllowed,
     bool SelfCheckin,
     PhotoWrite[]? Photos,
-    NearbyWrite[]? Nearby);
+    NearbyWrite[]? Nearby,
+    /// Fields an import filled that the owner has not yet edited (ADR-033).
+    /// Null on every listing that was never imported.
+    string[]? Imported,
+    /// Which of the six sources, for the step banner's eyebrow.
+    string? ImportSource);
 
 /// The only status move an owner may make on their own (ADR-024): closing a
 /// listing to new requests, and reopening it. Publishing is an admin act and
@@ -478,6 +483,9 @@ public static class HostValidation
                      ?? RichText(u.Copy?.En, photoUrls, entryIds);
         if (copyError is not null) return copyError;
 
+        var importedError = CheckImported(u.Imported, u.ImportSource);
+        if (importedError is not null) return importedError;
+
         return null;
     }
 
@@ -543,6 +551,24 @@ public static class HostValidation
             if (!seen.Add($"{d.Field}|{d.Source}")) return "declined_duplicate";
         }
 
+        return null;
+    }
+
+    /// The marks an owner has not yet cleared (ADR-033 Decision 8). Stored, not
+    /// derived: a field the owner typed and a field we filled look identical in
+    /// the data, so "is it non-empty" cannot answer this.
+    public static string? CheckImported(string[]? imported, string? source)
+    {
+        if (imported is null || imported.Length == 0)
+            // No marks and no source is an ordinary listing. A source with no
+            // marks is an import the owner has fully reviewed — also fine.
+            return source is null || ImportSources.IsKnown(source)
+                ? null
+                : "import_source_invalid";
+
+        if (imported.Length > ImportKeys.MaxKeys) return "imported_too_many";
+        if (imported.Any(k => !ImportKeys.All.Contains(k))) return "imported_unknown_field";
+        if (!ImportSources.IsKnown(source)) return "import_source_invalid";
         return null;
     }
 

@@ -80,6 +80,8 @@ export function blankListing(): HostListing {
     selfCheckin: false,
     photos: [],
     nearby: [],
+    imported: null,
+    importSource: null,
   };
 }
 

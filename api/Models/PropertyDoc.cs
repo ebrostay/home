@@ -180,6 +180,12 @@ public class PropertyDoc
 
     public string? CreatedAt { get; set; }
     public string? UpdatedAt { get; set; }
+
+    /// Fields an import filled that the owner has not yet edited (ADR-033).
+    /// Null on every listing that was never imported.
+    public string[]? Imported { get; set; }
+    /// Which of the six it came from, for the step banner's eyebrow.
+    public string? ImportSource { get; set; }
 }
 
 /// Converts one raw Cosmos item into a `PropertyDoc` without letting a single

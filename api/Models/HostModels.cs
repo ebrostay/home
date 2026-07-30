@@ -122,7 +122,12 @@ public record HostListing(
     // flag that says a saved entry is farther than its group's radius allows
     // and wants a second look — which is exactly why PublicNearby has no such
     // field.
-    NearbyEntry[] Nearby);
+    NearbyEntry[] Nearby,
+    /// Fields an import filled that the owner has not yet edited (ADR-033).
+    /// Null on every listing that was never imported.
+    string[]? Imported,
+    /// Which of the six sources, for the step banner's eyebrow.
+    string? ImportSource);
 
 /// One logged booking request. Deliberately narrower than the stored document:
 /// `userId` and `userName` are NOT projected. Ebrostay owns the tenant
@@ -288,7 +293,9 @@ public static class HostProjection
             .Select(ph => new HostPhoto(
                 ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder,
                 ph.HiddenFromGallery))],
-        p.Nearby);
+        p.Nearby,
+        p.Imported,
+        p.ImportSource);
 
     public static HostPricing ToPricing(PropertyDoc p, int platformFee) => new(
         p.PriceNumber,

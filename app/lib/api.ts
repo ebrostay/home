@@ -253,6 +253,13 @@ export type HostListing = {
   selfCheckin: boolean;
   photos: HostPhoto[];
   nearby: HostNearbyEntry[];
+  /** Fields an import filled that the owner has not yet edited (ADR-033).
+   *  Null on every listing that was never imported. Never inferred from
+   *  "field is non-empty" — a field the owner typed and a field we filled
+   *  look identical in the data. */
+  imported: string[] | null;
+  /** Which of the six sources, for the step banner's eyebrow. */
+  importSource: string | null;
 };
 
 /** A logged booking request, as the owner is allowed to see it. No tenant

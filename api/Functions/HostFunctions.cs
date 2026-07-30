@@ -254,6 +254,8 @@ public class HostFunctions(
         doc.SmokingAllowed = update.SmokingAllowed;
         doc.CouplesAllowed = update.CouplesAllowed;
         doc.SelfCheckin = update.SelfCheckin;
+        doc.Imported = update.Imported;
+        doc.ImportSource = update.ImportSource;
         // Position comes from the array's order, not from a number the client
         // sends: an index the client owns can arrive with gaps or repeats, and
         // the gallery would silently reorder itself.

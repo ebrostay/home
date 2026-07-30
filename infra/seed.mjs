@@ -61,7 +61,9 @@ const extra = {
     bedrooms: 3, bathrooms: 1, sizeM2: 80, selfCheckin: false,
     stayTerms: ["cancellation"],
     beds: { es: "3 camas individuales", en: "3 single beds" },
-    photos: ["zaragoza-hero.webp"],
+    photos: [
+      { key: "29d65ea45a9f473da010664f7d885955", source: "zaragoza-hero.webp" },
+    ],
   },
   pedro2: {
     reference: "EBR-P-0102",
@@ -70,7 +72,9 @@ const extra = {
     bedrooms: 3, bathrooms: 1, sizeM2: 82, selfCheckin: false,
     stayTerms: ["cancellation"],
     beds: { es: "2 camas dobles y 1 individual", en: "2 double beds and 1 single" },
-    photos: ["zaragoza-hero.webp"],
+    photos: [
+      { key: "d15f2fd6e540451189f03e2bbc9b1f44", source: "zaragoza-hero.webp" },
+    ],
   },
   movera0: {
     reference: "EBR-P-0201",
@@ -81,9 +85,11 @@ const extra = {
     stayTerms: ["cancellation", "cleaning"],
     beds: { es: "3 dormitorios privados con cama doble", en: "3 private bedrooms with double beds" },
     photos: [
-      "movera-second-hero.jpg", "movera-second-bedroom-1.jpg",
-      "movera-second-bedroom-2.jpg", "movera-second-bedroom-3.jpg",
-      "movera-second-bathroom.jpg",
+      { key: "a9f6095c76804984aeb56122c48a16f6", source: "movera-second-hero.jpg" },
+      { key: "1cddfcda57bf4650bae409d3af769bdf", source: "movera-second-bedroom-1.jpg" },
+      { key: "4f7c53c60f9547819ddd817ff2e46289", source: "movera-second-bedroom-2.jpg" },
+      { key: "30fb648d21cc4a11860abef09f970d2b", source: "movera-second-bedroom-3.jpg" },
+      { key: "73bc3bf52e0c404b8fe98d6d65175357", source: "movera-second-bathroom.jpg" },
     ],
   },
   movera1: {
@@ -95,8 +101,10 @@ const extra = {
     stayTerms: ["cancellation"],
     beds: { es: "3 dormitorios privados con cama doble", en: "3 private bedrooms with double beds" },
     photos: [
-      "movera-first-hero.jpg", "movera-first-bedroom-1.jpg",
-      "movera-first-bedroom-2.jpg", "movera-first-bathroom.jpg",
+      { key: "c2a28cc5f9784bc0a00fc6963673d1c4", source: "movera-first-hero.jpg" },
+      { key: "fdb673543425407fba309bd796374a5d", source: "movera-first-bedroom-1.jpg" },
+      { key: "d7aa78a70c5d47e5aae2af7388e405d3", source: "movera-first-bedroom-2.jpg" },
+      { key: "3a41eda7efd54350a609b632d1c191c1", source: "movera-first-bathroom.jpg" },
     ],
   },
 };
@@ -171,8 +179,24 @@ function toDoc(p) {
     depositProtected: !!p.depositProtected,
     availableFrom: p.availableFrom ?? null,
 
-    photos: (x.photos ?? []).map((name, i) => ({
-      url: `${BLOB}/${p.id}/${name}`,
+    // The three sizes `PhotoPipeline` produces, named the way the upload
+    // endpoint names them: one `key` shared by the variants of one photo.
+    // These are NOT the hand-uploaded originals — those are still in the
+    // container under their own names and are the SOURCE this was derived
+    // from, but nothing serves them: a photo carrying only `url` makes
+    // `app/lib/photos.ts` emit no srcset at all, so every search card
+    // downloaded a full-size image.
+    //
+    // Regenerating: run the re-encode harness over the originals named in
+    // `source` and paste the new keys here. It cannot be done from this file
+    // alone — the pipeline is C# (SkiaSharp), and re-deriving it in Node
+    // would be a second implementation that drifts. New keys each run, on
+    // purpose: blobs are served `immutable, max-age=31536000`, so a reused
+    // name would leave caches on last run's bytes for a year.
+    photos: (x.photos ?? []).map((ph, i) => ({
+      url: `${BLOB}/${p.id}/${ph.key}-full.webp`,
+      cardUrl: `${BLOB}/${p.id}/${ph.key}-card.webp`,
+      detailUrl: `${BLOB}/${p.id}/${ph.key}-detail.webp`,
       isFloorplan: false,
       sortOrder: (i + 1) * 10,
     })),

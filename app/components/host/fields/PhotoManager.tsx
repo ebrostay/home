@@ -114,8 +114,12 @@ export function PhotoManager({
 
   // The cover is derived, never stored: a stored "isCover" flag and a photo
   // list are two places to say the same thing, and they drift the first time
-  // a photo is deleted.
-  const coverIndex = photos.findIndex((p) => !p.isFloorplan);
+  // a photo is deleted. Same rule as the two server-side cover picks
+  // (PublicProjection.ToSummary, HostProjection.ToHostProperty): a photo the
+  // owner hid from the gallery must not badge as the cover here either, or
+  // this badge and the row's actual thumbnail would disagree about which
+  // photo is the cover for the same listing.
+  const coverIndex = photos.findIndex((p) => !p.isFloorplan && !p.hiddenFromGallery);
 
   // "Used in the description" is DERIVED, never stored — storing it is a
   // denormalised copy that goes stale on the next edit. Walked from both

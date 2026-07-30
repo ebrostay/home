@@ -8,11 +8,12 @@ import { useSearchParams } from "next/navigation";
 import { MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ApiError, biText, fetchProperty, type PropertyDetail, type PropertyPhoto } from "@/lib/api";
+import { ApiError, biDoc, biText, fetchProperty, type PropertyDetail, type PropertyPhoto } from "@/lib/api";
 import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
-import type { NearbyProfile } from "@/lib/nearby";
+import { DEFAULT_NEARBY_PROFILE, type NearbyProfile } from "@/lib/nearby";
+import { SIZES, srcSet } from "@/lib/photos";
 import { formatEuro } from "@/lib/pricing";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
@@ -149,7 +150,7 @@ function DetailBody({
   // above); this page only gets a ref to ask it to select something, and a
   // mirror of its profile to read.
   const nearbyRef = useRef<NearbyHandle>(null);
-  const [nearbyProfile, setNearbyProfile] = useState<NearbyProfile>("foot");
+  const [nearbyProfile, setNearbyProfile] = useState<NearbyProfile>(DEFAULT_NEARBY_PROFILE);
   const selectNearbyEntry = (entryId: string) => {
     nearbyRef.current?.select(entryId);
     document
@@ -315,7 +316,7 @@ function DetailBody({
           {/* 2 — About */}
           <Section title={td("about")} plain>
             <RichText
-              doc={locale === "es" ? (p.copy?.es ?? null) : (p.copy?.en ?? null)}
+              doc={biDoc(p.copy, locale)}
               photos={p.photos}
               nearby={p.nearby}
               profile={nearbyProfile}
@@ -499,7 +500,9 @@ function DetailBody({
           // eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized
           <img
             src={lightboxPhoto.detailUrl ?? lightboxPhoto.url}
-            alt=""
+            srcSet={srcSet(lightboxPhoto)}
+            sizes={SIZES.lightbox}
+            alt={p.name}
             className="w-full rounded-(--radius-control) object-contain"
           />
         )}

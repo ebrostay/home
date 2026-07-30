@@ -22,6 +22,12 @@ export type NearbyGroup = (typeof NEARBY_GROUPS)[number];
 export const NEARBY_PROFILES = ["foot", "car"] as const;
 export type NearbyProfile = (typeof NEARBY_PROFILES)[number];
 
+/** The one default, so `Nearby.tsx` (which owns the profile) and
+ *  `property/page.tsx` (which only mirrors it, Task 11) can't silently drift
+ *  into initializing their two copies of the same state to different
+ *  values. */
+export const DEFAULT_NEARBY_PROFILE: NearbyProfile = "foot";
+
 export type Reach = { metres: number; minutes: number };
 
 export function reachFor(

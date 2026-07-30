@@ -66,6 +66,10 @@ export const SIZES = {
   /** The four supporting tiles beside it, and the dialog's two-column grid.
    *  Both land near a quarter of the viewport. */
   tile: "(min-width: 40rem) 25vw, 100vw",
+  /** A single photo inside `ui/Dialog`, whose fixed class caps it at
+   *  `min(92vw, 28rem)` — the image is drawn at exactly that width, not a
+   *  viewport fraction, once the viewport passes 28rem. */
+  lightbox: "(min-width: 28rem) 28rem, 92vw",
 } as const;
 
 /** Below this, resizing costs a decode and an encode to save nothing. */

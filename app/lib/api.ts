@@ -3,7 +3,7 @@
 // at the local func host (func start --cors http://localhost:3000).
 
 import type { NearbyGroup, NearbyProfile, Reach } from "@/lib/nearby";
-import type { BilingualDoc } from "@/lib/rich-text";
+import type { BilingualDoc, RichNode } from "@/lib/rich-text";
 
 export type Bilingual = { es: string | null; en: string | null };
 export type PublicRange = { start: string; end: string }; // end exclusive
@@ -511,3 +511,13 @@ export async function fetchNearbyRoute(
 
 export const biText = (b: Bilingual | null | undefined, locale: string) =>
   (locale === "en" ? b?.en ?? b?.es : b?.es ?? b?.en) ?? "";
+
+/** Same fallback as `biText`, for a description document instead of a plain
+ *  string: the guest's own locale first, the other language rather than
+ *  nothing at all — a listing with Spanish-only copy must still show its
+ *  English guests something, exactly as `biText` already does for `details`
+ *  one field over. Nothing gates `copy` on `CopyEnApproved` at read time, so
+ *  this is the only thing standing between an unwritten translation and a
+ *  blank About section. */
+export const biDoc = (d: BilingualDoc | null | undefined, locale: string): RichNode | null =>
+  (locale === "en" ? d?.en ?? d?.es : d?.es ?? d?.en) ?? null;

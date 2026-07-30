@@ -13,7 +13,14 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ApiError, fetchNearbyRoute, type PublicNearbyEntry } from "@/lib/api";
-import { NEARBY_GROUPS, NEARBY_PROFILES, reachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
+import {
+  DEFAULT_NEARBY_PROFILE,
+  NEARBY_GROUPS,
+  NEARBY_PROFILES,
+  reachFor,
+  type NearbyGroup,
+  type NearbyProfile,
+} from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
 import { Segmented } from "@/components/host/fields/Segmented";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
@@ -69,7 +76,7 @@ export const Nearby = forwardRef<NearbyHandle, {
   const t = useTranslations("detail.nearby");
   const tType = useTranslations("nearby");
 
-  const [profile, setProfile] = useState<NearbyProfile>("foot");
+  const [profile, setProfile] = useState<NearbyProfile>(DEFAULT_NEARBY_PROFILE);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<EntryStatus>({ kind: "idle" });
@@ -176,10 +183,18 @@ export const Nearby = forwardRef<NearbyHandle, {
   // chip in the description asking this list to select an entry it already
   // knows about. An id this listing doesn't have (should never happen — the
   // document only ever references ids the server validated) is a no-op
-  // rather than a crash.
+  // rather than a crash. Also guarded on reach under the ACTIVE profile,
+  // same check `selectProfile` above makes when a profile switch would
+  // otherwise leave a dropped entry "active" — `groups` below drops any
+  // entry with no reach for the current profile, but a description chip
+  // still renders (RichText shows the reach figure only when present).
+  // Without this guard, selecting one would scroll to an entry invisible in
+  // the list, hide its own loading/error row (it lives inside the dropped
+  // `<li>`), and still draw a route to a place the list doesn't show.
   useImperativeHandle(ref, () => ({
     select: (id: string) => {
-      if (entryLookup.has(id)) selectEntry(id);
+      const entry = entryLookup.get(id);
+      if (entry && reachFor(entry, profile)) selectEntry(id);
     },
   }));
 

@@ -93,7 +93,10 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
 
   // — bilingual copy —
   "area":    { "es": "…", "en": "…" },
-  "copy":    { "es": "…", "en": "…" },
+  "copy":    { "es": { "type": "doc", "content": [ … ] },   // ✅ a rich-text
+               "en": { "type": "doc", "content": [ … ] } }, //   DOCUMENT, not
+                                      //   a string — a closed node schema,
+                                      //   §2.2.6 (ADR-032)
   "details": { "es": "…", "en": "…" },
   "beds":    { "es": "…", "en": "…" },
   "priceNote": { "es": "…", "en": "…" },   // optional
@@ -146,6 +149,12 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
       "cardUrl": "…/9f3a…-card.webp",       // 800 px long edge
       "detailUrl": "…/9f3a…-detail.webp",   // 1600 px long edge
       "isFloorplan": false, "sortOrder": 10,
+      // ✅ kept out of the gallery — exists only to be referenced from the
+      //    description (§2.2.6, ADR-032 D10). NEGATIVE and defaults to
+      //    `false`: no document written before this field existed carries
+      //    it, and a positive `inGallery` flag would deserialize
+      //    missing-as-false and empty every gallery on the site.
+      "hiddenFromGallery": false,
       // where the camera said it was — admin-only, see §2.2.2
       "capturedLat": 41.65393, "capturedLng": -0.90783, "capturedAt": "2026-05-14T10:22:07Z" }
   ],
@@ -474,6 +483,101 @@ populated `properties` container its first ever explicit policy, excluding
 save for a field nothing queries) and `/"_etag"/?` (matching Cosmos's implicit
 default). Deploying it triggers a Cosmos background index transformation —
 non-disruptive, but not instant (ADR-028 "Consequences to watch").
+
+### 2.2.6 The description document (`copy`) ✅ (ADR-032, built 2026-07-30)
+
+`copy` is no longer a `{ es, en }` string pair. Each side is a **ProseMirror-style
+JSON document** drawn from a closed node schema — the same shape `app/lib/rich-text.ts`
+defines and `api/Models/RichText.cs`/`HostWrites.cs` re-validate server-side,
+never trusting the client's own walk:
+
+```jsonc
+{
+  "type": "doc",
+  "content": [
+    { "type": "paragraph", "content": [
+        { "type": "text", "text": "A quiet third-floor flat, five minutes from the river and " },
+        { "type": "text", "text": "the tram", "marks": [{ "type": "bold" }] },
+        { "type": "text", "text": "." } ] },
+    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "The neighbourhood" }] },
+    { "type": "bulletList", "content": [
+        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Quiet, well connected." }] }] } ] },
+    { "type": "callout", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Good to know: no pets." }] }] },
+    { "type": "photoFigure", "attrs": { "url": "https://…/kitchen.webp", "caption": "The kitchen" } },
+    { "type": "paragraph", "content": [
+        { "type": "text", "text": "Two minutes from " },
+        { "type": "placeRef", "attrs": { "entryId": "9d4b2a71f0c8e3a5" } } ] }
+  ]
+}
+```
+
+**Six block types** — `doc`, `paragraph`, `heading` (level always `3`; the page
+owns h1/h2), `bulletList`/`orderedList` + `listItem` (a list item holds
+paragraphs only, so lists cannot nest), `callout` ("Good to know," styled as a
+quiet aside, not a warning). **Four reference/atom types** — `photoFigure` and
+`placeCard` (block-level), `photoRef` and `placeRef` (inline); each stores an
+identifier already on this listing (a photo `url`, a `nearby[].id`), never a
+name or a distance — those resolve at render, so a place chip is bilingual for
+free and a rendered figure cannot claim a distance the listing did not measure.
+**Two marks** — `bold`, `italic`. No links, no colour, no font, no size, no
+alignment, no table, no embed. Closed by decision (ADR-032 D7), not by
+oversight.
+
+**Limits** (`RICH_LIMITS`): 4,000 characters of `text` content (references and
+captions are not charged — charging a name that lives on another record would
+let renaming a nearby place silently change an unrelated description's
+length), 400 nodes, depth 5, a caption ≤ 200 characters.
+
+**Validation — reject, never repair (ADR-032 D8/D9).** `HostValidation.RichText`
+walks the incoming document on every save and refuses the whole write on the
+first failure, against the **incoming** photo and nearby arrays, not the
+stored ones (a single save can delete a photo and reference it at once):
+
+| Failure | Code |
+| --- | --- |
+| root is not `doc` | `copy_bad_root` |
+| unknown node type, or illegal for its parent | `copy_bad_node` |
+| mark outside `{bold, italic}` | `copy_bad_mark` |
+| `heading.level != 3` | `copy_bad_heading` |
+| caption > 200 chars | `copy_bad_caption` |
+| text length > 4,000 | `copy_too_long` |
+| depth > 5 | `copy_too_deep` |
+| nodes > 400 | `copy_too_many_nodes` |
+| `photoRef`/`photoFigure.url` not in the incoming photo set | `copy_photo_unknown` |
+| `placeRef`/`placeCard.entryId` not in the incoming nearby set | `copy_place_unknown` |
+
+**On save, the server remaps client-minted nearby ids inside the description**
+(ADR-032 D15): a `placeRef` may name a nearby entry added in the very same
+edit, which the client can only identify by a temporary id — the server
+discards that id and mints its own when it rebuilds `nearby[]`, so the
+description's reference is rewritten through the same `old id → new id` map,
+after validation, so an id absent from the payload is still rejected.
+
+**`hiddenFromGallery` on `photos[]`** (§2.2.2, ADR-032 D10) exists so a photo
+can be referenced from the description without cluttering the ordinary
+gallery — "used in the description" is itself never stored (D11), only
+derived by walking the document. Four combinations of the one stored flag and
+the one derived fact:
+
+| In gallery | In description | Meaning |
+| --- | --- | --- |
+| yes | no | ordinary listing photo |
+| yes | yes | fine, shown in both |
+| no | yes | a description-only photo — the case the flag exists for |
+| no | no | **orphan** — stored, counted against the photo cap, shown nowhere; `PhotoManager` badges it |
+
+**A reference whose target is missing renders nothing** — no broken image, no
+placeholder, no error text. Validation makes this unreachable through the
+save path; an admin photo deletion or a projection change could still produce
+it, and a guest has no use for the fact that a listing is internally
+inconsistent.
+
+**A stored plain-string `copy` throws, not degrades.** `{ "es": "…", "en": "…" }`
+cannot deserialize into `BilingualDoc` — `System.Text.Json` throws reading the
+property, taking the whole property document down with it (a 500, not a
+missing paragraph). Every environment must be re-seeded before code expecting
+`BilingualDoc` runs against it: `infra/seed-source.json` locally, staging as an
+explicit pre-deploy step. See ADR-032 for the full decision record.
 
 ---
 

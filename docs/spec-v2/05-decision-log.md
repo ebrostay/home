@@ -1907,6 +1907,216 @@ never told that was now their job).
 
 ---
 
+## ADR-032 — The listing description is a closed rich-text schema, not HTML
+
+- **Status:** ✅ locked and ✅ **built** 2026-07-30 (product owner: Raphael).
+  Carries the design at
+  `docs/superpowers/specs/2026-07-29-rich-text-editor-design.md` (D1–D14) into
+  the log, plus two decisions made during implementation. **Amends ADR-027**
+  (the editor's one-diff-one-save shape and the English approval gate, both
+  preserved) and **ADR-019** (the photo pipeline; the upload endpoint stays
+  the only way bytes reach Blob Storage).
+- **Context.** `copy` was a plain `{ es, en }` string pair, rendered on the
+  guest page as one `<p>`. An owner describing a kitchen could not show it,
+  and an owner mentioning the tram could not point at the stop the listing
+  already knows the walking time to. `copy` becomes a pair of ProseMirror-style
+  JSON documents, drawn from a **closed set of node types** — two of which are
+  references into data the listing already holds (its photos, its nearby
+  entries) rather than free text.
+
+### Decision 1 — Tiptap (ProseMirror), headless, MIT
+
+The schema *is* the allowlist and *is* the data structure: a document cannot
+hold a node the schema has no definition for, so pasting from Word, from a
+competitor's listing, or from a crafted page all produce the same result —
+everything representable survives, everything else is dropped at the door,
+with no filter to keep in step with the attack surface. Headless matters
+because the editing surface then uses our own Tailwind tokens rather than
+fighting a vendor's chrome. Rejected: Lexical and Plate/Slate (thinner ground
+under the schema, capability neither needs); Quill/TinyMCE/CKEditor (not
+headless, and paid-or-GPL).
+
+### Decision 2 — Store the ProseMirror JSON document. Never HTML
+
+No HTML string is built, on either side, at any point. `@tiptap/html`'s
+`generateHTML` is deliberately unused. The injection sink — `<script>`,
+`<iframe>`, `javascript:`, `data:`, `onerror=`, the mXSS family — does not
+exist rather than being filtered. `dangerouslySetInnerHTML` still appears
+exactly once in the app (`app/app/not-found.tsx`, the pre-paint theme
+bootstrap, project-authored content only); this feature adds no second use.
+
+### Decision 3 — `copy` only. `details`, `beds`, `priceNote` stay plain
+
+`details` is short, factual, and read on the detail page as a table rather
+than as prose — the reason ADR-027 leaves it ungated is the same reason a
+formatted block there would undermine it. Other surfaces get a slimmed-down
+variant later; not designed here (§13 of the design).
+
+### Decision 4 — Replace `Copy`'s shape outright. No compatibility field, no migration
+
+ADR-016's fresh start already paid for this. A `CopyDoc`-beside-`Copy`
+fallback would outlive everyone who remembers why it exists, and would keep
+the old shape writable — and therefore validated — forever. The seed
+regenerates instead of converting; see "Re-seeding is not optional" below.
+
+### Decision 5 — References store an id, resolved at render
+
+A photo reference holds a URL already on the property document; a place
+reference holds a `nearby[]` entry id. Names and distances are read from the
+stored records at render time, never carried in the reference itself — a
+place chip is bilingual for free, and a measured distance cannot be inflated
+by the text. Same posture as ADR-028 Decision 8 (reach figures are measured,
+never client-supplied).
+
+### Decision 6 — No links
+
+`href` does not exist anywhere in the schema — not rejected, unrepresentable.
+No URL to validate, no scheme allowlist, no `rel` policy, no link-spam queue.
+
+### Decision 7 — Six block types, four reference types, two marks. Closed
+
+`doc`, `paragraph`, `heading` (level always 3), `bulletList`/`orderedList` +
+`listItem`, `callout`. Reference/atom nodes: `photoFigure`, `placeCard`
+(block-level) and `photoRef`, `placeRef` (inline). Marks: `bold`, `italic`.
+Nothing else — no colour, font, size, alignment, highlight, table, code
+block, rule, blockquote-as-quote, image-by-URL, embed, or iframe. Anything
+absent is absent because it was decided against, not overlooked.
+
+### Decision 8 — Invalid documents are rejected, not repaired
+
+`HostValidation.RichText` (`api/Models/HostWrites.cs`, mirrored by
+`validateDoc` in `app/lib/rich-text.ts`) walks the tree and refuses on the
+first failure with one of ten error codes. Silent repair would delete an
+owner's words with no explanation; the editor makes every one of these
+states unreachable through normal use, so a rejection means a bug or
+tampering, not a legitimate edit gone wrong.
+
+### Decision 9 — References validate against the *incoming* photo and nearby arrays
+
+Not the stored ones. One save can both delete a photo and reference it in the
+same payload; validating against the document already on file would let a
+dangling reference through while the photo pipeline deletes the blob
+underneath it.
+
+### Decision 10 — `HiddenFromGallery`, negative, defaulting to `false`
+
+Not `InGallery`. **A C# `bool` defaults to `false`, and no stored Cosmos
+document carries this field at all** — every property written before this
+feature simply lacks it. A positive `InGallery` flag would deserialize
+missing-field-as-false on every one of those documents and **empty every
+gallery on the site** the moment this shipped. The negative name reads worse
+and fails safe; the failure mode of a bool nobody thought to set is
+"nothing is hidden," which is what every pre-existing listing already is.
+
+### Decision 11 — "Used in the description" is derived, never stored
+
+It is a fact about the document body (`referencedPhotoUrls`/
+`referencedEntryIds` walk it live). Storing it would be a denormalised copy
+that goes stale on the next edit, with a reconciliation bug to then go own.
+
+### Decision 12 — The callout is "Good to know," styled as an aside
+
+Labelled, not iconography-heavy or alert-coloured. The callout is
+structurally the most authoritative element an owner can place on the page;
+stay duration, pets, smoking and check-in are all fields the booking engine
+already enforces (ADR-022, the `terms` section), and prose that contradicts
+them is a dispute with our own UI as evidence. ADR-027's re-review on
+content edits is the backstop; the styling decides how often it fires.
+
+### Decision 13 — The guest page downloads no editor code
+
+`app/components/ui/RichText.tsx` is the renderer: ~80 lines, zero
+dependencies, imports no Tiptap. Tiptap loads only inside the authenticated
+host editor (code-split). Verified by grepping the static export (§11.9 of
+the design; confirmed clean for `/property` in Task 11's report).
+
+### Decision 14 — Two checkpoints: the style book, then the vertical slice
+
+The schema and the two components (`RichTextEditor`, `RichText`) are
+identical either way; the style-book page (`/design`, fixtures only, no API,
+no persistence) exists so the node set could be judged before the C# validator
+was written against it — changing the schema after that point would mean
+writing the validator twice.
+
+### Decision 15 — The server remaps client-minted nearby ids into the description on save
+
+`NearbyEditor` mints client temp ids (`local-…`) for a place added in the
+same edit that also mentions it. `HostFunctions.cs` assigns each unknown
+entry a fresh **server** id on save and discards the temp one — but the
+description validator (Decision 9) builds its reference set from the
+*incoming* payload, so a `placeRef` to a just-added place passes validation,
+is stored holding the now-discarded temp id, and matches nothing ever again.
+Silent orphaning on the single most ordinary flow there is: add a place,
+mention it, save. Photos are unaffected — a photo's identity is a URL the
+server assigns at upload and never re-mints.
+
+**The fix:** while rebuilding the nearby array, the server records
+`incoming id → final id` for every entry it newly generates, then rewrites
+`placeRef`/`placeCard` `entryId` attributes in both `Copy.Es` and `Copy.En`
+through that map before storing — after validation, which still runs against
+the incoming ids, so a reference to an entry absent from the payload entirely
+is still rejected with `copy_place_unknown`.
+
+**Why this does not violate Decision 8 ("reject, never repair").** Decision 8
+protects the owner's *words* — silently deleting or altering prose is what it
+forbids. This rewrites an identifier the server itself minted a moment
+earlier, to point at the entry the owner actually chose; the prose is
+untouched and the reference keeps its meaning, whereas leaving the temp id in
+place would silently lose that meaning instead. **Why not accept the
+client's id instead:** ADR-028 makes entry ids server-generated specifically
+so a caller cannot point the route cache at an entry it does not own; the
+remap works with that rule rather than around it. Full reasoning:
+addendum to `docs/superpowers/plans/2026-07-29-rich-text-editor.md`,
+2026-07-30.
+
+### Legacy plain-string `copy` throws, not degrades — re-seeding is not optional
+
+A property document still holding the old `{ es: "…", en: "…" }` string pair
+cannot deserialize into `BilingualDoc`: `System.Text.Json` throws a
+`JsonException` reading the `Copy` property, which takes the **whole**
+property read down with it — a 500 on the detail page, not a missing
+paragraph. Decision 4's "no migration" is therefore conditional on **every
+environment that holds one being re-seeded**: `infra/seed-source.json` /
+`infra/local-bootstrap.mjs` locally, and a re-seed of the staging listings as
+an explicit deployment step before the API carrying `BilingualDoc` ships —
+staging must not be deployed to first.
+
+### Consequences
+
+- `PropertyDoc.Copy` is `BilingualDoc?` (`api/Models/PropertyDoc.cs`), not
+  `Bilingual?`. `Bilingual` itself is untouched — `Details`, `Beds`,
+  `PriceNote` keep using it (Decision 3).
+- `PropertyPhoto`, `PhotoWrite`, `PublicPhoto`, `HostPhoto` all gain
+  `HiddenFromGallery` (Decision 10); every cover-photo pick and every gallery
+  filter across the codebase excludes it (three call sites found and fixed
+  during Task 11: `PublicProjection.ToSummary`, `HostProjection.ToHostProperty`,
+  `PhotoManager.tsx`'s own cover pick).
+- The `properties` indexing policy excludes `/copy/*`, the same reasoning
+  ADR-028 applied to `/nearby/*`: nothing ever queries into the document tree,
+  and every save would otherwise index it.
+- `FIELDS.description`'s diff no longer compares `copy` with `bi()`'s raw
+  object equality; `rich-text.ts`'s `canonical()` serializer (sorted keys,
+  absent normalised to `null`) is what the differ compares, so a tree built by
+  Tiptap and a tree parsed from the API — which can differ in key order and in
+  absent-versus-null at every node — do not falsely show as "changed."
+- 29 C# tests (`Ebrostay.Api.Tests`) and 108 vitest tests cover the validator,
+  the differ, and the cover-photo fix; none are adversarial shell scripts —
+  the validator's own tampered-payload test cases are the adversarial pass.
+
+### What this deliberately does not do
+
+- No machine translation between the two documents (ADR-020 still owns plain
+  translation; a reference-preserving document translation is harder and not
+  started).
+- No plain-text projection of `copy` for SEO, cards, or search — nothing
+  consumes plain text today.
+- No CSP `globalHeaders` — worth doing, independent of this feature, and
+  `app/public/staticwebapp.config.json` still ships none.
+- No slimmed-down rich-text variant for other surfaces — designed against a
+  real second surface when one exists, not guessed at here.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

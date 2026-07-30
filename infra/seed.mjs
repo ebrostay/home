@@ -101,6 +101,10 @@ function toDoc(p) {
     lat: p.lat, lng: p.lng,
 
     area: p.area, copy: p.copy, details: p.details,
+    // Embedded "what's nearby" entries (§2.2.5, ADR-028). Passed through as-is
+    // — the shape in seed-source.json already matches `NearbyEntry` exactly,
+    // camelCase field for field, so there is nothing to transform.
+    nearby: p.nearby ?? [],
     beds: x.beds ?? null,
     priceNote: null,
     // The v1 English copy was published and read for two years, so it is

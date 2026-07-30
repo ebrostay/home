@@ -13,9 +13,54 @@
    "en": "University - Pedro II el Católico"
   },
   "copy": {
-   "es": "Piso amueblado en Pedro II el Católico 3, preparado para estancias de media duración en Zaragoza.",
-   "en": "Furnished flat at Pedro II el Católico 3, prepared for medium-stay rentals in Zaragoza."
+   "es": {
+    "type": "doc",
+    "content": [
+     { "type": "paragraph", "content": [{ "type": "text", "text": "Piso amueblado en Pedro II el Católico 3, preparado para estancias de media duración en Zaragoza." }] },
+     { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "El barrio" }] },
+     { "type": "bulletList", "content": [
+       { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Zona universitaria, tranquila y bien comunicada." }] }] },
+       { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Comercios y cafeterías a pie de calle." }] }] }
+     ] },
+     { "type": "paragraph", "content": [
+       { "type": "text", "text": "La parada de " },
+       { "type": "placeRef", "attrs": { "entryId": "9d4b2a71f0c8e3a5" } },
+       { "type": "text", "text": " está a pocos minutos caminando." }
+     ] }
+    ]
+   },
+   "en": {
+    "type": "doc",
+    "content": [
+     { "type": "paragraph", "content": [{ "type": "text", "text": "Furnished flat at Pedro II el Católico 3, prepared for medium-stay rentals in Zaragoza." }] },
+     { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "The neighbourhood" }] },
+     { "type": "bulletList", "content": [
+       { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "A quiet university-area location, well connected." }] }] },
+       { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Shops and cafés right on the street." }] }] }
+     ] },
+     { "type": "paragraph", "content": [
+       { "type": "text", "text": "The " },
+       { "type": "placeRef", "attrs": { "entryId": "9d4b2a71f0c8e3a5" } },
+       { "type": "text", "text": " stop is a short walk away." }
+     ] }
+    ]
+   }
   },
+  "nearby": [
+   {
+    "id": "9d4b2a71f0c8e3a5",
+    "group": "transport",
+    "type": "tram",
+    "customType": null,
+    "name": "Gran Vía",
+    "lat": 41.65210,
+    "lng": -0.90512,
+    "reach": { "foot": { "metres": 420, "minutes": 6 }, "car": { "metres": 900, "minutes": 3 } },
+    "osmId": "node/612233981",
+    "measuredAt": "2026-07-22T12:00:00Z",
+    "needsCheck": false
+   }
+  ],
   "details": {
    "es": "Primero izquierda en una ubicación urbana y bien comunicada, con cocina equipada, zona de trabajo y gestión local Ebrostay.",
    "en": "First-floor left flat in a connected urban location, with equipped kitchen, work area, and local Ebrostay management."
@@ -68,8 +113,8 @@
    "en": "University - Pedro II el Católico"
   },
   "copy": {
-   "es": "Segundo izquierda en el mismo edificio, una opción práctica para profesionales, estudiantes o traslados temporales.",
-   "en": "Second-floor left flat in the same building, practical for professionals, students, or temporary relocations."
+   "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Segundo izquierda en el mismo edificio, una opción práctica para profesionales, estudiantes o traslados temporales." }] }] },
+   "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Second-floor left flat in the same building, practical for professionals, students, or temporary relocations." }] }] }
   },
   "details": {
    "es": "Vivienda amueblada con distribución funcional, wifi, calefacción y soporte local para llegada y estancia.",
@@ -124,8 +169,8 @@
    "en": "Movera"
   },
   "copy": {
-   "es": "Piso de 3 habitaciones privadas en Movera 7 (segunda planta), ideal para equipos de empresa, técnicos y estancias por proyecto.",
-   "en": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays."
+   "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Piso de 3 habitaciones privadas en Movera 7 (segunda planta), ideal para equipos de empresa, técnicos y estancias por proyecto." }] }] },
+   "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays." }] }] }
   },
   "details": {
    "es": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos y baño completo. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",
@@ -176,8 +221,8 @@
    "en": "Movera"
   },
   "copy": {
-   "es": "Piso de 3 habitaciones privadas en Movera 7, ideal para equipos de empresa, técnicos y estancias por proyecto.",
-   "en": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays."
+   "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Piso de 3 habitaciones privadas en Movera 7, ideal para equipos de empresa, técnicos y estancias por proyecto." }] }] },
+   "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays." }] }] }
   },
   "details": {
    "es": "Tres dormitorios privados con salón, comedor y cocina equipada compartidos, baño completo y terraza. Suministros con tope de 50 EUR por habitación (lo que exceda se factura aparte), autoentrada con lockbox y soporte 24/7. Piso completo o por habitaciones.",

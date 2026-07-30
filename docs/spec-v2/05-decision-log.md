@@ -2081,6 +2081,18 @@ environment that holds one being re-seeded**: `infra/seed-source.json` /
 an explicit deployment step before the API carrying `BilingualDoc` ships —
 staging must not be deployed to first.
 
+### What this deliberately does not do
+
+- No machine translation between the two documents (ADR-020 still owns plain
+  translation; a reference-preserving document translation is harder and not
+  started).
+- No plain-text projection of `copy` for SEO, cards, or search — nothing
+  consumes plain text today.
+- No CSP `globalHeaders` — worth doing, independent of this feature, and
+  `app/public/staticwebapp.config.json` still ships none.
+- No slimmed-down rich-text variant for other surfaces — designed against a
+  real second surface when one exists, not guessed at here.
+
 ### Consequences
 
 - `PropertyDoc.Copy` is `BilingualDoc?` (`api/Models/PropertyDoc.cs`), not
@@ -2099,21 +2111,11 @@ staging must not be deployed to first.
   absent normalised to `null`) is what the differ compares, so a tree built by
   Tiptap and a tree parsed from the API — which can differ in key order and in
   absent-versus-null at every node — do not falsely show as "changed."
-- 29 C# tests (`Ebrostay.Api.Tests`) and 108 vitest tests cover the validator,
-  the differ, and the cover-photo fix; none are adversarial shell scripts —
-  the validator's own tampered-payload test cases are the adversarial pass.
-
-### What this deliberately does not do
-
-- No machine translation between the two documents (ADR-020 still owns plain
-  translation; a reference-preserving document translation is harder and not
-  started).
-- No plain-text projection of `copy` for SEO, cards, or search — nothing
-  consumes plain text today.
-- No CSP `globalHeaders` — worth doing, independent of this feature, and
-  `app/public/staticwebapp.config.json` still ships none.
-- No slimmed-down rich-text variant for other surfaces — designed against a
-  real second surface when one exists, not guessed at here.
+- 29 C# tests (`Ebrostay.Api.Tests`) covered the validator and the cover-photo
+  fix at the unit level even before this round; this round adds one more, a
+  true integration test through the save endpoint itself (see the fix-round
+  addendum below) — the one adversarial case unit tests structurally couldn't
+  reach.
 
 ---
 

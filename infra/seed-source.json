@@ -12,7 +12,7 @@
    "es": "Universidad - Pedro II el Católico",
    "en": "University - Pedro II el Católico"
   },
-  "copy": {
+  "description": {
    "es": {
     "type": "doc",
     "content": [
@@ -112,7 +112,7 @@
    "es": "Universidad - Pedro II el Católico",
    "en": "University - Pedro II el Católico"
   },
-  "copy": {
+  "description": {
    "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Segundo izquierda en el mismo edificio, una opción práctica para profesionales, estudiantes o traslados temporales." }] }] },
    "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Second-floor left flat in the same building, practical for professionals, students, or temporary relocations." }] }] }
   },
@@ -168,7 +168,7 @@
    "es": "Movera",
    "en": "Movera"
   },
-  "copy": {
+  "description": {
    "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Piso de 3 habitaciones privadas en Movera 7 (segunda planta), ideal para equipos de empresa, técnicos y estancias por proyecto." }] }] },
    "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Three private bedrooms at Movera 7 (second floor), ideal for company teams, technicians, and project stays." }] }] }
   },
@@ -220,7 +220,7 @@
    "es": "Movera",
    "en": "Movera"
   },
-  "copy": {
+  "description": {
    "es": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Piso de 3 habitaciones privadas en Movera 7, ideal para equipos de empresa, técnicos y estancias por proyecto." }] }] },
    "en": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Three private bedrooms at Movera 7, ideal for company teams, technicians, and project stays." }] }] }
   },

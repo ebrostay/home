@@ -111,17 +111,17 @@ public class PropertyDoc
     public DeclinedSuggestion[] DeclinedSuggestions { get; set; } = [];
 
     public Bilingual? Area { get; set; }
-    public BilingualDoc? Copy { get; set; }
+    public BilingualDoc? Description { get; set; }
     public Bilingual? Details { get; set; }
     public Bilingual? Beds { get; set; }
     public Bilingual? PriceNote { get; set; }
 
     // The owner has read the English description and stands behind it
-    // (ADR-027). Only `Copy` carries the gate: it is the one paragraph a
+    // (ADR-027). Only `Description` carries the gate: it is the one paragraph a
     // guest reads as the owner's own voice, and the only one long enough for
     // a bad translation to mislead. Area, details and beds are short labels
     // whose meaning survives a literal rendering.
-    public bool CopyEnApproved { get; set; }
+    public bool DescriptionEnApproved { get; set; }
 
     public int Guests { get; set; }
     public int Bedrooms { get; set; }
@@ -192,8 +192,8 @@ public class PropertyDoc
 /// malformed document take down whatever loop is reading a whole page of
 /// them with it (ADR-032's "Legacy plain-string `copy` throws, not
 /// degrades"). A property document still holding the old `{ es, en }` string
-/// pair for `copy` cannot deserialize into `BilingualDoc` — Newtonsoft throws
-/// reading `Copy` — and `Container.GetItemQueryIterator<PropertyDoc>`
+/// pair for `description` cannot deserialize into `BilingualDoc` — Newtonsoft throws
+/// reading `Description` — and `Container.GetItemQueryIterator<PropertyDoc>`
 /// deserializes an entire page in one `ReadNextAsync` call, so one bad
 /// document among many would otherwise fail every document sharing its page,
 /// not just itself. Callers that need per-document isolation (rather than

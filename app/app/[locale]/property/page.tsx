@@ -316,7 +316,7 @@ function DetailBody({
           {/* 2 — About */}
           <Section title={td("about")} plain>
             <RichText
-              doc={biDoc(p.copy, locale)}
+              doc={biDoc(p.description, locale)}
               photos={p.photos}
               nearby={p.nearby}
               profile={nearbyProfile}

@@ -129,10 +129,10 @@ export function PhotoManager({
   // in the description editor is reflected here immediately.
   const referenced = useMemo(() => {
     const out = new Set<string>();
-    for (const d of [value.copy?.es, value.copy?.en])
+    for (const d of [value.description?.es, value.description?.en])
       if (d) for (const url of referencedPhotoUrls(d)) out.add(url);
     return out;
-  }, [value.copy]);
+  }, [value.description]);
 
   return (
     <div className="flex flex-col gap-4">

@@ -39,7 +39,7 @@ export function DescriptionFields({
   value: HostListing;
   // A real `useState` setter, not a plain `(value) => void` — both call
   // sites already pass one (`setListing`). Needed because Tiptap's onUpdate
-  // (setCopyDoc) and upload() can both fire an onChange within the same
+  // (setDescriptionDoc) and upload() can both fire an onChange within the same
   // React batch (PhotoPicker calls onPick — which inserts the chip,
   // synchronously firing onUpdate — right after onUpload resolves, with no
   // further `await` in between). A PLAIN value call closes over whatever
@@ -82,17 +82,17 @@ export function DescriptionFields({
       return { ...prev, [key]: merged.es === null && merged.en === null ? null : merged };
     });
 
-  // `copy` holds documents, not strings, so it gets its own setter rather
+  // `description` holds documents, not strings, so it gets its own setter rather
   // than sharing `setBi`. `applyDescriptionEdit` is the pure merge logic
   // (lib/listing.ts, unit tested there); this just names the edit.
-  const setCopyDoc = (locale: "es" | "en", next: RichNode) =>
-    onChange((prev) => applyDescriptionEdit(prev, { type: "copyChanged", locale, doc: next }));
+  const setDescriptionDoc = (locale: "es" | "en", next: RichNode) =>
+    onChange((prev) => applyDescriptionEdit(prev, { type: "descriptionChanged", locale, doc: next }));
 
-  const approved = value.copyEnApproved;
+  const approved = value.descriptionEnApproved;
   // Presence is not enough: a document holding only a photo chip has no
   // words, and approving nothing would satisfy the gate without anyone
   // having written a sentence.
-  const hasEnglish = !isEmptyDoc(value.copy?.en);
+  const hasEnglish = !isEmptyDoc(value.description?.en);
 
   // Both editors — ES and EN — share one pair of pickers, held here. Only one
   // can be open at a time; which editor asked is remembered as the `insert`
@@ -155,11 +155,11 @@ export function DescriptionFields({
   return (
     <div className="flex flex-col gap-5">
       <RichTextEditor
-        value={value.copy?.es ?? null}
-        onChange={(next) => setCopyDoc("es", next)}
+        value={value.description?.es ?? null}
+        onChange={(next) => setDescriptionDoc("es", next)}
         label={t("about")}
         tag={t("aboutTagEs")}
-        mark={mark?.("copy")}
+        mark={mark?.("description")}
         placeholder={t("aboutPlaceholder")}
         hint={t("aboutHint")}
         onInsertPhoto={(insert) => setPhotoPick(() => insert)}
@@ -180,8 +180,8 @@ export function DescriptionFields({
         </div>
 
         <RichTextEditor
-          value={value.copy?.en ?? null}
-          onChange={(next) => setCopyDoc("en", next)}
+          value={value.description?.en ?? null}
+          onChange={(next) => setDescriptionDoc("en", next)}
           label={t("about")}
           tag="EN"
           placeholder={t("aboutPlaceholder")}
@@ -197,7 +197,7 @@ export function DescriptionFields({
           // blocker without anyone having written a word.
           disabled={!hasEnglish}
           aria-pressed={approved}
-          onClick={() => onChange((prev) => ({ ...prev, copyEnApproved: !prev.copyEnApproved }))}
+          onClick={() => onChange((prev) => ({ ...prev, descriptionEnApproved: !prev.descriptionEnApproved }))}
           className={`flex w-fit items-center gap-2 rounded-(--radius-control) px-3.5 py-2 text-[0.78125rem] font-semibold transition-[filter,background-color] duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 ${
             approved
               ? "bg-surface-2 text-muted hover:brightness-95"

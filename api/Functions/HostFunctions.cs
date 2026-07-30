@@ -245,8 +245,8 @@ public class HostFunctions(
         // No ToBilingual-style repair for the document (D8: RichText REJECTS,
         // never repairs) — CheckDetails has already walked and validated it,
         // so this is a straight carry-over, not a sanitize.
-        doc.Copy = update.Copy;
-        doc.CopyEnApproved = update.CopyEnApproved;
+        doc.Description = update.Description;
+        doc.DescriptionEnApproved = update.DescriptionEnApproved;
         doc.Details = ToBilingual(update.Details);
         doc.Beds = ToBilingual(update.Beds);
         doc.Guests = update.Guests;
@@ -316,7 +316,7 @@ public class HostFunctions(
         // Every id that changed between the incoming payload and the id this
         // entry is actually stored under — in practice, `NearbyEditor.tsx`'s
         // client temp id (`local-<ts>-<rand>`) for an entry added in this
-        // same save, mapped to the fresh server id just below. A `copy`
+        // same save, mapped to the fresh server id just below. A `description`
         // document saved in the SAME request can already hold a `placeRef`
         // to that temp id (add a place, mention it, save), so this map is
         // what lets that reference be rewritten to something that still
@@ -364,7 +364,7 @@ public class HostFunctions(
             // above. An entry that DID match keeps its own id (`entry.Id ==
             // known.Id`) and needs no remap; a write with no id at all (the
             // editor's own "brand new, never yet saved" case) has nothing a
-            // `copy` document could have referenced, so there is nothing to
+            // `description` document could have referenced, so there is nothing to
             // record either.
             if (known is null && w.Id is not null)
                 idRemap[w.Id] = entry.Id;
@@ -432,13 +432,13 @@ public class HostFunctions(
         // Rewrite `placeRef`/`placeCard` ids through the map above, now that
         // it is complete — AFTER the rebuild, on the document `CheckDetails`
         // already validated against the INCOMING ids, never before. This is
-        // not a D8 "repair" of invalid content: `doc.Copy` already passed
+        // not a D8 "repair" of invalid content: `doc.Description` already passed
         // validation; this only updates an identifier the server itself just
         // minted so the reference keeps resolving, and touches no prose.
-        if (idRemap.Count > 0 && doc.Copy is not null)
-            doc.Copy = new BilingualDoc(
-                HostValidation.RemapPlaceIds(doc.Copy.Es, idRemap),
-                HostValidation.RemapPlaceIds(doc.Copy.En, idRemap));
+        if (idRemap.Count > 0 && doc.Description is not null)
+            doc.Description = new BilingualDoc(
+                HostValidation.RemapPlaceIds(doc.Description.Es, idRemap),
+                HostValidation.RemapPlaceIds(doc.Description.En, idRemap));
 
         // §2.2.1: an approved listing re-enters the queue and leaves public
         // search until a reviewer sees it again. A draft stays a draft and a

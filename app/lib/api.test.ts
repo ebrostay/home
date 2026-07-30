@@ -6,7 +6,7 @@ import { EMPTY_DOC, paragraphDoc, type RichNode } from "./rich-text";
 // both-ways-locale fallback for a description DOCUMENT. `biText` gets away
 // with a plain `??` because `setBi` (`DescriptionFields.tsx`) normalises an
 // emptied string to `null` before a reader ever sees it — the document path
-// has no equivalent, so `copy.en` can be a real, non-null
+// has no equivalent, so `description.en` can be a real, non-null
 // `{type:"doc",content:[]}` after an owner deletes everything they typed.
 // `biDoc` must therefore fall back on EMPTY, not merely on `null` — these
 // pin exactly that, at the same granularity `bothLanguagesDoc`

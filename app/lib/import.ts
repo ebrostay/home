@@ -73,7 +73,7 @@ export const IMPORT_KEYS = [
   "address", "postcode", "pin", "area", "cadastralRef",
   "name", "type", "sizeM2", "bedrooms", "bathrooms", "guests",
   "floorNumber", "energyRating",
-  "copy", "details", "beds",
+  "description", "details", "beds",
   "amenities",
   "price", "billsPolicy", "utilitiesCapEur", "depositAmount", "minStayMonths",
   "petsAllowed", "smokingAllowed", "couplesAllowed", "selfCheckin",
@@ -90,7 +90,7 @@ export const IMPORT_STEP_OF: Record<ImportKey, string> = {
   name: "basics", type: "basics", sizeM2: "basics", bedrooms: "basics",
   bathrooms: "basics", guests: "basics", floorNumber: "basics",
   energyRating: "basics",
-  copy: "description", details: "description", beds: "description",
+  description: "description", details: "description", beds: "description",
   amenities: "amenities",
   price: "pricing", billsPolicy: "pricing", utilitiesCapEur: "pricing",
   depositAmount: "pricing", minStayMonths: "pricing",
@@ -250,10 +250,10 @@ export function mergeImport(
   take("floorNumber", l.floorNumber, (v) => (next.floorNumber = v));
   take("energyRating", l.energyRating, (v) => (next.energyRating = v));
 
-  // The Spanish only, always. `copyEnApproved` is untouched: there is no
+  // The Spanish only, always. `descriptionEnApproved` is untouched: there is no
   // English to approve, and an approval gate the owner clicks through is
   // worse than no English (§10.5).
-  take("copy", l.copyEs, (v) => (next.copy = { es: paragraphDoc(v), en: null }));
+  take("description", l.descriptionEs, (v) => (next.description = { es: paragraphDoc(v), en: null }));
   take("details", l.detailsEs, (v) => (next.details = { es: v, en: null }));
   take("beds", l.bedsEs, (v) => (next.beds = { es: v, en: null }));
 
@@ -364,7 +364,7 @@ const VALUE_OF: Record<ImportKey, KeyReader> = {
   // depends on key order and on absent-versus-null at every node, and a false
   // difference here would clear the mark on a paragraph nobody has read — the
   // same hazard `changedSections` documents for the editor's dirty check.
-  copy: { on: "listing", read: (l) => [canonical(l.copy?.es), canonical(l.copy?.en)] },
+  description: { on: "listing", read: (l) => [canonical(l.description?.es), canonical(l.description?.en)] },
   details: { on: "listing", read: (l) => [l.details?.es ?? null, l.details?.en ?? null] },
   beds: { on: "listing", read: (l) => [l.beds?.es ?? null, l.beds?.en ?? null] },
   amenities: { on: "listing", read: (l) => l.amenities },

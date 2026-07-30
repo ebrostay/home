@@ -24,8 +24,8 @@ const complete = (over: Partial<HostListing> = {}): HostListing => ({
   lat: 41.6289,
   lng: -0.8812,
   area: { es: "Torrero", en: "Torrero" },
-  copy: { es: paragraphDoc("Un ático"), en: paragraphDoc("A top-floor flat") },
-  copyEnApproved: true,
+  description: { es: paragraphDoc("Un ático"), en: paragraphDoc("A top-floor flat") },
+  descriptionEnApproved: true,
   details: { es: "Detalles", en: "Details" },
   beds: { es: "1 cama doble", en: "1 double bed" },
   guests: 2,
@@ -82,16 +82,16 @@ describe("stepBlockers", () => {
   });
 
   it("gates description on Spanish alone", () => {
-    const es = complete({ copy: { es: paragraphDoc("Hola"), en: null }, copyEnApproved: false });
+    const es = complete({ description: { es: paragraphDoc("Hola"), en: null }, descriptionEnApproved: false });
     expect(stepBlockers("description", es, priced())).toEqual([]);
-    const en = complete({ copy: { es: null, en: paragraphDoc("Hello") } });
-    expect(stepBlockers("description", en, priced())).toEqual(["copyEs"]);
+    const en = complete({ description: { es: null, en: paragraphDoc("Hello") } });
+    expect(stepBlockers("description", en, priced())).toEqual(["descriptionEs"]);
   });
 
   // A document object existing is not the same as a written description —
   // mirrors the server's `Both(BilingualDoc?)` (api/Models/HostModels.cs),
   // which counts WORDS. A doc holding only a photo chip has a non-empty
-  // `content` array but zero text, so a presence check (`!!listing.copy?.es`)
+  // `content` array but zero text, so a presence check (`!!listing.description?.es`)
   // would wrongly wave this step through.
   it("treats a document holding only a photo chip as no description", () => {
     const chipOnly = {
@@ -103,8 +103,8 @@ describe("stepBlockers", () => {
         },
       ],
     };
-    const l = complete({ copy: { es: chipOnly, en: null } });
-    expect(stepBlockers("description", l, priced())).toEqual(["copyEs"]);
+    const l = complete({ description: { es: chipOnly, en: null } });
+    expect(stepBlockers("description", l, priced())).toEqual(["descriptionEs"]);
   });
 
   it("gates pricing on a price", () => {
@@ -141,9 +141,9 @@ describe("submitBlockers", () => {
   });
 
   it("does not ask for English approval before there is English", () => {
-    const noEn = complete({ copy: { es: paragraphDoc("Un ático"), en: null }, copyEnApproved: false });
+    const noEn = complete({ description: { es: paragraphDoc("Un ático"), en: null }, descriptionEnApproved: false });
     const keys = submitBlockers(noEn, priced()).map((b) => b.key);
-    expect(keys).toContain("untransCopy");
+    expect(keys).toContain("untransDescription");
     expect(keys).not.toContain("enNotApproved");
   });
 

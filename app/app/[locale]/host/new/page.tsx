@@ -433,8 +433,8 @@ function NewPropertyContent() {
         // knowable. Thrown rather than returned so the catch below — which
         // already turns an `ApiError` into a translated message — handles it
         // with no second error surface.
-        const copyError = richTextError(listing);
-        if (copyError) throw new ApiError(400, copyError);
+        const descriptionError = richTextError(listing);
+        if (descriptionError) throw new ApiError(400, descriptionError);
         const sent = listing;
         const result = await saveHostListing(id, listing);
         property = result.property;

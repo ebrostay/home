@@ -25,7 +25,7 @@ import {
 // one poll — and the page it hangs off is already nine steps long.
 //
 // Nothing here decides what a terminal stage is or how a server code maps to
-// copy: both are pure, both live in lib/import.ts, and both are unit-tested
+// description: both are pure, both live in lib/import.ts, and both are unit-tested
 // there against the real code list and both message files.
 
 /** What the page is showing. The nine steps are the third of three screens,

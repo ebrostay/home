@@ -35,7 +35,7 @@ export type RichNode = {
 export type BilingualDoc = { es: RichNode | null; en: RichNode | null };
 
 export const RICH_LIMITS = {
-  // Mirrors `LIMITS.maxCopy` in `lib/listing.ts`, duplicated rather than
+  // Mirrors `LIMITS.maxDescription` in `lib/listing.ts`, duplicated rather than
   // imported: `lib/listing.ts`'s differ needs `canonical()`/`isEmptyDoc()`
   // from this file, and importing `LIMITS` back from there would make the two
   // modules import each other — this file is meant to be the pure base the
@@ -122,16 +122,16 @@ export function paragraphDoc(text: string): RichNode {
 /** The ten rejections. Identical strings on both sides, so the client can
  *  pre-empt one and the server's answer is recognisable when it cannot. */
 export type RichError =
-  | "copy_bad_root"
-  | "copy_bad_node"
-  | "copy_bad_mark"
-  | "copy_bad_heading"
-  | "copy_bad_caption"
-  | "copy_too_long"
-  | "copy_too_deep"
-  | "copy_too_many_nodes"
-  | "copy_photo_unknown"
-  | "copy_place_unknown";
+  | "description_bad_root"
+  | "description_bad_node"
+  | "description_bad_mark"
+  | "description_bad_heading"
+  | "description_bad_caption"
+  | "description_too_long"
+  | "description_too_deep"
+  | "description_too_many_nodes"
+  | "description_photo_unknown"
+  | "description_place_unknown";
 
 export type RichRefs = { photoUrls: ReadonlySet<string>; entryIds: ReadonlySet<string> };
 
@@ -149,13 +149,13 @@ export type RichRefs = { photoUrls: ReadonlySet<string>; entryIds: ReadonlySet<s
  *  legitimate state, not a malformed one (fix round 2). */
 export function validateDoc(node: RichNode | null, refs: RichRefs): RichError | null {
   if (node === null) return null;
-  if (node.type !== "doc") return "copy_bad_root";
+  if (node.type !== "doc") return "description_bad_root";
   let budget = RICH_LIMITS.maxNodes;
 
   const walk = (n: RichNode, depth: number): RichError | null => {
-    if (depth > RICH_LIMITS.maxDepth) return "copy_too_deep";
-    if (--budget < 0) return "copy_too_many_nodes";
-    if (!RICH_NODES.includes(n.type)) return "copy_bad_node";
+    if (depth > RICH_LIMITS.maxDepth) return "description_too_deep";
+    if (--budget < 0) return "description_too_many_nodes";
+    if (!RICH_NODES.includes(n.type)) return "description_bad_node";
 
     const allowed = CONTENT_MODEL[n.type];
     // `!= null` rather than `!== undefined`: a server payload's JSON `null`
@@ -163,26 +163,26 @@ export function validateDoc(node: RichNode | null, refs: RichRefs): RichError | 
     // API cannot tell them apart, so neither can this walk if the two are to
     // agree on every input (D9 follow-up, fix-round 1).
     if (allowed === null && (n.content?.length || (n.type !== "text" && n.text != null)))
-      return "copy_bad_node";
-    if (allowed !== null && n.text != null) return "copy_bad_node";
+      return "description_bad_node";
+    if (allowed !== null && n.text != null) return "description_bad_node";
 
     // `!m` also catches a null array element (`"marks":[null]`) — without it
-    // that shape throws instead of failing closed with copy_bad_mark.
+    // that shape throws instead of failing closed with description_bad_mark.
     for (const m of n.marks ?? [])
-      if (!m || !RICH_MARKS.includes(m.type)) return "copy_bad_mark";
+      if (!m || !RICH_MARKS.includes(m.type)) return "description_bad_mark";
 
-    if (n.type === "heading" && n.attrs?.level !== 3) return "copy_bad_heading";
-    if ((n.attrs?.caption?.length ?? 0) > RICH_LIMITS.maxCaption) return "copy_bad_caption";
+    if (n.type === "heading" && n.attrs?.level !== 3) return "description_bad_heading";
+    if ((n.attrs?.caption?.length ?? 0) > RICH_LIMITS.maxCaption) return "description_bad_caption";
 
     if (n.type === "photoRef" || n.type === "photoFigure")
-      if (!n.attrs?.url || !refs.photoUrls.has(n.attrs.url)) return "copy_photo_unknown";
+      if (!n.attrs?.url || !refs.photoUrls.has(n.attrs.url)) return "description_photo_unknown";
     if (n.type === "placeRef" || n.type === "placeCard")
-      if (!n.attrs?.entryId || !refs.entryIds.has(n.attrs.entryId)) return "copy_place_unknown";
+      if (!n.attrs?.entryId || !refs.entryIds.has(n.attrs.entryId)) return "description_place_unknown";
 
     // `!child` also catches a null array element (`"content":[null]`), same
     // reasoning as the marks guard above.
     for (const child of n.content ?? []) {
-      if (!child || allowed === null || !allowed.includes(child.type)) return "copy_bad_node";
+      if (!child || allowed === null || !allowed.includes(child.type)) return "description_bad_node";
       const err = walk(child, depth + 1);
       if (err) return err;
     }
@@ -191,7 +191,7 @@ export function validateDoc(node: RichNode | null, refs: RichRefs): RichError | 
 
   const err = walk(node, 1);
   if (err) return err;
-  return textLength(node) > RICH_LIMITS.maxText ? "copy_too_long" : null;
+  return textLength(node) > RICH_LIMITS.maxText ? "description_too_long" : null;
 }
 
 const collect = (node: RichNode, types: RichNodeType[], key: "url" | "entryId"): Set<string> => {

@@ -98,7 +98,7 @@ export type PropertyDetail = Omit<
   "coverUrl" | "coverCardUrl" | "coverDetailUrl"
 > & {
   address: string | null;
-  copy: BilingualDoc | null;
+  description: BilingualDoc | null;
   details: Bilingual | null;
   beds: Bilingual | null;
   priceNote: Bilingual | null;
@@ -235,9 +235,9 @@ export type HostListing = {
   lat: number;
   lng: number;
   area: Bilingual | null;
-  copy: BilingualDoc | null;
-  /** The owner stands behind the English description. Only `copy` is gated. */
-  copyEnApproved: boolean;
+  description: BilingualDoc | null;
+  /** The owner stands behind the English description. Only `description` is gated. */
+  descriptionEnApproved: boolean;
   details: Bilingual | null;
   beds: Bilingual | null;
   guests: number;
@@ -323,7 +323,7 @@ export type AvailabilityWrite = { start: string; end: string; note: string | nul
 export type ImportListingPatch = {
   address?: string; postcode?: string; cadastralRef?: string;
   lat?: number; lng?: number; areaEs?: string;
-  copyEs?: string; detailsEs?: string; bedsEs?: string;
+  descriptionEs?: string; detailsEs?: string; bedsEs?: string;
   name?: string; type?: string;
   guests?: number; bedrooms?: number; bathrooms?: number; sizeM2?: number;
   floorNumber?: number; energyRating?: string;
@@ -599,7 +599,7 @@ export const biText = (b: Bilingual | null | undefined, locale: string) =>
  *  string: the guest's own locale first, the other language rather than
  *  nothing at all — a listing with Spanish-only copy must still show its
  *  English guests something, exactly as `biText` already does for `details`
- *  one field over. Nothing gates `copy` on `CopyEnApproved` at read time, so
+ *  one field over. Nothing gates `description` on `DescriptionEnApproved` at read time, so
  *  this is the only thing standing between an unwritten translation and a
  *  blank About section.
  *
@@ -608,7 +608,7 @@ export const biText = (b: Bilingual | null | undefined, locale: string) =>
  *  `setBi` (`DescriptionFields.tsx`) normalises an emptied string back to
  *  `null` before it can reach a reader; the document path has no equivalent
  *  normalisation anywhere in the save path (client or server), so an owner
- *  who types something and then deletes it all leaves `copy.en` a real,
+ *  who types something and then deletes it all leaves `description.en` a real,
  *  non-null `{type:"doc",content:[]}` — present by `??`'s reckoning, empty
  *  by any reader's. `isEmptyDoc` is the same predicate the completeness gate
  *  already uses for exactly this question (`bothLanguagesDoc`,

@@ -33,46 +33,46 @@ public class RichTextValidationTests
     public void AcceptsNull() => Assert.Null(HostValidation.RichText(null, Photos, Entries));
 
     [Fact]
-    public void RejectsBadRoot() => Assert.Equal("copy_bad_root", Check(P(T("x"))));
+    public void RejectsBadRoot() => Assert.Equal("description_bad_root", Check(P(T("x"))));
 
     [Fact]
-    public void RejectsUnknownNode() => Assert.Equal("copy_bad_node", Check(Doc(new RichNode("iframe", null, null, null, null))));
+    public void RejectsUnknownNode() => Assert.Equal("description_bad_node", Check(Doc(new RichNode("iframe", null, null, null, null))));
 
     [Fact]
     public void RejectsLegalNodeInIllegalPlace() =>
-        Assert.Equal("copy_bad_node", Check(Doc(P(P(T("nested"))))));
+        Assert.Equal("description_bad_node", Check(Doc(P(P(T("nested"))))));
 
     [Fact]
-    public void RejectsUnknownMark() => Assert.Equal("copy_bad_mark", Check(Doc(P(T("x", "link")))));
+    public void RejectsUnknownMark() => Assert.Equal("description_bad_mark", Check(Doc(P(T("x", "link")))));
 
     [Fact]
     public void RejectsNonLevel3Heading() =>
-        Assert.Equal("copy_bad_heading", Check(Doc(new RichNode("heading", [T("x")], null, null, new RichAttrs(1, null, null, null)))));
+        Assert.Equal("description_bad_heading", Check(Doc(new RichNode("heading", [T("x")], null, null, new RichAttrs(1, null, null, null)))));
 
     [Fact]
     public void RejectsOverlongText() =>
-        Assert.Equal("copy_too_long", Check(Doc(P(T(new string('x', HostValidation.MaxCopyLength + 1))))));
+        Assert.Equal("description_too_long", Check(Doc(P(T(new string('x', HostValidation.MaxDescriptionLength + 1))))));
 
     [Fact]
     public void RejectsOverlongCaption() =>
-        Assert.Equal("copy_bad_caption", Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "/p/1.jpg", new string('c', 201), null)))));
+        Assert.Equal("description_bad_caption", Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "/p/1.jpg", new string('c', 201), null)))));
 
     // The load-bearing one. An off-document URL would render in a public <img>.
     [Fact]
     public void RejectsOffDocumentPhoto() =>
-        Assert.Equal("copy_photo_unknown", Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "https://evil.example/x.jpg", null, null)))));
+        Assert.Equal("description_photo_unknown", Check(Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "https://evil.example/x.jpg", null, null)))));
 
     [Fact]
     public void RejectsUnknownPlace() =>
-        Assert.Equal("copy_place_unknown", Check(Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, "nope"))))));
+        Assert.Equal("description_place_unknown", Check(Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, "nope"))))));
 
     [Fact]
     public void RejectsTextNodeWithChildren() =>
-        Assert.Equal("copy_bad_node", Check(Doc(P(new RichNode("text", [T("y")], "x", null, null)))));
+        Assert.Equal("description_bad_node", Check(Doc(P(new RichNode("text", [T("y")], "x", null, null)))));
 
-    // Expects copy_bad_node, NOT copy_too_deep. The content model already
+    // Expects description_bad_node, NOT description_too_deep. The content model already
     // bounds depth: the longest legal chain is doc>bulletList>listItem>
-    // paragraph>text, which is exactly MaxCopyDepth, and listItem admits only
+    // paragraph>text, which is exactly MaxDescriptionDepth, and listItem admits only
     // paragraph so lists cannot nest. A bomb therefore becomes content-model
     // illegal at depth ~4 and is refused there. That IS the property under
     // test — the other 38 wraps are never visited. The depth guard stays as
@@ -84,13 +84,13 @@ public class RichTextValidationTests
         var n = P(T("deep"));
         for (var i = 0; i < 40; i++)
             n = new RichNode("bulletList", [new("listItem", [n], null, null, null)], null, null, null);
-        Assert.Equal("copy_bad_node", Check(Doc(n)));
+        Assert.Equal("description_bad_node", Check(Doc(n)));
     }
 
     [Fact]
     public void RejectsTooManyNodes() =>
-        Assert.Equal("copy_too_many_nodes",
-            Check(Doc(Enumerable.Range(0, HostValidation.MaxCopyNodes + 1).Select(_ => P(T("x"))).ToArray())));
+        Assert.Equal("description_too_many_nodes",
+            Check(Doc(Enumerable.Range(0, HostValidation.MaxDescriptionNodes + 1).Select(_ => P(T("x"))).ToArray())));
 
     [Fact]
     public void AcceptsEmptyDocument() => Assert.Null(Check(Doc()));
@@ -114,12 +114,12 @@ public class RichTextValidationTests
         // `Doc(null!)` would bind to the params array itself being null (an
         // empty, accepted document) rather than a one-element array holding
         // null — spelled out explicitly to get the shape the bug is about.
-        Assert.Equal("copy_bad_node", Check(Doc(new RichNode[] { null! })));
+        Assert.Equal("description_bad_node", Check(Doc(new RichNode[] { null! })));
 
     // `"marks":[null]` is the same shape of bug one level down.
     [Fact]
     public void RejectsNullMarkElement() =>
-        Assert.Equal("copy_bad_mark", Check(Doc(P(new RichNode("text", null, "x", [null!], null)))));
+        Assert.Equal("description_bad_mark", Check(Doc(P(new RichNode("text", null, "x", [null!], null)))));
 
     // Fix round 2: the fixture below deliberately contains "" itself. The
     // original version of this test used `Photos`/`Entries`, which do NOT
@@ -138,14 +138,14 @@ public class RichTextValidationTests
     // where it could only ever coincidentally agree with the set.
     [Fact]
     public void RejectsEmptyStringPhotoUrl() =>
-        Assert.Equal("copy_photo_unknown",
+        Assert.Equal("description_photo_unknown",
             HostValidation.RichText(
                 Doc(new RichNode("photoFigure", null, null, null, new RichAttrs(null, "", null, null))),
                 PhotosWithEmptyString, Entries));
 
     [Fact]
     public void RejectsEmptyStringEntryId() =>
-        Assert.Equal("copy_place_unknown",
+        Assert.Equal("description_place_unknown",
             HostValidation.RichText(
                 Doc(P(new RichNode("placeRef", null, null, null, new RichAttrs(null, null, null, "")))),
                 Photos, EntriesWithEmptyString));

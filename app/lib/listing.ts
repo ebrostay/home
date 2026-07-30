@@ -83,9 +83,9 @@ const FIELDS: Record<SectionKey, (l: HostListing) => unknown[]> = {
     // on absent-versus-undefined at EVERY node — the hazard `bi()` documents
     // for a two-key record, multiplied by the tree. Without the canonical form
     // the "changed" indicator lights on a freshly opened page.
-    canonical(l.copy?.es),
-    canonical(l.copy?.en),
-    l.copyEnApproved,
+    canonical(l.description?.es),
+    canonical(l.description?.en),
+    l.descriptionEnApproved,
     ...bi(l.details),
     ...bi(l.beds),
   ],
@@ -122,7 +122,7 @@ export const goesBackToReview = (changed: SectionKey[]) =>
 /** The bilingual fields a listing must carry in both languages. Mirrors four
  *  of the API's submit-for-review checks (`HostProjection.Sections`); the
  *  others belong to Manage's half of the document and are not editable here. */
-const BILINGUAL = ["area", "copy", "details", "beds"] as const;
+const BILINGUAL = ["area", "description", "details", "beds"] as const;
 
 export type BilingualField = (typeof BILINGUAL)[number];
 
@@ -172,11 +172,11 @@ const bothLanguages = (b: Bilingual | null) =>
 const bothLanguagesDoc = (d: BilingualDoc | null) =>
   !isEmptyDoc(d?.es) && !isEmptyDoc(d?.en);
 
-/** `copy` is a document; the other three `BILINGUAL` fields are plain
+/** `description` is a document; the other three `BILINGUAL` fields are plain
  *  strings. One list drives both `untranslated` and `completenessOf`, so the
  *  runtime check lives here rather than duplicated at each call site. */
 const fieldHasBothLanguages = (l: HostListing, key: BilingualField): boolean =>
-  key === "copy" ? bothLanguagesDoc(l.copy) : bothLanguages(l[key] as Bilingual | null);
+  key === "description" ? bothLanguagesDoc(l.description) : bothLanguages(l[key] as Bilingual | null);
 
 // ------------------------------------------------------------
 // Blockers — what still stands between this and a listing worth publishing.
@@ -223,7 +223,7 @@ export function blockersOf(l: HostListing): Blocker[] {
 
   // Only worth saying once there is English to approve — words, not merely a
   // document object (same test `bothLanguagesDoc` makes).
-  if (!isEmptyDoc(l.copy?.en) && !l.copyEnApproved) out.push({ key: "enNotApproved" });
+  if (!isEmptyDoc(l.description?.en) && !l.descriptionEnApproved) out.push({ key: "enNotApproved" });
 
   if (nearbyTypeEnMissing(l)) out.push({ key: "nearbyTypeEnMissing" });
   if (nearbyNeedsCheck(l)) out.push({ key: "nearbyNeedsCheck" });
@@ -245,10 +245,10 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
   // Same fix as `completenessOf`/`blockersOf`: a hidden photo does not count.
   if (l.photos.every((p) => p.isFloorplan || p.hiddenFromGallery)) out.add("photos");
   if (
-    !bothLanguagesDoc(l.copy) ||
+    !bothLanguagesDoc(l.description) ||
     !bothLanguages(l.details) ||
     !bothLanguages(l.beds) ||
-    (!isEmptyDoc(l.copy?.en) && !l.copyEnApproved)
+    (!isEmptyDoc(l.description?.en) && !l.descriptionEnApproved)
   )
     out.add("description");
   if (l.amenities.length === 0) out.add("amenities");
@@ -266,7 +266,7 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
 // Description editor edits — a small, pure two-action state machine.
 //
 // DescriptionFields.tsx used to STAGE an upload's photo in a ref and fold it
-// into whatever `setCopyDoc` call happened next. That "next" call is not
+// into whatever `setDescriptionDoc` call happened next. That "next" call is not
 // guaranteed: ProseMirror's restricted heading/listItem content models
 // (RichTextEditor.tsx) can make an insert a no-op — no document change, no
 // `onUpdate`, no flush — so the staged photo would sit there until some
@@ -278,7 +278,7 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
 // be unit tested directly rather than trusted by inspection.
 export type DescriptionEdit =
   | { type: "uploaded"; photo: HostPhoto }
-  | { type: "copyChanged"; locale: "es" | "en"; doc: RichNode };
+  | { type: "descriptionChanged"; locale: "es" | "en"; doc: RichNode };
 
 /** Applies one description-editor edit to the working listing.
  *
@@ -300,12 +300,12 @@ export function applyDescriptionEdit(listing: HostListing, edit: DescriptionEdit
           : [...listing.photos, edit.photo],
       };
     }
-    case "copyChanged":
+    case "descriptionChanged":
       return {
         ...listing,
-        copy: {
-          es: listing.copy?.es ?? null,
-          en: listing.copy?.en ?? null,
+        description: {
+          es: listing.description?.es ?? null,
+          en: listing.description?.en ?? null,
           [edit.locale]: edit.doc,
         },
       };
@@ -354,14 +354,14 @@ export function adoptNearbyIds(
     return id ? { ...n, id } : n;
   });
 
-  const copy = current.copy
+  const description = current.description
     ? {
-        es: current.copy.es ? remapPlaceIds(current.copy.es, remap) : null,
-        en: current.copy.en ? remapPlaceIds(current.copy.en, remap) : null,
+        es: current.description.es ? remapPlaceIds(current.description.es, remap) : null,
+        en: current.description.en ? remapPlaceIds(current.description.en, remap) : null,
       }
-    : current.copy;
+    : current.description;
 
-  return { ...current, nearby, copy };
+  return { ...current, nearby, description };
 }
 
 /** The reference universe `validateDoc` checks a description's photo/place
@@ -386,7 +386,7 @@ export const richRefsFor = (l: HostListing): RichRefs => ({
  *  at fault. */
 export const richTextError = (l: HostListing): RichError | null => {
   const refs = richRefsFor(l);
-  return validateDoc(l.copy?.es ?? null, refs) ?? validateDoc(l.copy?.en ?? null, refs);
+  return validateDoc(l.description?.es ?? null, refs) ?? validateDoc(l.description?.en ?? null, refs);
 };
 
 // ------------------------------------------------------------
@@ -402,7 +402,7 @@ export const LIMITS = {
   maxName: 120,
   maxAddress: 200,
   maxArea: 120,
-  maxCopy: 4_000,
+  maxDescription: 4_000,
   maxDetails: 2_000,
   maxBeds: 400,
   maxPhotos: 40,

@@ -7,7 +7,7 @@ namespace Ebrostay.Api.Tests;
 
 // Finding 2 (production-readiness review, 2026-07-30): `PropertiesFunctions.List`
 // used to hand `GetItemQueryIterator<PropertyDoc>` a page containing a legacy
-// document — `copy` still stored as the old `{ es: "…", en: "…" }` string pair
+// document — `description` still stored as the old `{ es: "…", en: "…" }` string pair
 // — and one such document threw out of the loop, taking the ENTIRE public
 // listings response down with it, not merely that listing's own detail page
 // (ADR-032's "Legacy plain-string `copy` throws, not degrades"). The fix reads
@@ -33,7 +33,7 @@ public class PropertyDocParserTests
                 "id": "legacy-1",
                 "status": "published",
                 "name": "Old listing",
-                "copy": { "es": "Un piso céntrico.", "en": "A central flat." }
+                "description": { "es": "Un piso céntrico.", "en": "A central flat." }
             }
             """);
 
@@ -50,7 +50,7 @@ public class PropertyDocParserTests
                 "id": "p1",
                 "status": "published",
                 "name": "A real listing",
-                "copy": {
+                "description": {
                     "es": { "type": "doc", "content": [] },
                     "en": { "type": "doc", "content": [] }
                 }

@@ -29,7 +29,7 @@ const FIXTURE = {
     bathrooms: 1,
     floorNumber: 3,
     energyRating: "D",
-    copyEs:
+    descriptionEs:
       "Piso exterior muy luminoso en pleno centro de Zaragoza, reformado en 2023.\n\n" +
       "A cinco minutos andando del tranvía y del mercado central.",
     detailsEs: "Calefacción central. Ascensor. Cocina office equipada.",
@@ -51,7 +51,7 @@ const FIXTURE = {
   },
   imported: [
     "address", "postcode", "area", "name", "type", "sizeM2", "bedrooms",
-    "bathrooms", "floorNumber", "energyRating", "copy", "details", "beds",
+    "bathrooms", "floorNumber", "energyRating", "description", "details", "beds",
     "amenities", "petsAllowed", "smokingAllowed", "price", "depositAmount",
     "billsPolicy", "minStayMonths",
   ],

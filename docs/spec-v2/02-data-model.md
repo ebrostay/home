@@ -91,17 +91,17 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   ruled on, so they are not re-offered
                                       //   until they change (§2.2.4, ADR-027)
 
-  // — bilingual copy —
+  // — bilingual description —
   "area":    { "es": "…", "en": "…" },
-  "copy":    { "es": { "type": "doc", "content": [ … ] },   // ✅ a rich-text
+  "description":    { "es": { "type": "doc", "content": [ … ] },   // ✅ a rich-text
                "en": { "type": "doc", "content": [ … ] } }, //   DOCUMENT, not
                                       //   a string — a closed node schema,
                                       //   §2.2.6 (ADR-032)
   "details": { "es": "…", "en": "…" },
   "beds":    { "es": "…", "en": "…" },
   "priceNote": { "es": "…", "en": "…" },   // optional
-  "copyEnApproved": true,             // ✅ the owner stands behind the English
-                                      //   description. Only `copy` is gated —
+  "descriptionEnApproved": true,             // ✅ the owner stands behind the English
+                                      //   description. Only `description` is gated —
                                       //   the rest are short labels (ADR-027)
 
   // — capacity & attributes —
@@ -484,9 +484,9 @@ save for a field nothing queries) and `/"_etag"/?` (matching Cosmos's implicit
 default). Deploying it triggers a Cosmos background index transformation —
 non-disruptive, but not instant (ADR-028 "Consequences to watch").
 
-### 2.2.6 The description document (`copy`) ✅ (ADR-032, built 2026-07-30)
+### 2.2.6 The description document (`description`) ✅ (ADR-032, built 2026-07-30)
 
-`copy` is no longer a `{ es, en }` string pair. Each side is a **ProseMirror-style
+`description` is no longer a `{ es, en }` string pair. Each side is a **ProseMirror-style
 JSON document** drawn from a closed node schema — the same shape `app/lib/rich-text.ts`
 defines and `api/Models/RichText.cs`/`HostWrites.cs` re-validate server-side,
 never trusting the client's own walk:
@@ -535,16 +535,16 @@ stored ones (a single save can delete a photo and reference it at once):
 
 | Failure | Code |
 | --- | --- |
-| root is not `doc` | `copy_bad_root` |
-| unknown node type, or illegal for its parent | `copy_bad_node` |
-| mark outside `{bold, italic}` | `copy_bad_mark` |
-| `heading.level != 3` | `copy_bad_heading` |
-| caption > 200 chars | `copy_bad_caption` |
-| text length > 4,000 | `copy_too_long` |
-| depth > 5 | `copy_too_deep` |
-| nodes > 400 | `copy_too_many_nodes` |
-| `photoRef`/`photoFigure.url` not in the incoming photo set | `copy_photo_unknown` |
-| `placeRef`/`placeCard.entryId` not in the incoming nearby set | `copy_place_unknown` |
+| root is not `doc` | `description_bad_root` |
+| unknown node type, or illegal for its parent | `description_bad_node` |
+| mark outside `{bold, italic}` | `description_bad_mark` |
+| `heading.level != 3` | `description_bad_heading` |
+| caption > 200 chars | `description_bad_caption` |
+| text length > 4,000 | `description_too_long` |
+| depth > 5 | `description_too_deep` |
+| nodes > 400 | `description_too_many_nodes` |
+| `photoRef`/`photoFigure.url` not in the incoming photo set | `description_photo_unknown` |
+| `placeRef`/`placeCard.entryId` not in the incoming nearby set | `description_place_unknown` |
 
 **On save, the server remaps client-minted nearby ids inside the description**
 (ADR-032 D15): a `placeRef` may name a nearby entry added in the very same
@@ -572,12 +572,21 @@ save path; an admin photo deletion or a projection change could still produce
 it, and a guest has no use for the fact that a listing is internally
 inconsistent.
 
-**A stored plain-string `copy` throws, not degrades.** `{ "es": "…", "en": "…" }`
-cannot deserialize into `BilingualDoc` — `System.Text.Json` throws reading the
+**A stored plain-string document throws, not degrades.** `{ "es": "…", "en": "…" }`
+stored under `description` cannot deserialize into `BilingualDoc` — Newtonsoft
+(the Cosmos SDK's serializer, not `System.Text.Json`) throws reading the
 property, taking the whole property document down with it (a 500, not a
-missing paragraph). Every environment must be re-seeded before code expecting
-`BilingualDoc` runs against it: `infra/seed-source.json` locally, staging as an
-explicit pre-deploy step. See ADR-032 for the full decision record.
+missing paragraph). See ADR-032 for the full decision record.
+
+**The ADR-034 rename softened this for pre-rename documents only.** A document
+still carrying the field under its old name, `copy`, no longer throws: `copy`
+is an unmapped member and Newtonsoft's default `MissingMemberHandling` ignores
+it, so `description` reads as `null` and the listing renders with no
+description at all. That is a quieter failure than the 500 ADR-032 describes,
+and a worse one to notice — nothing logs it. Re-seeding every environment
+remains required (`infra/seed-source.json` locally, staging as an explicit
+pre-deploy step); what changed is that forgetting now shows up as listings
+with blank descriptions rather than as an outage.
 
 ---
 

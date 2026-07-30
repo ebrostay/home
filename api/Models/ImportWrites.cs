@@ -3,7 +3,7 @@ namespace Ebrostay.Api.Models;
 // What crosses the wire into the import endpoints (ADR-033 Decision 6).
 //
 // THE ENGLISH IS UNREPRESENTABLE HERE. `ImportListingPatch` has an `AreaEs`
-// and no `AreaEn`, a `CopyEs` and no `CopyEn`. System.Text.Json silently drops
+// and no `AreaEn`, a `DescriptionEs` and no `DescriptionEn`. System.Text.Json silently drops
 // any JSON property it has no member for, so a pipeline that returns a
 // machine-read English paragraph does not get its value rejected — it gets it
 // discarded, structurally, with no allowlist to maintain. Same idiom as
@@ -22,7 +22,7 @@ public record ImportListingPatch(
     double? Lat = null,
     double? Lng = null,
     string? AreaEs = null,
-    string? CopyEs = null,
+    string? DescriptionEs = null,
     string? DetailsEs = null,
     string? BedsEs = null,
     string? Name = null,
@@ -146,7 +146,7 @@ public static class ImportValidation
             Lat = lat,
             Lng = lng,
             AreaEs = Text(l.AreaEs, HostValidation.MaxAreaLength, "area"),
-            CopyEs = Text(l.CopyEs, HostValidation.MaxCopyLength, "copy"),
+            DescriptionEs = Text(l.DescriptionEs, HostValidation.MaxDescriptionLength, "description"),
             DetailsEs = Text(l.DetailsEs, HostValidation.MaxDetailsLength, "details"),
             BedsEs = Text(l.BedsEs, HostValidation.MaxBedsLength, "beds"),
             Name = Text(l.Name, HostValidation.MaxNameLength, "name"),

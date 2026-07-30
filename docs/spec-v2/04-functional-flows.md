@@ -41,7 +41,7 @@ then filters/sorts **client-side** — the rules carry over from v1 **verbatim**
 - **Main predicate, quick filters, enhanced filters:** per docs/spec/05
   §5.2.1–§5.2.3 (city substring, type, max budget, min guests, amenities AND,
   available-from, date-overlap; chips `checked`/`bills`/`deposit` combinable
-  AND; address text search across address + translated area/name/copy/details,
+  AND; address text search across address + translated area/name/description/details,
   min bedrooms/bathrooms; "saved only" stays 🚫 out of scope). The bills chip
   keys off `billsPolicy === "included"`.
 - **Sorting:** per docs/spec/05 §5.3 (`best` rating desc/price asc; `price`
@@ -261,7 +261,7 @@ Nine sections down a sticky rail, saved by **one** whole-page diff:
 | Nearby | embedded `nearby[]` — group tabs, map-assisted candidate picker, route preview | ✅ editable (ADR-028, §4.4.1 below) |
 | Photos | embedded `photos[]` — reorder, cover, floor-plan flag, remove | ⚠️ no upload (ADR-019 🔜) |
 | Floor plan | `isFloorplan` photos | ⚠️ flag only; no pins |
-| Description | `copy`/`details`/`beds` bilingual + `copyEnApproved` | ✅ editable; owner writes both languages |
+| Description | `description`/`details`/`beds` bilingual + `descriptionEnApproved` | ✅ editable; owner writes both languages |
 | Amenities | `amenities[]` | ✅ editable |
 | Rules & terms | `petsAllowed`, `smokingAllowed`, `couplesAllowed`, `selfCheckin` | ✅ editable; policy block read-only |
 | Legal | — | ❌ no document model (ADR-027 🔜) |

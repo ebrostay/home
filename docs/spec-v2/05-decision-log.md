@@ -836,7 +836,7 @@ the owner's payout honest and the tenant's total complete.
 ### Decision 4 — New fields: postcode, cadastral reference, English approval
 
 - `postcode` (5 digits, validated), `cadastralRef` (stored as typed,
-  uppercased), `copyEnApproved` (bool).
+  uppercased), `descriptionEnApproved` (bool).
 - **The Catastro IS queried**, which supersedes this decision's first draft.
   Its free *datos no protegidos* services are public, keyless and answer with
   permissive CORS, so the editor calls them client-direct exactly like
@@ -946,7 +946,7 @@ the owner's payout honest and the tenant's total complete.
 - **No tourist-licence field.** The handoff offers one; Ebrostay lets
   *mid-term* homes, so a *vivienda de uso turístico* licence is the wrong
   instrument and asking for it would suggest the wrong product.
-- `copyEnApproved` gates **only** the description. It is the one paragraph
+- `descriptionEnApproved` gates **only** the description. It is the one paragraph
   read as the owner's own voice and the only one long enough for a bad
   translation to mislead; area, details and beds are short labels.
 - **The owner writes both languages.** The handoff promises machine
@@ -1916,10 +1916,15 @@ never told that was now their job).
   (the editor's one-diff-one-save shape and the English approval gate, both
   preserved) and **ADR-019** (the photo pipeline; the upload endpoint stays
   the only way bytes reach Blob Storage).
-- **Context.** `copy` was a plain `{ es, en }` string pair, rendered on the
+- **Naming.** This ADR was written while the field was called `copy`. It was
+  renamed to `description` by **ADR-034** and the text below has been updated
+  to the current name; the decision itself is unchanged. Where the *legacy
+  stored shape* is discussed, the old name is kept deliberately — a document
+  written before ADR-034 really does carry `copy`.
+- **Context.** `description` was a plain `{ es, en }` string pair, rendered on the
   guest page as one `<p>`. An owner describing a kitchen could not show it,
   and an owner mentioning the tram could not point at the stop the listing
-  already knows the walking time to. `copy` becomes a pair of ProseMirror-style
+  already knows the walking time to. `description` becomes a pair of ProseMirror-style
   JSON documents, drawn from a **closed set of node types** — two of which are
   references into data the listing already holds (its photos, its nearby
   entries) rather than free text.
@@ -1945,16 +1950,17 @@ exist rather than being filtered. `dangerouslySetInnerHTML` still appears
 exactly once in the app (`app/app/not-found.tsx`, the pre-paint theme
 bootstrap, project-authored content only); this feature adds no second use.
 
-### Decision 3 — `copy` only. `details`, `beds`, `priceNote` stay plain
+### Decision 3 — `description` only. `details`, `beds`, `priceNote` stay plain
 
 `details` is short, factual, and read on the detail page as a table rather
 than as prose — the reason ADR-027 leaves it ungated is the same reason a
 formatted block there would undermine it. Other surfaces get a slimmed-down
 variant later; not designed here (§13 of the design).
 
-### Decision 4 — Replace `Copy`'s shape outright. No compatibility field, no migration
+### Decision 4 — Replace the description's shape outright. No compatibility field, no migration
 
-ADR-016's fresh start already paid for this. A `CopyDoc`-beside-`Copy`
+ADR-016's fresh start already paid for this. A new document field kept beside
+the old string field as a
 fallback would outlive everyone who remembers why it exists, and would keep
 the old shape writable — and therefore validated — forever. The seed
 regenerates instead of converting; see "Re-seeding is not optional" below.
@@ -2052,10 +2058,10 @@ server assigns at upload and never re-mints.
 
 **The fix:** while rebuilding the nearby array, the server records
 `incoming id → final id` for every entry it newly generates, then rewrites
-`placeRef`/`placeCard` `entryId` attributes in both `Copy.Es` and `Copy.En`
+`placeRef`/`placeCard` `entryId` attributes in both `Description.Es` and `Description.En`
 through that map before storing — after validation, which still runs against
 the incoming ids, so a reference to an entry absent from the payload entirely
-is still rejected with `copy_place_unknown`.
+is still rejected with `description_place_unknown`.
 
 **Why this does not violate Decision 8 ("reject, never repair").** Decision 8
 protects the owner's *words* — silently deleting or altering prose is what it
@@ -2074,7 +2080,7 @@ addendum to `docs/superpowers/plans/2026-07-29-rich-text-editor.md`,
 A property document still holding the old `{ es: "…", en: "…" }` string pair
 cannot deserialize into `BilingualDoc`: Newtonsoft.Json (the Cosmos SDK's own
 serializer, not `System.Text.Json` — `Ebrostay.Api.csproj`) throws reading
-the `Copy` property, which takes the **whole** document read down with it.
+the `Description` property, which takes the **whole** document read down with it.
 That is not confined to the one listing's own detail page: `PropertyGet`
 point-reads a single id, so it only cost that listing a 500 — but
 `PropertiesFunctions.List` ran the identical deserialization inside its feed
@@ -2095,7 +2101,7 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
 - No machine translation between the two documents (ADR-020 still owns plain
   translation; a reference-preserving document translation is harder and not
   started).
-- No plain-text projection of `copy` for SEO, cards, or search — nothing
+- No plain-text projection of `description` for SEO, cards, or search — nothing
   consumes plain text today.
 - No CSP `globalHeaders` — worth doing, independent of this feature, and
   `app/public/staticwebapp.config.json` still ships none.
@@ -2104,7 +2110,7 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
 
 ### Consequences
 
-- `PropertyDoc.Copy` is `BilingualDoc?` (`api/Models/PropertyDoc.cs`), not
+- `PropertyDoc.Description` is `BilingualDoc?` (`api/Models/PropertyDoc.cs`), not
   `Bilingual?`. `Bilingual` itself is untouched — `Details`, `Beds`,
   `PriceNote` keep using it (Decision 3).
 - `PropertyPhoto`, `PhotoWrite`, `PublicPhoto`, `HostPhoto` all gain
@@ -2112,10 +2118,10 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
   filter across the codebase excludes it (three call sites found and fixed
   during Task 11: `PublicProjection.ToSummary`, `HostProjection.ToHostProperty`,
   `PhotoManager.tsx`'s own cover pick).
-- The `properties` indexing policy excludes `/copy/*`, the same reasoning
+- The `properties` indexing policy excludes `/description/*`, the same reasoning
   ADR-028 applied to `/nearby/*`: nothing ever queries into the document tree,
   and every save would otherwise index it.
-- `FIELDS.description`'s diff no longer compares `copy` with `bi()`'s raw
+- `FIELDS.description`'s diff no longer compares `description` with `bi()`'s raw
   object equality; `rich-text.ts`'s `canonical()` serializer (sorted keys,
   absent normalised to `null`) is what the differ compares, so a tree built by
   Tiptap and a tree parsed from the API — which can differ in key order and in
@@ -2394,6 +2400,73 @@ tell the pipeline team before that set changes.
   container, which exists for exactly this cross-instance counting.
 - We never fetch the portal, never store the source page, and never re-host its
   images. Only the pipeline reads the page the owner pointed at.
+
+---
+
+## ADR-034 — The listing description field is `description`, not `copy`
+
+- **Status.** Accepted, 2026-07-30. Built the same day. **Amends ADR-032**
+  (the rich-text schema, unchanged — only the field's name moves).
+- **Context.** The field holding a listing's written description has been
+  called `copy` since the first v2 data model. It is the publishing sense of
+  the word — *ad copy*, what a copywriter writes — and it was never argued
+  for in any ADR; it simply arrived with the original schema and stayed.
+  The name collides with the far more common engineering sense of "copy" as
+  *duplicate*, and the collision is not hypothetical: `02-data-model.md` uses
+  "copy" to mean duplicate three times in prose ("a second copy of a rule",
+  "not a copy of the register", "its own copy") while a field named `copy`
+  sits in the same document meaning something else entirely.
+
+### Decision 1 — Rename to `description`, everywhere, in one change
+
+`copy` → `description` in the stored document, both API projections, the
+client types, the message keys and the docs. Derived names follow:
+`copyEnApproved` → `descriptionEnApproved`, `CopyDoc` → `DescriptionDoc`, the
+ten `copy_*` validation error codes → `description_*`, `MaxCopy*` →
+`MaxDescription*`. `description` is what the UI has always called it, what the
+editor's section is already named, and it carries no second meaning.
+
+### Decision 2 — Done now, while the only stored data is four sample homes
+
+The cost of this rename is a re-seed, and the only environments holding the
+field are the local emulator and staging's four regenerable sample listings.
+The same rename after real owners have written real descriptions would need a
+migration, a compatibility read path, or both — precisely what ADR-032
+Decision 4 refused to build for the shape change. Taking it now costs one
+`node infra/seed.mjs` run.
+
+### Decision 3 — What is deliberately NOT renamed
+
+The publishing sense of "copy" is correct in several places and stays: the
+About page's `rootsCopy`/`bridgeCopy` section fields, `06-design-language.md`'s
+"Copy rules", every prose use meaning wording or duplicate, and `copyright`.
+The rename was applied by pattern and then reviewed line by line; the review
+caught two false positives a blind pass would have shipped — `SKBitmap.Copy()`
+in `PhotoPipeline` (a bitmap duplicate, renamed to `.Description()`, which
+failed the build) and two orphaned local bindings in `listing.ts` and
+`listing.test.ts` where the object key moved but the variable did not. The
+second pair compiled clean in one case and would have silently returned an
+object with the wrong key.
+
+### Consequences to watch
+
+- **A pre-rename document no longer throws; it goes blank.** ADR-032's
+  "Legacy plain-string `copy` throws, not degrades" described a 500, because
+  the old string pair could not deserialize into `BilingualDoc`. After this
+  rename a stale document carries `copy`, which is now an *unmapped* member —
+  Newtonsoft's default `MissingMemberHandling` ignores it, so `description`
+  reads as `null` and the listing renders with no description at all. Quieter
+  than a 500 and harder to notice: nothing logs it. `PropertiesFunctions`'s
+  per-document `TryParse` guard still stands, but this failure never reaches
+  it. Re-seeding remains mandatory; forgetting now looks like blank listings.
+- The `properties` indexing policy excludes `/description/*` where it
+  excluded `/copy/*` (`infra/main.bicep`). Deploying it re-triggers the
+  background index transformation ADR-028 describes.
+- ADR-032's text was updated to the current name rather than left frozen,
+  because that document is read as a working reference. Its "Naming" bullet
+  records that it was written when the field was `copy`, and the passages
+  about the *legacy stored shape* keep the old name deliberately — a document
+  written before this ADR really does carry `copy`.
 
 ---
 

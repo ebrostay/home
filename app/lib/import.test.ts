@@ -75,10 +75,10 @@ describe("mergeImport", () => {
   it("wraps the Spanish description into a document", () => {
     const { listing } = mergeImport(
       blankListing(), blankPricing(),
-      result({ listing: { copyEs: "Piso luminoso." }, imported: ["copy"] }),
+      result({ listing: { descriptionEs: "Piso luminoso." }, imported: ["description"] }),
       new Set());
-    expect(listing.copy?.es?.type).toBe("doc");
-    expect(listing.copy?.en).toBeNull();
+    expect(listing.description?.es?.type).toBe("doc");
+    expect(listing.description?.en).toBeNull();
   });
 });
 
@@ -384,11 +384,11 @@ describe("editedListingKeys / editedPricingKeys", () => {
     // The mark on a description must survive the editor loading it: canonical
     // form, not raw JSON, or key order alone would clear a paragraph nobody
     // has read.
-    const l = { ...blankListing(), copy: { es: paragraphDoc("Hola"), en: null } };
-    const same = { ...l, copy: { es: JSON.parse(JSON.stringify(paragraphDoc("Hola"))), en: null } };
+    const l = { ...blankListing(), description: { es: paragraphDoc("Hola"), en: null } };
+    const same = { ...l, description: { es: JSON.parse(JSON.stringify(paragraphDoc("Hola"))), en: null } };
     expect(editedListingKeys(l, same)).toEqual([]);
-    expect(editedListingKeys(l, { ...l, copy: { es: paragraphDoc("Adiós"), en: null } })).toEqual([
-      "copy",
+    expect(editedListingKeys(l, { ...l, description: { es: paragraphDoc("Adiós"), en: null } })).toEqual([
+      "description",
     ]);
   });
 
@@ -402,7 +402,7 @@ describe("editedListingKeys / editedPricingKeys", () => {
       listing: {
         address: "Calle de Bilbao, 12", postcode: "50004", cadastralRef: "4721903XM7147S0001BT",
         lat: 41.65, lng: -0.88, areaEs: "Centro",
-        copyEs: "Piso luminoso.", detailsEs: "Ascensor.", bedsEs: "Una cama de 150.",
+        descriptionEs: "Piso luminoso.", detailsEs: "Ascensor.", bedsEs: "Una cama de 150.",
         name: "Piso en el Centro", type: "house",
         guests: 4, bedrooms: 2, bathrooms: 1, sizeM2: 78, floorNumber: 3, energyRating: "D",
         amenities: ["wifi"],

@@ -44,7 +44,7 @@ public record PropertyDetail(
     double Lat,
     double Lng,
     Bilingual? Area,
-    BilingualDoc? Copy,
+    BilingualDoc? Description,
     Bilingual? Details,
     Bilingual? Beds,
     Bilingual? PriceNote,
@@ -186,7 +186,7 @@ public static class PublicProjection
     public static PropertyDetail ToDetail(PropertyDoc p, DateTimeOffset now, int platformFee)
         => new(
             p.Id, p.City, p.Type, p.Name, p.Address, p.Lat, p.Lng,
-            p.Area, p.Copy, p.Details, p.Beds, p.PriceNote,
+            p.Area, p.Description, p.Details, p.Beds, p.PriceNote,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2, p.FloorNumber,
             p.Amenities, p.EnergyRating, p.PetsAllowed, p.SmokingAllowed,
             p.CouplesAllowed, p.SelfCheckin, p.VideoUrl,

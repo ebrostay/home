@@ -18,9 +18,9 @@ const t = (text: string, ...marks: string[]): RichNode =>
   marks.length ? { type: "text", text, marks: marks.map((m) => ({ type: m as "bold" })) } : { type: "text", text };
 
 describe("limits", () => {
-  it("keeps the text cap in step with LIMITS.maxCopy", async () => {
+  it("keeps the text cap in step with LIMITS.maxDescription", async () => {
     const { LIMITS } = await import("./listing");
-    expect(RICH_LIMITS.maxText).toBe(LIMITS.maxCopy);
+    expect(RICH_LIMITS.maxText).toBe(LIMITS.maxDescription);
   });
 
   it("allows exactly two marks", () => {
@@ -102,66 +102,66 @@ describe("validateDoc", () => {
   });
 
   it("rejects a root that is not a doc", () => {
-    expect(ok(p(t("x")))).toBe("copy_bad_root");
+    expect(ok(p(t("x")))).toBe("description_bad_root");
   });
 
   it("rejects an unknown node type", () => {
-    expect(ok(doc({ type: "iframe" as "paragraph" }))).toBe("copy_bad_node");
+    expect(ok(doc({ type: "iframe" as "paragraph" }))).toBe("description_bad_node");
   });
 
   it("rejects a legal node in an illegal place", () => {
-    expect(ok(doc(p({ type: "paragraph", content: [t("nested")] })))).toBe("copy_bad_node");
+    expect(ok(doc(p({ type: "paragraph", content: [t("nested")] })))).toBe("description_bad_node");
   });
 
   it("rejects an unknown mark", () => {
-    expect(ok(doc(p(t("x", "link"))))).toBe("copy_bad_mark");
+    expect(ok(doc(p(t("x", "link"))))).toBe("description_bad_mark");
   });
 
   it("rejects a heading that is not level 3", () => {
-    expect(ok(doc({ type: "heading", attrs: { level: 1 as 3 }, content: [t("x")] }))).toBe("copy_bad_heading");
+    expect(ok(doc({ type: "heading", attrs: { level: 1 as 3 }, content: [t("x")] }))).toBe("description_bad_heading");
   });
 
   it("rejects text past the cap", () => {
-    expect(ok(doc(p(t("x".repeat(RICH_LIMITS.maxText + 1)))))).toBe("copy_too_long");
+    expect(ok(doc(p(t("x".repeat(RICH_LIMITS.maxText + 1)))))).toBe("description_too_long");
   });
 
   it("rejects a caption past the cap", () => {
     expect(ok(doc({ type: "photoFigure", attrs: { url: "/p/1.jpg", caption: "c".repeat(201) } }))).toBe(
-      "copy_bad_caption",
+      "description_bad_caption",
     );
   });
 
   it("rejects a photo reference to a url not on the listing", () => {
     expect(ok(doc({ type: "photoFigure", attrs: { url: "https://evil.example/x.jpg" } }))).toBe(
-      "copy_photo_unknown",
+      "description_photo_unknown",
     );
   });
 
   it("rejects a place reference to an unknown entry", () => {
-    expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "nope" } })))).toBe("copy_place_unknown");
+    expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "nope" } })))).toBe("description_place_unknown");
   });
 
   it("rejects a text node carrying children", () => {
-    expect(ok(doc(p({ type: "text", text: "x", content: [t("y")] })))).toBe("copy_bad_node");
+    expect(ok(doc(p({ type: "text", text: "x", content: [t("y")] })))).toBe("description_bad_node");
   });
 
   // CONTENT_MODEL's deepest legal chain (doc→bulletList→listItem→paragraph→text)
   // is exactly RICH_LIMITS.maxDepth levels, and listItem allows only paragraph —
   // "lists cannot nest" — so alternating bulletList/listItem past one wrap is
   // ALSO a content-model violation, at a depth well under the cap. A first-
-  // failure walk hits that shallow copy_bad_node long before depth or node
+  // failure walk hits that shallow description_bad_node long before depth or node
   // count would matter, which is exactly the "refused rather than fully
   // walked" property this is meant to demonstrate: none of the other 38 wraps
   // above it are ever visited.
   it("rejects a nesting bomb before it is fully walked", () => {
     let n: RichNode = p(t("deep"));
     for (let i = 0; i < 40; i++) n = { type: "bulletList", content: [{ type: "listItem", content: [n] }] };
-    expect(ok(doc(n))).toBe("copy_bad_node");
+    expect(ok(doc(n))).toBe("description_bad_node");
   });
 
   it("rejects more nodes than the cap", () => {
     expect(ok(doc(...Array.from({ length: RICH_LIMITS.maxNodes + 1 }, () => p(t("x")))))).toBe(
-      "copy_too_many_nodes",
+      "description_too_many_nodes",
     );
   });
 
@@ -180,15 +180,15 @@ describe("validateDoc", () => {
   });
 
   // `"content":[null]` used to throw a TypeError reading `child.type`
-  // instead of failing closed with copy_bad_node.
+  // instead of failing closed with description_bad_node.
   it("rejects a null content element", () => {
-    expect(ok(doc(null as unknown as RichNode))).toBe("copy_bad_node");
+    expect(ok(doc(null as unknown as RichNode))).toBe("description_bad_node");
   });
 
   // Same bug, one level down: `"marks":[null]`.
   it("rejects a null mark element", () => {
     expect(ok(doc(p({ type: "text", text: "x", marks: [null as unknown as { type: "bold" }] })))).toBe(
-      "copy_bad_mark",
+      "description_bad_mark",
     );
   });
 
@@ -199,11 +199,11 @@ describe("validateDoc", () => {
   // set. Ran with `refs.photoUrls` swapped for a set containing "" to
   // confirm: still rejects, because the falsy check never reaches `.has()`.
   it("rejects an empty string photo url", () => {
-    expect(ok(doc({ type: "photoFigure", attrs: { url: "" } }))).toBe("copy_photo_unknown");
+    expect(ok(doc({ type: "photoFigure", attrs: { url: "" } }))).toBe("description_photo_unknown");
   });
 
   it("rejects an empty string entry id", () => {
-    expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "" } })))).toBe("copy_place_unknown");
+    expect(ok(doc(p({ type: "placeRef", attrs: { entryId: "" } })))).toBe("description_place_unknown");
   });
 
   // Fix round 2, finding C: HostValidation.RichText has always accepted a

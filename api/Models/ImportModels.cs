@@ -79,7 +79,7 @@ public static class ImportKeys
         "address", "postcode", "pin", "area", "cadastralRef",
         "name", "type", "sizeM2", "bedrooms", "bathrooms", "guests",
         "floorNumber", "energyRating",
-        "copy", "details", "beds",
+        "description", "details", "beds",
         "amenities",
         "price", "billsPolicy", "utilitiesCapEur", "depositAmount", "minStayMonths",
         "petsAllowed", "smokingAllowed", "couplesAllowed", "selfCheckin",

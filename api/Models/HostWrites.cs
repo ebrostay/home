@@ -65,8 +65,8 @@ public record DetailsUpdate(
     double Lat,
     double Lng,
     BilingualWrite? Area,
-    BilingualDoc? Copy,
-    bool CopyEnApproved,
+    BilingualDoc? Description,
+    bool DescriptionEnApproved,
     BilingualWrite? Details,
     BilingualWrite? Beds,
     int Guests,
@@ -126,14 +126,14 @@ public static class HostValidation
     public const int MaxNameLength = 120;
     public const int MaxAddressLength = 200;
     public const int MaxAreaLength = 120;
-    public const int MaxCopyLength = 4_000;
+    public const int MaxDescriptionLength = 4_000;
     public const int MaxDetailsLength = 2_000;
     /// Caps for the description document walked by `RichText` below. Mirror
     /// `RICH_LIMITS` in `app/lib/rich-text.ts` exactly — the two are the same
     /// rule stated twice, and a drift between them is either a lost save or a
     /// hole, never a harmless difference.
-    public const int MaxCopyNodes = 400;
-    public const int MaxCopyDepth = 5;
+    public const int MaxDescriptionNodes = 400;
+    public const int MaxDescriptionDepth = 5;
     public const int MaxCaptionLength = 200;
     public const int MaxBedsLength = 400;
     public const int MaxAmenities = 40;
@@ -180,11 +180,11 @@ public static class HostValidation
     /// abandons it leaves one behind. Finishing a draft frees the slot.
     public const int MaxOpenDrafts = 8;
 
-    private static readonly string[] CopyMarks = ["bold", "italic"];
+    private static readonly string[] DescriptionMarks = ["bold", "italic"];
 
     /// What each node may contain. An empty array is an ATOM — no children at
     /// all — which is why a photo reference can never hold text.
-    private static readonly Dictionary<string, string[]> CopyModel = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string[]> DescriptionModel = new(StringComparer.Ordinal)
     {
         ["doc"] = ["paragraph", "heading", "bulletList", "orderedList", "callout", "photoFigure", "placeCard"],
         ["paragraph"] = ["text", "photoRef", "placeRef"],
@@ -220,45 +220,45 @@ public static class HostValidation
     public static string? RichText(RichNode? doc, IReadOnlySet<string> photoUrls, IReadOnlySet<string> entryIds)
     {
         if (doc is null) return null;
-        if (doc.Type != "doc") return "copy_bad_root";
+        if (doc.Type != "doc") return "description_bad_root";
 
-        var budget = MaxCopyNodes;
+        var budget = MaxDescriptionNodes;
         var text = 0;
 
         string? Walk(RichNode n, int depth)
         {
-            if (depth > MaxCopyDepth) return "copy_too_deep";
-            if (--budget < 0) return "copy_too_many_nodes";
-            if (n.Type is null || !CopyModel.TryGetValue(n.Type, out var allowed)) return "copy_bad_node";
+            if (depth > MaxDescriptionDepth) return "description_too_deep";
+            if (--budget < 0) return "description_too_many_nodes";
+            if (n.Type is null || !DescriptionModel.TryGetValue(n.Type, out var allowed)) return "description_bad_node";
 
             var isAtom = allowed.Length == 0;
-            if (isAtom && n.Content is { Length: > 0 }) return "copy_bad_node";
-            if (n.Type != "text" && n.Text is not null) return "copy_bad_node";
+            if (isAtom && n.Content is { Length: > 0 }) return "description_bad_node";
+            if (n.Type != "text" && n.Text is not null) return "description_bad_node";
             if (n.Type == "text") text += n.Text?.Length ?? 0;
 
             // `m?.Type is null` also catches a null array element (`"marks":[null]`
             // deserializes to a null RichMark) — without it that shape throws
             // instead of failing closed with a 400.
             foreach (var m in n.Marks ?? [])
-                if (m?.Type is null || !CopyMarks.Contains(m.Type, StringComparer.Ordinal)) return "copy_bad_mark";
+                if (m?.Type is null || !DescriptionMarks.Contains(m.Type, StringComparer.Ordinal)) return "description_bad_mark";
 
-            if (n.Type == "heading" && n.Attrs?.Level != 3) return "copy_bad_heading";
-            if ((n.Attrs?.Caption?.Length ?? 0) > MaxCaptionLength) return "copy_bad_caption";
+            if (n.Type == "heading" && n.Attrs?.Level != 3) return "description_bad_heading";
+            if ((n.Attrs?.Caption?.Length ?? 0) > MaxCaptionLength) return "description_bad_caption";
 
             // IsNullOrEmpty, not `is null`: an owner cannot construct a photo
             // whose url is genuinely the empty string, but a payload that
             // claims one must still be refused rather than falling through to
             // a set lookup that happens to agree.
             if (n.Type is "photoRef" or "photoFigure")
-                if (string.IsNullOrEmpty(n.Attrs?.Url) || !photoUrls.Contains(n.Attrs.Url)) return "copy_photo_unknown";
+                if (string.IsNullOrEmpty(n.Attrs?.Url) || !photoUrls.Contains(n.Attrs.Url)) return "description_photo_unknown";
             if (n.Type is "placeRef" or "placeCard")
-                if (string.IsNullOrEmpty(n.Attrs?.EntryId) || !entryIds.Contains(n.Attrs.EntryId)) return "copy_place_unknown";
+                if (string.IsNullOrEmpty(n.Attrs?.EntryId) || !entryIds.Contains(n.Attrs.EntryId)) return "description_place_unknown";
 
             // `child?.Type is null` also catches a null array element
             // (`"content":[null]`) for the same reason as the marks guard above.
             foreach (var child in n.Content ?? [])
             {
-                if (child?.Type is null || !allowed.Contains(child.Type, StringComparer.Ordinal)) return "copy_bad_node";
+                if (child?.Type is null || !allowed.Contains(child.Type, StringComparer.Ordinal)) return "description_bad_node";
                 var err = Walk(child, depth + 1);
                 if (err is not null) return err;
             }
@@ -270,7 +270,7 @@ public static class HostValidation
         // Text only — references and captions are NOT charged, because their
         // labels live on other records and renaming one must not change the
         // length of a description nobody touched.
-        return text > MaxCopyLength ? "copy_too_long" : null;
+        return text > MaxDescriptionLength ? "description_too_long" : null;
     }
 
     /// Rewrites every `placeRef`/`placeCard` `entryId` through `remap`,
@@ -452,7 +452,7 @@ public static class HostValidation
             else
             {
                 // The escape hatch: Spanish required, English optional and falling
-                // back to it, mirroring copyEnApproved rather than inventing a new
+                // back to it, mirroring descriptionEnApproved rather than inventing a new
                 // state.
                 var es = n.CustomType?.Es?.Trim();
                 if (string.IsNullOrEmpty(es) || es.Length > MaxNearbyCustomTypeLength)
@@ -479,9 +479,9 @@ public static class HostValidation
             .Select(n => n.Id!)
             .ToHashSet(StringComparer.Ordinal);
 
-        var copyError = RichText(u.Copy?.Es, photoUrls, entryIds)
-                     ?? RichText(u.Copy?.En, photoUrls, entryIds);
-        if (copyError is not null) return copyError;
+        var descriptionError = RichText(u.Description?.Es, photoUrls, entryIds)
+                     ?? RichText(u.Description?.En, photoUrls, entryIds);
+        if (descriptionError is not null) return descriptionError;
 
         var importedError = CheckImported(u.Imported, u.ImportSource);
         if (importedError is not null) return importedError;

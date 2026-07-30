@@ -192,9 +192,9 @@ function EditContent() {
     // deleted server-side between load and save, D9) still comes back as the
     // same code through the normal catch below — this only skips the trip
     // when the answer is already knowable.
-    const copyError = richTextError(listing);
-    if (copyError) {
-      setError(message(new ApiError(400, copyError)));
+    const descriptionError = richTextError(listing);
+    if (descriptionError) {
+      setError(message(new ApiError(400, descriptionError)));
       setSaveState("error");
       return;
     }

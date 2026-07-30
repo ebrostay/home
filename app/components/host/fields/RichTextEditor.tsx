@@ -140,7 +140,7 @@ const chipClass = (tone: string) => `mx-0.5 inline-flex items-baseline gap-1 rou
 // matches `h3` since `levels: [3]` is the sole configured level) — but the
 // stock extension's `level` attribute still *defaults* to 1 when unset. That
 // default is exactly the field `validateDoc` rejects on
-// (`copy_bad_heading`), so it's overridden here too: belt-and-braces against
+// (`description_bad_heading`), so it's overridden here too: belt-and-braces against
 // any future insertion path (e.g. a bare `setNode("heading")`) that forgets
 // to pass an explicit level.
 const RestrictedHeading = Heading.extend({

@@ -94,7 +94,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
 // `properties` never queries on the embedded Nearby array (§2.2 / task-2 of
 // the "What's nearby" plan), so it is excluded from indexing here — every
 // owner save would otherwise pay to index up to 24 embedded entries for
-// nothing. `/copy/*` is excluded for the same reason (rich-text editor
+// nothing. `/description/*` is excluded for the same reason (rich-text editor
 // design doc §5.1, ADR-032): nothing ever queries into the description
 // document tree, and every save would otherwise index the whole thing.
 // /photos/* and /availability/* are almost certainly in the same position
@@ -105,7 +105,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
 //
 // This is the first explicit indexingPolicy ever applied to `properties`,
 // which is live and populated. Deploying it (including this round's
-// addition of `/copy/*`) triggers a Cosmos background index transformation
+// addition of `/description/*`) triggers a Cosmos background index transformation
 // (non-disruptive, but not instant) — see ADR-028, "Consequences to watch",
 // docs/spec-v2/05-decision-log.md.
 var propertiesIndexingPolicy = {
@@ -115,7 +115,7 @@ var propertiesIndexingPolicy = {
   ]
   excludedPaths: [
     { path: '/nearby/*' }
-    { path: '/copy/*' }
+    { path: '/description/*' }
     { path: '/"_etag"/?' }
   ]
 }

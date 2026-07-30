@@ -18,12 +18,12 @@ if (!endpoint || !key) {
 
 // Refuse to run against anything but the local emulator, unless explicitly
 // overridden — the same rule `local-bootstrap.mjs` applies to container
-// creation, and a more urgent one here: this script now writes `copy` as a
+// creation, and a more urgent one here: this script now writes `description` as a
 // ProseMirror JSON document (`BilingualDoc`), a shape the pre-ADR-032 API
 // cannot read at all (docs/spec-v2/05-decision-log.md, "Legacy plain-string
-// `copy` throws, not degrades" — it takes the whole public listings response
+// `description` throws, not degrades" — it takes the whole public listings response
 // down, not just one page). Run this against the wrong database and it is
-// not adding harmless test data; it is overwriting real listings' `copy`
+// not adding harmless test data; it is overwriting real listings' `description`
 // into a shape that outage-level breaks the site for anyone still running
 // the old API. The one legitimate exception is the deliberate staging
 // re-seed that same decision requires before the new API ships — it must
@@ -122,7 +122,7 @@ function toDoc(p) {
     cadastralRef: null,
     lat: p.lat, lng: p.lng,
 
-    area: p.area, copy: p.copy, details: p.details,
+    area: p.area, description: p.description, details: p.details,
     // Embedded "what's nearby" entries (§2.2.5, ADR-028). Passed through as-is
     // — the shape in seed-source.json already matches `NearbyEntry` exactly,
     // camelCase field for field, so there is nothing to transform.
@@ -131,7 +131,7 @@ function toDoc(p) {
     priceNote: null,
     // The v1 English copy was published and read for two years, so it is
     // approved by every meaning of the word (ADR-027).
-    copyEnApproved: true,
+    descriptionEnApproved: true,
 
     guests: p.guests ?? 4,
     bedrooms: x.bedrooms ?? 3,

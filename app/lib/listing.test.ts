@@ -22,7 +22,7 @@ const base = (over: Partial<HostListing> = {}): HostListing =>
     floorNumber: null, energyRating: null,
     address: "Calle", postcode: "50194", cadastralRef: null,
     lat: 41.65, lng: -0.89,
-    area: null, copy: null, copyEnApproved: false, details: null, beds: null,
+    area: null, description: null, descriptionEnApproved: false, details: null, beds: null,
     amenities: [], photos: [],
     petsAllowed: false, smokingAllowed: false,
     couplesAllowed: false, selfCheckin: false,
@@ -115,20 +115,20 @@ describe("changedSections – description document", () => {
       content: [{ content: [{ text: "Hola", type: "text" }], type: "paragraph" }],
       type: "doc",
     };
-    const a = base({ copy: { es: built, en: null } });
-    const b = base({ copy: { es: roundTripped, en: null } });
+    const a = base({ description: { es: built, en: null } });
+    const b = base({ description: { es: roundTripped, en: null } });
     expect(changedSections(a, b)).toEqual([]);
   });
 
   it("still flags a document whose text actually changed", () => {
     const a = base({
-      copy: {
+      description: {
         es: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Hola" }] }] },
         en: null,
       },
     });
     const b = base({
-      copy: {
+      description: {
         es: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Adiós" }] }] },
         en: null,
       },
@@ -149,7 +149,7 @@ describe("changedSections – photos", () => {
 });
 
 // DescriptionFields.tsx used to stage an upload's photo in a ref and fold it
-// into whichever setCopyDoc call happened next — but "next" was never
+// into whichever setDescriptionDoc call happened next — but "next" was never
 // guaranteed (ProseMirror's restricted heading/listItem content model can
 // make a chip insert a no-op, so no onUpdate ever fires), so the ref could
 // sit stale across arbitrarily many unrelated edits before finally flushing
@@ -180,14 +180,14 @@ describe("applyDescriptionEdit", () => {
     expect(next.photos[0].hiddenFromGallery).toBe(true);
   });
 
-  it('"copyChanged" sets one locale and leaves the other untouched', () => {
-    const l = base({ copy: { es: paragraphDoc("Hola"), en: null } });
+  it('"descriptionChanged" sets one locale and leaves the other untouched', () => {
+    const l = base({ description: { es: paragraphDoc("Hola"), en: null } });
     const next = applyDescriptionEdit(l, {
-      type: "copyChanged",
+      type: "descriptionChanged",
       locale: "en",
       doc: paragraphDoc("Hello"),
     });
-    expect(next.copy).toEqual({ es: paragraphDoc("Hola"), en: paragraphDoc("Hello") });
+    expect(next.description).toEqual({ es: paragraphDoc("Hola"), en: paragraphDoc("Hello") });
   });
 
   // THE sequence round 1's ref-staging design got wrong: an upload lands,
@@ -206,9 +206,9 @@ describe("applyDescriptionEdit", () => {
     });
     // The unrelated edit.
     l = { ...l, photos: l.photos.filter((p) => p.url !== "a.webp") };
-    l = applyDescriptionEdit(l, { type: "copyChanged", locale: "es", doc: paragraphDoc("Hola") });
+    l = applyDescriptionEdit(l, { type: "descriptionChanged", locale: "es", doc: paragraphDoc("Hola") });
     expect(l.photos.map((p) => p.url)).toEqual(["b.webp"]);
-    expect(l.copy?.es).toEqual(paragraphDoc("Hola"));
+    expect(l.description?.es).toEqual(paragraphDoc("Hola"));
   });
 });
 
@@ -319,33 +319,33 @@ describe("richTextError", () => {
   });
 
   it("is null for an ordinary paragraph", () => {
-    const l = base({ copy: { es: paragraphDoc("Living here is quiet."), en: null } });
+    const l = base({ description: { es: paragraphDoc("Living here is quiet."), en: null } });
     expect(richTextError(l)).toBeNull();
   });
 
   it("flags a photo reference the listing's photos do not have", () => {
-    const l = base({ copy: { es: photoRef("missing.jpg"), en: null } });
-    expect(richTextError(l)).toBe("copy_photo_unknown");
+    const l = base({ description: { es: photoRef("missing.jpg"), en: null } });
+    expect(richTextError(l)).toBe("description_photo_unknown");
   });
 
   it("accepts a photo reference that matches one of the listing's own photos", () => {
-    const l = base({ photos: [photo({ url: "a.webp" })], copy: { es: photoRef("a.webp"), en: null } });
+    const l = base({ photos: [photo({ url: "a.webp" })], description: { es: photoRef("a.webp"), en: null } });
     expect(richTextError(l)).toBeNull();
   });
 
   it("flags a place reference the listing's nearby entries do not have", () => {
-    const l = base({ copy: { es: placeRef("nope"), en: null } });
-    expect(richTextError(l)).toBe("copy_place_unknown");
+    const l = base({ description: { es: placeRef("nope"), en: null } });
+    expect(richTextError(l)).toBe("description_place_unknown");
   });
 
   it("accepts a place reference that matches one of the listing's own nearby entries", () => {
-    const l = base({ nearby: [entry({ id: "e1" })], copy: { es: placeRef("e1"), en: null } });
+    const l = base({ nearby: [entry({ id: "e1" })], description: { es: placeRef("e1"), en: null } });
     expect(richTextError(l)).toBeNull();
   });
 
   it("checks both languages, Es short-circuiting En exactly like the server", () => {
-    const l = base({ copy: { es: null, en: photoRef("missing.jpg") } });
-    expect(richTextError(l)).toBe("copy_photo_unknown");
+    const l = base({ description: { es: null, en: photoRef("missing.jpg") } });
+    expect(richTextError(l)).toBe("description_photo_unknown");
   });
 });
 
@@ -357,10 +357,10 @@ describe("richTextError", () => {
 // a fresh round of metered routing calls on every save for the rest of the
 // session, with nothing visibly wrong to show for it.
 describe("adoptNearbyIds", () => {
-  const withPlaces = (ids: string[], copy: RichNode | null = null): HostListing =>
+  const withPlaces = (ids: string[], description: RichNode | null = null): HostListing =>
     base({
       nearby: ids.map((id) => entry({ id })),
-      copy: copy ? { es: copy, en: null } : null,
+      description: description ? { es: description, en: null } : null,
     });
 
   const mentions = (...entryIds: string[]): RichNode => ({
@@ -390,7 +390,7 @@ describe("adoptNearbyIds", () => {
       withPlaces(["local-1"]),
       withPlaces(["real-1"]),
     );
-    expect(referencedEntryIds(out.copy!.es!)).toEqual(new Set(["real-1"]));
+    expect(referencedEntryIds(out.description!.es!)).toEqual(new Set(["real-1"]));
   });
 
   it("leaves ids the server already knew alone", () => {

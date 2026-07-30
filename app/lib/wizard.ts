@@ -63,8 +63,8 @@ export function blankListing(): HostListing {
     lat: 0,
     lng: 0,
     area: null,
-    copy: null,
-    copyEnApproved: false,
+    description: null,
+    descriptionEnApproved: false,
     details: null,
     beds: null,
     guests: 0,
@@ -145,7 +145,7 @@ export function stepBlockers(
   // holding only a photo chip, is not a written description, so this counts
   // WORDS (`isEmptyDoc`/`textLength`), matching `Both(BilingualDoc?)` on the
   // server (`api/Models/HostModels.cs`) and `bothLanguagesDoc` in lib/listing.
-  if (step === "description" && isEmptyDoc(listing.copy?.es)) out.push("copyEs");
+  if (step === "description" && isEmptyDoc(listing.description?.es)) out.push("descriptionEs");
 
   if (step === "pricing" && pricing.priceNumber <= 0) out.push("price");
 
@@ -169,7 +169,7 @@ export function stepBlockers(
 export type SubmitBlocker =
   | Exclude<Blocker, { key: "missingTranslation"; count: number }>
   | { key: "untransArea" }
-  | { key: "untransCopy" }
+  | { key: "untransDescription" }
   | { key: "untransDetails" }
   | { key: "untransBeds" }
   | { key: "noName" }
@@ -196,7 +196,7 @@ export function submitBlockers(
     out.push({
       key: (`untrans${field[0].toUpperCase()}${field.slice(1)}`) as
         | "untransArea"
-        | "untransCopy"
+        | "untransDescription"
         | "untransDetails"
         | "untransBeds",
     });
@@ -237,7 +237,7 @@ export const STEP_OF: Record<SubmitBlocker["key"], StepKey> = {
   noName: "basics",
   noCapacity: "basics",
   noPhotos: "photos",
-  untransCopy: "description",
+  untransDescription: "description",
   untransDetails: "description",
   untransBeds: "description",
   enNotApproved: "description",

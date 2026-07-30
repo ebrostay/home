@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Familjen_Grotesk, Onest, Spline_Sans_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
@@ -62,11 +61,22 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        {/* next/script keeps this out of the React-rendered tree, so client
-            navigations don't re-render a raw <script> (Next 16 error). */}
-        <Script id="theme-bootstrap" strategy="beforeInteractive">
-          {themeBootstrap}
-        </Script>
+        {/* A plain inline <script>, on purpose. `next/script` with
+            `beforeInteractive` does NOT emit one: it emits a
+            `(self.__next_s=self.__next_s||[]).push([...])` queue entry that
+            Next's client runtime drains, and that runtime arrives in an async
+            chunk. "Before interactive" means before hydration, not before
+            paint — so between 2026-07-2x and now every page painted with no
+            `data-theme` at all (light, per globals.css) and then repainted
+            dark once the chunks landed. That is the flash the script exists to
+            prevent, and it was worst on exactly the visitors it matters most
+            for: a cold cache or a slow phone widens the gap.
+
+            This runs synchronously, before the body is parsed, so the theme is
+            on <html> for the first pixel. React logs a dev-only warning about
+            an inline script in the tree (allowlisted in e2e/pages.spec.ts, and
+            absent from the production build) — that is the whole price. */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body
         /* dvh, not vh: on mobile browsers 100vh is the height with the toolbar

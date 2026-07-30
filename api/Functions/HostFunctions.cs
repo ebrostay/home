@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Ebrostay.Api.Functions;
 
@@ -49,9 +50,24 @@ public class HostFunctions(
         {
             var query = new QueryDefinition("SELECT * FROM c WHERE c.hostId = @hostId")
                 .WithParameter("@hostId", profile!.Id);
-            using var feed = Properties.GetItemQueryIterator<PropertyDoc>(query);
+            // Fetched as JObject and converted document-by-document
+            // (`PropertyDocParser.TryParse`), same as `PropertiesList` — NOT
+            // handed straight to `GetItemQueryIterator<PropertyDoc>`, which
+            // deserializes an entire page in one `ReadNextAsync` call. An
+            // owner with eight listings and one stale legacy document
+            // (ADR-032's plain-string `copy`) would otherwise get a blank
+            // manage page instead of seven listings and a logged gap: the
+            // one document this owner cannot open must not cost them every
+            // other one they own.
+            using var feed = Properties.GetItemQueryIterator<JObject>(query);
             while (feed.HasMoreResults)
-                docs.AddRange(await feed.ReadNextAsync());
+            {
+                foreach (var raw in await feed.ReadNextAsync())
+                {
+                    var doc = PropertyDocParser.TryParse(raw, logger, "host properties list");
+                    if (doc is not null) docs.Add(doc);
+                }
+            }
         }
         catch (CosmosException ex)
         {

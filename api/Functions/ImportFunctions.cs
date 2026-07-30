@@ -207,21 +207,39 @@ public class ImportFunctions(
         var (job, etag, readError) = await ReadAsync(jobId, ct);
         if (readError is not null) return readError;
         if (job!.OwnerId != profile!.Id) return new NotFoundResult();
-        if (ImportStage.IsTerminal(job.Stage)) return new NoContentResult();
 
-        var outcome = await ReplaceAsync(job with
+        var cancelled = ImportDecision.Cancel(job, DateTimeOffset.UtcNow);
+        if (cancelled is null) return new NoContentResult(); // already terminal
+
+        var outcome = await ReplaceAsync(cancelled, etag!, ct);
+        if (outcome == ReplaceOutcome.Ok) return new NoContentResult();
+        if (outcome == ReplaceOutcome.Error)
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+
+        // ReplaceOutcome.Stale: some other write landed first, and it is not
+        // safe to assume it was a terminal one — a concurrent progress
+        // report (e.g. "reading" -> "matching") is just as capable of
+        // winning this race, and answering 204 in that case would tell the
+        // owner "cancelled" while the job keeps running. The owner pressed
+        // Stop, so this retries the cancel once against a fresh read rather
+        // than reporting on whatever the other write did.
+        var (retryJob, retryEtag, retryError) = await ReadAsync(jobId, ct);
+        if (retryError is not null) return retryError;
+
+        var retryCancel = ImportDecision.Cancel(retryJob!, DateTimeOffset.UtcNow);
+        if (retryCancel is null) return new NoContentResult(); // terminal on its own by now
+
+        return await ReplaceAsync(retryCancel, retryEtag!, ct) switch
         {
-            Stage = ImportStage.Cancelled,
-            UpdatedAt = DateTimeOffset.UtcNow.ToString("o"),
-        }, etag!, ct);
-
-        // A stale write here means some other write (the pipeline completing,
-        // or another cancel) landed first. The job is terminal, or about to
-        // be, either way — and a DELETE that finds its target already gone is
-        // still a success.
-        return outcome == ReplaceOutcome.Error
-            ? new StatusCodeResult(StatusCodes.Status502BadGateway)
-            : new NoContentResult();
+            ReplaceOutcome.Ok => new NoContentResult(),
+            ReplaceOutcome.Error => new StatusCodeResult(StatusCodes.Status502BadGateway),
+            // Lost the retry too: the job is still non-terminal (a genuinely
+            // finished job would have made ImportDecision.Cancel return null
+            // above), so this is NOT the "job_finished" case Callback uses —
+            // it is two lost races in a row. A 409 says so honestly instead
+            // of a 204 claiming a cancellation that did not happen.
+            _ => new ConflictObjectResult(new { error = "cancel_conflict" }),
+        };
     }
 
     // -----------------------------------------------------------------------

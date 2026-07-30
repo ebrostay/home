@@ -57,6 +57,24 @@ public static class ImportDecision
         return new CallbackResult(CallbackOutcome.Applied, updated);
     }
 
+    /// What a cancel does to a job: a terminal job is left alone — there is
+    /// nothing left to stop, and re-terminating it would be a second write
+    /// nobody asked for — a running job moves to Cancelled. Null means
+    /// "nothing to write." `ImportFunctions.Cancel` calls this twice when its
+    /// first write loses a race (once against the original read, once more
+    /// against a fresh one), so this takes no state beyond the job itself: it
+    /// does not know or care which attempt it is.
+    public static ImportJobDoc? Cancel(ImportJobDoc job, DateTimeOffset now)
+    {
+        if (ImportStage.IsTerminal(job.Stage)) return null;
+
+        return job with
+        {
+            Stage = ImportStage.Cancelled,
+            UpdatedAt = now.ToString("o"),
+        };
+    }
+
     /// THE REAPER. A running job found past its deadline fails right here —
     /// the reason this feature needs no timer trigger, which SWA managed
     /// functions cannot host anyway. Null means "leave it alone": already

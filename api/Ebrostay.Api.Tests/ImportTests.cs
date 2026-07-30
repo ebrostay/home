@@ -362,6 +362,42 @@ public class ImportDecisionTests
         Assert.Equal("timeout", reaped.Error!.Code);
     }
 
+    // --- Cancel ----------------------------------------------------------
+    //
+    // Task 4 re-review, Important finding: ImportFunctions.Cancel used to
+    // answer 204 for ANY stale write, including one that lost to a
+    // concurrent non-terminal progress update — which would tell the owner
+    // "cancelled" while the job kept running. The fix retries the cancel
+    // once against a fresh read; these tests pin down what each half of
+    // that retry decides.
+
+    [Fact]
+    public void CancelLeavesATerminalJobAlone() =>
+        Assert.Null(ImportDecision.Cancel(Job(ImportStage.Done), Now));
+
+    [Fact]
+    public void CancelLeavesACancelledJobAlone() =>
+        // Cancelling twice must not be a second write.
+        Assert.Null(ImportDecision.Cancel(Job(ImportStage.Cancelled), Now));
+
+    [Fact]
+    public void CancelMovesARunningJobToCancelled()
+    {
+        var cancelled = ImportDecision.Cancel(Job(ImportStage.Reading), Now);
+
+        Assert.NotNull(cancelled);
+        Assert.Equal(ImportStage.Cancelled, cancelled!.Stage);
+        Assert.Equal(Now.ToString("o"), cancelled.UpdatedAt);
+    }
+
+    // ImportFunctions.Cancel calls this SAME function again, against a fresh
+    // read, when its first write loses a race — so "the job is terminal by
+    // the time the retry looks" and "the job was already terminal on the
+    // first read" (CancelLeavesATerminalJobAlone, above) are the identical
+    // case from Cancel()'s point of view: it takes no state beyond the job
+    // it is handed. That equivalence is what lets ImportFunctions retry
+    // without a separate "is it done now" branch of its own.
+
     // --- ExceedsRunningCap -------------------------------------------------
 
     [Theory]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { SECTIONS, attentionOf, blockersOf, changedSections } from "./listing";
+import { SECTIONS, applyDescriptionEdit, attentionOf, blockersOf, changedSections } from "./listing";
 import type { HostListing, HostNearbyEntry, HostPhoto } from "./api";
-import type { RichNode } from "./rich-text";
+import { paragraphDoc, type RichNode } from "./rich-text";
 
 // A listing with only the fields the diff reads. Cast once here so each test
 // stays about the rule under test rather than about fixture plumbing.
@@ -20,6 +20,16 @@ const base = (over: Partial<HostListing> = {}): HostListing =>
     nearby: [],
     ...over,
   }) as HostListing;
+
+const photo = (over: Partial<HostPhoto> = {}): HostPhoto => ({
+  url: "a.webp",
+  cardUrl: null,
+  detailUrl: null,
+  isFloorplan: false,
+  sortOrder: 0,
+  hiddenFromGallery: false,
+  ...over,
+});
 
 // Mirrors HostNearbyEntry exactly — osmId and measuredAt are REQUIRED there,
 // matching the C#, so a fixture omitting them will not typecheck.
@@ -119,16 +129,6 @@ describe("changedSections – description document", () => {
 });
 
 describe("changedSections – photos", () => {
-  const photo = (over: Partial<HostPhoto> = {}): HostPhoto => ({
-    url: "a.webp",
-    cardUrl: null,
-    detailUrl: null,
-    isFloorplan: false,
-    sortOrder: 0,
-    hiddenFromGallery: false,
-    ...over,
-  });
-
   // `hiddenFromGallery` is owner intent, like `isFloorplan` — without it in
   // the differ, toggling the gallery checkbox never marks the section dirty
   // and the toggle is silently dropped on save.
@@ -136,6 +136,70 @@ describe("changedSections – photos", () => {
     const a = base({ photos: [photo({ hiddenFromGallery: true })] });
     const b = base({ photos: [photo({ hiddenFromGallery: false })] });
     expect(changedSections(a, b)).toEqual(["photos"]);
+  });
+});
+
+// DescriptionFields.tsx used to stage an upload's photo in a ref and fold it
+// into whichever setCopyDoc call happened next — but "next" was never
+// guaranteed (ProseMirror's restricted heading/listItem content model can
+// make a chip insert a no-op, so no onUpdate ever fires), so the ref could
+// sit stale across arbitrarily many unrelated edits before finally flushing
+// a snapshot that had fallen out of date. `applyDescriptionEdit` replaces
+// that with a pure, immediate reducer — no staging, so these are the tests
+// that would have caught the staging bug before it shipped.
+describe("applyDescriptionEdit", () => {
+  it('"uploaded" appends a photo not already on the listing', () => {
+    const l = base({ photos: [photo({ url: "a.webp" })] });
+    const next = applyDescriptionEdit(l, {
+      type: "uploaded",
+      photo: photo({ url: "b.webp", hiddenFromGallery: true }),
+    });
+    expect(next.photos.map((p) => p.url)).toEqual(["a.webp", "b.webp"]);
+    expect(next.photos[1].hiddenFromGallery).toBe(true);
+  });
+
+  it('"uploaded" upserts by url when the photo is already present', () => {
+    // Mirrors the page's own onUploaded/photosUploaded having already
+    // appended the raw (unflagged) photo before this edit runs — the whole
+    // point of the upsert is that this ordering does not matter.
+    const l = base({ photos: [photo({ url: "b.webp", hiddenFromGallery: false })] });
+    const next = applyDescriptionEdit(l, {
+      type: "uploaded",
+      photo: photo({ url: "b.webp", hiddenFromGallery: true }),
+    });
+    expect(next.photos).toHaveLength(1);
+    expect(next.photos[0].hiddenFromGallery).toBe(true);
+  });
+
+  it('"copyChanged" sets one locale and leaves the other untouched', () => {
+    const l = base({ copy: { es: paragraphDoc("Hola"), en: null } });
+    const next = applyDescriptionEdit(l, {
+      type: "copyChanged",
+      locale: "en",
+      doc: paragraphDoc("Hello"),
+    });
+    expect(next.copy).toEqual({ es: paragraphDoc("Hola"), en: paragraphDoc("Hello") });
+  });
+
+  // THE sequence round 1's ref-staging design got wrong: an upload lands,
+  // then something ELSE edits `photos` (e.g. PhotoManager removing a
+  // different photo elsewhere on the page) before the next copy change
+  // arrives. A reducer that "remembers" the photo list from upload time and
+  // reapplies it later would silently discard the edit made in between —
+  // and would even resurrect a photo removed since. Because this reducer
+  // touches only the field named by each edit and never remembers anything
+  // between calls, neither is possible.
+  it("does not clobber an unrelated photo edit made between an upload and the next copy change", () => {
+    let l = base({ photos: [photo({ url: "a.webp" })] });
+    l = applyDescriptionEdit(l, {
+      type: "uploaded",
+      photo: photo({ url: "b.webp", hiddenFromGallery: true }),
+    });
+    // The unrelated edit.
+    l = { ...l, photos: l.photos.filter((p) => p.url !== "a.webp") };
+    l = applyDescriptionEdit(l, { type: "copyChanged", locale: "es", doc: paragraphDoc("Hola") });
+    expect(l.photos.map((p) => p.url)).toEqual(["b.webp"]);
+    expect(l.copy?.es).toEqual(paragraphDoc("Hola"));
   });
 });
 

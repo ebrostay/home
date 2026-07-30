@@ -21,7 +21,16 @@
 // writes that need a real id, and because "saved as you go" has to be true
 // before an owner has typed enough to mind losing it.
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { Info } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -590,7 +599,12 @@ function Step({
 }: {
   step: StepKey;
   listing: HostListing;
-  setListing: (value: HostListing) => void;
+  // A real Dispatch, not a plain "(value) => void": DescriptionFields needs
+  // to call it with an updater function (see its own onChange comment for
+  // why), and `listing`'s own useState<HostListing> setter is exactly that
+  // already — this widens the prop type to match what is really passed in,
+  // rather than narrowing what DescriptionFields can rely on.
+  setListing: Dispatch<SetStateAction<HostListing>>;
   pricing: HostPricing;
   setPricing: (value: HostPricing) => void;
   blocks: HostRange[];

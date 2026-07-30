@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { uploadHostPhoto, type Bilingual, type HostListing, type HostPhoto } from "@/lib/api";
 import { isEmptyDoc, type RichNode } from "@/lib/rich-text";
-import { LIMITS } from "@/lib/listing";
+import { LIMITS, applyDescriptionEdit } from "@/lib/listing";
 import { shrink } from "@/lib/photos";
 import { TextAreaField, TextField } from "./TextField";
 import { RichTextEditor, type RichTextEditorProps } from "./RichTextEditor";
@@ -35,7 +35,19 @@ export function DescriptionFields({
   onUploaded,
 }: {
   value: HostListing;
-  onChange: (value: HostListing) => void;
+  // A real `useState` setter, not a plain `(value) => void` — both call
+  // sites already pass one (`setListing`). Needed because Tiptap's onUpdate
+  // (setCopyDoc) and upload() can both fire an onChange within the same
+  // React batch (PhotoPicker calls onPick — which inserts the chip,
+  // synchronously firing onUpdate — right after onUpload resolves, with no
+  // further `await` in between). A PLAIN value call closes over whatever
+  // `value` was at render time; two of them in the same batch mean the
+  // second silently discards whatever the first changed. A FUNCTIONAL call
+  // reads the latest queued state instead, so order stops mattering — see
+  // `applyDescriptionEdit` in lib/listing.ts, which is what actually merges
+  // each edit, and its own comment for why staging in a ref (round 1's fix)
+  // was not enough.
+  onChange: Dispatch<SetStateAction<HostListing>>;
   propertyId: string;
   /** The server's photo list right after an upload — mirrors `PhotoManager`'s
    *  prop of the same name, and exists for the same reason: the page holds a
@@ -48,48 +60,19 @@ export function DescriptionFields({
 }) {
   const t = useTranslations("host.edit.description");
 
-  const setBi = (key: "details" | "beds", locale: "es" | "en", next: string) => {
-    const current = value[key];
-    const merged: Bilingual = { es: current?.es ?? null, en: current?.en ?? null };
-    merged[locale] = next.trim() === "" ? null : next;
-    onChange({
-      ...value,
-      [key]: merged.es === null && merged.en === null ? null : merged,
+  const setBi = (key: "details" | "beds", locale: "es" | "en", next: string) =>
+    onChange((prev) => {
+      const current = prev[key];
+      const merged: Bilingual = { es: current?.es ?? null, en: current?.en ?? null };
+      merged[locale] = next.trim() === "" ? null : next;
+      return { ...prev, [key]: merged.es === null && merged.en === null ? null : merged };
     });
-  };
-
-  // Tiptap's onUpdate (which calls setCopyDoc, below) and upload() (further
-  // below) can BOTH end up calling `onChange` — and `onChange` here IS the
-  // page's `setListing`, a plain (non-functional) state setter. PhotoPicker
-  // calls onPick — which inserts the chip, synchronously firing onUpdate —
-  // right after onUpload resolves, with no further `await` in between, so
-  // both onChange calls land in the SAME React batch, both closing over the
-  // SAME pre-batch `value`. Neither is a functional updater, so the SECOND
-  // call's spread of that stale `value` overwrites everything the FIRST one
-  // changed: without this, a just-uploaded photo would vanish from `photos`
-  // the instant its chip lands in the text (upload's own onChange, fired
-  // first, gets clobbered by setCopyDoc's), and the next Save would be
-  // rejected server-side with `copy_photo_unknown` (HostWrites.cs) — with
-  // nothing on screen to say why.
-  //
-  // Fixed by merging into ONE onChange call rather than racing two: upload()
-  // stages the working list's new photo here (with the owner's gallery
-  // choice already applied) instead of writing it itself, and setCopyDoc —
-  // always the very next write, since PhotoPicker calls onPick unconditionally
-  // right after a successful upload — folds it into its own single call.
-  const pendingPhotosRef = useRef<HostPhoto[] | null>(null);
 
   // `copy` holds documents, not strings, so it gets its own setter rather
-  // than sharing `setBi`.
-  const setCopyDoc = (locale: "es" | "en", next: RichNode) => {
-    const photos = pendingPhotosRef.current;
-    pendingPhotosRef.current = null;
-    onChange({
-      ...value,
-      ...(photos ? { photos } : {}),
-      copy: { es: value.copy?.es ?? null, en: value.copy?.en ?? null, [locale]: next },
-    });
-  };
+  // than sharing `setBi`. `applyDescriptionEdit` is the pure merge logic
+  // (lib/listing.ts, unit tested there); this just names the edit.
+  const setCopyDoc = (locale: "es" | "en", next: RichNode) =>
+    onChange((prev) => applyDescriptionEdit(prev, { type: "copyChanged", locale, doc: next }));
 
   const approved = value.copyEnApproved;
   // Presence is not enough: a document holding only a photo chip has no
@@ -114,17 +97,27 @@ export function DescriptionFields({
     // and the API re-encodes regardless (lib/photos.ts).
     const uploaded = await uploadHostPhoto(propertyId, await shrink(file), false);
     const added = uploaded[uploaded.length - 1];
+    // Validated before anything touches state: an empty response must fail
+    // into the picker's own error handling, not stage a url-less photo.
+    if (!added) throw new Error("upload returned no photo");
     // The SAVED baseline first, exactly like PhotoManager: an upload applies
     // live, so the server already has this photo whether or not the working
-    // listing is ever saved again.
+    // listing is ever saved again. A SEPARATE write (the page's own
+    // onUploaded/photosUploaded, to the same underlying state) — called
+    // before the functional update below so that even where it is not
+    // itself functional (host/edit/page.tsx), the upsert that follows still
+    // lands last and wins.
     onUploaded(uploaded);
     // "Also show in the gallery" IS owner intent, though — like isFloorplan,
-    // it stays in the diff and only takes effect on Save. Staged rather than
-    // written directly: see the comment on pendingPhotosRef/setCopyDoc above.
-    pendingPhotosRef.current = [
-      ...value.photos,
-      { ...added, hiddenFromGallery: !alsoInGallery },
-    ];
+    // it stays in the diff and only takes effect on Save. Applied via the
+    // shared reducer's upsert, so it is correct whether or not onUploaded's
+    // own append (above) has been reflected in `prev` yet.
+    onChange((prev) =>
+      applyDescriptionEdit(prev, {
+        type: "uploaded",
+        photo: { ...added, hiddenFromGallery: !alsoInGallery },
+      }),
+    );
     return added.url;
   };
 
@@ -183,7 +176,7 @@ export function DescriptionFields({
           // blocker without anyone having written a word.
           disabled={!hasEnglish}
           aria-pressed={approved}
-          onClick={() => onChange({ ...value, copyEnApproved: !approved })}
+          onClick={() => onChange((prev) => ({ ...prev, copyEnApproved: !prev.copyEnApproved }))}
           className={`flex w-fit items-center gap-2 rounded-(--radius-control) px-3.5 py-2 text-[0.78125rem] font-semibold transition-[filter,background-color] duration-(--dur-standard) disabled:cursor-not-allowed disabled:opacity-45 ${
             approved
               ? "bg-surface-2 text-muted hover:brightness-95"

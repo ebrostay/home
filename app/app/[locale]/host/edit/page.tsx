@@ -13,7 +13,15 @@
 // the count, the review note, whether Save is live. Six section-level dirty
 // flags would be six chances for the rail and the chips to disagree.
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { Info } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -163,6 +171,16 @@ function EditContent() {
   }
 
   const property = detail.property;
+
+  // `listing` is `HostListing` here — never `null` past the guard above —
+  // but `setListing`'s own type still allows `null`, since that is
+  // `useState`'s default before the first load. DescriptionFields needs a
+  // real `Dispatch<SetStateAction<HostListing>>` (its own onChange comment
+  // explains why); `setListing` never actually receives `null` after mount
+  // (grep confirms every call site here passes a real listing), so this
+  // narrows the TYPE to match a runtime guarantee flow analysis cannot see
+  // through two separate bindings.
+  const setLoadedListing = setListing as Dispatch<SetStateAction<HostListing>>;
 
   const save = async () => {
     setSaveState("saving");
@@ -438,7 +456,7 @@ function EditContent() {
           >
             <DescriptionFields
               value={listing}
-              onChange={setListing}
+              onChange={setLoadedListing}
               propertyId={property.id}
               onUploaded={photosUploaded}
             />

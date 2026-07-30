@@ -1,6 +1,6 @@
-import type { Bilingual, HostListing } from "@/lib/api";
+import type { Bilingual, HostListing, HostPhoto } from "@/lib/api";
 import { AMENITY_KEYS } from "@/lib/amenity-icons";
-import { canonical, isEmptyDoc, type BilingualDoc } from "@/lib/rich-text";
+import { canonical, isEmptyDoc, type BilingualDoc, type RichNode } from "@/lib/rich-text";
 
 // ============================================================
 // The diff IS the page (ADR-027).
@@ -245,6 +245,56 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
   // without opening the section.
   if (nearbyTypeEnMissing(l) || nearbyNeedsCheck(l)) out.add("nearby");
   return out;
+}
+
+// ------------------------------------------------------------
+// Description editor edits — a small, pure two-action state machine.
+//
+// DescriptionFields.tsx used to STAGE an upload's photo in a ref and fold it
+// into whatever `setCopyDoc` call happened next. That "next" call is not
+// guaranteed: ProseMirror's restricted heading/listItem content models
+// (RichTextEditor.tsx) can make an insert a no-op — no document change, no
+// `onUpdate`, no flush — so the staged photo would sit there until some
+// LATER, entirely unrelated edit (any keystroke) flushed a now-stale
+// snapshot, silently dropping the photo and anything edited in between.
+//
+// Fixed by applying each edit the instant it is known, via a functional
+// `onChange`, with THIS reducer as the actual merge logic — pure, so it can
+// be unit tested directly rather than trusted by inspection.
+export type DescriptionEdit =
+  | { type: "uploaded"; photo: HostPhoto }
+  | { type: "copyChanged"; locale: "es" | "en"; doc: RichNode };
+
+/** Applies one description-editor edit to the working listing.
+ *
+ * `"uploaded"` is an UPSERT by `url`, not a plain append: the photo may
+ * already be in `listing.photos` — the page's own `onUploaded` prop (mirrors
+ * `PhotoManager`'s) is what appends it there AND updates the SAVED baseline,
+ * a concern this reducer does not touch — or it may not be yet, depending on
+ * an ordering this function does not need to know or control. Either way the
+ * result is the same, which is what removes the ordering dependency the
+ * ref-staging approach had. */
+export function applyDescriptionEdit(listing: HostListing, edit: DescriptionEdit): HostListing {
+  switch (edit.type) {
+    case "uploaded": {
+      const exists = listing.photos.some((p) => p.url === edit.photo.url);
+      return {
+        ...listing,
+        photos: exists
+          ? listing.photos.map((p) => (p.url === edit.photo.url ? edit.photo : p))
+          : [...listing.photos, edit.photo],
+      };
+    }
+    case "copyChanged":
+      return {
+        ...listing,
+        copy: {
+          es: listing.copy?.es ?? null,
+          en: listing.copy?.en ?? null,
+          [edit.locale]: edit.doc,
+        },
+      };
+  }
 }
 
 // ------------------------------------------------------------

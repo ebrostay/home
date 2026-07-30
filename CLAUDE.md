@@ -19,6 +19,13 @@ and is the functional reference here.
 
 - `cd app && npm run dev` — frontend dev server (pages under `/es` … `/en`)
 - `cd app && npm run build` — static export to `app/out` (must stay green)
+- `cd app && npm test` — pure-logic unit tests (vitest, `app/lib` only)
+- `cd app && npm run test:e2e` — opens every page in `es` and `en` in a real
+  browser and fails on an uncaught exception or console error (Playwright,
+  `app/e2e`). Hermetic: `/api/*` is served from recorded fixtures, so nothing
+  else needs to be running. Add a page, add a case — a guard test enumerates
+  the routes and fails if one is missing.
+- `~/.dotnet/dotnet test api/Ebrostay.Api.Tests` — API model/validation tests
 - `~/.dotnet/dotnet build api` — build the API (or `cd api && func start`)
 - `swa start app/out --api-location api` — full local emulation incl. auth
 

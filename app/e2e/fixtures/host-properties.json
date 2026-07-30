@@ -1,0 +1,418 @@
+[
+  {
+    "id": "01d061dcb79c400cb83dbcfc9e9390ed",
+    "status": "pending_review",
+    "reviewNote": null,
+    "reference": null,
+    "name": "Test 1",
+    "address": "C. de Elvira de Hidalgo, 10",
+    "area": {
+      "es": "Centro",
+      "en": "Centro"
+    },
+    "bedrooms": 7,
+    "bathrooms": 4,
+    "sizeM2": 379,
+    "priceNumber": 1234,
+    "coverUrl": "http://127.0.0.1:10000/devstoreaccount1/property-photos/01d061dcb79c400cb83dbcfc9e9390ed/f1719775fde645969d804bfc377ef0c0-full.webp",
+    "photoCount": 5,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": null,
+    "updatedAt": "2026-07-29T21:00:44.2752870+00:00",
+    "availability": [
+      {
+        "start": "2026-08-07",
+        "end": "2026-08-09",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "18369dbfbb514b549be94d020f8bfeee",
+    "status": "draft",
+    "reviewNote": null,
+    "reference": null,
+    "name": "",
+    "address": "Calle Pedro II el Catolico 20",
+    "area": {
+      "es": "Delicias",
+      "en": "Delicias"
+    },
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "sizeM2": 0,
+    "priceNumber": 0,
+    "coverUrl": null,
+    "photoCount": 0,
+    "sectionsDone": 2,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": null,
+    "updatedAt": "2026-07-29T20:54:07.2028130+00:00",
+    "availability": []
+  },
+  {
+    "id": "a51784d54167411bab2d16bd64fa7e8a",
+    "status": "pending_review",
+    "reviewNote": null,
+    "reference": null,
+    "name": "Pedro II el Católico 20 - 3 DCHA",
+    "address": "Calle Pedro II el Catolico 20",
+    "area": {
+      "es": "Delicias",
+      "en": "Delicias"
+    },
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "sizeM2": 72,
+    "priceNumber": 1250,
+    "coverUrl": "http://127.0.0.1:10000/devstoreaccount1/property-photos/a51784d54167411bab2d16bd64fa7e8a/3ab65bac16e7480ea3193b83d7c07161-full.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": null,
+    "updatedAt": "2026-07-29T18:39:08.4450910+00:00",
+    "availability": []
+  },
+  {
+    "id": "6f28c902e7b84d5eb54dfab90dbb34aa",
+    "status": "draft",
+    "reviewNote": null,
+    "reference": null,
+    "name": "",
+    "address": null,
+    "area": null,
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "sizeM2": 0,
+    "priceNumber": 0,
+    "coverUrl": null,
+    "photoCount": 0,
+    "sectionsDone": 0,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": null,
+    "updatedAt": "2026-07-29T18:32:16.0781180+00:00",
+    "availability": []
+  },
+  {
+    "id": "pedro1",
+    "status": "published",
+    "reviewNote": null,
+    "reference": "EBR-P-0101",
+    "name": "Pedro II el Católico 3 - 1 IZQ",
+    "address": "Pedro II el Católico 3, Zaragoza",
+    "area": {
+      "es": "Universidad - Pedro II el Católico",
+      "en": "University - Pedro II el Católico"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 80,
+    "priceNumber": 950,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/zaragoza-hero.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-22T12:00:00Z",
+    "availability": [
+      {
+        "start": "2026-06-20",
+        "end": "2026-06-24",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-07-04",
+        "end": "2026-07-10",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-08-12",
+        "end": "2026-08-18",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "pedro2",
+    "status": "published",
+    "reviewNote": null,
+    "reference": "EBR-P-0102",
+    "name": "Pedro II el Católico 3 - 2 IZQ",
+    "address": "Pedro II el Católico 3, Zaragoza",
+    "area": {
+      "es": "Universidad - Pedro II el Católico",
+      "en": "University - Pedro II el Católico"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 82,
+    "priceNumber": 980,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro2/zaragoza-hero.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": "2026-07-10",
+    "updatedAt": "2026-07-22T12:00:00Z",
+    "availability": [
+      {
+        "start": "2026-06-27",
+        "end": "2026-07-03",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-07-18",
+        "end": "2026-07-22",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-08-10",
+        "end": "2026-08-14",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "movera0",
+    "status": "published",
+    "reviewNote": null,
+    "reference": "EBR-P-0201",
+    "name": "Movera 7 - Segunda Planta",
+    "address": "Calle Movera 7, Zaragoza",
+    "area": {
+      "es": "Movera",
+      "en": "Movera"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 90,
+    "priceNumber": 1350,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/movera0/movera-second-hero.jpg",
+    "photoCount": 5,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-22T12:00:00Z",
+    "availability": [
+      {
+        "start": "2026-07-26",
+        "end": "2026-08-02",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "movera1",
+    "status": "published",
+    "reviewNote": null,
+    "reference": "EBR-P-0202",
+    "name": "Movera 7 - Primera Planta",
+    "address": "Calle Movera 7, Zaragoza",
+    "area": {
+      "es": "Movera",
+      "en": "Movera"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 88,
+    "priceNumber": 1350,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/movera1/movera-first-hero.jpg",
+    "photoCount": 4,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-22T12:00:00Z",
+    "availability": [
+      {
+        "start": "2026-06-22",
+        "end": "2026-06-29",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-08-01",
+        "end": "2026-08-16",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "fixture-rejected",
+    "status": "rejected",
+    "reviewNote": "Faltan fotos del baño.",
+    "reference": "EBR-P-9001",
+    "name": "Rejected fixture",
+    "address": "Pedro II el Católico 3, Zaragoza",
+    "area": {
+      "es": "Universidad - Pedro II el Católico",
+      "en": "University - Pedro II el Católico"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 80,
+    "priceNumber": 950,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/zaragoza-hero.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 0,
+    "oldestRequestAt": null,
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-15T09:00:00.0000000+00:00",
+    "availability": [
+      {
+        "start": "2026-06-20",
+        "end": "2026-06-24",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-07-04",
+        "end": "2026-07-10",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-08-12",
+        "end": "2026-08-18",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "fixture-paused",
+    "status": "paused",
+    "reviewNote": null,
+    "reference": "EBR-P-9002",
+    "name": "Paused fixture",
+    "address": "Pedro II el Católico 3, Zaragoza",
+    "area": {
+      "es": "Universidad - Pedro II el Católico",
+      "en": "University - Pedro II el Católico"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 80,
+    "priceNumber": 950,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/zaragoza-hero.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 2,
+    "oldestRequestAt": "2026-07-20T08:00:00.0000000+00:00",
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-14T09:00:00.0000000+00:00",
+    "availability": [
+      {
+        "start": "2026-06-20",
+        "end": "2026-06-24",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-07-04",
+        "end": "2026-07-10",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      },
+      {
+        "start": "2026-08-12",
+        "end": "2026-08-18",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  },
+  {
+    "id": "fixture-busy",
+    "status": "published",
+    "reviewNote": null,
+    "reference": "EBR-P-9003",
+    "name": "Occupied fixture",
+    "address": "Pedro II el Católico 3, Zaragoza",
+    "area": {
+      "es": "Universidad - Pedro II el Católico",
+      "en": "University - Pedro II el Católico"
+    },
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "sizeM2": 80,
+    "priceNumber": 950,
+    "coverUrl": "https://ebrostayphotos.blob.core.windows.net/property-photos/pedro1/zaragoza-hero.webp",
+    "photoCount": 1,
+    "sectionsDone": 11,
+    "sectionsTotal": 11,
+    "requestCount": 1,
+    "oldestRequestAt": "2026-07-25T08:00:00.0000000+00:00",
+    "availableFrom": "2026-07-01",
+    "updatedAt": "2026-07-13T09:00:00.0000000+00:00",
+    "availability": [
+      {
+        "start": "2026-07-01",
+        "end": "2027-01-01",
+        "status": "confirmed",
+        "note": null,
+        "turnoverDaysOverride": null,
+        "kind": null
+      }
+    ]
+  }
+]

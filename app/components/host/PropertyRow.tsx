@@ -7,7 +7,7 @@ import { AvailabilityBand } from "@/components/MonthBand";
 import { RowMenu } from "@/components/host/RowMenu";
 import type { HostProperty } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
-import { bucketOf, isDimmed, monthsFor, type Tab } from "@/lib/portfolio";
+import { bucketOf, formatDay, isDimmed, monthsFor, type Tab } from "@/lib/portfolio";
 
 // ============================================================
 // One row per listing, covering every lifecycle state. The row is a status
@@ -56,12 +56,9 @@ export function PropertyRow({
   const isDraft = p.status === "draft";
   const soon = t("soon");
 
-  const day = (iso: string) =>
-    new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(new Date(`${iso.slice(0, 10)}T12:00:00`));
+  // Falls back to the em dash this row already shows for a missing date, so
+  // an unreadable one costs this line and not the page (see `formatDay`).
+  const day = (iso: string) => formatDay(iso, locale) ?? "—";
 
   const note = noteFor();
   const actions = ACTIONS[bucket];

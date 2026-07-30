@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Ebrostay.Api.Serialization;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,10 +29,12 @@ builder.Services.AddSingleton(_ =>
 
     return new CosmosClient(endpoint, key, new CosmosClientOptions
     {
-        SerializerOptions = new CosmosSerializationOptions
-        {
-            PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
-        },
+        // Replaces SerializerOptions/CamelCase — same camelCase mapping, plus
+        // DateParseHandling.None so a stored ISO timestamp survives a read as
+        // the string it is. See CosmosDateSafeSerializer for what went wrong
+        // without it. (Serializer and SerializerOptions are mutually
+        // exclusive; the camelCase policy moved into the serializer.)
+        Serializer = new CosmosDateSafeSerializer(),
         MaxRetryAttemptsOnRateLimitedRequests = 5,
         ConnectionMode = gateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
     });

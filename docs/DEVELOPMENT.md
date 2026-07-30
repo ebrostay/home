@@ -348,12 +348,50 @@ Before pushing:
 ```bash
 npm run build --prefix app     # static export must stay green
 npm run lint --prefix app
+npm run test:all --prefix app  # unit tests, then every page in a browser
+dotnet test api/Ebrostay.Api.Tests
 dotnet build api
 ```
 
 > `npm run lint` currently reports **5 pre-existing errors** in
 > `app/not-found.tsx` and `components/site/ThemeToggle.tsx`. They are not
 > yours; the bar is not adding to them.
+
+### The three test suites
+
+| Command | Covers |
+|---|---|
+| `npm run test --prefix app` | Pure logic in `app/lib` (vitest, node) |
+| `npm run test:e2e --prefix app` | Every page, both languages (Playwright) |
+| `dotnet test api/Ebrostay.Api.Tests` | Models and validation (xunit) |
+
+The Playwright suite in `app/e2e` opens all ten routes in `es` and `en`, plus
+the 404 page, and fails on an uncaught exception, an unexpected console error,
+or a page that rendered a failure state. It exists because a formatter met a
+timestamp it could not read and killed the owner's whole portfolio page, and
+nothing noticed until someone opened it by hand.
+
+Two things about it are worth knowing before you touch it:
+
+- **It needs nothing running.** Every `/api/*` call is served from recorded
+  JSON in `app/e2e/fixtures`, and images and map tiles from a one-pixel PNG.
+  No Functions host, no Cosmos emulator, no Azurite, no network. Re-record the
+  fixtures from a live stack when a response *shape* changes — the shapes are
+  the point, the values are not.
+- **It starts its own dev server** on :3021, building into `.next-e2e` so your
+  own `npm run dev` keeps running. Next refuses two dev servers on one
+  `.next`; that is what `NEXT_DIST_DIR` in `playwright.config.ts` is for.
+
+Adding a page? A guard test enumerates `app/app/[locale]/**/page.tsx` and
+fails if any route has no case in `e2e/pages.spec.ts`, so the suite tells you
+rather than silently skipping it.
+
+The browser is Playwright's own chromium, and each Playwright release pins one
+revision of it. If the suite complains that the browser is missing:
+
+```bash
+cd app && npx playwright install chromium
+```
 
 ---
 
@@ -378,6 +416,15 @@ Read the error code — the pipeline refuses by reason. `photo_heic` means
 exactly that (export as JPEG); `photo_svg`, `photo_not_an_image` and
 `photo_too_large` likewise. These are deliberate refusals, not failures. Full
 rules: the ADR-019 amendment in `docs/spec-v2/05-decision-log.md`.
+
+**`npm run test:e2e` says the browser is missing**
+`npm i` installs the Playwright package but not the browser it drives — and
+this machine blocks postinstall scripts (see §2). Run
+`cd app && npx playwright install chromium`.
+
+**`npm run test:e2e` fails with "Another next dev server is already running"**
+Something is using `.next` and `NEXT_DIST_DIR` did not reach the dev server.
+It is set in `playwright.config.ts`'s `webServer.command`; check it survived.
 
 **A React "script tag" error in the browser console**
 Dev-only noise from the theme bootstrap script in

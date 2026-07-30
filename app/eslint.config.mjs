@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The e2e suite's build output (playwright.config.ts sets NEXT_DIST_DIR).
+    // Generated code, and 7k lint problems if it is not ignored here — the
+    // default list above only knows about ".next".
+    ".next-e2e/**",
+    // Playwright's own artefacts.
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

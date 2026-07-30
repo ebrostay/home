@@ -149,6 +149,28 @@ export function tabCounts(properties: HostProperty[]): Record<Tab, number> {
 // Noon avoids the DST edge where a midnight date lands on the previous day.
 const fromIso = (iso: string) => new Date(`${iso}T12:00:00`);
 
+/** A stored timestamp as a long date in the reader's language, or `null` when
+ *  the value cannot be read as one.
+ *
+ *  The null branch is the point. A row renders a date it was handed by the
+ *  API, and `Intl.DateTimeFormat.format` THROWS on an invalid `Date` rather
+ *  than returning something useless — so one unreadable timestamp used to
+ *  take down the entire portfolio page, every listing on it, with a
+ *  `RangeError`. It happened for real (2026-07-30): the API briefly returned
+ *  `07/22/2026 12:00:00` instead of ISO, and `slice(0, 10)` on that is not a
+ *  date. That bug is fixed at its source in the API, and this is the second
+ *  line: a field this page merely displays must never be able to cost the
+ *  owner the eight listings around it. Callers render their own placeholder. */
+export function formatDay(iso: string, locale: string): string | null {
+  const at = fromIso(iso.slice(0, 10));
+  if (Number.isNaN(at.getTime())) return null;
+  return new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(at);
+}
+
 const isoDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate(),

@@ -15,7 +15,16 @@
 
 # next.js
 /.next/
+# The e2e suite's own build directory — Next refuses a second dev server on a
+# .next it already owns, so playwright.config.ts points it elsewhere.
+/.next-e2e/
 /out/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # production
 /build

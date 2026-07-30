@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { HostListing } from "@/lib/api";
 import { MIN_STAY_DAYS } from "@/lib/pricing";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 
 // House rules, and the policy the owner does not get to set.
 //
@@ -35,10 +36,16 @@ export function RulesFields({
   /** Rendered as a pointer to Manage. Omitted by the wizard, which sets the
    *  price in a step of its own. */
   manageHref,
+  mark,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
   manageHref?: React.ReactNode;
+  /** The import's glyph, per field key — see `AddressFields`' own prop. Each
+   *  house rule is its own key and carries its own mark: unlike the amenity
+   *  grid these are four separate questions, answered yes or no one at a
+   *  time. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("host.edit.terms");
 
@@ -78,8 +85,9 @@ export function RulesFields({
                 on ? "border-brand bg-brand-soft" : "border-line bg-surface-2 hover:border-brand"
               }`}
             >
-              <span className="text-[0.84375rem] text-body">
+              <span className="flex flex-wrap items-center gap-1.5 text-[0.84375rem] text-body">
                 {t(`rule.${rule}` as "rule.pets")}
+                {mark?.(key)}
               </span>
               <span
                 className={`data shrink-0 text-[0.78125rem] font-semibold ${

@@ -340,7 +340,15 @@
       "errorPipelineError": "Something went wrong on our side while reading it.",
       "errorResultInvalid": "What came back from that listing was not something we could use. Fill the form in yourself, or try another link.",
       "errorJobFinished": "That read had already finished.",
-      "errorCancelConflict": "The read did not stop — it finished first. Carry on filling the form; what it found will still arrive."
+      "errorCancelConflict": "The read did not stop — it finished first. Carry on filling the form; what it found will still arrive.",
+      "markLabel": "Filled from your listing — edit it and the mark clears",
+      "bannerFrom": "FROM {source}",
+      "bannerJustLanded": "JUST LANDED · {source}",
+      "bannerPolicy": "NOT IMPORTED · BY POLICY",
+      "bannerNothing": "NOTHING ON THIS STEP",
+      "bannerKey": "marks the fields we filled from {source}. Edit one and the mark clears.",
+      "bannerNothingLine": "{source} had nothing for this step — all of it is yours to answer.",
+      "bannerPricingCaution": "Portals quote a calendar month. This price is for thirty days — check it."
     },
     "prompt": {
       "title": "Another home to fill?",

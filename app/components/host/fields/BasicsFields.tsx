@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { HostListing } from "@/lib/api";
 import { ENERGY_RATINGS, LIMITS, PROPERTY_TYPES } from "@/lib/listing";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 import { ChipGroup } from "./ChipGroup";
 import { TextField, UnitField } from "./TextField";
 
@@ -19,9 +20,12 @@ import { TextField, UnitField } from "./TextField";
 export function BasicsFields({
   value,
   onChange,
+  mark,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
+  /** The import's glyph, per field key — see `AddressFields`' own prop. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("host.edit.basics");
   const tType = useTranslations("type");
@@ -36,14 +40,22 @@ export function BasicsFields({
         // document has no bilingual title. Tagging it says which language to
         // write in instead of leaving the owner to guess from the placeholder.
         tag="ES"
+        mark={mark?.("name")}
         value={value.name}
         onChange={(v) => set("name", v)}
         maxLength={LIMITS.maxName}
         hint={t("nameHint")}
       />
 
+      {/* ONE mark on the group label, not one per chip: a portal's "piso"
+          mapping onto one of five kinds is one answer to one question, and a
+          glyph on every option would be five claims about the four it did not
+          choose. Same rule for the energy scale below. */}
       <div className="flex flex-col gap-2">
-        <span className="text-[0.8125rem] font-semibold text-ink">{t("type")}</span>
+        <span className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+          {t("type")}
+          {mark?.("type")}
+        </span>
         <ChipGroup<string>
           name="propertyType"
           label={t("type")}
@@ -61,6 +73,7 @@ export function BasicsFields({
       <div className="grid grid-cols-1 gap-3.5 min-[34rem]:grid-cols-2 min-[52rem]:grid-cols-4">
         <UnitField
           label={t("size")}
+          mark={mark?.("sizeM2")}
           unit="m²"
           value={value.sizeM2 || null}
           onChange={(v) => set("sizeM2", v ?? 0)}
@@ -68,18 +81,21 @@ export function BasicsFields({
         />
         <UnitField
           label={t("bedrooms")}
+          mark={mark?.("bedrooms")}
           value={value.bedrooms || null}
           onChange={(v) => set("bedrooms", v ?? 0)}
           max={LIMITS.maxRooms}
         />
         <UnitField
           label={t("bathrooms")}
+          mark={mark?.("bathrooms")}
           value={value.bathrooms || null}
           onChange={(v) => set("bathrooms", v ?? 0)}
           max={LIMITS.maxRooms}
         />
         <UnitField
           label={t("guests")}
+          mark={mark?.("guests")}
           value={value.guests || null}
           onChange={(v) => set("guests", v ?? 0)}
           max={LIMITS.maxGuests}
@@ -92,6 +108,7 @@ export function BasicsFields({
       <div className="max-w-[14rem]">
         <UnitField
           label={t("floor")}
+          mark={mark?.("floorNumber")}
           value={value.floorNumber}
           // Genuinely optional, and genuinely signed: a ground floor is 0 and
           // a Spanish sótano is negative, so "not answered" cannot be 0.
@@ -104,7 +121,10 @@ export function BasicsFields({
       {/* Its own row: eight options read as the A–G scale they are only when
           they fit on one line. */}
       <div className="flex flex-col gap-2">
-        <span className="text-[0.8125rem] font-semibold text-ink">{t("energy")}</span>
+        <span className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+          {t("energy")}
+          {mark?.("energyRating")}
+        </span>
         <ChipGroup<string>
           name="energyRating"
           label={t("energy")}

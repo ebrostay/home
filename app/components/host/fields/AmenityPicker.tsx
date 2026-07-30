@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HostListing } from "@/lib/api";
 import { AMENITY_ICONS, AMENITY_KEYS } from "@/lib/amenity-icons";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 
 // What the home offers. Multi-select over a fixed vocabulary, which is what
 // makes an amenity searchable — free text would give every listing its own
@@ -17,9 +18,15 @@ import { AMENITY_ICONS, AMENITY_KEYS } from "@/lib/amenity-icons";
 export function AmenityPicker({
   value,
   onChange,
+  mark,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
+  /** The import's glyph, per field key — see `AddressFields`' own prop. The
+   *  whole grid is ONE key: a portal's feature list mapping onto nine of
+   *  fifteen chips is still one answer to one question, so the mark sits on
+   *  the group's own line and any toggle clears it. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("amenity");
   const te = useTranslations("host.edit.amenities");
@@ -35,7 +42,9 @@ export function AmenityPicker({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[0.84375rem] leading-relaxed text-body">{te("intro")}</p>
+      <p className="text-[0.84375rem] leading-relaxed text-body">
+        {te("intro")} {mark?.("amenities")}
+      </p>
       <div className="flex flex-wrap gap-2">
         {AMENITY_KEYS.map((key) => {
           const on = selected.has(key);

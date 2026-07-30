@@ -52,9 +52,16 @@ import {
   type HostListing,
   type HostPhoto,
   type HostRange,
+  type ImportResult,
   type PropertySummary,
 } from "@/lib/api";
 import { stamped, withDecline } from "@/lib/declined";
+import {
+  clearMark,
+  editedListingKeys,
+  editedPricingKeys,
+  mergeImport,
+} from "@/lib/import";
 import { adoptNearbyIds, changedSections, richTextError } from "@/lib/listing";
 import { blocksDirty, isOwnerBlock, priceBandFor, pricingDirty } from "@/lib/manage";
 import {
@@ -76,6 +83,8 @@ import { usePublishedBarHeight } from "@/components/host/manage/ContextBar";
 import { StepCard } from "@/components/host/new/StepCard";
 import { StartScreen } from "@/components/host/new/import/StartScreen";
 import { ReadingScreen } from "@/components/host/new/import/ReadingScreen";
+import { ImportBanner } from "@/components/host/new/import/ImportBanner";
+import { ImportMark, type MarkFor } from "@/components/host/new/import/ImportMark";
 import { useImportJob } from "@/components/host/new/import/useImportJob";
 import { StepFooter, type SaveState } from "@/components/host/new/StepFooter";
 import { PayoutCard } from "@/components/host/new/PayoutCard";
@@ -153,10 +162,112 @@ function NewPropertyContent() {
     [tn],
   );
 
+  // ── The import, once it reaches the nine steps (ADR-033) ────────────────
+  //
+  // There is no summary screen. The marks on the fields and the banner above
+  // them ARE the review surface, so what the machine filled and what the owner
+  // has since looked at have to be tracked here, on the draft itself.
+
+  /** Keys the owner has edited since the page loaded. Read once, by the merge:
+   *  an arriving result may fill only what nobody has touched, which is the
+   *  whole reason "Start filling it in meanwhile" is safe to offer.
+   *
+   *  A ref rather than state — nothing renders from it, and a re-render per
+   *  keystroke to store a fact only an async callback reads would be a waste.
+   *  It is written from inside `setListing`'s updater below, which React may
+   *  call twice in development; `Set.add` of the same key twice is the same
+   *  Set, so that is safe. */
+  const touchedRef = useRef(new Set<string>());
+  /** The result arrived while the owner was already in the form. Only that
+   *  case gets the louder eyebrow — fields moving under someone's hands is a
+   *  different event from fields being there when they arrive. */
+  const [justLanded, setJustLanded] = useState(false);
+
+  /** What the read found, handed over by the poll at the one moment it is
+   *  readable (see `useImportJob`'s `onResult`). MERGES, never overwrites. */
+  const onImportResult = useCallback(
+    (result: ImportResult, host: string, inWizard: boolean) => {
+      const merged = mergeImport(listing, pricing, result, touchedRef.current);
+      // Raw setters, deliberately: this is the machine filling fields, not the
+      // owner editing them, and the edit-aware wrappers below would read every
+      // filled field as an edit and clear the mark it just made.
+      setListing({ ...merged.listing, importSource: host });
+      setPricing(merged.pricing);
+      setJustLanded(inWizard);
+    },
+    [listing, pricing],
+  );
+
   // The offer, the wait and the read that outlives both (ADR-033). The whole
   // state machine is one hook: the nine steps below are its third phase, not
   // its only one.
-  const imp = useImportJob({ skipOffer: !!resumeId, fallback: message });
+  const imp = useImportJob({
+    skipOffer: !!resumeId,
+    fallback: message,
+    onResult: onImportResult,
+  });
+
+  /**
+   * The owner editing a field, as opposed to the machine filling one.
+   *
+   * Which key was edited is READ BACK from the change rather than reported by
+   * the control, because **the wizard owns no fields**: every step wraps a
+   * component the listing editor already uses, and those hand back a whole
+   * `HostListing`. The alternative is a key-reporting callback threaded
+   * through twenty-five controls in six shared components — twenty-five
+   * chances for one to forget, and the forgotten one is a mark that never
+   * clears. `editedListingKeys` is the single table, beside `mergeImport`.
+   *
+   * The clear is PERMANENT and per field: undo restores the value, never the
+   * mark. The marks that remain are exactly the values nobody has looked at,
+   * and a mark that came back would be the machine claiming an answer the
+   * owner had already read.
+   */
+  const editListing = useCallback<Dispatch<SetStateAction<HostListing>>>((action) => {
+    setListing((prev) => {
+      const next = typeof action === "function" ? action(prev) : action;
+      const edited = editedListingKeys(prev, next);
+      if (edited.length === 0) return next;
+      for (const k of edited) touchedRef.current.add(k);
+      // Null stays null: a listing that was never imported has no marks to
+      // clear, and turning that into an empty array would send the server a
+      // claim about an import that never happened.
+      if (next.imported === null) return next;
+      let imported = next.imported;
+      for (const k of edited) imported = clearMark(imported, k);
+      return imported.length === next.imported.length ? next : { ...next, imported };
+    });
+  }, []);
+
+  /** The same, for the pricing block the wizard holds beside the listing. A
+   *  plain handler rather than an updater, because the marks it clears live on
+   *  the LISTING — and a second `setState` from inside another's updater is a
+   *  side effect in a function React is allowed to call twice. */
+  const editPricing = useCallback(
+    (next: HostPricing) => {
+      setPricing(next);
+      const edited = editedPricingKeys(pricing, next);
+      if (edited.length === 0) return;
+      for (const k of edited) touchedRef.current.add(k);
+      setListing((l) => {
+        if (l.imported === null) return l;
+        let imported = l.imported;
+        for (const k of edited) imported = clearMark(imported, k);
+        return imported.length === l.imported.length ? l : { ...l, imported };
+      });
+    },
+    [pricing],
+  );
+
+  /** The glyph, per field key — nothing at all for a key nobody filled. Passed
+   *  DOWN rather than read from `listing.imported` inside the field
+   *  components: the editor's listings carry that array too, and it has no
+   *  import to review. */
+  const marked = useMemo(() => new Set(listing.imported ?? []), [listing.imported]);
+  const mark = useCallback<MarkFor>(
+    (key) => (marked.has(key) ? <ImportMark /> : null),
+    [marked],
+  );
 
   // The comparables feed the rent hint. A failure there costs a sentence,
   // never the page — so it resolves to an empty list rather than rejecting.
@@ -517,6 +628,11 @@ function NewPropertyContent() {
             setReached(0);
             setSaveState("idle");
             setSent(false);
+            // `blankListing` clears the marks and the source with everything
+            // else; these two live outside it and would otherwise describe
+            // the listing that has just gone to the queue.
+            touchedRef.current = new Set<string>();
+            setJustLanded(false);
           }}
         />
       ) : (
@@ -566,12 +682,27 @@ function NewPropertyContent() {
                 />
               }
             >
+              {/* The whole visible difference an import makes to the nine
+                  steps, alongside the marks in the fields themselves. One per
+                  step, variant chosen by StepKey — including on the steps an
+                  import touched nothing, which is a fact worth stating rather
+                  than a silence to interpret. */}
+              {listing.importSource && (
+                <ImportBanner
+                  step={key}
+                  source={listing.importSource}
+                  imported={listing.imported ?? []}
+                  justLanded={justLanded}
+                />
+              )}
+
               <Step
                 step={key}
                 listing={listing}
-                setListing={setListing}
+                setListing={editListing}
                 pricing={pricing}
-                setPricing={setPricing}
+                setPricing={editPricing}
+                mark={mark}
                 blocks={blocks}
                 setBlocks={setBlocks}
                 holds={holds}
@@ -684,6 +815,7 @@ function Step({
   now,
   blockers,
   onFix,
+  mark,
 }: {
   step: StepKey;
   listing: HostListing;
@@ -708,6 +840,9 @@ function Step({
   now: Date;
   blockers: ReturnType<typeof submitBlockers>;
   onFix: (step: StepKey) => void;
+  /** The import's glyph, per field key. Nothing reaches the two steps an
+   *  import is never allowed to fill — their banner says why instead. */
+  mark: MarkFor;
 }) {
   const tn = useTranslations("host.new");
 
@@ -719,6 +854,7 @@ function Step({
           onChange={setListing}
           declined={declined}
           onDecline={onDecline}
+          mark={mark}
         />
       );
 
@@ -740,7 +876,7 @@ function Step({
       );
 
     case "basics":
-      return <BasicsFields value={listing} onChange={setListing} />;
+      return <BasicsFields value={listing} onChange={setListing} mark={mark} />;
 
     case "photos":
       // The draft exists by now — the address step made it — but the type does
@@ -766,13 +902,14 @@ function Step({
           onChange={setListing}
           propertyId={property.id}
           onUploaded={onUploaded}
+          mark={mark}
         />
       ) : (
         <p className="text-sm text-muted">{tn("needsAddressFirst")}</p>
       );
 
     case "amenities":
-      return <AmenityPicker value={listing} onChange={setListing} />;
+      return <AmenityPicker value={listing} onChange={setListing} mark={mark} />;
 
     case "pricing":
       return (
@@ -784,6 +921,7 @@ function Step({
             maxStayMonths={pricing.maxStayMonths}
             platformCleaningFeeEur={pricing.platformCleaningFeeEur}
             locale={locale}
+            mark={mark}
           />
           <PayoutCard
             price={pricing.priceNumber}
@@ -804,7 +942,7 @@ function Step({
       );
 
     case "rules":
-      return <RulesFields value={listing} onChange={setListing} />;
+      return <RulesFields value={listing} onChange={setListing} mark={mark} />;
 
     case "paperwork":
       return (

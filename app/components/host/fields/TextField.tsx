@@ -9,10 +9,16 @@ import { useId, type ReactNode } from "react";
 // `tag` is the small mono suffix the design puts after certain labels ("ES",
 // "optional"): a second register in the label line rather than a second line
 // of hint text, because it qualifies the field's name, not its behaviour.
+//
+// `mark` is the same slot for a glyph the CALLER supplies — today the import's
+// "we filled this" mark (see `ImportMark`'s own note on why it is a prop and
+// not a read of the listing). Undefined everywhere but the wizard, so the
+// listing editor renders nothing at all.
 
 export function TextField({
   label,
   tag,
+  mark,
   info,
   value,
   onChange,
@@ -26,6 +32,8 @@ export function TextField({
 }: {
   label: string;
   tag?: string;
+  /** A glyph annotating this field, from whoever knows there is one to draw. */
+  mark?: ReactNode;
   /** Sits after the label — an InfoPopover, for a field that needs explaining
    *  rather than merely hinting. */
   info?: ReactNode;
@@ -56,6 +64,7 @@ export function TextField({
       >
         {label}
         {tag && <span className="data font-normal text-muted">{tag}</span>}
+        {mark}
         {info}
       </label>
       <input
@@ -91,6 +100,7 @@ export function TextField({
  *  six values, not as six sentences. */
 export function UnitField({
   label,
+  mark,
   unit,
   value,
   onChange,
@@ -98,6 +108,7 @@ export function UnitField({
   max,
 }: {
   label: string;
+  mark?: ReactNode;
   unit?: string;
   value: number | null;
   onChange: (value: number | null) => void;
@@ -120,8 +131,12 @@ export function UnitField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-[0.8125rem] font-semibold text-ink">
+      <label
+        htmlFor={id}
+        className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink"
+      >
         {label}
+        {mark}
       </label>
       <div className="flex items-center gap-2 rounded-(--radius-control) border border-line-strong bg-surface px-[13px] py-[11px] transition-colors duration-(--dur-standard) focus-within:border-brand">
         <input
@@ -143,6 +158,7 @@ export function UnitField({
 export function TextAreaField({
   label,
   tag,
+  mark,
   value,
   onChange,
   hint,
@@ -151,6 +167,7 @@ export function TextAreaField({
 }: {
   label: string;
   tag?: string;
+  mark?: ReactNode;
   value: string;
   onChange: (value: string) => void;
   hint?: string;
@@ -161,9 +178,13 @@ export function TextAreaField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-[0.8125rem] font-semibold text-ink">
+      <label
+        htmlFor={id}
+        className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink"
+      >
         {label}
-        {tag && <span className="data ml-1.5 font-normal text-muted">{tag}</span>}
+        {tag && <span className="data font-normal text-muted">{tag}</span>}
+        {mark}
       </label>
       <textarea
         id={id}

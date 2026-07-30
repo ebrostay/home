@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 // A euro amount the owner types. Controlled and locale-formatted: the value in
 // state is a plain number, the value on screen is grouped (`1.350`), and every
@@ -12,6 +12,7 @@ import { useId } from "react";
 
 export function MoneyField({
   label,
+  mark,
   value,
   onChange,
   hint,
@@ -22,6 +23,8 @@ export function MoneyField({
   compact,
 }: {
   label: string;
+  /** A glyph annotating this field — see `TextField`'s prop of the same name. */
+  mark?: ReactNode;
   value: number | null;
   onChange: (value: number) => void;
   hint?: string;
@@ -56,8 +59,12 @@ export function MoneyField({
       } ${disabled ? "opacity-55" : ""}`}
     >
       {compact && (
-        <label htmlFor={id} className="text-[0.78125rem] text-muted">
+        <label
+          htmlFor={id}
+          className="flex shrink-0 items-center gap-1.5 text-[0.78125rem] text-muted"
+        >
           {label}
+          {mark}
         </label>
       )}
       <input
@@ -79,8 +86,12 @@ export function MoneyField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[0.8125rem] font-semibold text-ink">
+      <label
+        htmlFor={id}
+        className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink"
+      >
         {label}
+        {mark}
       </label>
       {field}
       {hint && (

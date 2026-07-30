@@ -340,7 +340,15 @@
       "errorPipelineError": "Algo ha fallado por nuestra parte al leerlo.",
       "errorResultInvalid": "Lo que nos ha devuelto ese anuncio no era algo que pudiéramos usar. Rellena el formulario tú, o prueba con otro enlace.",
       "errorJobFinished": "Esa lectura ya había terminado.",
-      "errorCancelConflict": "La lectura no se ha detenido: ha terminado antes. Sigue rellenando el formulario; lo que haya encontrado llegará igualmente."
+      "errorCancelConflict": "La lectura no se ha detenido: ha terminado antes. Sigue rellenando el formulario; lo que haya encontrado llegará igualmente.",
+      "markLabel": "Rellenado desde tu anuncio: edítalo y la marca desaparece",
+      "bannerFrom": "DE {source}",
+      "bannerJustLanded": "ACABA DE LLEGAR · {source}",
+      "bannerPolicy": "NO IMPORTADO · POR NORMA",
+      "bannerNothing": "NADA EN ESTE PASO",
+      "bannerKey": "marca los campos que hemos rellenado desde {source}. Edita uno y la marca desaparece.",
+      "bannerNothingLine": "{source} no tenía nada para este paso: todo es tuyo por responder.",
+      "bannerPricingCaution": "Los portales anuncian un mes natural. Este precio es por treinta días: compruébalo."
     },
     "prompt": {
       "title": "¿Otra vivienda que llenar?",

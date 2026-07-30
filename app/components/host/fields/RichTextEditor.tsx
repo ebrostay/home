@@ -154,6 +154,8 @@ export type RichTextEditorProps = {
   onChange: (next: RichNode) => void;
   label: string;
   tag?: string;
+  /** A glyph annotating this field — see `TextField`'s prop of the same name. */
+  mark?: React.ReactNode;
   placeholder?: string;
   /** A persistent caption below the editor — mirrors `TextAreaField`'s
    *  `hint`. Distinct from `placeholder`, which only shows while empty and
@@ -182,7 +184,7 @@ export type RichTextEditorProps = {
 };
 
 export function RichTextEditor({
-  value, onChange, label, tag, placeholder, hint, onInsertPhoto, onInsertPlace, strings,
+  value, onChange, label, tag, mark, placeholder, hint, onInsertPhoto, onInsertPlace, strings,
 }: RichTextEditorProps) {
   const editor = useEditor({
     // Static export: the editor must not render on the server.
@@ -249,6 +251,7 @@ export function RichTextEditor({
       <div className="flex items-center gap-2">
         <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">{label}</span>
         {tag && <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">{tag}</span>}
+        {mark}
       </div>
 
       <div className="overflow-hidden rounded-(--radius-control) border border-line focus-within:border-brand">

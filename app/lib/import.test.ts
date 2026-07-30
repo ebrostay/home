@@ -5,6 +5,8 @@ import {
   IMPORT_ERROR_CODES,
   IMPORT_KEYS,
   clearMark,
+  editedListingKeys,
+  editedPricingKeys,
   importErrorKey,
   isTerminalStage,
   matchSource,
@@ -13,6 +15,7 @@ import {
   stageLine,
 } from "./import";
 import { blankListing, blankPricing } from "./wizard";
+import { paragraphDoc } from "./rich-text";
 import type { ImportResult } from "./api";
 
 const result = (over: Partial<ImportResult> = {}): ImportResult => ({
@@ -81,6 +84,99 @@ describe("clearMark", () => {
 
   it("is a no-op for a key that is not marked", () => {
     expect(clearMark(["name"], "price")).toEqual(["name"]);
+  });
+});
+
+// What clears a mark. The wizard owns no fields — every step hands back a whole
+// listing — so the key an owner just edited is read back from the change. A key
+// this cannot see move is a glyph that stays on screen forever, claiming nobody
+// has looked at a value the owner has since rewritten.
+describe("editedListingKeys / editedPricingKeys", () => {
+  it("sees nothing in an unchanged draft", () => {
+    const l = blankListing();
+    const p = blankPricing();
+    expect(editedListingKeys(l, { ...l })).toEqual([]);
+    expect(editedPricingKeys(p, { ...p })).toEqual([]);
+  });
+
+  it("names the one field that moved, and only it", () => {
+    const l = blankListing();
+    expect(editedListingKeys(l, { ...l, name: "P" })).toEqual(["name"]);
+    expect(editedListingKeys(l, { ...l, sizeM2: 78 })).toEqual(["sizeM2"]);
+    const p = blankPricing();
+    expect(editedPricingKeys(p, { ...p, priceNumber: 950 })).toEqual(["price"]);
+  });
+
+  it("reads a pin as one answer, not two", () => {
+    const l = blankListing();
+    expect(editedListingKeys(l, { ...l, lat: 41.65, lng: -0.88 })).toEqual(["pin"]);
+  });
+
+  it("sees a grouped control move on any one option", () => {
+    const l = blankListing();
+    // The whole amenity grid is one key: a single chip toggled is the group
+    // answered again.
+    expect(editedListingKeys(l, { ...l, amenities: ["wifi"] })).toEqual(["amenities"]);
+    expect(
+      editedListingKeys({ ...l, amenities: ["wifi", "heating"] }, { ...l, amenities: ["wifi"] }),
+    ).toEqual(["amenities"]);
+  });
+
+  it("sees a bilingual field move in either language", () => {
+    const l = blankListing();
+    expect(editedListingKeys(l, { ...l, area: { es: "Centro", en: null } })).toEqual(["area"]);
+    expect(
+      editedListingKeys(
+        { ...l, area: { es: "Centro", en: null } },
+        { ...l, area: { es: "Centro", en: "Centre" } },
+      ),
+    ).toEqual(["area"]);
+  });
+
+  it("does not read a re-serialised rich-text document as an edit", () => {
+    // The mark on a description must survive the editor loading it: canonical
+    // form, not raw JSON, or key order alone would clear a paragraph nobody
+    // has read.
+    const l = { ...blankListing(), copy: { es: paragraphDoc("Hola"), en: null } };
+    const same = { ...l, copy: { es: JSON.parse(JSON.stringify(paragraphDoc("Hola"))), en: null } };
+    expect(editedListingKeys(l, same)).toEqual([]);
+    expect(editedListingKeys(l, { ...l, copy: { es: paragraphDoc("Adiós"), en: null } })).toEqual([
+      "copy",
+    ]);
+  });
+
+  it("sees every key the merge can fill", () => {
+    // The drift guard. A key `mergeImport` writes that neither of these can
+    // see move is a glyph with no way off the screen — and the two together
+    // must therefore cover IMPORT_KEYS exactly. Checked through the merge
+    // rather than against a hand-written list, so it cannot pass by agreeing
+    // with a copy of the same mistake.
+    const full: ImportResult = {
+      listing: {
+        address: "Calle de Bilbao, 12", postcode: "50004", cadastralRef: "4721903XM7147S0001BT",
+        lat: 41.65, lng: -0.88, areaEs: "Centro",
+        copyEs: "Piso luminoso.", detailsEs: "Ascensor.", bedsEs: "Una cama de 150.",
+        name: "Piso en el Centro", type: "house",
+        guests: 4, bedrooms: 2, bathrooms: 1, sizeM2: 78, floorNumber: 3, energyRating: "D",
+        amenities: ["wifi"],
+        petsAllowed: true, smokingAllowed: true, couplesAllowed: true, selfCheckin: true,
+      },
+      pricing: {
+        priceNumber: 950, depositAmount: 950,
+        billsPolicy: "capped", utilitiesCapEur: 90, minStayMonths: 3,
+      },
+      imported: [...IMPORT_KEYS],
+    };
+    const l = blankListing();
+    const p = blankPricing();
+    const merged = mergeImport(l, p, full, new Set());
+    expect([...merged.imported].sort()).toEqual([...IMPORT_KEYS].sort());
+
+    const back = [
+      ...editedListingKeys(merged.listing, l),
+      ...editedPricingKeys(merged.pricing, p),
+    ];
+    expect(back.sort()).toEqual([...IMPORT_KEYS].sort());
   });
 });
 

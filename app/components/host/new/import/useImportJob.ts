@@ -9,6 +9,7 @@ import {
   cancelImport,
   fetchImportJob,
   startImport,
+  type ImportResult,
   type ImportStage,
 } from "@/lib/api";
 import { POLL_CEILING_MS, importErrorKey, isTerminalStage, pollDelay } from "@/lib/import";
@@ -28,6 +29,7 @@ export type ImportPhase = "start" | "reading" | "wizard";
 export function useImportJob({
   skipOffer,
   fallback,
+  onResult,
 }: {
   /** True while a draft is being resumed: it has already answered the offer
    *  once, and asking again would be asking about a home half described. */
@@ -35,6 +37,18 @@ export function useImportJob({
   /** The page's generic API-error copy, for a failure carrying no code of its
    *  own (a dropped connection mid-poll). */
   fallback: (err: unknown) => string;
+  /** What the read found, handed over the instant the job settles.
+   *
+   *  It has to be a callback rather than a returned value, and it has to fire
+   *  inside the terminal branch below: `settle()` clears `jobId`, which stops
+   *  the poll, and a settled job is no longer being fetched — there is no
+   *  later render at which the page could go and read `job.result` for itself.
+   *
+   *  `inWizard` is whether the owner was ALREADY in the form when it landed
+   *  (they took "Start filling it in meanwhile"), which is the difference
+   *  between fields appearing under someone's hands and fields being there
+   *  when they arrive. */
+  onResult: (result: ImportResult, host: string, inWizard: boolean) => void;
 }) {
   const t = useTranslations("host.import");
   const router = useRouter();
@@ -60,6 +74,19 @@ export function useImportJob({
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+
+  // Both read from the awaited poll, never from render, and both re-synced on
+  // every commit — `onResult` closes over the page's live draft, so a stale
+  // copy would merge the read into the listing as it was when the poll started
+  // and discard whatever was typed meanwhile. Refs rather than dependencies
+  // because the poll must not be torn down and restarted (a restart fires a
+  // fetch) every time the owner presses a key.
+  const onResultRef = useRef(onResult);
+  const phaseRef = useRef(phase);
+  useEffect(() => {
+    onResultRef.current = onResult;
+    phaseRef.current = phase;
+  });
 
   const message = useCallback(
     (err: unknown) => {
@@ -118,6 +145,14 @@ export function useImportJob({
           // where the six sites and the blank form are. `done` and `cancelled`
           // hand over to the wizard, where the merge picks the result up.
           if (job.stage === "failed") setError(message(job.error?.code));
+          // BEFORE settle(), which stops the poll: this is the last moment
+          // anything sees `job.result`. Tested on the result rather than on
+          // `stage === "done"` because a cancel that lost its race settles
+          // `cancelled` with a finished read attached — the same case
+          // `errorCancelConflict` promises "what it found will still arrive".
+          if (job.result) {
+            onResultRef.current(job.result, job.host, phaseRef.current === "wizard");
+          }
           settle(job.stage === "failed" ? "start" : "wizard");
           return;
         }

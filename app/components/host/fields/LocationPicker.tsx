@@ -27,6 +27,7 @@ export function LocationPicker({
   suggestion,
   label,
   caption,
+  mark,
   suggestedLabel,
 }: {
   lat: number;
@@ -40,6 +41,10 @@ export function LocationPicker({
   suggestion: Suggestion;
   label: string;
   caption: string;
+  /** A glyph annotating the pin — see `TextField`'s prop of the same name. The
+   *  map has no label of its own on screen, so it rides in the caption pill,
+   *  which is the only thing here that names what the map is showing. */
+  mark?: React.ReactNode;
   /** Accessible name for the suggested pin, so the two are distinguishable
    *  to anything reading the map rather than looking at it. */
   suggestedLabel: string;
@@ -195,8 +200,9 @@ export function LocationPicker({
         aria-label={label}
         className="z-0 h-[13rem] rounded-(--radius-card) border border-line"
       />
-      <p className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-(--radius-control) bg-surface/95 px-3 py-1.5 text-xs font-semibold text-ink shadow-(--shadow-card)">
+      <p className="pointer-events-none absolute bottom-3 left-3 z-[400] flex items-center gap-1.5 rounded-(--radius-control) bg-surface/95 px-3 py-1.5 text-xs font-semibold text-ink shadow-(--shadow-card)">
         {caption}
+        {mark}
       </p>
     </div>
   );

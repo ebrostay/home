@@ -7,6 +7,7 @@ import type { Bilingual, Declined, HostListing } from "@/lib/api";
 import { LIMITS, cadastreChecksum, cadastreValid, postcodeValid } from "@/lib/listing";
 import { pinValue, verdictFor } from "@/lib/declined";
 import { InfoPopover } from "@/components/ui/InfoPopover";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 import {
   SAME_PLACE_M,
   formatDistance,
@@ -62,12 +63,17 @@ export function AddressFields({
   onChange,
   declined,
   onDecline,
+  mark,
 }: {
   value: HostListing;
   onChange: (value: HostListing) => void;
   /** Suggestions already ruled on. Applies live and is not part of the diff. */
   declined: Declined[];
   onDecline: (entry: Omit<Declined, "at">) => void;
+  /** The import's "we filled this" glyph, per field key. Passed only by the
+   *  wizard — see `ImportMark` for why it is a prop and not a read of
+   *  `value.imported`, which the editor's listings carry too. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("host.edit.address");
   const locale = useLocale();
@@ -275,6 +281,7 @@ export function AddressFields({
       <div className="grid items-start gap-3.5 min-[34rem]:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <TextField
           label={t("street")}
+          mark={mark?.("address")}
           value={address}
           onChange={(v) => set("address", v.trim() === "" ? null : v)}
           maxLength={LIMITS.maxAddress}
@@ -291,6 +298,7 @@ export function AddressFields({
         />
         <TextField
           label={t("postcode")}
+          mark={mark?.("postcode")}
           value={value.postcode ?? ""}
           onChange={(v) => set("postcode", v.trim() === "" ? null : v)}
           maxLength={5}
@@ -374,6 +382,7 @@ export function AddressFields({
         <TextField
           label={t("cadastre")}
           tag={t("optional")}
+          mark={mark?.("cadastralRef")}
           info={
             <InfoPopover label={t("cadastreWhat")} title={t("cadastreWhat")}>
               <p>{t("cadastreInfoWhat")}</p>
@@ -416,6 +425,10 @@ export function AddressFields({
           <TextField
             label={t("area")}
             tag="ES"
+            // The Spanish only: an import never fills an English field
+            // (§10.5), so a mark on the EN box would claim a value we never
+            // sent.
+            mark={mark?.("area")}
             value={value.area?.es ?? ""}
             onChange={(v) => setArea("es", v)}
             maxLength={LIMITS.maxArea}
@@ -464,6 +477,7 @@ export function AddressFields({
           suggestion={suggestion}
           label={t("mapLabel")}
           caption={status === "searching" ? t("searching") : t("mapCaption")}
+          mark={mark?.("pin")}
           suggestedLabel={t("suggestedPin")}
         />
 

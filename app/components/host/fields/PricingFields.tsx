@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { BillsPolicy, CleaningBy, HostPricing } from "@/lib/api";
 import { formatEuro } from "@/lib/pricing";
 import { LIMITS, priceVerdict, type PriceBand } from "@/lib/manage";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 import { MoneyField } from "./MoneyField";
 import { Segmented } from "./Segmented";
 import { ChipGroup } from "./ChipGroup";
@@ -38,6 +39,7 @@ export function PricingFields({
   maxStayMonths,
   platformCleaningFeeEur,
   locale,
+  mark,
 }: {
   value: PricingValue;
   onChange: (value: PricingValue) => void;
@@ -47,6 +49,11 @@ export function PricingFields({
   /** Policy, shown so the owner can see what they are opting out of. */
   platformCleaningFeeEur: number;
   locale: string;
+  /** The import's glyph, per field key — see `AddressFields`' own prop. The
+   *  rent carries one like any other field: it is carried across UNCHANGED,
+   *  and the step's banner is where the calendar-month caution goes. Nothing
+   *  here does arithmetic on an imported price. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("host.manage.pricing");
   const set = <K extends keyof PricingValue>(key: K, next: PricingValue[K]) =>
@@ -69,6 +76,7 @@ export function PricingFields({
       <div className="grid items-start gap-3.5 min-[34rem]:grid-cols-2 min-[62rem]:grid-cols-3">
         <MoneyField
           label={t("rent")}
+          mark={mark?.("price")}
           value={value.priceNumber}
           onChange={(v) => set("priceNumber", v)}
           max={LIMITS.maxPrice}
@@ -77,7 +85,12 @@ export function PricingFields({
         />
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-[0.8125rem] font-semibold text-ink">{t("bills")}</span>
+          {/* One mark for the segmented control, on its label — see the same
+              rule for the kind of home in BasicsFields. */}
+          <span className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+            {t("bills")}
+            {mark?.("billsPolicy")}
+          </span>
           {/* Three segments, not the handoff's two: the model has a third
               policy (`included`, no ceiling), and folding it into `capped`
               would silently invent a cap on any listing that offers none. */}
@@ -107,6 +120,7 @@ export function PricingFields({
             <MoneyField
               compact
               label={t("cap")}
+              mark={mark?.("utilitiesCapEur")}
               unit={t("capUnit")}
               value={value.utilitiesCapEur ?? 0}
               onChange={(v) => set("utilitiesCapEur", v)}
@@ -120,6 +134,7 @@ export function PricingFields({
 
         <MoneyField
           label={t("deposit")}
+          mark={mark?.("depositAmount")}
           value={value.depositAmount ?? 0}
           onChange={(v) => set("depositAmount", v)}
           max={LIMITS.maxDeposit}
@@ -195,8 +210,9 @@ export function PricingFields({
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <span className="data text-[0.65625rem] tracking-[0.1em] text-muted">
+        <span className="data flex flex-wrap items-center gap-1.5 text-[0.65625rem] tracking-[0.1em] text-muted">
           {t("minStay")}
+          {mark?.("minStayMonths")}
         </span>
         <ChipGroup<number>
           name="minStayMonths"

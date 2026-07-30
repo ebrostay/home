@@ -7,6 +7,7 @@ import { uploadHostPhoto, type Bilingual, type HostListing, type HostPhoto } fro
 import { isEmptyDoc, type RichNode } from "@/lib/rich-text";
 import { LIMITS, applyDescriptionEdit } from "@/lib/listing";
 import { shrink } from "@/lib/photos";
+import type { MarkFor } from "@/components/host/new/import/ImportMark";
 import { TextAreaField, TextField } from "./TextField";
 import { RichTextEditor, type RichTextEditorProps } from "./RichTextEditor";
 import { PhotoPicker } from "./PhotoPicker";
@@ -33,6 +34,7 @@ export function DescriptionFields({
   onChange,
   propertyId,
   onUploaded,
+  mark,
 }: {
   value: HostListing;
   // A real `useState` setter, not a plain `(value) => void` — both call
@@ -57,6 +59,10 @@ export function DescriptionFields({
    *  already has, and an in-flight reorder elsewhere on the page would snap
    *  back to storage order the moment this fires. */
   onUploaded: (photos: HostPhoto[]) => void;
+  /** The import's glyph, per field key — see `AddressFields`' own prop. Only
+   *  ever on the Spanish side: the English is never imported (§10.5), and the
+   *  approval gate below is untouched by an import for the same reason. */
+  mark?: MarkFor;
 }) {
   const t = useTranslations("host.edit.description");
   // The one word guests actually read on a photoRef/photoFigure chip
@@ -153,6 +159,7 @@ export function DescriptionFields({
         onChange={(next) => setCopyDoc("es", next)}
         label={t("about")}
         tag={t("aboutTagEs")}
+        mark={mark?.("copy")}
         placeholder={t("aboutPlaceholder")}
         hint={t("aboutHint")}
         onInsertPhoto={(insert) => setPhotoPick(() => insert)}
@@ -208,6 +215,7 @@ export function DescriptionFields({
         <TextAreaField
           label={t("details")}
           tag="ES"
+          mark={mark?.("details")}
           rows={3}
           value={value.details?.es ?? ""}
           onChange={(v) => setBi("details", "es", v)}
@@ -225,6 +233,7 @@ export function DescriptionFields({
         <TextField
           label={t("beds")}
           tag="ES"
+          mark={mark?.("beds")}
           value={value.beds?.es ?? ""}
           onChange={(v) => setBi("beds", "es", v)}
           maxLength={LIMITS.maxBeds}

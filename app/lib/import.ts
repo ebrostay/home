@@ -1,5 +1,5 @@
 import type { HostListing, HostPricing, ImportResult, ImportStage } from "@/lib/api";
-import { paragraphDoc } from "@/lib/rich-text";
+import { canonical, paragraphDoc } from "@/lib/rich-text";
 
 // ============================================================
 // "Start faster" — the AI-assisted import (ADR-033).
@@ -167,6 +167,75 @@ export function mergeImport(
  *  the whole trust mechanism. */
 export const clearMark = (imported: string[] | null, key: string): string[] =>
   (imported ?? []).filter((k) => k !== key);
+
+/** Where each key's value LIVES, so an edit to it can be recognised.
+ *
+ *  The wizard owns no fields — every step wraps a component the listing editor
+ *  already uses, and those hand back a whole `HostListing` rather than "the
+ *  postcode changed". So which key an owner just edited is READ BACK from the
+ *  change, not reported by the control: the alternative is threading a
+ *  key-reporting callback through twenty-five controls in six shared
+ *  components, which is twenty-five chances for one of them to forget.
+ *
+ *  Total, not partial, on purpose: a key `mergeImport` can fill and this table
+ *  has no reader for is a mark that can never clear, and the compiler is the
+ *  only thing that will notice. */
+type KeyReader =
+  | { on: "listing"; read: (l: HostListing) => unknown }
+  | { on: "pricing"; read: (p: HostPricing) => unknown };
+
+const VALUE_OF: Record<ImportKey, KeyReader> = {
+  address: { on: "listing", read: (l) => l.address ?? null },
+  postcode: { on: "listing", read: (l) => l.postcode ?? null },
+  // One answer, two numbers: a drag moves both, and a mark per coordinate
+  // would be a mark on half a pin.
+  pin: { on: "listing", read: (l) => [l.lat, l.lng] },
+  area: { on: "listing", read: (l) => [l.area?.es ?? null, l.area?.en ?? null] },
+  cadastralRef: { on: "listing", read: (l) => l.cadastralRef ?? null },
+  name: { on: "listing", read: (l) => l.name },
+  type: { on: "listing", read: (l) => l.type },
+  sizeM2: { on: "listing", read: (l) => l.sizeM2 },
+  bedrooms: { on: "listing", read: (l) => l.bedrooms },
+  bathrooms: { on: "listing", read: (l) => l.bathrooms },
+  guests: { on: "listing", read: (l) => l.guests },
+  floorNumber: { on: "listing", read: (l) => l.floorNumber ?? null },
+  energyRating: { on: "listing", read: (l) => l.energyRating ?? null },
+  // `canonical`, not raw JSON: a rich-text document compared field-by-field
+  // depends on key order and on absent-versus-null at every node, and a false
+  // difference here would clear the mark on a paragraph nobody has read — the
+  // same hazard `changedSections` documents for the editor's dirty check.
+  copy: { on: "listing", read: (l) => [canonical(l.copy?.es), canonical(l.copy?.en)] },
+  details: { on: "listing", read: (l) => [l.details?.es ?? null, l.details?.en ?? null] },
+  beds: { on: "listing", read: (l) => [l.beds?.es ?? null, l.beds?.en ?? null] },
+  amenities: { on: "listing", read: (l) => l.amenities },
+  petsAllowed: { on: "listing", read: (l) => l.petsAllowed },
+  smokingAllowed: { on: "listing", read: (l) => l.smokingAllowed },
+  couplesAllowed: { on: "listing", read: (l) => l.couplesAllowed },
+  selfCheckin: { on: "listing", read: (l) => l.selfCheckin },
+  price: { on: "pricing", read: (p) => p.priceNumber },
+  billsPolicy: { on: "pricing", read: (p) => p.billsPolicy },
+  utilitiesCapEur: { on: "pricing", read: (p) => p.utilitiesCapEur ?? null },
+  depositAmount: { on: "pricing", read: (p) => p.depositAmount ?? null },
+  minStayMonths: { on: "pricing", read: (p) => p.minStayMonths },
+};
+
+const differs = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
+
+/** Which import keys this listing edit touched. Feeds both halves of the same
+ *  promise: the key goes into `touched` so an arriving read may not overwrite
+ *  it, and its mark is cleared so the glyph stops claiming nobody has looked. */
+export const editedListingKeys = (before: HostListing, after: HostListing): ImportKey[] =>
+  IMPORT_KEYS.filter((k) => {
+    const r = VALUE_OF[k];
+    return r.on === "listing" && differs(r.read(before), r.read(after));
+  });
+
+/** …and the same for the pricing block, which the wizard holds separately. */
+export const editedPricingKeys = (before: HostPricing, after: HostPricing): ImportKey[] =>
+  IMPORT_KEYS.filter((k) => {
+    const r = VALUE_OF[k];
+    return r.on === "pricing" && differs(r.read(before), r.read(after));
+  });
 
 const STAGE_KEYS = ["fetching", "reading", "matching"] as const;
 export type StageKey = (typeof STAGE_KEYS)[number];

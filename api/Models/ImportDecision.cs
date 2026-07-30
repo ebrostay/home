@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -75,16 +76,36 @@ public static class ImportDecision
         };
     }
 
+    /// Has this job's deadline passed? The one place the stored string is read
+    /// back as a time, and it FAILS CLOSED in two ways on purpose:
+    ///
+    ///   · `InvariantCulture` + `RoundtripKind`, never the ambient culture.
+    ///     `DateTimeOffset`'s "yyyy" is calendar-dependent, and the failure it
+    ///     would cause here is silent and total: under a non-Gregorian
+    ///     calendar our 2026 reads as 2026 AH or 2026 BE, every deadline lands
+    ///     centuries away, and NOTHING is ever reaped. Measured on .NET 9 the
+    ///     parser takes an ISO round-trip fast path and does not in fact
+    ///     consult the calendar for this string shape — but that is a runtime
+    ///     detail rather than a contract, and it is not something the reaper
+    ///     should be resting on. `ImportBudget` says the same on the way out.
+    ///   · an UNPARSABLE deadline counts as PASSED. It should never happen —
+    ///     we write the string ourselves — but the cost of the two answers is
+    ///     not symmetric: "healthy" means the reaper never fires, the job runs
+    ///     to its seven-day TTL, and it holds one of the owner's two running
+    ///     slots for the whole week. "Expired" costs one job a spurious
+    ///     timeout the owner can retry immediately.
+    public static bool DeadlinePassed(string deadlineAt, DateTimeOffset now) =>
+        !DateTimeOffset.TryParse(deadlineAt, CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind, out var deadline) || now > deadline;
+
     /// THE REAPER. A running job found past its deadline fails right here —
     /// the reason this feature needs no timer trigger, which SWA managed
     /// functions cannot host anyway. Null means "leave it alone": already
-    /// terminal, or the deadline has not passed (or is unparsable, which
-    /// should never happen but must not crash a poll either way).
+    /// terminal, or the deadline has not passed.
     public static ImportJobDoc? Reap(ImportJobDoc job, DateTimeOffset now)
     {
         if (ImportStage.IsTerminal(job.Stage)) return null;
-        if (!DateTimeOffset.TryParse(job.DeadlineAt, out var deadline)) return null;
-        if (now <= deadline) return null;
+        if (!DeadlinePassed(job.DeadlineAt, now)) return null;
 
         return job with
         {
@@ -98,6 +119,31 @@ public static class ImportDecision
     public const int MaxRunningPerOwner = 2;
 
     public static bool ExceedsRunningCap(int runningCount) => runningCount >= MaxRunningPerOwner;
+
+    /// The cap's other half: the query that counts what is running.
+    ///
+    /// It lives here beside `DeadlinePassed` because it is the SAME rule read
+    /// from the other side — a job counts as running only while it is in a
+    /// running stage **and** its deadline has not passed — and the two must
+    /// not drift apart.
+    ///
+    /// The `deadlineAt` clause is not an optimisation. The reaper only runs
+    /// when someone polls, and the case it exists for (the pipeline never
+    /// answers) is exactly the case where the owner gives up and closes the
+    /// tab — so a job abandoned at `fetching` is never read again, never
+    /// reaped, and without this clause counts as running until its seven-day
+    /// TTL expires. Two of those is a week-long `too_many_imports` the owner
+    /// cannot clear: cancelling needs a job id, the client drops `?import=` on
+    /// every terminal exit, and there is no listing of running reads. A job
+    /// past its deadline is not running, whether or not anyone has yet got
+    /// around to writing that down.
+    ///
+    /// `@now` is compared as a STRING, which is sound only because both sides
+    /// are written by us in the same round-trip ("o") format: fixed-width,
+    /// UTC, and therefore lexicographically ordered.
+    public const string RunningCountSql =
+        "SELECT VALUE COUNT(1) FROM c WHERE c.ownerId = @o AND c.stage IN " +
+        "('queued', 'fetching', 'reading', 'matching') AND c.deadlineAt > @now";
 
     /// Constant-time so a mismatched token costs the same wall-clock time to
     /// reject as a matching one — the whole reason a per-job token bearer

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -296,12 +297,23 @@ public class ImportFunctions(
 
     private async Task<int> RunningCountAsync(string ownerId, CancellationToken ct)
     {
-        var query = new QueryDefinition(
-                "SELECT VALUE COUNT(1) FROM c WHERE c.ownerId = @o AND c.stage IN " +
-                "('queued', 'fetching', 'reading', 'matching')")
-            .WithParameter("@o", ownerId);
+        var query = new QueryDefinition(ImportDecision.RunningCountSql)
+            .WithParameter("@o", ownerId)
+            // The same round-trip format the deadlines are written in — see
+            // ImportDecision.RunningCountSql for why a string comparison is
+            // the right one here.
+            .WithParameter("@now", DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+
         using var feed = Jobs.GetItemQueryIterator<int>(query);
-        return feed.HasMoreResults ? (await feed.ReadNextAsync(ct)).FirstOrDefault() : 0;
+        // DRAINED, not first-page. `importJobs` is partitioned on /id, so this
+        // is a genuine cross-partition aggregate: the SDK's pipeline can hand
+        // back an EMPTY first page while it is still fanning out, and
+        // `FirstOrDefault()` on that page is 0 — the cap silently disabled for
+        // that request. Invisible on a single-physical-partition serverless
+        // account, and it appears the day the container splits.
+        var total = 0;
+        while (feed.HasMoreResults) total += (await feed.ReadNextAsync(ct)).Sum();
+        return total;
     }
 
     // A malformed body (bad JSON, wrong shape) is a 400, never a 500 — the

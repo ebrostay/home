@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ebrostay.Api.Functions;
 using Ebrostay.Api.Models;
 using Xunit;
@@ -362,6 +363,62 @@ public class ImportDecisionTests
         Assert.Equal("timeout", reaped.Error!.Code);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("not a timestamp")]
+    [InlineData("2026-13-45T99:99:99Z")]
+    public void AnUnparsableDeadlineIsTreatedAsExpired(string deadlineAt)
+    {
+        // FAIL CLOSED. Reading an unparsable deadline as "not reached yet"
+        // means the reaper never fires: the job runs to its seven-day TTL and
+        // holds one of the owner's two running slots for the whole week, which
+        // is the lockout the deadline clause in RunningCountSql exists to
+        // prevent. A spurious timeout on one job is the cheaper mistake.
+        Assert.True(ImportDecision.DeadlinePassed(deadlineAt, Now));
+
+        var reaped = ImportDecision.Reap(Job(ImportStage.Fetching, deadlineAt), Now);
+        Assert.NotNull(reaped);
+        Assert.Equal(ImportStage.Failed, reaped!.Stage);
+    }
+
+    [Theory]
+    [InlineData("ar-SA")]   // Umm al-Qura calendar
+    [InlineData("th-TH")]   // Thai Buddhist calendar
+    [InlineData("fa-IR")]   // Persian calendar
+    public void TheDeadlineIsReadTheSameWayInEveryCulture(string culture)
+    {
+        // An INVARIANT, not a reproduction. Measured on .NET 9: the parser
+        // takes an ISO-8601 round-trip fast path that ignores the ambient
+        // calendar, so all three of these give the right answer with or
+        // without the explicit `InvariantCulture` — this test passes against
+        // the old code too, and it is not the guard for that half of the fix
+        // (the fail-closed test above is). It is here because the property it
+        // states — a deadline means the same instant whatever culture the
+        // worker happens to run under — is one nothing in the reaper should
+        // ever be allowed to depend on, and because that fast path is a
+        // runtime detail, not a contract. `ImportBudget` pins the same
+        // property on the way out.
+        var original = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+            Assert.True(ImportDecision.DeadlinePassed("2026-07-30T09:05:00Z", Now));
+            Assert.False(ImportDecision.DeadlinePassed("2026-07-30T09:20:00Z", Now));
+            Assert.NotNull(ImportDecision.Reap(
+                Job(ImportStage.Reading, deadlineAt: "2026-07-30T09:05:00Z"), Now));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+    }
+
+    [Fact]
+    public void ADeadlineExactlyOnTheDotHasNotPassed() =>
+        // The reaper's boundary, pinned: `>` and not `>=`, matching the SQL.
+        Assert.False(ImportDecision.DeadlinePassed(Now.ToString("o"), Now));
+
     // --- Cancel ----------------------------------------------------------
     //
     // Task 4 re-review, Important finding: ImportFunctions.Cancel used to
@@ -407,4 +464,30 @@ public class ImportDecisionTests
     [InlineData(3, true)]
     public void TheRunningCapIsTwoAtOnce(int running, bool expected) =>
         Assert.Equal(expected, ImportDecision.ExceedsRunningCap(running));
+
+    [Fact]
+    public void TheRunningCapCountsOnlyJobsInsideTheirDeadline()
+    {
+        // The lockout this clause prevents: the reaper runs only when someone
+        // polls, and a pipeline that never answers is exactly the case where
+        // the owner closes the tab — so an abandoned job is never read, never
+        // reaped, and without `deadlineAt > @now` it counts as running for the
+        // seven days its TTL lasts. Two of those and every `POST /api/import`
+        // answers 429 for a week, with no way for the owner to clear it.
+        //
+        // A string assertion on the query text, deliberately: the SQL is the
+        // rule, and the rule is the thing that went missing. What the clause
+        // MEANS is pinned by DeadlinePassed's tests above, which the query is
+        // the server-side half of.
+        Assert.Contains("c.deadlineAt > @now", ImportDecision.RunningCountSql);
+        Assert.Contains("c.ownerId = @o", ImportDecision.RunningCountSql);
+        foreach (var stage in new[] { ImportStage.Queued, ImportStage.Fetching,
+            ImportStage.Reading, ImportStage.Matching })
+            Assert.Contains($"'{stage}'", ImportDecision.RunningCountSql);
+
+        // …and never a terminal one: a done job is not a running job.
+        foreach (var stage in new[] { ImportStage.Done, ImportStage.Failed,
+            ImportStage.Cancelled })
+            Assert.DoesNotContain($"'{stage}'", ImportDecision.RunningCountSql);
+    }
 }

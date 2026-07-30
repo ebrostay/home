@@ -113,6 +113,18 @@ public class ImportCallbackValidationTests
         foreach (var code in ImportError.Codes)
             Assert.Null(ImportValidation.CheckCallback(new("failed", null, new ImportError(code))));
     }
+
+    [Fact]
+    public void RejectsAResultMissingItsSubObjects()
+    {
+        // System.Text.Json will happily deserialize `{"result":{}}` by
+        // leaving Listing/Pricing/Imported null despite their non-nullable
+        // C# types — reachable by any holder of a valid callback token.
+        // Before this was guarded, CheckCallback's own `result.Imported.Length`
+        // threw a NullReferenceException instead of returning a 400.
+        Assert.Equal("result_invalid",
+            ImportValidation.CheckCallback(new("done", new ImportResult(null!, null!, null!), null)));
+    }
 }
 
 public class ImportClampTests
@@ -136,6 +148,19 @@ public class ImportClampTests
         var clamped = ImportValidation.Clamp(WithPrice(950));
         Assert.Equal(950, clamped.Pricing.PriceNumber);
         Assert.Contains("price", clamped.Imported);
+    }
+
+    [Fact]
+    public void ClampToleratesMissingSubObjects()
+    {
+        // Defense in depth: Clamp must not crash even if a future caller
+        // skips CheckCallback's own guard (the normal Callback flow never
+        // does — CheckCallback rejects this shape with "result_invalid"
+        // before Clamp is ever reached).
+        var clamped = ImportValidation.Clamp(new ImportResult(null!, null!, null!));
+        Assert.NotNull(clamped.Listing);
+        Assert.NotNull(clamped.Pricing);
+        Assert.Empty(clamped.Imported);
     }
 }
 
@@ -207,4 +232,143 @@ public class ImportStageProgressionTests
     [InlineData("reading")]
     public void RunningStagesAreNot(string stage) =>
         Assert.False(ImportStage.IsTerminal(stage));
+}
+
+// Task 4 review, Important finding 3: none of ImportFunctions' own transition
+// rules were reachable from a unit test, because the decision was inline
+// inside the Cosmos read/write. These exercise the pure ImportDecision
+// directly — no emulator, no HTTP context.
+public class ImportDecisionTests
+{
+    private static readonly DateTimeOffset Now =
+        DateTimeOffset.Parse("2026-07-30T09:10:00Z");
+
+    private static ImportJobDoc Job(string stage, string deadlineAt = "2026-07-30T09:05:00Z") =>
+        new("imp_1", "owner-1", new ImportJobSource("url", "idealista", "https://x"),
+            stage, "2026-07-30T09:00:00Z", "2026-07-30T09:00:00Z", deadlineAt,
+            "s3cr3t", null, null, 604800);
+
+    // --- TokenMatches --------------------------------------------------
+
+    [Fact]
+    public void TokenMatchesAcceptsTheExactToken() =>
+        Assert.True(ImportDecision.TokenMatches("s3cr3t", "s3cr3t"));
+
+    [Fact]
+    public void TokenMatchesRejectsAWrongTokenOfTheSameLength() =>
+        Assert.False(ImportDecision.TokenMatches("s3cr3x", "s3cr3t"));
+
+    [Fact]
+    public void TokenMatchesRejectsATokenOfADifferentLength() =>
+        Assert.False(ImportDecision.TokenMatches("short", "s3cr3t"));
+
+    [Fact]
+    public void TokenMatchesRejectsAnEmptyPresentedToken() =>
+        Assert.False(ImportDecision.TokenMatches("", "s3cr3t"));
+
+    // --- Next: the 409 / no-op / applied split --------------------------
+
+    [Fact]
+    public void ATerminalJobRefusesAnyFurtherWrite()
+    {
+        var result = ImportDecision.Next(Job(ImportStage.Done),
+            new ImportCallback(ImportStage.Failed, null, new ImportError("timeout")), Now);
+
+        Assert.Equal(ImportDecision.CallbackOutcome.Conflict, result.Outcome);
+        Assert.Null(result.Job);
+    }
+
+    [Fact]
+    public void ACancelledJobAlsoRefusesAFurtherWrite()
+    {
+        // The design's own example: the pipeline finishing a job the owner
+        // already cancelled must be a no-op, not a resurrection.
+        var result = ImportDecision.Next(Job(ImportStage.Cancelled),
+            new ImportCallback(ImportStage.Done,
+                new ImportResult(new ImportListingPatch(), new ImportPricingPatch(), []), null),
+            Now);
+
+        Assert.Equal(ImportDecision.CallbackOutcome.Conflict, result.Outcome);
+    }
+
+    [Fact]
+    public void AReportBehindTheCurrentStageIsDroppedNotApplied()
+    {
+        // The job is already at "matching"; a late "reading" report from a
+        // retried pipeline step must not walk it backwards.
+        var result = ImportDecision.Next(Job(ImportStage.Matching),
+            new ImportCallback(ImportStage.Reading, null, null), Now);
+
+        Assert.Equal(ImportDecision.CallbackOutcome.NoOp, result.Outcome);
+        Assert.Null(result.Job);
+    }
+
+    [Fact]
+    public void AForwardReportIsAppliedWithTheGivenTimestamp()
+    {
+        var result = ImportDecision.Next(Job(ImportStage.Reading),
+            new ImportCallback(ImportStage.Matching, null, null), Now);
+
+        Assert.Equal(ImportDecision.CallbackOutcome.Applied, result.Outcome);
+        Assert.Equal(ImportStage.Matching, result.Job!.Stage);
+        Assert.Equal(Now.ToString("o"), result.Job.UpdatedAt);
+    }
+
+    [Fact]
+    public void ADoneReportCarriesAClampedResult()
+    {
+        var result = ImportDecision.Next(Job(ImportStage.Matching),
+            new ImportCallback(ImportStage.Done,
+                new ImportResult(new ImportListingPatch(), new ImportPricingPatch(PriceNumber: 950),
+                    ["price"]),
+                null),
+            Now);
+
+        Assert.Equal(ImportDecision.CallbackOutcome.Applied, result.Outcome);
+        Assert.Equal(950, result.Job!.Result!.Pricing.PriceNumber);
+    }
+
+    [Fact]
+    public void AReportWithNoResultKeepsWhateverTheJobAlreadyHad()
+    {
+        var existing = new ImportResult(new ImportListingPatch(), new ImportPricingPatch(PriceNumber: 700),
+            ["price"]);
+        var job = Job(ImportStage.Matching) with { Result = existing };
+
+        var result = ImportDecision.Next(job, new ImportCallback(ImportStage.Matching, null, null), Now);
+
+        Assert.Same(existing, result.Job!.Result);
+    }
+
+    // --- Reap ------------------------------------------------------------
+
+    [Fact]
+    public void ReapLeavesATerminalJobAlone() =>
+        Assert.Null(ImportDecision.Reap(Job(ImportStage.Done), Now));
+
+    [Fact]
+    public void ReapLeavesARunningJobAloneBeforeItsDeadline() =>
+        Assert.Null(ImportDecision.Reap(
+            Job(ImportStage.Reading, deadlineAt: "2026-07-30T09:20:00Z"), Now));
+
+    [Fact]
+    public void ReapFailsARunningJobPastItsDeadline()
+    {
+        var reaped = ImportDecision.Reap(
+            Job(ImportStage.Reading, deadlineAt: "2026-07-30T09:05:00Z"), Now);
+
+        Assert.NotNull(reaped);
+        Assert.Equal(ImportStage.Failed, reaped!.Stage);
+        Assert.Equal("timeout", reaped.Error!.Code);
+    }
+
+    // --- ExceedsRunningCap -------------------------------------------------
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    public void TheRunningCapIsTwoAtOnce(int running, bool expected) =>
+        Assert.Equal(expected, ImportDecision.ExceedsRunningCap(running));
 }

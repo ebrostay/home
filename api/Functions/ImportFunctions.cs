@@ -1,5 +1,5 @@
+using System.Net;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Ebrostay.Api.Models;
 using Ebrostay.Api.Services;
@@ -17,6 +17,12 @@ namespace Ebrostay.Api.Functions;
 // because only the client knows which fields the owner has already typed into.
 // So nothing here writes to `properties`, and HostWrites validation is
 // untouched by this whole feature.
+//
+// Every stage-transition DECISION (the 409, the backwards-rank no-op, the
+// reaper, the running-imports cap, the token comparison) lives in the pure,
+// unit-tested `ImportDecision`. What is left here is I/O: read a job with its
+// etag, ask ImportDecision what happens, write it back with that same etag so
+// a stale write 412s instead of silently clobbering whatever landed first.
 public class ImportFunctions(
     Database database,
     ProfileService profiles,
@@ -26,8 +32,6 @@ public class ImportFunctions(
 {
     private Container Jobs => database.GetContainer("importJobs");
 
-    /// Two at once is enough for anyone who is not scripting us.
-    private const int MaxRunningPerOwner = 2;
     private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -40,13 +44,22 @@ public class ImportFunctions(
         var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
-        var body = await JsonSerializer.DeserializeAsync<ImportStart>(req.Body, Json, ct);
+        var body = await ReadJsonAsync<ImportStart>(req, ct);
         var host = ImportSources.Match(body?.Url);
         if (host is null) return Bad("unsupported_host");
 
-        if (await RunningCountAsync(profile!.Id, ct) >= MaxRunningPerOwner)
-            return TooMany("too_many_imports");
-        if (!await budget.TryConsumeAsync(profile.Id, ct))
+        int runningCount;
+        try
+        {
+            runningCount = await RunningCountAsync(profile!.Id, ct);
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error counting running imports for {OwnerId}", profile!.Id);
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
+        if (ImportDecision.ExceedsRunningCap(runningCount)) return TooMany("too_many_imports");
+        if (!await budget.TryConsumeAsync(profile!.Id, ct))
             return TooMany("daily_import_limit");
 
         var now = DateTimeOffset.UtcNow;
@@ -64,7 +77,15 @@ public class ImportFunctions(
             Error: null,
             Ttl: 604800);
 
-        await Jobs.CreateItemAsync(job, new PartitionKey(job.Id), cancellationToken: ct);
+        try
+        {
+            await Jobs.CreateItemAsync(job, new PartitionKey(job.Id), cancellationToken: ct);
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error creating import job {JobId}", job.Id);
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
 
         var baseUrl = Environment.GetEnvironmentVariable("IMPORT_CALLBACK_BASE_URL")
             ?? $"{req.Scheme}://{req.Host}";
@@ -86,27 +107,38 @@ public class ImportFunctions(
         var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
-        var job = await ReadAsync(jobId, ct);
+        var (job, etag, readError) = await ReadAsync(jobId, ct);
+        if (readError is not null) return readError;
         // 404, not 403: a job id is not a thing to confirm the existence of.
-        if (job is null || job.OwnerId != profile!.Id) return new NotFoundResult();
+        if (job!.OwnerId != profile!.Id) return new NotFoundResult();
 
-        // THE REAPER. A running job past its deadline fails here, which is why
-        // this feature needs no timer trigger — the same lazy pattern
+        // THE REAPER. A running job past its deadline fails here, which is
+        // why this feature needs no timer trigger — the same lazy pattern
         // RouteCache uses for stale geometry.
-        if (!ImportStage.IsTerminal(job.Stage) &&
-            DateTimeOffset.TryParse(job.DeadlineAt, out var deadline) &&
-            DateTimeOffset.UtcNow > deadline)
+        var reaped = ImportDecision.Reap(job, DateTimeOffset.UtcNow);
+        if (reaped is not null)
         {
             logger.LogWarning(
                 "Import job {JobId} reaped: past deadline {DeadlineAt} while in stage {Stage}",
                 job.Id, job.DeadlineAt, job.Stage);
-            job = job with
+
+            switch (await ReplaceAsync(reaped, etag!, ct))
             {
-                Stage = ImportStage.Failed,
-                Error = new ImportError("timeout"),
-                UpdatedAt = DateTimeOffset.UtcNow.ToString("o"),
-            };
-            await ReplaceAsync(job, ct);
+                case ReplaceOutcome.Ok:
+                    job = reaped;
+                    break;
+                case ReplaceOutcome.Stale:
+                    // Someone else's write — most likely the pipeline's own
+                    // completion callback — landed first. Re-read and hand
+                    // back whatever they left rather than clobbering a
+                    // result that arrived while we were reaping.
+                    var (latest, _, latestError) = await ReadAsync(jobId, ct);
+                    if (latestError is not null) return latestError;
+                    job = latest!;
+                    break;
+                case ReplaceOutcome.Error:
+                    return new StatusCodeResult(StatusCodes.Status502BadGateway);
+            }
         }
 
         return new OkObjectResult(ImportProjection.ToView(job));
@@ -120,11 +152,11 @@ public class ImportFunctions(
         // ANONYMOUS BY DESIGN. The pipeline is third-party and holds no
         // account with us; the per-job token is the credential, and a leak is
         // scoped to one job and dies with it.
-        var job = await ReadAsync(jobId, ct);
-        if (job is null) return new NotFoundResult();
+        var (job, etag, readError) = await ReadAsync(jobId, ct);
+        if (readError is not null) return readError;
 
         var presented = req.Headers["X-Import-Token"].ToString();
-        if (!FixedTimeEquals(presented, job.CallbackToken))
+        if (!ImportDecision.TokenMatches(presented, job!.CallbackToken))
         {
             // Logged at the job, never the token: the token itself is a
             // credential and does not belong in a log line.
@@ -132,7 +164,7 @@ public class ImportFunctions(
             return new NotFoundResult();
         }
 
-        var callback = await JsonSerializer.DeserializeAsync<ImportCallback>(req.Body, Json, ct);
+        var callback = await ReadJsonAsync<ImportCallback>(req, ct);
         if (callback is null) return Bad("body_required");
 
         var invalid = ImportValidation.CheckCallback(callback);
@@ -142,25 +174,26 @@ public class ImportFunctions(
             return Bad(invalid);
         }
 
-        // Idempotent: at-least-once delivery means the pipeline may report the
-        // same completion twice, and a cancelled job may be reported done.
-        if (ImportStage.IsTerminal(job.Stage))
+        // Idempotent: at-least-once delivery means the pipeline may report
+        // the same completion twice, and a cancelled job may be reported
+        // done. The decision below is pinned to the SAME read (via etag) that
+        // produced `job`, so two concurrent duplicate callbacks cannot both
+        // win — the loser's write 412s and is turned into the same Conflict
+        // outcome below.
+        var decision = ImportDecision.Next(job, callback, DateTimeOffset.UtcNow);
+        if (decision.Outcome == ImportDecision.CallbackOutcome.Conflict)
             return new ConflictObjectResult(new { error = "job_finished" });
-
-        var stage = callback.Stage!;
-        // Never walk the owner's status line backwards.
-        if (!ImportStage.IsTerminal(stage) && ImportStage.Rank(stage) < ImportStage.Rank(job.Stage))
+        if (decision.Outcome == ImportDecision.CallbackOutcome.NoOp)
             return new OkResult();
 
-        job = job with
+        return await ReplaceAsync(decision.Job!, etag!, ct) switch
         {
-            Stage = stage,
-            Result = callback.Result is null ? job.Result : ImportValidation.Clamp(callback.Result),
-            Error = callback.Error ?? job.Error,
-            UpdatedAt = DateTimeOffset.UtcNow.ToString("o"),
+            ReplaceOutcome.Ok => new OkResult(),
+            // Lost the race to another write on this same job — whatever got
+            // there first already makes this report a no-op in effect.
+            ReplaceOutcome.Stale => new ConflictObjectResult(new { error = "job_finished" }),
+            _ => new StatusCodeResult(StatusCodes.Status502BadGateway),
         };
-        await ReplaceAsync(job, ct);
-        return new OkResult();
     }
 
     [Function("ImportCancel")]
@@ -171,42 +204,77 @@ public class ImportFunctions(
         var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
-        var job = await ReadAsync(jobId, ct);
-        if (job is null || job.OwnerId != profile!.Id) return new NotFoundResult();
+        var (job, etag, readError) = await ReadAsync(jobId, ct);
+        if (readError is not null) return readError;
+        if (job!.OwnerId != profile!.Id) return new NotFoundResult();
         if (ImportStage.IsTerminal(job.Stage)) return new NoContentResult();
 
-        await ReplaceAsync(job with
+        var outcome = await ReplaceAsync(job with
         {
             Stage = ImportStage.Cancelled,
             UpdatedAt = DateTimeOffset.UtcNow.ToString("o"),
-        }, ct);
-        return new NoContentResult();
+        }, etag!, ct);
+
+        // A stale write here means some other write (the pipeline completing,
+        // or another cancel) landed first. The job is terminal, or about to
+        // be, either way — and a DELETE that finds its target already gone is
+        // still a success.
+        return outcome == ReplaceOutcome.Error
+            ? new StatusCodeResult(StatusCodes.Status502BadGateway)
+            : new NoContentResult();
     }
 
     // -----------------------------------------------------------------------
 
-    private static bool FixedTimeEquals(string presented, string expected)
-    {
-        var a = Encoding.UTF8.GetBytes(presented);
-        var b = Encoding.UTF8.GetBytes(expected);
-        return a.Length == b.Length && CryptographicOperations.FixedTimeEquals(a, b);
-    }
+    private enum ReplaceOutcome { Ok, Stale, Error }
 
-    private async Task<ImportJobDoc?> ReadAsync(string jobId, CancellationToken ct)
+    // Ownership is a 404, not a 403 — decided by the caller, not here, since
+    // ImportCallback has no owner to check. Mirrors HostFunctions.LoadOwnedAsync:
+    // a non-404 Cosmos failure is logged and mapped to 502, never left to
+    // surface as an unhandled 500.
+    private async Task<(ImportJobDoc? Job, string? ETag, IActionResult? Error)> ReadAsync(
+        string jobId, CancellationToken ct)
     {
         try
         {
-            return await Jobs.ReadItemAsync<ImportJobDoc>(jobId, new PartitionKey(jobId),
+            var response = await Jobs.ReadItemAsync<ImportJobDoc>(jobId, new PartitionKey(jobId),
                 cancellationToken: ct);
+            return (response.Resource, response.ETag, null);
         }
-        catch (CosmosException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            return null;
+            return (null, null, new NotFoundResult());
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error reading import job {JobId}", jobId);
+            return (null, null, new StatusCodeResult(StatusCodes.Status502BadGateway));
         }
     }
 
-    private Task ReplaceAsync(ImportJobDoc job, CancellationToken ct) =>
-        Jobs.ReplaceItemAsync(job, job.Id, new PartitionKey(job.Id), cancellationToken: ct);
+    // Conditional replace: write only if the document has not moved
+    // underneath us. A stale etag means someone else already wrote — the
+    // caller decides what that means for them (a 409, a re-read, or a no-op
+    // success), but it is never a silent overwrite of a result or an error
+    // that arrived first.
+    private async Task<ReplaceOutcome> ReplaceAsync(ImportJobDoc job, string etag, CancellationToken ct)
+    {
+        try
+        {
+            await Jobs.ReplaceItemAsync(job, job.Id, new PartitionKey(job.Id),
+                new ItemRequestOptions { IfMatchEtag = etag }, ct);
+            return ReplaceOutcome.Ok;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
+        {
+            return ReplaceOutcome.Stale;
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error replacing import job {JobId}", job.Id);
+            return ReplaceOutcome.Error;
+        }
+    }
 
     private async Task<int> RunningCountAsync(string ownerId, CancellationToken ct)
     {
@@ -216,6 +284,22 @@ public class ImportFunctions(
             .WithParameter("@o", ownerId);
         using var feed = Jobs.GetItemQueryIterator<int>(query);
         return feed.HasMoreResults ? (await feed.ReadNextAsync(ct)).FirstOrDefault() : 0;
+    }
+
+    // A malformed body (bad JSON, wrong shape) is a 400, never a 500 — the
+    // pipeline's at-least-once delivery means a 500 is what makes it retry a
+    // payload that will never parse. Mirrors HostFunctions.ReadJsonAsync.
+    private static async Task<T?> ReadJsonAsync<T>(HttpRequest req, CancellationToken ct)
+        where T : class
+    {
+        try
+        {
+            return await JsonSerializer.DeserializeAsync<T>(req.Body, Json, ct);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static ObjectResult Bad(string code) =>

@@ -73,6 +73,13 @@ public static class ImportValidation
 
         if (callback.Result is { } result)
         {
+            // Every member of ImportResult is a non-nullable reference type,
+            // but that is a compile-time promise only: System.Text.Json will
+            // happily deserialize `{"result":{}}` by leaving Listing/Pricing/
+            // Imported null, and the pipeline is a third party — a bad day
+            // there must be a 400, not a NullReferenceException here.
+            if (result.Listing is null || result.Pricing is null || result.Imported is null)
+                return "result_invalid";
             if (result.Imported.Length > ImportKeys.MaxKeys) return "imported_too_many";
             if (result.Imported.Any(k => !ImportKeys.All.Contains(k)))
                 return "imported_unknown_field";
@@ -110,7 +117,10 @@ public static class ImportValidation
             return value;
         }
 
-        var l = result.Listing;
+        // Defensive against a caller that skipped CheckCallback (the normal
+        // Callback flow never does): a sub-object System.Text.Json left null
+        // must not crash a `with` expression here either.
+        var l = result.Listing ?? new ImportListingPatch();
         var lat = l.Lat; var lng = l.Lng;
         if (lat is not null && (lat < -90 || lat > 90)) { lat = null; dropped.Add("pin"); }
         if (lng is not null && (lng < -180 || lng > 180)) { lng = null; dropped.Add("pin"); }
@@ -151,7 +161,7 @@ public static class ImportValidation
             Amenities = amenities,
         };
 
-        var p = result.Pricing;
+        var p = result.Pricing ?? new ImportPricingPatch();
         var pricing = p with
         {
             PriceNumber = Bounded(p.PriceNumber, 1, HostValidation.MaxPrice, "price"),
@@ -162,7 +172,7 @@ public static class ImportValidation
         };
 
         return new ImportResult(listing, pricing,
-            result.Imported.Where(k => !dropped.Contains(k)).ToArray());
+            (result.Imported ?? []).Where(k => !dropped.Contains(k)).ToArray());
     }
 }
 

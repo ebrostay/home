@@ -1,3 +1,4 @@
+using Ebrostay.Api.Functions;
 using Ebrostay.Api.Models;
 using Xunit;
 
@@ -157,4 +158,53 @@ public class RichTextBuilderTests
         Assert.Equal("doc", doc.Type);
         Assert.Empty(doc.Content!);
     }
+}
+
+public class ImportProjectionTests
+{
+    private static ImportJobDoc Job(string stage) => new(
+        "imp_1", "owner-1", new ImportJobSource("url", "idealista", "https://x"),
+        stage, "2026-07-30T09:00:00Z", "2026-07-30T09:00:00Z", "2026-07-30T09:05:00Z",
+        "s3cr3t", null, null, 604800);
+
+    [Fact]
+    public void TheViewCannotCarryTheToken()
+    {
+        var view = ImportProjection.ToView(Job(ImportStage.Reading));
+        var json = System.Text.Json.JsonSerializer.Serialize(view);
+        Assert.DoesNotContain("s3cr3t", json);
+        Assert.DoesNotContain("callbackToken", json);
+    }
+
+    [Fact]
+    public void TheViewDoesNotEchoTheUrl()
+    {
+        // The client already has what it pasted. Echoing it back is a second
+        // copy of a value we have no reason to hold twice.
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            ImportProjection.ToView(Job(ImportStage.Reading)));
+        Assert.DoesNotContain("https://x", json);
+    }
+}
+
+public class ImportStageProgressionTests
+{
+    [Fact]
+    public void ARunningStageNeverGoesBackwards()
+    {
+        Assert.True(ImportStage.Rank(ImportStage.Matching) > ImportStage.Rank(ImportStage.Reading));
+    }
+
+    [Theory]
+    [InlineData("done")]
+    [InlineData("failed")]
+    [InlineData("cancelled")]
+    public void TerminalStagesAreTerminal(string stage) =>
+        Assert.True(ImportStage.IsTerminal(stage));
+
+    [Theory]
+    [InlineData("queued")]
+    [InlineData("reading")]
+    public void RunningStagesAreNot(string stage) =>
+        Assert.False(ImportStage.IsTerminal(stage));
 }

@@ -307,9 +307,12 @@ export default function HomePage() {
                   key={i}
                   className="rounded-(--radius-card) border border-line bg-surface p-3.5"
                 >
-                  {/* Same cap as the card's photo, or the list jumps when the
-                      skeletons are replaced by the homes they stood in for. */}
-                  <div className="skeleton aspect-[16/11] max-h-[13.5rem] rounded-[0.625rem]" />
+                  {/* Same cap AND same `w-full` as the card's photo, or the
+                      list jumps when the skeletons are replaced by the homes
+                      they stood in for. Without the explicit width the ratio
+                      transfers the max-height into a max-width and the box
+                      stops at 314px — in every engine, this one. */}
+                  <div className="skeleton aspect-[16/11] max-h-[13.5rem] w-full rounded-[0.625rem]" />
                   <div className="mt-3.5 space-y-2.5">
                     <div className="skeleton h-4 w-32" />
                     <div className="skeleton h-3 w-24" />

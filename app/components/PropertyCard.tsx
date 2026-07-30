@@ -123,7 +123,15 @@ export function PropertyCard({
            406px tall. Capped, the photo's share FALLS as the card widens,
            which is the direction it should move, and a card is a stable
            ~420px object at every width instead of one that balloons. */
-        className={`relative shrink-0 overflow-hidden rounded-[0.625rem] bg-surface-2 ${
+        /* `w-full` is load-bearing, not decoration. A box with an aspect ratio
+           and an *auto* width transfers its max-height back through the ratio
+           into a max-width — so this box's width was capped at 13.5rem × 16/11
+           = 314px. Chrome and Firefox hide it (flex stretch wins), WebKit does
+           not: in Safari the photo sat 314px wide inside a wider card, leaving
+           a gap down the right, and overflowed the rounded corner on cards
+           narrower than 314px. A specified width is not an automatic size, so
+           nothing is transferred and the ratio only ever drives the height. */
+        className={`relative w-full shrink-0 overflow-hidden rounded-[0.625rem] bg-surface-2 ${
           list
             ? "aspect-[16/11] sm:aspect-auto sm:max-h-[22rem] sm:w-[300px]"
             : "aspect-[16/11] max-h-[13.5rem]"

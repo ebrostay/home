@@ -2130,12 +2130,13 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
 
 ## ADR-033 — AI-assisted import: an async job the API owns and an extractor it does not trust
 
-- **Status:** ✅ locked 2026-07-30 (product owner: Raphael); 🔜 **not built**.
+- **Status:** ✅ locked and ✅ **built** 2026-07-30 (product owner: Raphael).
   Carries the design at
   `docs/superpowers/specs/2026-07-30-ai-assisted-import-design.md` into the
-  log. **Extends ADR-030** (the wizard gains a step 0 in front of it; nothing
-  inside the nine steps changes but one banner and one glyph) and **sits
-  beside ADR-020** (the DeepSeek assistant) rather than replacing it.
+  log, plus five decisions made during implementation. **Extends ADR-030**
+  (the wizard gains a step 0 in front of it; nothing inside the nine steps
+  changes but one banner and one glyph) and **sits beside ADR-020** (the
+  DeepSeek assistant) rather than replacing it.
 - **Context.** Most owners arriving at *Add a property* already have the flat
   listed on a portal, and retyping it is why drafts get abandoned. The design
   reads a pasted portal URL and proposes a filled form. Extraction takes 30
@@ -2255,6 +2256,65 @@ question an absent card leaves them guessing at. It is `disabled` +
 `aria-disabled` with **no drop, dragover or change handler attached at all** —
 the design's rule that a dead control must be plainly dead applies with more
 force to a whole card than to a button.
+
+### Decision 10 — `ImportDecision`: the transition rules are a pure type, not function bodies
+
+The job's stage-transition rules — `Next` (apply/no-op/conflict), `Reap`,
+`ExceedsRunningCap`, `TokenMatches`, and `Cancel`'s own idempotence — were
+pulled out of `ImportFunctions` into `api/Models/ImportDecision.cs`: a static
+class that does no I/O and is a pure function of a document, a callback, and
+(where time matters) the caller's own `now`. `ImportFunctions` is now a thin
+wrapper that reads a job with its etag, asks `ImportDecision` what happens, and
+writes the answer back — which is what makes the six guarantees (a duplicate
+completion is a no-op, an out-of-order stage report cannot walk the status line
+backwards, a job past its deadline fails itself, two at once is the cap, a
+token compare costs the same time whether it matches, cancelling a terminal job
+writes nothing) unit-testable without a Cosmos emulator.
+
+### Decision 11 — Optimistic concurrency is load-bearing, not hygiene
+
+Every job write (`ImportFunctions.ReplaceAsync`) carries `IfMatchEtag`. Without
+it, the poll's own reaper could overwrite a completed extraction with
+`failed`/`timeout` — a successful read reported to the owner as a timeout,
+silently. `Cancel` retries once against a fresh etag when its first write loses
+a race, and answers a new `cancel_conflict` (409) if it loses twice, rather
+than a `204` that would claim a cancellation that did not happen — a stale
+write here is never treated as "someone else finished it for me."
+
+### Decision 12 — The amenity vocabulary is filtered client-side, in `mergeImport`, never server-side
+
+`HostWrites.cs` deliberately keeps the amenity vocabulary off the API: shipping
+a new amenity needs no API deploy. The consequence is that the server-side
+shape check (`^[a-z0-9-]{1,32}$`) cannot reject an out-of-vocabulary key — it
+passes, is stored on the job, and is filtered only when `mergeImport` (Task 6)
+applies it against `AMENITY_KEYS`. An unfiltered key would render as nothing on
+the amenities step, which is why the fixture correction in commit `c86bade`
+(the stub's amenity names had to match `app/lib/amenity-icons.ts`, not a
+portal's own words) mattered enough to bring the whole URL flow down for
+review, not just tidy a fixture.
+
+### Decision 13 — Cleared marks are part of the save condition, never part of `changedSections`
+
+`marksDiffer` (Task 6) makes a mark clearing on its own enough to enable Save —
+an owner who has looked at every marked field but changed nothing must still be
+able to leave. But marks are deliberately **excluded** from `changedSections`,
+the signal that drives the editor's dirty indicator and its re-review trigger.
+Without the split, a pricing-only edit — or an edit that exactly reverts to the
+imported value — would flip a section to "changed" for no reason a reload could
+explain, and a later reload would re-mark a field the owner had already looked
+at.
+
+### Decision 14 — The arrival set is not persisted, by decision
+
+`arrived` (Task 8, `page.tsx`) answers "did the portal send anything for this
+step" and is kept only in client state, never written to `PropertyDoc`. On a
+resumed draft the banner cannot tell "this step received nothing" from "the
+owner has already reviewed it" — both look identical once the marks are gone —
+so it renders no body line rather than guess between them: truthful in every
+state, at the cost of saying less on a screen the owner has already seen once.
+`nearby` is the one step exempt from the guess in the first place: no import
+key maps to it (Decision 4's table is one-directional on purpose), so absence
+there is certain rather than unknown, and it keeps its true nothing-line always.
 
 ### Consequences
 

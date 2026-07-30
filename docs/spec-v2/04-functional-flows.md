@@ -17,6 +17,10 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5):
 | `PUT /api/host/properties/{id}/status` | auth (own) | Pause / reopen only (ADR-024). Publishing stays an admin act. |
 | `POST /api/host/properties/{id}/submit` | auth (own) | draft/rejected → `pending_review`. |
 | `POST /api/host/properties/{id}/photos` · `DELETE …/photos/{n}` | auth (own) | Photo upload/delete via Blob (§4.4). |
+| `POST /api/import` | auth | Enqueue extraction from a pasted portal URL — `202 { jobId, stage: "queued" }` (ADR-033). Errors: `unsupported_host`, `bad_url`, `too_many_imports`, `daily_import_limit`. |
+| `GET /api/import/{jobId}` | auth (own) | Poll a job's stage/result, `queued → fetching → reading → matching → done \| failed \| cancelled`; also the reaper — a job found past its deadline is written `failed`/`timeout` here rather than by a timer trigger (ADR-033 Decisions 7, 10). |
+| `POST /api/import/{jobId}/callback` | **anon**, per-job `X-Import-Token` (`FixedTimeEquals`; a mismatch is `404`, never `403`) | The extraction pipeline reports stage/result (ADR-033 Decisions 5–6, 10–11). Errors: `body_required`, `result_invalid`, `imported_unknown_field`, `imported_too_many`, `stage_invalid`, `error_code_invalid`, `job_finished`; failure codes carried on a `failed` job: `login_wall`, `not_found`, `withdrawn`, `unreadable`, `timeout`, `pipeline_error`. |
+| `DELETE /api/import/{jobId}` | auth (own) | Cancel a running job (*Stop reading*). `204` once cancelled; `cancel_conflict` (`409`) if the cancel loses the race against the pipeline's own write twice rather than falsely reporting success (ADR-033 Decision 11). |
 | `GET /api/nearby/vocabulary` | anon | The type/group/profile vocabulary, cached 1h (§2.2.5, ADR-028). |
 | `GET /api/host/nearby/candidates` | auth (own point) | Owner's candidate search — Overpass + ORS matrix (§4.4.1). |
 | `GET /api/host/nearby/preview-route` | auth (own points) | Route preview for a not-yet-saved candidate; stores nothing (§4.4.1). |

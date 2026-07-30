@@ -72,6 +72,20 @@ async function stubBackend(page: Page): Promise<string[]> {
     if (path === "/api/me") return json(fixture("me.json"));
     if (path === "/api/properties") return json(fixture("properties.json"));
     if (path === "/api/nearby/vocabulary") return json(fixture("nearby-vocabulary.json"));
+
+    // The AI-assisted import (ADR-033). The GET fixture's `result` is the same
+    // payload infra/stub-extractor.mjs's FIXTURE sends over the real callback,
+    // so one body is the source of truth for both the manual stub and this
+    // suite — a drift between them would otherwise only show up by hand.
+    if (path === "/api/import" && route.request().method() === "POST") {
+      return route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: fixture("import-start.json"),
+      });
+    }
+    if (path === "/api/import/imp_test") return json(fixture("import-job-done.json"));
+
     if (path === "/api/host/properties") return json(fixture("host-properties.json"));
 
     if (path.startsWith("/api/host/properties/")) {
@@ -244,6 +258,63 @@ for (const locale of ["es", "en"] as const) {
     }
     expect(consoleErrors, `console errors on the ${locale} wizard`).toEqual([]);
     expect(unstubbed, "endpoints with no fixture, reached from the wizard").toEqual([]);
+  });
+}
+
+// The pasted-link path (ADR-033), starting from `phase === "start"` — the
+// screen /host/new opens on — through `POST /api/import` and the poll's
+// `GET /api/import/{id}` to the nine steps with the merge already applied.
+// Asserting the address field's actual value and the banner naming the
+// source is deliberate: a test that only checked "no crash" would stay green
+// even if the merge silently dropped every field on the floor, which is
+// exactly the failure this fixture pair exists to catch.
+const IMPORT_URL = "https://www.idealista.com/inmueble/107294518/";
+const IMPORT_CASE = {
+  es: { read: "Leer este anuncio", street: "Dirección", exit: "Guardar y salir" },
+  en: { read: "Read this listing", street: "Street address", exit: "Save and exit" },
+} as const;
+
+for (const locale of ["es", "en"] as const) {
+  const { read, street, exit } = IMPORT_CASE[locale];
+
+  test(`/${locale}/host/new — a pasted link reaches the nine steps with marks`, async ({
+    page,
+  }) => {
+    const crashes: string[] = [];
+    const consoleErrors: string[] = [];
+
+    page.on("pageerror", (err) => crashes.push(err.stack ?? err.message));
+    page.on("console", (msg: ConsoleMessage) => {
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (ALLOWED_CONSOLE.some((rx) => rx.test(text))) return;
+      consoleErrors.push(text);
+    });
+
+    const unstubbed = await stubBackend(page);
+
+    // Fresh load, no `?import=` — this is `phase === "start"`, the offer
+    // screen, before anything is pasted.
+    await page.goto(`/${locale}/host/new`, { waitUntil: "networkidle" });
+
+    await page.locator("#import-url").fill(IMPORT_URL);
+    await page.getByRole("button", { name: read }).click();
+
+    // The merge landed: the address field carries the fixture's value, not a
+    // placeholder or an empty control, and the banner names the source that
+    // filled it — the same fixture body infra/stub-extractor.mjs sends for
+    // real, per Task 9's brief.
+    await expect(page.getByLabel(street)).toHaveValue("Calle de Bilbao, 12");
+    await expect(page.locator("main")).toContainText(/Idealista/);
+    await expect(page.getByRole("button", { name: exit })).toBeVisible();
+
+    expect(crashes, `uncaught exception on the ${locale} import`).toEqual([]);
+    const body = await page.locator("body").innerText();
+    for (const fragment of FAILURE_TEXT) {
+      expect(body, `the ${locale} import rendered a failure state`).not.toContain(fragment);
+    }
+    expect(consoleErrors, `console errors on the ${locale} import`).toEqual([]);
+    expect(unstubbed, "endpoints with no fixture, reached from the import").toEqual([]);
   });
 }
 

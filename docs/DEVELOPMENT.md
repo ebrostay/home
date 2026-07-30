@@ -179,7 +179,14 @@ Three of these are load-bearing and easy to get wrong:
   on the default.
 - **`PHOTOS_CONNECTION` is not set**, deliberately. It falls back to
   `AzureWebJobsStorage`, so Azurite serves both roles locally and there is one
-  fewer setting to keep in step.
+  fewer setting to keep in step. `IMPORTS_CONNECTION` (the import queue) works
+  the same way.
+- **`IMPORT_CALLBACK_BASE_URL` is required** for the AI-assisted import, and
+  `POST /api/import` throws without it rather than guessing. The only thing it
+  could guess from is the request's own `Host` header, which the caller
+  controls — and the guess would write that job's callback token into a queue
+  message addressed to whatever host they asked for. Locally it is
+  `http://localhost:4280`; in Azure the bicep sets it to the SWA hostname.
 
 The "What's nearby" feature needs one more: **`ORS_API_KEY`**, required for it
 to work at all — without it, OpenRouteService calls fail with no explanation

@@ -178,6 +178,10 @@ resource importQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@202
   name: 'import-jobs'
 }
 
+// One account, two roles (photo blobs and the import queue), so one connection
+// string built once and handed to both settings below.
+var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+
 // Unlinked SWA — deploys happen via deployment token from CI, no repo binding.
 resource swa 'Microsoft.Web/staticSites@2023-01-01' = {
   name: swaName
@@ -201,7 +205,15 @@ resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
     COSMOS_ENDPOINT: cosmos.properties.documentEndpoint
     COSMOS_KEY: cosmos.listKeys().primaryMasterKey
     COSMOS_DATABASE: databaseName
-    STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    // The names the CODE reads (api/Program.cs), not a third name of our own.
+    // `STORAGE_CONNECTION_STRING` used to be the only storage setting here and
+    // nothing has ever read it: the blob client reads PHOTOS_CONNECTION and the
+    // queue client reads IMPORTS_CONNECTION, each falling back to
+    // AzureWebJobsStorage — which SWA managed functions do not expose either.
+    // Applied as it stood, the QueueServiceClient singleton threw at DI
+    // resolution and every /api/import answered 500.
+    PHOTOS_CONNECTION: storageConnectionString
+    IMPORTS_CONNECTION: storageConnectionString
     PHOTOS_CONTAINER: photosContainerName
     PIPELINE_WAKEUP_URL: ''
     IMPORT_CALLBACK_BASE_URL: 'https://${swa.properties.defaultHostname}'

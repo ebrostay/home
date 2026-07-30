@@ -189,3 +189,36 @@ export const POLL_CEILING_MS = 5 * 60_000;
  *  going to take fifty seconds does not need twenty-five polls in its last
  *  half. */
 export const pollDelay = (elapsedMs: number) => (elapsedMs < 60_000 ? POLL_MS : 5_000);
+
+/** The three stages a job stops at. The poll schedules no further round after
+ *  one of these, and nothing else in the client may decide "is it over" by
+ *  listing stages of its own. */
+const TERMINAL_STAGES = new Set<ImportStage>(["done", "failed", "cancelled"]);
+export const isTerminalStage = (stage: ImportStage) => TERMINAL_STAGES.has(stage);
+
+/** Every error code an owner can be shown, from the four endpoints' 4xx and
+ *  from a job's own `error.code`. Mirrors `ImportErrors.Failures` plus the
+ *  rejection codes in api/Functions/ImportFunctions.cs and ImportWrites.cs —
+ *  a drift here is a code that reaches an owner as the generic "not saved".
+ *
+ *  `bad_url` is the one no endpoint emits: the client refuses an unparseable
+ *  link before it is ever sent, and the copy exists so that refusal has words. */
+export const IMPORT_ERROR_CODES = [
+  "unsupported_host", "bad_url", "body_required",
+  "too_many_imports", "daily_import_limit",
+  "job_finished", "cancel_conflict", "result_invalid",
+  "login_wall", "not_found", "withdrawn", "unreadable", "timeout", "pipeline_error",
+] as const;
+
+export type ImportErrorCode = (typeof IMPORT_ERROR_CODES)[number];
+
+/** `unsupported_host` → `errorUnsupportedHost`. One table serves the 4xx from
+ *  `POST /import` and the job's own `error.code`, so a code cannot be given
+ *  copy in one place and left generic in the other. A key this produces that
+ *  no message file has is a silent fall back to "something went wrong" —
+ *  which is what `import.test.ts` asserts against, in both locales. */
+export const importErrorKey = (code: string) =>
+  `error${code
+    .split("_")
+    .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1))
+    .join("")}`;

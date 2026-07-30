@@ -127,6 +127,12 @@ const ROUTES: RouteCase[] = [
   { path: "/host", expect: { es: /vivienda/i, en: /home/i } },
   // The offer, not step 1 (ADR-033): /host/new opens on the import start
   // screen now, and the nine steps sit behind "Start with a blank form".
+  // This case therefore renders StartScreen and nothing else — the nine steps
+  // are covered by "the blank form reaches the nine steps" below, which is
+  // where DraftBar, SectionNav, StepCard, StepFooter and AddressFields
+  // actually get opened. Neither case can stand in for the other, and the
+  // route-enumeration guard at the bottom of this file cannot tell: the path
+  // is listed either way.
   { path: "/host/new", expect: { es: /anunciada/i, en: /listed/i } },
   { path: "/host/manage?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
   // The listing in review: the state whose "submitted on <date>" line is what
@@ -192,6 +198,53 @@ for (const locale of ["es", "en"] as const) {
       expect(unstubbed, `endpoints with no fixture, reached from ${url}`).toEqual([]);
     });
   }
+}
+
+// The nine steps, which are the largest component in the app and which no
+// route case reaches any more: /host/new opens on the import offer, and the
+// wizard is one click behind it (ADR-033). Same assertions the route cases
+// make — an uncaught exception and a console error are the failures this file
+// exists for, and moving the wizard behind a button must not move it out of
+// their reach.
+const BLANK_FORM = {
+  es: { button: "Empezar con el formulario en blanco", step: /direcci/i, exit: "Guardar y salir" },
+  en: { button: "Start with a blank form", step: /address/i, exit: "Save and exit" },
+} as const;
+
+for (const locale of ["es", "en"] as const) {
+  const { button, step, exit } = BLANK_FORM[locale];
+
+  test(`/${locale}/host/new — the blank form reaches the nine steps`, async ({ page }) => {
+    const crashes: string[] = [];
+    const consoleErrors: string[] = [];
+
+    page.on("pageerror", (err) => crashes.push(err.stack ?? err.message));
+    page.on("console", (msg: ConsoleMessage) => {
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (ALLOWED_CONSOLE.some((rx) => rx.test(text))) return;
+      consoleErrors.push(text);
+    });
+
+    const unstubbed = await stubBackend(page);
+
+    await page.goto(`/${locale}/host/new`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: button }).click();
+
+    // The step card's own question, the draft bar, and the rail: three
+    // components the offer screen deliberately does not render.
+    await expect(page.locator("main")).toContainText(step);
+    await expect(page.getByRole("button", { name: exit })).toBeVisible();
+    await expect(page.getByRole("navigation").last()).toBeVisible();
+
+    expect(crashes, `uncaught exception on the ${locale} wizard`).toEqual([]);
+    const body = await page.locator("body").innerText();
+    for (const fragment of FAILURE_TEXT) {
+      expect(body, `the ${locale} wizard rendered a failure state`).not.toContain(fragment);
+    }
+    expect(consoleErrors, `console errors on the ${locale} wizard`).toEqual([]);
+    expect(unstubbed, "endpoints with no fixture, reached from the wizard").toEqual([]);
+  });
 }
 
 // A page added later must not quietly escape this file. Without this, the

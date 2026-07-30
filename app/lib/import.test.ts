@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
+  IMPORT_ERROR_CODES,
   IMPORT_KEYS,
   clearMark,
+  importErrorKey,
+  isTerminalStage,
   matchSource,
   mergeImport,
   pollDelay,
@@ -106,5 +111,61 @@ describe("IMPORT_KEYS", () => {
   it("holds 26 keys and no duplicates", () => {
     expect(new Set(IMPORT_KEYS).size).toBe(IMPORT_KEYS.length);
     expect(IMPORT_KEYS.length).toBe(26);
+  });
+});
+
+describe("isTerminalStage", () => {
+  it("is true for exactly the three stages a job stops at", () => {
+    expect(isTerminalStage("done")).toBe(true);
+    expect(isTerminalStage("failed")).toBe(true);
+    expect(isTerminalStage("cancelled")).toBe(true);
+  });
+
+  it("is false while the job is still moving", () => {
+    // `queued` is the one that matters: a poll that treated it as terminal
+    // would abandon every read before the pipeline had picked it up.
+    expect(isTerminalStage("queued")).toBe(false);
+    expect(isTerminalStage("fetching")).toBe(false);
+    expect(isTerminalStage("reading")).toBe(false);
+    expect(isTerminalStage("matching")).toBe(false);
+  });
+});
+
+// The error path, end to end as far as pure code can see it: a server code
+// becomes a message key, and that key has copy in BOTH locales. The transform
+// on its own is not the interesting half — a code with no copy is what
+// actually bites, because it degrades silently into "something went wrong"
+// and takes the one sentence that would have told the owner what to do next.
+describe("importErrorKey", () => {
+  const messages = (locale: string) =>
+    JSON.parse(
+      readFileSync(join(__dirname, "..", "messages", `${locale}.json`), "utf8"),
+    ).host.import as Record<string, string>;
+
+  it("camel-cases a snake_case code onto the errorX namespace", () => {
+    expect(importErrorKey("unsupported_host")).toBe("errorUnsupportedHost");
+    expect(importErrorKey("daily_import_limit")).toBe("errorDailyImportLimit");
+    expect(importErrorKey("cancel_conflict")).toBe("errorCancelConflict");
+    expect(importErrorKey("result_invalid")).toBe("errorResultInvalid");
+    // A single word keeps its shape rather than gaining a stray separator.
+    expect(importErrorKey("timeout")).toBe("errorTimeout");
+    expect(importErrorKey("withdrawn")).toBe("errorWithdrawn");
+  });
+
+  it.each(["es", "en"])("has copy in %s for every code the API can send", (locale) => {
+    const copy = messages(locale);
+    const missing = IMPORT_ERROR_CODES.filter((code) => !copy[importErrorKey(code)]);
+    expect(missing, `codes with no ${locale} copy`).toEqual([]);
+  });
+
+  it("says the same things in both languages", () => {
+    // Not a translation check — a key-parity one. A key present in one file
+    // and absent from the other is a screen that reads correctly for half the
+    // owners and falls back to the generic message for the other half.
+    expect(Object.keys(messages("es")).sort()).toEqual(Object.keys(messages("en")).sort());
+  });
+
+  it("lists each code once", () => {
+    expect(new Set(IMPORT_ERROR_CODES).size).toBe(IMPORT_ERROR_CODES.length);
   });
 });

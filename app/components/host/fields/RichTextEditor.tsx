@@ -12,7 +12,7 @@ import Heading from "@tiptap/extension-heading";
 import History from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
-import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, StickyNote } from "lucide-react";
+import { Bold as BoldIcon, Heading3, Image as ImageIcon, Italic as ItalicIcon, List, ListOrdered, MapPin, Redo2, StickyNote, Undo2 } from "lucide-react";
 import { canonical, EMPTY_DOC, RICH_LIMITS, textLength, type RichNode } from "@/lib/rich-text";
 
 // The ONLY file in the app that imports Tiptap. Everything downstream — the
@@ -175,7 +175,8 @@ export type RichTextEditorProps = {
    *  ("Insert photo"/"Insert place") as if it were the chip's content — the
    *  exact bug this pair of keys exists to prevent. */
   strings: Record<
-    "bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place" | "photoChip" | "placeChip",
+    "bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place"
+      | "undo" | "redo" | "photoChip" | "placeChip",
     string
   >;
 };
@@ -267,6 +268,17 @@ export function RichTextEditor({
           <span className={`data ml-auto text-[0.65625rem] ${over ? "text-danger" : "text-muted"}`}>
             {used.toLocaleString()} / {RICH_LIMITS.maxText.toLocaleString()}
           </span>
+          {/* After the counter, at the far end: undo and redo act on the whole
+              document rather than on the selection, so they do not belong in
+              the run of formatting tools the owner reaches for while typing.
+              `editor.can()` is asked on every render — the counter above
+              already re-renders this toolbar on each transaction, which is
+              exactly when the history depth can have changed. */}
+          <Divider />
+          <Tool editor={editor} label={strings.undo} disabled={!editor.can().undo()}
+            onClick={() => editor.chain().focus().undo().run()}><Undo2 size={14} strokeWidth={2} /></Tool>
+          <Tool editor={editor} label={strings.redo} disabled={!editor.can().redo()}
+            onClick={() => editor.chain().focus().redo().run()}><Redo2 size={14} strokeWidth={2} /></Tool>
         </div>
 
         {/* The `Placeholder` extension (@tiptap/extensions under the hood in
@@ -295,18 +307,24 @@ export function RichTextEditor({
 
 const Divider = () => <span className="mx-1 h-4 w-px bg-line" aria-hidden />;
 
-function Tool({ editor, active, label, onClick, children }: {
-  editor: Editor; active?: string; label: string; onClick: () => void; children: React.ReactNode;
+/** `disabled` is for a tool that has nothing to do right now — undo with an
+ *  empty history — as opposed to `active`, which is a toggle's on-state. The
+ *  two are different enough to keep apart: a disabled button is not pressable
+ *  and says so to assistive tech, where an inactive toggle very much is. */
+function Tool({ editor, active, label, onClick, disabled, children }: {
+  editor: Editor; active?: string; label: string; onClick: () => void;
+  disabled?: boolean; children: React.ReactNode;
 }) {
   const on = active ? editor.isActive(active) : false;
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
       aria-pressed={active ? on : undefined}
-      className={`rounded-(--radius-control) px-2 py-1.5 transition-[background-color] duration-(--dur-standard) hover:bg-surface-2 ${on ? "bg-surface-2 text-ink" : "text-muted"}`}
+      className={`rounded-(--radius-control) px-2 py-1.5 transition-[background-color] duration-(--dur-standard) enabled:hover:bg-surface-2 disabled:cursor-default disabled:opacity-40 ${on ? "bg-surface-2 text-ink" : "text-muted"}`}
     >
       {children}
     </button>

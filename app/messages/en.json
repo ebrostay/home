@@ -716,7 +716,9 @@
           "ordered": "Numbered list",
           "note": "Good to know",
           "photo": "Insert photo",
-          "place": "Insert place"
+          "place": "Insert place",
+          "undo": "Undo",
+          "redo": "Redo"
         },
         "photoPicker": {
           "title": "Insert a photo",

@@ -140,6 +140,8 @@ export function DescriptionFields({
     note: t("toolbar.note"),
     photo: t("toolbar.photo"),
     place: t("toolbar.place"),
+    undo: t("toolbar.undo"),
+    redo: t("toolbar.redo"),
     photoChip: trChip("photo"),
     placeChip: trChip("place"),
   };

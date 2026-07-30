@@ -210,6 +210,36 @@ test("every route under app/[locale] has a case in this file", () => {
   expect(pages(root).filter((p) => !covered.has(p)), "routes with no test case").toEqual([]);
 });
 
+// Undo/redo are the only toolbar tools with a disabled state, and the only
+// ones whose effect is a document-wide history step rather than a mark on the
+// selection — neither is checkable without a real editor, so it is checked
+// here. The style book at /design is the one page that renders the editor
+// without an owner session or a listing behind it.
+test("the editor's undo and redo walk the history", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/design", { waitUntil: "networkidle" });
+
+  const body = page.locator(".ProseMirror").first();
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  const redo = page.getByRole("button", { name: "Redo", exact: true });
+
+  // Nothing typed yet: there is no history to walk in either direction.
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeDisabled();
+
+  await body.click();
+  await page.keyboard.type("Zaragoza");
+  await expect(body).toContainText("Zaragoza");
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect(body).not.toContainText("Zaragoza");
+  await expect(redo).toBeEnabled();
+
+  await redo.click();
+  await expect(body).toContainText("Zaragoza");
+});
+
 // The regression itself, at the level it actually bit: not "is the formatter
 // correct" (lib/portfolio.test.ts) or "does the API return ISO"
 // (api/Ebrostay.Api.Tests/CosmosDateSafeSerializerTests.cs), but "can one

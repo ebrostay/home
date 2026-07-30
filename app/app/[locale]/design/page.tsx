@@ -158,6 +158,8 @@ function RichTextDemo() {
           note: "Good to know",
           photo: "Insert photo",
           place: "Insert place",
+          undo: "Undo",
+          redo: "Redo",
           photoChip: "photo",
           placeChip: "place",
         }}

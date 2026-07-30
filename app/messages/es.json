@@ -716,7 +716,9 @@
           "ordered": "Lista numerada",
           "note": "Bueno saberlo",
           "photo": "Insertar foto",
-          "place": "Insertar lugar"
+          "place": "Insertar lugar",
+          "undo": "Deshacer",
+          "redo": "Rehacer"
         },
         "photoPicker": {
           "title": "Insertar una foto",

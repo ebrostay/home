@@ -79,7 +79,8 @@ const PlaceRef = Node.create({
       // editing surface and the guest page read as the same colour.
       mergeAttributes({ "data-place-ref": HTMLAttributes.entryId, class: chipClass("bg-brand-soft text-brand-strong") }),
       // No label attribute exists on this atom (see the comment above), so the
-      // editor shows a generic tag rather than pretending to resolve a name.
+      // editor shows a generic tag (strings.placeChip) rather than pretending
+      // to resolve a name.
       `◎ ${this.options.label}`,
     ];
   },
@@ -114,6 +115,7 @@ const PlaceCard = Node.create({
     return [
       "div",
       mergeAttributes({ "data-place-card": HTMLAttributes.entryId, class: "rounded-(--radius-control) border border-line p-2 text-xs text-muted" }),
+      // Same generic-tag reasoning as placeRef above.
       `◎ ${this.options.label}`,
     ];
   },
@@ -161,14 +163,19 @@ export type RichTextEditorProps = {
   onInsertPhoto: (insert: (url: string, asFigure: boolean) => void) => void;
   onInsertPlace: (insert: (entryId: string, asCard: boolean) => void) => void;
   /** Toolbar button labels, so this component holds no untranslated copy.
-   *  `photo`/`place` are the TOOLBAR's own words ("Insert photo"); `photoChip`
-   *  is a separate key on purpose — it labels the reference chip a photoRef/
-   *  photoFigure node renders IN the document, which guests read too
-   *  (`detail.richText.photo`/`.floorplan`, `components/ui/RichText.tsx`).
-   *  Reusing `photo` there would print the toolbar's own instruction
-   *  ("Insert photo") as if it were the chip's content. */
+   *  `photo`/`place` are the TOOLBAR's own words ("Insert photo"/"Insert
+   *  place"); `photoChip`/`placeChip` are separate keys on purpose — they
+   *  label the reference chip a photoRef/photoFigure/placeRef/placeCard node
+   *  renders IN the document, which guests read too (`photoChip` reuses
+   *  `detail.richText.photo`, the same word `components/ui/RichText.tsx`
+   *  shows guests; `placeChip` reuses `detail.richText.place`, a generic
+   *  noun — unlike a photo, the editor holds only the place's id, never its
+   *  name, so it cannot show what a guest actually sees there). Reusing
+   *  `photo`/`place` for the chips would print the toolbar's own instruction
+   *  ("Insert photo"/"Insert place") as if it were the chip's content — the
+   *  exact bug this pair of keys exists to prevent. */
   strings: Record<
-    "bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place" | "photoChip",
+    "bold" | "italic" | "heading" | "bullet" | "ordered" | "note" | "photo" | "place" | "photoChip" | "placeChip",
     string
   >;
 };
@@ -186,9 +193,9 @@ export function RichTextEditor({
       Placeholder.configure({ placeholder: placeholder ?? "" }),
       Callout,
       PhotoRef.configure({ label: strings.photoChip }),
-      PlaceRef.configure({ label: strings.place }),
+      PlaceRef.configure({ label: strings.placeChip }),
       PhotoFigure.configure({ label: strings.photoChip }),
-      PlaceCard.configure({ label: strings.place }),
+      PlaceCard.configure({ label: strings.placeChip }),
     ],
     content: value ?? { type: "doc", content: [] },
     editorProps: {

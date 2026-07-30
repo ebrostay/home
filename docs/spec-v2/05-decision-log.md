@@ -2072,14 +2072,23 @@ addendum to `docs/superpowers/plans/2026-07-29-rich-text-editor.md`,
 ### Legacy plain-string `copy` throws, not degrades — re-seeding is not optional
 
 A property document still holding the old `{ es: "…", en: "…" }` string pair
-cannot deserialize into `BilingualDoc`: `System.Text.Json` throws a
-`JsonException` reading the `Copy` property, which takes the **whole**
-property read down with it — a 500 on the detail page, not a missing
-paragraph. Decision 4's "no migration" is therefore conditional on **every
-environment that holds one being re-seeded**: `infra/seed-source.json` /
-`infra/local-bootstrap.mjs` locally, and a re-seed of the staging listings as
-an explicit deployment step before the API carrying `BilingualDoc` ships —
-staging must not be deployed to first.
+cannot deserialize into `BilingualDoc`: Newtonsoft.Json (the Cosmos SDK's own
+serializer, not `System.Text.Json` — `Ebrostay.Api.csproj`) throws reading
+the `Copy` property, which takes the **whole** document read down with it.
+That is not confined to the one listing's own detail page: `PropertyGet`
+point-reads a single id, so it only cost that listing a 500 — but
+`PropertiesFunctions.List` ran the identical deserialization inside its feed
+loop with no per-document isolation, so the same throw took the entire
+public listings endpoint (`GET /api/properties`) down with it, every
+published listing along with the one that was actually bad. `List` now
+catches a per-document deserialization failure, logs it, and skips just that
+document (see its own comment); `PropertyGet` has no equivalent and still
+hard-fails that one listing's detail page, which is the narrower, correct
+blast radius for a point read. Decision 4's "no migration" is therefore
+conditional on **every environment that holds one being re-seeded**:
+`infra/seed-source.json` / `infra/local-bootstrap.mjs` locally, and a
+re-seed of the staging listings as an explicit deployment step before the
+API carrying `BilingualDoc` ships — staging must not be deployed to first.
 
 ### What this deliberately does not do
 

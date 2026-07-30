@@ -63,6 +63,9 @@ export function DescriptionFields({
   // (`components/ui/RichText.tsx`) — reused here rather than the toolbar's
   // own "Insert photo" instruction, which is a different piece of copy for a
   // different purpose (see `RichTextEditorProps.strings`'s own comment).
+  // `place` is the generic noun the editor falls back to for a placeRef/
+  // placeCard chip — the editor only has the place's id, never its name, so
+  // it cannot show what a guest actually sees there (the resolved name).
   const trChip = useTranslations("detail.richText");
 
   const setBi = (key: "details" | "beds", locale: "es" | "en", next: string) =>
@@ -138,6 +141,7 @@ export function DescriptionFields({
     photo: t("toolbar.photo"),
     place: t("toolbar.place"),
     photoChip: trChip("photo"),
+    placeChip: trChip("place"),
   };
 
   return (

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Ebrostay.Api.Functions;
 
@@ -29,11 +30,29 @@ public class PropertiesFunctions(
 
         var now = DateTimeOffset.UtcNow;
         var results = new List<PropertySummary>();
-        using var feed = Properties.GetItemQueryIterator<PropertyDoc>(query);
+        // Fetched as JObject and converted document-by-document
+        // (`PropertyDocParser.TryParse`), NOT handed straight to
+        // `GetItemQueryIterator<PropertyDoc>`: that overload deserializes an
+        // entire page in one `ReadNextAsync` call, so one malformed document
+        // (a legacy plain-string `copy` — ADR-032) would fail every document
+        // sharing its page — and this container holds only a few dozen docs,
+        // so "a page" here likely means the whole result. Chosen deliberately
+        // over letting the request fail outright: a 500 across every
+        // published listing because one stale document can't deserialize is
+        // a worse outage than that one listing being absent from the list,
+        // and the absence is not silent — `TryParse` logs it as an ERROR with
+        // the document's id, so it surfaces in monitoring rather than only
+        // being noticed by a guest who can't find a listing that should be
+        // there.
+        using var feed = Properties.GetItemQueryIterator<JObject>(query);
         while (feed.HasMoreResults)
         {
-            foreach (var doc in await feed.ReadNextAsync())
+            foreach (var raw in await feed.ReadNextAsync())
+            {
+                var doc = PropertyDocParser.TryParse(raw, logger, "public listings");
+                if (doc is null) continue;
                 results.Add(PublicProjection.ToSummary(doc, now));
+            }
         }
 
         return new OkObjectResult(results);

@@ -1,3 +1,7 @@
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace Ebrostay.Api.Models;
 
 // The `properties` container document — docs/spec-v2/02-data-model.md §2.2.
@@ -176,4 +180,42 @@ public class PropertyDoc
 
     public string? CreatedAt { get; set; }
     public string? UpdatedAt { get; set; }
+}
+
+/// Converts one raw Cosmos item into a `PropertyDoc` without letting a single
+/// malformed document take down whatever loop is reading a whole page of
+/// them with it (ADR-032's "Legacy plain-string `copy` throws, not
+/// degrades"). A property document still holding the old `{ es, en }` string
+/// pair for `copy` cannot deserialize into `BilingualDoc` — Newtonsoft throws
+/// reading `Copy` — and `Container.GetItemQueryIterator<PropertyDoc>`
+/// deserializes an entire page in one `ReadNextAsync` call, so one bad
+/// document among many would otherwise fail every document sharing its page,
+/// not just itself. Callers that need per-document isolation (rather than
+/// letting the whole request fail) fetch the raw `JObject` and convert
+/// through here instead.
+public static class PropertyDocParser
+{
+    /// Returns `null` on a document this deserialization step cannot read,
+    /// rather than throwing — but logs it as an ERROR (with the document's id
+    /// when the raw JSON has one) first: a listing quietly missing from a
+    /// response is still a real cost to a guest who can't find it, so the
+    /// drop must show up in monitoring even though the request itself
+    /// succeeds. `context` names the caller for that log line (e.g. "public
+    /// listings") since this helper has no route of its own.
+    public static PropertyDoc? TryParse(JObject raw, ILogger logger, string context)
+    {
+        try
+        {
+            return raw.ToObject<PropertyDoc>();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogError(
+                ex,
+                "Skipping undeserializable property {Id} in {Context}",
+                raw["id"]?.ToString() ?? "(unknown id)",
+                context);
+            return null;
+        }
+    }
 }

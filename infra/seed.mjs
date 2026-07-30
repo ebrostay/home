@@ -16,6 +16,28 @@ if (!endpoint || !key) {
   process.exit(1);
 }
 
+// Refuse to run against anything but the local emulator, unless explicitly
+// overridden — the same rule `local-bootstrap.mjs` applies to container
+// creation, and a more urgent one here: this script now writes `copy` as a
+// ProseMirror JSON document (`BilingualDoc`), a shape the pre-ADR-032 API
+// cannot read at all (docs/spec-v2/05-decision-log.md, "Legacy plain-string
+// `copy` throws, not degrades" — it takes the whole public listings response
+// down, not just one page). Run this against the wrong database and it is
+// not adding harmless test data; it is overwriting real listings' `copy`
+// into a shape that outage-level breaks the site for anyone still running
+// the old API. The one legitimate exception is the deliberate staging
+// re-seed that same decision requires before the new API ships — it must
+// opt in explicitly with SEED_ALLOW_REMOTE=1 rather than rely on this guard
+// simply not being here.
+if (
+  !/^https?:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(endpoint) &&
+  process.env.SEED_ALLOW_REMOTE !== "1"
+) {
+  console.error(`Refusing to run against ${endpoint} — this is not a local emulator endpoint.`);
+  console.error("If this is a deliberate staging re-seed (ADR-032), set SEED_ALLOW_REMOTE=1.");
+  process.exit(1);
+}
+
 const sourcePath = process.argv[2] ?? new URL("./seed-source.json", import.meta.url).pathname;
 const source = JSON.parse(readFileSync(sourcePath, "utf8"));
 

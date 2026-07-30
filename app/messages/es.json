@@ -1016,7 +1016,8 @@
     },
     "richText": {
       "photo": "foto",
-      "floorplan": "plano"
+      "floorplan": "plano",
+      "place": "lugar"
     },
     "places": {
       "title": "Tus sitios",

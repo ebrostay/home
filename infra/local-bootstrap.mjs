@@ -42,6 +42,10 @@ const CONTAINERS = [
   { id: "nearbyRoutes", partitionKey: "/propertyId" },
   { id: "nearbyCandidates", partitionKey: "/cell" },
   { id: "serviceBudget", partitionKey: "/id" },
+  // Import jobs (ADR-033), matching main.bicep: partitioned on /id for a
+  // point read by job id, seven-day TTL because a job is a transaction, not
+  // a record.
+  { id: "importJobs", partitionKey: "/id", defaultTtl: 604800 },
 ];
 
 // The emulator serves its gateway without direct-mode replica addresses, the
@@ -59,8 +63,10 @@ for (const spec of CONTAINERS) {
   const { container } = await database.containers.createIfNotExists({
     id: spec.id,
     partitionKey: { paths: [spec.partitionKey] },
+    ...(spec.defaultTtl != null ? { defaultTtl: spec.defaultTtl } : {}),
   });
-  console.log(`  container ${container.id}  (${spec.partitionKey})`);
+  const ttlNote = spec.defaultTtl != null ? `, ttl ${spec.defaultTtl}s` : "";
+  console.log(`  container ${container.id}  (${spec.partitionKey}${ttlNote})`);
 }
 
 console.log("\nNext: seed the sample listings —");

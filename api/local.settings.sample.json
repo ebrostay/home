@@ -3,7 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "_photos": "Listing photos (§2.6). Falls back to AzureWebJobsStorage, so a local run needs Azurite and nothing else: docker run -d --name ebrostay-blob -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0",
+    "_photos": "Listing photos (§2.6) and the import queue (ADR-033) both fall back to AzureWebJobsStorage, so a local run needs Azurite and nothing else: docker run -d --name ebrostay-blob -p 10000:10000 -p 10001:10001 mcr.microsoft.com/azure-storage/azurite azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0",
     "PHOTOS_CONNECTION": "",
     "IMPORT_CALLBACK_BASE_URL": "http://localhost:4280",
     "PIPELINE_WAKEUP_URL": ""

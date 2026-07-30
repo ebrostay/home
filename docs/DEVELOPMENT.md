@@ -124,17 +124,20 @@ Give it a minute on first start. It is ready when this returns `200`:
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8081/
 ```
 
-### Blob storage (Azurite)
+### Blob & queue storage (Azurite)
 
 ```bash
 docker run -d --name ebrostay-blob \
-  -p 10000:10000 \
+  -p 10000:10000 -p 10001:10001 \
   mcr.microsoft.com/azure-storage/azurite \
-  azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+  azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --skipApiVersionCheck
 ```
 
-Photo uploads write here (§2.6). `--skipApiVersionCheck` keeps Azurite from
-rejecting a newer Azure SDK than it knows about.
+Photo uploads write here (§2.6), and so does the AI-assisted import handover
+queue (ADR-033) — `azurite` (rather than `azurite-blob`) starts the blob,
+queue and table services together, which is what the default
+`UseDevelopmentStorage=true` connection string expects. `--skipApiVersionCheck`
+keeps Azurite from rejecting a newer Azure SDK than it knows about.
 
 The `property-photos` container is created on first upload by `PhotoStore`, so
 there is nothing to set up.
@@ -260,6 +263,7 @@ that need one look broken for a reason that has nothing to do with them.
 | 8081 | Cosmos emulator gateway |
 | 1234 | Cosmos data explorer |
 | 10000 | Azurite blob |
+| 10001 | Azurite queue |
 
 Static export is only exercised by `npm run build --prefix app`, which must
 stay green — `output: "export"` means no middleware, no server components at

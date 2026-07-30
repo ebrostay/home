@@ -685,8 +685,10 @@ writes a new one.
 
 **Local development** uses Azurite; `PHOTOS_CONNECTION` falls back to
 `AzureWebJobsStorage`, so a local run needs one setting and one container:
-`docker run -d --name ebrostay-blob -p 10000:10000
-mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0`.
+`docker run -d --name ebrostay-blob -p 10000:10000 -p 10001:10001
+mcr.microsoft.com/azure-storage/azurite azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0`.
+(The same Azurite container also serves the import queue, ADR-033 —
+`azurite` starts blob, queue and table together.)
 
 What "validates" and "compresses" mean concretely — magic-byte sniffing, the
 `Content-Type` allowlist, no SVG, server-generated blob names, caps applied

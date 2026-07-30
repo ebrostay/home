@@ -2313,8 +2313,67 @@ owner has already reviewed it" — both look identical once the marks are gone �
 so it renders no body line rather than guess between them: truthful in every
 state, at the cost of saying less on a screen the owner has already seen once.
 `nearby` is the one step exempt from the guess in the first place: no import
-key maps to it (Decision 4's table is one-directional on purpose), so absence
-there is certain rather than unknown, and it keeps its true nothing-line always.
+key maps to it (`IMPORT_STEP_OF` in `app/lib/import.ts`, read one-directionally
+on purpose), so absence there is certain rather than unknown, and it keeps its
+true nothing-line always.
+
+### Decision 15 — The callback host is the SWA's own hostname, never the custom domain
+
+`IMPORT_CALLBACK_BASE_URL` is set from `swa.properties.defaultHostname`, and
+stays there after cutover rather than moving to `ebrostay.com`.
+
+Immediately decisive: `ebrostay.com` is still v1 on GitHub Pages (ADR-016), so
+callbacks addressed there today would reach a static site with no
+`/api/import/…` to receive them. But the choice holds after cutover too, for
+three reasons that outlast the migration:
+
+- **Nobody ever reads this URL.** It is written into a queue message and
+  consumed by a service. A pretty domain buys nothing; reachability is the
+  only property that matters.
+- **Fewer things in front of it.** The custom domain depends on our DNS being
+  right and our certificate renewing, and anything we later put in front of it
+  — Front Door, a CDN, a WAF — sits in the callback path. Those are tuned for
+  browser traffic, and a machine POSTing JSON with an unusual header is the
+  shape they most like to challenge. A blocked callback fails *silently*: the
+  job simply sits until the reaper times it out and the owner is told the read
+  took too long.
+- **The bicep derives it.** `'https://${swa.properties.defaultHostname}'` is
+  correct in every environment including per-PR preview environments, each of
+  which gets its own hostname, with nothing to remember.
+
+The cost: deleting and recreating the SWA changes the hostname. Rare, it would
+break much else besides, and the next `az deployment` picks up the new value.
+Moving callbacks to a custom domain later is a one-line app-setting change —
+which is exactly the flexibility Decision 16 exists to preserve.
+
+### Decision 16 — The pipeline is asked to allowlist the callback host on its own side
+
+The queue message carries the reply address rather than the pipeline holding
+it, because each environment has a different hostname — local, per-PR preview,
+staging, production — and one pipeline instance must serve all of them.
+
+That flexibility costs something, and the mitigation is stated here as an
+expectation on the pipeline rather than left implicit: **it should hold a list
+of acceptable callback hosts in its own configuration** (`*.azurestaticapps.net`
+today) and refuse a message whose `callbackUrl` does not match.
+
+**The risk it addresses is SSRF, not token theft.** This is worth stating
+plainly because the intuitive reading is wrong: the callback token is minted
+per job by us, so anyone forging a message supplies their own token and has
+nothing of ours to steal. The real exposure is the pipeline's shape — a service
+that fetches one URL from a message and POSTs to another URL from the same
+message is a ready-made proxy. Anyone who can put a message on that queue
+(a leaked or over-permissioned SAS, a bug on our side) can aim it at an
+internal endpoint, a cloud metadata service, or a host they control, with the
+pipeline's credentials and reputation rather than their own. A secondary and
+likelier benefit: if *we* misconfigure `IMPORT_CALLBACK_BASE_URL`, the
+allowlist turns a silent failure into a loud one.
+
+**The list must live on the pipeline's side, never in the message.** A check
+that travels with the data it checks is not a check — an attacker forging the
+message forges the allowlist with it. Our side of this is documentary: we
+undertake to send callback URLs only on hosts we have named in advance, and to
+tell the pipeline team before that set changes.
 
 ### Consequences
 

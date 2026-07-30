@@ -34,7 +34,12 @@ const FIXTURE = {
       "A cinco minutos andando del tranvía y del mercado central.",
     detailsEs: "Calefacción central. Ascensor. Cocina office equipada.",
     bedsEs: "Un dormitorio con cama de 150 y otro con dos camas de 90.",
-    amenities: ["wifi", "heating", "washingMachine", "elevator", "airConditioning"],
+    // OUR vocabulary (`app/lib/amenity-icons.ts`), not a portal's words. The
+    // real pipeline's job is exactly this mapping, and the API refuses
+    // anything that is not `^[a-z0-9-]{1,32}$` — a fixture spelling them
+    // `washingMachine`/`airConditioning` made every imported draft
+    // unsaveable with `amenity_invalid` on the first Continue.
+    amenities: ["wifi", "heating", "washer", "lift", "ac"],
     petsAllowed: false,
     smokingAllowed: false,
   },

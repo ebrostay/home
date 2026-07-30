@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "@azure/cosmos": "^4.10.0",
+    "@azure/storage-blob": "^12.33.0",
     "@azure/storage-queue": "^12.31.0"
   }
 }

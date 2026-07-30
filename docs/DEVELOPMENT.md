@@ -227,16 +227,25 @@ node infra/seed.mjs
 ```
 
 `local-bootstrap.mjs` creates `properties`, `profiles`, `bookingRequests` and
-`inquiries` with the partition keys from §2.1. It refuses to run against any
-endpoint that is not localhost.
+`inquiries` with the partition keys from §2.1, then uploads the sample homes'
+photos into Azurite — the container is created with anonymous blob read, the
+same as `main.bicep` grants in Azure, because the browser loads them straight
+from `<img src>`. It refuses to run against any endpoint that is not localhost.
 
 `seed.mjs` upserts the four sample homes. Both are idempotent — re-run either
 whenever local data gets messy.
 
-> The seeded listings point at **photo URLs in the real Azure Blob account**,
-> which is public-read, so images load without any local upload. Photos you
-> upload yourself land in Azurite and get the three derived sizes; the seeded
-> ones have only their original, which is expected (§2.2.2).
+> **The photos are committed, at `infra/sample-photos/`** (33 files, 2.4 MB:
+> eleven photos in the three sizes `PhotoPipeline` produces). A fresh clone
+> therefore shows the sample homes' photos with no network and no dependency on
+> the deployed storage account staying public — which is what it depended on
+> until 2026-07-31. `seed.mjs` follows the database it is seeding: a local run
+> writes Azurite URLs, `SEED_ALLOW_REMOTE=1` writes the deployed account's, and
+> `PHOTOS_BASE_URL` overrides both. Photos you upload yourself land in Azurite
+> either way and get the three derived sizes.
+>
+> Still external, and unrelated to this: map tiles (openstreetmap.org) and the
+> analytics script. Neither blocks anything if you are offline.
 
 ---
 

@@ -29,10 +29,8 @@ if (!endpoint || !key) {
 // re-seed that same decision requires before the new API ships — it must
 // opt in explicitly with SEED_ALLOW_REMOTE=1 rather than rely on this guard
 // simply not being here.
-if (
-  !/^https?:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(endpoint) &&
-  process.env.SEED_ALLOW_REMOTE !== "1"
-) {
+const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(endpoint);
+if (!local && process.env.SEED_ALLOW_REMOTE !== "1") {
   console.error(`Refusing to run against ${endpoint} — this is not a local emulator endpoint.`);
   console.error("If this is a deliberate staging re-seed (ADR-032), set SEED_ALLOW_REMOTE=1.");
   process.exit(1);
@@ -41,7 +39,19 @@ if (
 const sourcePath = process.argv[2] ?? new URL("./seed-source.json", import.meta.url).pathname;
 const source = JSON.parse(readFileSync(sourcePath, "utf8"));
 
-const BLOB = "https://ebrostayphotos.blob.core.windows.net/property-photos";
+// Where the photo URLs written into each document point. It follows the
+// database being seeded: a local run gets Azurite, which `local-bootstrap.mjs`
+// fills from infra/sample-photos/ under exactly these names. Pointing local
+// documents at the deployed account instead — which is what this did until
+// 2026-07-31 — makes a local stack need the internet, and quietly need that
+// container to stay publicly readable, to show a sample home's photos.
+//
+// Azurite's well-known development account. 127.0.0.1 rather than localhost so
+// the URL is stable whichever the browser resolves first.
+const AZURITE = "http://127.0.0.1:10000/devstoreaccount1/property-photos";
+const BLOB =
+  process.env.PHOTOS_BASE_URL ??
+  (local ? AZURITE : "https://ebrostayphotos.blob.core.windows.net/property-photos");
 
 // Who owns the seeded listings. The default is a placeholder that matches no
 // real principal, so the sample homes are public but belong to nobody. To see

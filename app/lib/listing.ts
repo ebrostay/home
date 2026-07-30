@@ -3,6 +3,7 @@ import { AMENITY_KEYS } from "@/lib/amenity-icons";
 import {
   canonical,
   isEmptyDoc,
+  remapPlaceIds,
   validateDoc,
   type BilingualDoc,
   type RichError,
@@ -309,6 +310,58 @@ export function applyDescriptionEdit(listing: HostListing, edit: DescriptionEdit
         },
       };
   }
+}
+
+/** Adopt the ids the server minted for nearby entries created by this save,
+ *  in the form the owner still has open.
+ *
+ *  `NearbyEditor` mints a temporary `local-…` id for a place added but not yet
+ *  saved, because the description has to be able to reference it immediately.
+ *  The server replaces those with real ids and rewrites the stored
+ *  description's `placeRef`s to match. Nothing rewrites the open FORM, and
+ *  that is the whole problem this fixes: a form still holding `local-…` sends
+ *  it again on the next save, the server recognises none of it, and every
+ *  place is treated as brand new — fresh ids, discarded reach measurements,
+ *  and a full round of metered routing calls, on every save for the rest of
+ *  the session. Self-consistent, so nothing looks broken; purely wasted.
+ *
+ *  `sent` is the listing as handed to the API, NOT the current form: the
+ *  mapping is positional, and only the sent array is known to line up with
+ *  what came back. The server rebuilds its list in payload order, one entry
+ *  per write, so `stored.nearby[i]` answers `sent.nearby[i]`.
+ *
+ *  `current` is read separately because the owner may have typed during the
+ *  round trip; only the ids are adopted, and everything else is left as they
+ *  left it. Returns `current` unchanged when no id moved, so the caller can
+ *  skip the state update entirely. If the two arrays disagree on length the
+ *  positional assumption is void and this does nothing rather than guess. */
+export function adoptNearbyIds(
+  current: HostListing,
+  sent: HostListing,
+  stored: HostListing,
+): HostListing {
+  if (sent.nearby.length !== stored.nearby.length) return current;
+
+  const remap = new Map<string, string>();
+  sent.nearby.forEach((was, i) => {
+    const now = stored.nearby[i];
+    if (was.id && now.id && was.id !== now.id) remap.set(was.id, now.id);
+  });
+  if (remap.size === 0) return current;
+
+  const nearby = current.nearby.map((n) => {
+    const id = remap.get(n.id);
+    return id ? { ...n, id } : n;
+  });
+
+  const copy = current.copy
+    ? {
+        es: current.copy.es ? remapPlaceIds(current.copy.es, remap) : null,
+        en: current.copy.en ? remapPlaceIds(current.copy.en, remap) : null,
+      }
+    : current.copy;
+
+  return { ...current, nearby, copy };
 }
 
 /** The reference universe `validateDoc` checks a description's photo/place

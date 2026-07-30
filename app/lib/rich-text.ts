@@ -209,3 +209,44 @@ const collect = (node: RichNode, types: RichNodeType[], key: "url" | "entryId"):
  *  on the next edit. */
 export const referencedPhotoUrls = (node: RichNode): Set<string> =>
   collect(node, ["photoRef", "photoFigure"], "url");
+
+/** Which nearby entries this document points at. */
+export const referencedEntryIds = (node: RichNode): Set<string> =>
+  collect(node, ["placeRef", "placeCard"], "entryId");
+
+/** Rewrite place references through `map`, leaving every other node — and all
+ *  prose — untouched. Ids absent from the map are kept as they are.
+ *
+ *  The client twin of `HostValidation.RemapPlaceIds` in the API, and it exists
+ *  for the same reason on the other side of the wire: a place the owner adds
+ *  and mentions in the SAME editing session is referenced by a temporary id
+ *  the client minted, and the server answers with the real one it assigned.
+ *  The stored document is rewritten server-side; this is what stops the OPEN
+ *  form from carrying the dead temporary id into the next save.
+ *
+ *  Returns the identical node when nothing changed, so a caller can use the
+ *  result to decide whether any state update is needed at all. */
+export function remapPlaceIds(
+  node: RichNode,
+  map: ReadonlyMap<string, string>,
+): RichNode {
+  if (map.size === 0) return node;
+
+  const rewrite = (n: RichNode): RichNode => {
+    const id = n.attrs?.entryId;
+    const replacement =
+      (n.type === "placeRef" || n.type === "placeCard") && id ? map.get(id) : undefined;
+
+    const content = n.content?.map(rewrite);
+    const contentChanged = content?.some((c, i) => c !== n.content![i]) ?? false;
+
+    if (!replacement && !contentChanged) return n;
+    return {
+      ...n,
+      ...(replacement ? { attrs: { ...n.attrs, entryId: replacement } } : {}),
+      ...(content ? { content } : {}),
+    };
+  };
+
+  return rewrite(node);
+}

@@ -4,7 +4,9 @@ import {
   RICH_MARKS,
   canonical,
   paragraphDoc,
+  referencedEntryIds,
   referencedPhotoUrls,
+  remapPlaceIds,
   textLength,
   validateDoc,
   type RichNode,
@@ -223,5 +225,47 @@ describe("reference extraction", () => {
 
   it("finds photo urls in both node types", () => {
     expect([...referencedPhotoUrls(d)].sort()).toEqual(["/p/1.jpg", "/p/2.jpg"]);
+  });
+
+  it("finds entry ids in both node types", () => {
+    expect([...referencedEntryIds(d)].sort()).toEqual(["e1", "e2"]);
+  });
+});
+
+describe("remapPlaceIds", () => {
+  const d = doc(
+    p(t("Junto al "), { type: "placeRef", attrs: { entryId: "local-1" } }, t(".")),
+    { type: "placeCard", attrs: { entryId: "local-2" } },
+    { type: "photoRef", attrs: { url: "/p/1.jpg" } },
+  );
+
+  const map = new Map([
+    ["local-1", "real-1"],
+    ["local-2", "real-2"],
+  ]);
+
+  it("rewrites both reference node types, however deeply nested", () => {
+    expect([...referencedEntryIds(remapPlaceIds(d, map))].sort()).toEqual(["real-1", "real-2"]);
+  });
+
+  it("leaves the prose exactly as it was", () => {
+    const before = canonical(d).replace(/local-(\d)/g, "real-$1");
+    expect(canonical(remapPlaceIds(d, map))).toBe(before);
+  });
+
+  it("keeps an id the map does not mention", () => {
+    const only1 = new Map([["local-1", "real-1"]]);
+    expect([...referencedEntryIds(remapPlaceIds(d, only1))].sort()).toEqual(["local-2", "real-1"]);
+  });
+
+  // The caller uses identity to decide whether any state update is needed, so
+  // "nothing changed" has to mean the very same object, not an equal one.
+  it("returns the identical node when nothing matches", () => {
+    expect(remapPlaceIds(d, new Map())).toBe(d);
+    expect(remapPlaceIds(d, new Map([["absent", "x"]]))).toBe(d);
+  });
+
+  it("does not touch a photo reference", () => {
+    expect([...referencedPhotoUrls(remapPlaceIds(d, map))]).toEqual(["/p/1.jpg"]);
   });
 });

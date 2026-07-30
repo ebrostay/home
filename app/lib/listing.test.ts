@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   SECTIONS,
+  adoptNearbyIds,
   applyDescriptionEdit,
   attentionOf,
   blockersOf,
@@ -9,7 +10,7 @@ import {
   richTextError,
 } from "./listing";
 import type { HostListing, HostNearbyEntry, HostPhoto } from "./api";
-import { paragraphDoc, type RichNode } from "./rich-text";
+import { paragraphDoc, referencedEntryIds, type RichNode } from "./rich-text";
 
 // A listing with only the fields the diff reads. Cast once here so each test
 // stays about the rule under test rather than about fixture plumbing.
@@ -345,5 +346,83 @@ describe("richTextError", () => {
   it("checks both languages, Es short-circuiting En exactly like the server", () => {
     const l = base({ copy: { es: null, en: photoRef("missing.jpg") } });
     expect(richTextError(l)).toBe("copy_photo_unknown");
+  });
+});
+
+// A place added and mentioned in the same session carries `NearbyEditor`'s
+// temporary `local-…` id until a save comes back. The server mints the real
+// one and rewrites the STORED description; this is what carries that back into
+// the form the owner still has open. Without it the form re-sends the dead id,
+// the server matches nothing, and every place is re-created and re-measured —
+// a fresh round of metered routing calls on every save for the rest of the
+// session, with nothing visibly wrong to show for it.
+describe("adoptNearbyIds", () => {
+  const withPlaces = (ids: string[], copy: RichNode | null = null): HostListing =>
+    base({
+      nearby: ids.map((id) => entry({ id })),
+      copy: copy ? { es: copy, en: null } : null,
+    });
+
+  const mentions = (...entryIds: string[]): RichNode => ({
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: entryIds.map((entryId) => ({ type: "placeRef" as const, attrs: { entryId } })),
+      },
+    ],
+  });
+
+  it("adopts the id the server minted", () => {
+    const out = adoptNearbyIds(
+      withPlaces(["local-1"]),
+      withPlaces(["local-1"]),
+      withPlaces(["real-1"]),
+    );
+    expect(out.nearby.map((n) => n.id)).toEqual(["real-1"]);
+  });
+
+  // The two have to move together: a form whose description still points at
+  // the temp id would fail the server's own reference check on the next save.
+  it("rewrites the description's references at the same time", () => {
+    const out = adoptNearbyIds(
+      withPlaces(["local-1"], mentions("local-1")),
+      withPlaces(["local-1"]),
+      withPlaces(["real-1"]),
+    );
+    expect(referencedEntryIds(out.copy!.es!)).toEqual(new Set(["real-1"]));
+  });
+
+  it("leaves ids the server already knew alone", () => {
+    const out = adoptNearbyIds(
+      withPlaces(["kept", "local-2"]),
+      withPlaces(["kept", "local-2"]),
+      withPlaces(["kept", "real-2"]),
+    );
+    expect(out.nearby.map((n) => n.id)).toEqual(["kept", "real-2"]);
+  });
+
+  // `current` is read separately from `sent` because a wizard save fires on
+  // leaving a step and the owner can type during the round trip. Only the ids
+  // are adopted; anything else they changed meanwhile survives.
+  it("keeps edits made while the save was in flight", () => {
+    const current = { ...withPlaces(["local-1"]), name: "Renamed mid-save", bedrooms: 4 };
+    const out = adoptNearbyIds(current, withPlaces(["local-1"]), withPlaces(["real-1"]));
+    expect(out.name).toBe("Renamed mid-save");
+    expect(out.bedrooms).toBe(4);
+    expect(out.nearby.map((n) => n.id)).toEqual(["real-1"]);
+  });
+
+  it("returns the identical listing when no id moved", () => {
+    const current = withPlaces(["real-1"]);
+    expect(adoptNearbyIds(current, withPlaces(["real-1"]), withPlaces(["real-1"]))).toBe(current);
+  });
+
+  // The mapping is positional, so a length disagreement means the assumption
+  // does not hold. Doing nothing leaves a wasteful save; guessing would point
+  // a reference at the wrong place.
+  it("does nothing rather than guess when the arrays disagree", () => {
+    const current = withPlaces(["local-1", "local-2"]);
+    expect(adoptNearbyIds(current, current, withPlaces(["real-1"]))).toBe(current);
   });
 });

@@ -55,7 +55,7 @@ import {
   type PropertySummary,
 } from "@/lib/api";
 import { stamped, withDecline } from "@/lib/declined";
-import { changedSections, richTextError } from "@/lib/listing";
+import { adoptNearbyIds, changedSections, richTextError } from "@/lib/listing";
 import { blocksDirty, isOwnerBlock, priceBandFor, pricingDirty } from "@/lib/manage";
 import {
   CREATES_DRAFT,
@@ -293,9 +293,25 @@ function NewPropertyContent() {
         // with no second error surface.
         const copyError = richTextError(listing);
         if (copyError) throw new ApiError(400, copyError);
+        const sent = listing;
         const result = await saveHostListing(id, listing);
         property = result.property;
         nextListing = result.listing;
+
+        // Take back the ids the server just minted for places added in this
+        // save. Without this the form keeps `NearbyEditor`'s temporary
+        // `local-…` ids, sends them again next time, and the server — which
+        // matches entries by id — treats every place as new: fresh ids,
+        // discarded reach measurements, and a full round of metered routing
+        // calls, on every save for the rest of the session.
+        //
+        // Functional, and only the ids: `persist` fires on leaving a step, so
+        // the owner can have typed during the round trip, and replacing the
+        // form with the server's copy (as the editor's own `save` does, where
+        // there is no wizard step to leave) would throw that away. `sent` is
+        // captured above rather than read here for the same reason — the
+        // mapping is positional against what was actually sent.
+        setListing((l) => adoptNearbyIds(l, sent, result.listing));
       }
       if (pricingDirty(pricing, base.pricing)) {
         nextPricing = await saveHostPricing(id, {

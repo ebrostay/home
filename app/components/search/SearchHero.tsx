@@ -33,6 +33,13 @@ export function defaultQuery(): SearchQuery {
   return { moveIn, moveOut: addMonths(moveIn, 3), bedrooms: 0 };
 }
 
+/** The bar with no dates in it — what the prerendered HTML has to carry,
+ *  because `defaultQuery` reads a clock and the HTML is built once. The home
+ *  page swaps this for the real default on mount. */
+export function emptyQuery(): SearchQuery {
+  return { moveIn: "", moveOut: "", bedrooms: 0 };
+}
+
 // The search bar carries dates as ISO strings; the calendar control speaks
 // Date. Parse as LOCAL midnight so a "2026-09-01" never slips a day via UTC.
 function isoToDate(iso: string): Date | undefined {

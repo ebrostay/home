@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import {
   SearchHero,
   defaultQuery,
+  emptyQuery,
   type SearchQuery,
 } from "@/components/search/SearchHero";
 import {
@@ -64,7 +65,14 @@ export default function HomePage() {
   // v1 parity: the stay search only filters once submitted (R-Home-2); the
   // grid shows everything until then.
   const [applied, setApplied] = useState<SearchQuery | null>(null);
-  const [query, setQuery] = useState<SearchQuery>(defaultQuery);
+  // No clock in the first render. This page is prerendered at build time, so
+  // "today + 3 months" computed here is the BUILD's today — frozen into the
+  // HTML — while every visitor's browser computes their own and disagrees with
+  // it on hydration: a day out the day after a deploy, a month out a month
+  // later. The bar ships with its em-dash placeholder and the mount effect
+  // below fills the dates in, which is where the URL restore already waits for
+  // the same reason.
+  const [query, setQuery] = useState<SearchQuery>(emptyQuery);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
   const [view, setView] = useState<CardView>("grid");
@@ -91,6 +99,11 @@ export default function HomePage() {
     if (s.applied) {
       setApplied(s.applied);
       setQuery(s.applied); // the bar must show what is actually filtering
+    } else {
+      // Nothing was submitted, so the bar gets its prefilled suggestion —
+      // today + 3 months, read here rather than during render because the
+      // HTML is older than the visit (see `emptyQuery` above).
+      setQuery(defaultQuery());
     }
     setFilters(s.filters);
     setView(s.view);

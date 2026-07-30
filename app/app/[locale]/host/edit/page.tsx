@@ -210,30 +210,54 @@ function EditContent() {
   // storage order, and a photo they had just removed would reappear, because
   // the server still has it until the content save goes through.
   //
-  // Both updates below are functional: this fires after an `await`, so the
-  // render-time `listing`/`state` are a stale snapshot from before the
-  // upload started. Writing through it would revert whatever happened during
-  // the transfer — text typed into the other locale's editor, an approve
-  // toggle, a `PhotoManager` delete, or a second upload finishing first —
-  // and in that last case would also drop the concurrent upload's photos
-  // from the saved baseline, so a later Save would delete them from storage.
+  // Both writes are functional, AND so is the ADDED computation inside each:
+  // `before` is read off the updater's own previous-state argument, not off
+  // the render-time `listing`/`state` this callback closed over. That matters
+  // because this fires after an `await` with no render guaranteed in between
+  // two calls — e.g. two uploads finishing back to back. If `before` were
+  // computed once outside the updaters (as it used to be), the second call
+  // would filter `stored` (the server's FULL list) against a `before` that
+  // does not yet include what the first call just added, and would append
+  // that same photo again — duplicated in both the working listing and the
+  // saved baseline, and a duplicate survives a Save. Computing `before` fresh
+  // inside each updater means the second call sees the first call's result
+  // and correctly filters it back out.
+  //
+  // What this still does NOT protect against: a change to a field other than
+  // photos, made between the two uploads, is simply carried forward by the
+  // spread unexamined — this mechanism only decides which photos count as
+  // new, it does not resolve conflicts on anything else.
+  //
+  // `setLoadedListing` applies unconditionally where `setState` guards on
+  // `s.kind === "ready"`, because `listing` has no "not loaded for this id"
+  // case of its own to check. That asymmetry is safe only because the one
+  // path back INTO `"ready"` — the id-change effect above — always REPLACES
+  // `listing` wholesale (`setListing(detail.listing)`) rather than merging
+  // into it, and nothing below renders `listing` or the Save button while
+  // `state.kind !== "ready"`. So a stray append made during a non-"ready"
+  // stretch (id changed mid-upload, refetch then failed) is inert: never
+  // shown, never saveable, and overwritten outright by the next successful
+  // load. If that effect ever became a merge instead of a replace, this
+  // stops being true and the two would need the same guard.
   const photosUploaded = (stored: HostPhoto[]) => {
-    const before = new Set(detail.listing.photos.map((p) => p.url));
-    const added = stored.filter((p) => !before.has(p.url));
-    if (added.length === 0) return;
-
-    setLoadedListing((l) => ({ ...l, photos: [...l.photos, ...added] }));
-    setState((s) =>
-      s.kind === "ready"
-        ? {
-            ...s,
-            detail: {
-              ...s.detail,
-              listing: { ...s.detail.listing, photos: [...s.detail.listing.photos, ...added] },
-            },
-          }
-        : s,
-    );
+    setLoadedListing((l) => {
+      const before = new Set(l.photos.map((p) => p.url));
+      const added = stored.filter((p) => !before.has(p.url));
+      return added.length === 0 ? l : { ...l, photos: [...l.photos, ...added] };
+    });
+    setState((s) => {
+      if (s.kind !== "ready") return s;
+      const before = new Set(s.detail.listing.photos.map((p) => p.url));
+      const added = stored.filter((p) => !before.has(p.url));
+      if (added.length === 0) return s;
+      return {
+        ...s,
+        detail: {
+          ...s.detail,
+          listing: { ...s.detail.listing, photos: [...s.detail.listing.photos, ...added] },
+        },
+      };
+    });
   };
 
   // "Keep mine". Applied on screen first and written after, because the whole

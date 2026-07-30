@@ -369,15 +369,40 @@ function NewPropertyContent() {
   // unsaved change to a photo the server already has. Only what the upload
   // ADDED, appended: taking the server's list wholesale would undo a reorder
   // made while the transfer was in flight.
+  //
+  // `before` is computed fresh inside each updater, off that updater's own
+  // previous-state argument, not off `saved`/`listing` as closed over when
+  // this callback was created. This fires after an `await`, with no render
+  // guaranteed between two uploads finishing back to back; a `before`
+  // computed once outside the updaters would make the second call filter
+  // `stored` (the server's FULL list) against a snapshot that does not yet
+  // include what the first call just added, and append that photo a second
+  // time — duplicated in the working listing and the saved baseline alike,
+  // surviving a Save. Recomputing inside each updater means the second call
+  // sees the first call's result and filters it back out.
+  //
+  // `setListing` runs unconditionally where `setSaved` no-ops while `s` is
+  // null. That's safe, not merely convenient: `listing`'s own type has no
+  // "draft not created yet" case (it defaults to `blankListing`, never
+  // null), and `PhotoManager` cannot fire an upload before the document
+  // exists — this page creates it on leaving step 1 specifically because
+  // uploads are live writes that need a real id (see the file banner). So by
+  // the time `stored` can exist at all, `saved` is already non-null; the
+  // `!s` branch here is defensive, not a path this reaches in practice.
   const photosUploaded = (stored: HostPhoto[]) => {
-    if (!saved) return;
-    const before = new Set(saved.listing.photos.map((p) => p.url));
-    const added = stored.filter((p) => !before.has(p.url));
-    if (added.length === 0) return;
-    setListing((l) => ({ ...l, photos: [...l.photos, ...added] }));
-    setSaved((s) =>
-      s ? { ...s, listing: { ...s.listing, photos: [...s.listing.photos, ...added] } } : s,
-    );
+    setListing((l) => {
+      const before = new Set(l.photos.map((p) => p.url));
+      const added = stored.filter((p) => !before.has(p.url));
+      return added.length === 0 ? l : { ...l, photos: [...l.photos, ...added] };
+    });
+    setSaved((s) => {
+      if (!s) return s;
+      const before = new Set(s.listing.photos.map((p) => p.url));
+      const added = stored.filter((p) => !before.has(p.url));
+      return added.length === 0
+        ? s
+        : { ...s, listing: { ...s.listing, photos: [...s.listing.photos, ...added] } };
+    });
   };
 
   // "Keep mine". Applied on screen first and written after — a suggestion that

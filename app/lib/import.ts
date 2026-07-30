@@ -1,6 +1,10 @@
 import type { HostListing, HostPricing, ImportResult, ImportStage } from "@/lib/api";
 import { AMENITY_KEYS } from "@/lib/amenity-icons";
 import { canonical, paragraphDoc } from "@/lib/rich-text";
+// Type only, and erased at build: it buys the compiler's check on the two
+// policy-step literals below without this module gaining a runtime dependency
+// on the wizard's own ordering.
+import type { StepKey } from "@/lib/wizard";
 
 // ============================================================
 // "Start faster" — the AI-assisted import (ADR-033).
@@ -96,6 +100,105 @@ export const IMPORT_STEP_OF: Record<ImportKey, string> = {
 
 /** The amenity vocabulary, as a lookup. Ours, not any portal's. */
 const KNOWN_AMENITIES = new Set<string>(AMENITY_KEYS);
+
+// ------------------------------------------------------------
+// The step banner's two lines, as a decision rather than as nested ternaries
+// inside a component. It is the same argument this file opens with — a banner
+// and twenty-odd marks all state things about one job, and computed at each
+// site they are chances to disagree — and it earns its place here because the
+// table is four cases wide and two reviews found it wrong.
+// ------------------------------------------------------------
+
+/** The eyebrow answers "is there anything on this step nobody has read yet". */
+export type BannerEyebrow = "policy" | "justLanded" | "from" | "nothing";
+
+/** The body answers "did the portal send anything for this step" — a different
+ *  question, and `silent` is the answer when we honestly cannot tell. */
+export type BannerBody = "policy" | "key" | "nothing" | "silent";
+
+/** The two steps an import is not allowed to fill, whatever the portal had. */
+const POLICY_STEPS = new Set<StepKey>(["photos", "paperwork"]);
+
+/** The steps an import key can reach at all.
+ *
+ *  Read in ONE direction only. A step ABSENT from this set can never receive
+ *  anything, so "the portal had nothing for this step" is certain there rather
+ *  than guessed — `nearby` is the case, by design, because nothing an advert
+ *  publishes belongs in a measured walking time.
+ *
+ *  The converse does NOT hold and must never be used: that a step COULD have
+ *  received something says nothing about whether THIS import did, and reading
+ *  it that way is precisely what made an unfilled step contradict itself —
+ *  an eyebrow saying nothing is here above a body offering the key to marks
+ *  that do not exist. */
+const REACHABLE_STEPS = new Set<string>(IMPORT_KEYS.map((k) => IMPORT_STEP_OF[k]));
+
+/**
+ * What the banner says on this step.
+ *
+ * The two lines answer DIFFERENT questions and must read from different
+ * sources, which is the bug this shape exists to prevent:
+ *
+ *   · the eyebrow is about REVIEW, so it reads the live marks — they shrink as
+ *     the owner works, which is exactly what it is reporting;
+ *   · the body is about ARRIVAL, so it reads `arrived`, which never shrinks.
+ *     Reading it off the live set turned "the portal had nothing for this
+ *     step" into a lie about a step the owner had just finished reviewing —
+ *     the normal end state of using the feature, which every step reaches.
+ *
+ * `arrived` is null on a resumed draft: the arrival set is not persisted, so
+ * after a reload we know an import happened and what is still marked, and
+ * nothing else. Both constant fallbacks are wrong there —
+ *
+ *   · always "something arrived" makes an unfilled step contradict itself,
+ *     eyebrow saying nothing is here while the body offers a key to marks that
+ *     do not exist;
+ *   · always "nothing arrived" makes a step that still carries live marks deny
+ *     the very fields it is marking.
+ *
+ * So it says less instead of saying something false. Live marks are PROOF
+ * something arrived, and stand in for the arrival set; with no marks left
+ * there is genuinely no way to tell a step that received nothing from one that
+ * has been read, and the body is dropped entirely rather than guessed.
+ *
+ * The one exception is where that ignorance does not apply: on a step no key
+ * can reach (`REACHABLE_STEPS`), nothing CAN have arrived, so the true
+ * sentence is still available and is still said.
+ */
+export function bannerVariant(
+  step: StepKey,
+  /** Still marked — what nobody has looked at yet. */
+  imported: string[],
+  /** What the read actually filled, or null on a resumed draft. */
+  arrived: string[] | null,
+  justLanded: boolean,
+): { eyebrow: BannerEyebrow; body: BannerBody; caution: boolean } {
+  if (POLICY_STEPS.has(step))
+    return { eyebrow: "policy", body: "policy", caution: false };
+
+  const here = (keys: string[]) => keys.some((k) => IMPORT_STEP_OF[k as ImportKey] === step);
+  const unreviewed = here(imported);
+
+  return {
+    eyebrow: justLanded ? "justLanded" : unreviewed ? "from" : "nothing",
+    body:
+      arrived !== null
+        ? here(arrived)
+          ? "key"
+          : "nothing"
+        : unreviewed
+          ? "key"
+          : REACHABLE_STEPS.has(step)
+            ? "silent"
+            : "nothing",
+    // The calendar-month caution. On the REVIEW question, not the arrival one:
+    // it is a thing to go and check, and once every price on the step has been
+    // looked at there is nothing left to check. Independent of `justLanded`,
+    // which changes how loudly the banner announces itself and not whether the
+    // price still wants checking.
+    caution: step === "pricing" && unreviewed,
+  };
+}
 
 /** An arriving import MERGES, never overwrites: only fields the owner has not
  *  touched may be filled. This is the whole reason "Start filling it in

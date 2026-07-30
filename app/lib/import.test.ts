@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   IMPORT_ERROR_CODES,
   IMPORT_KEYS,
+  bannerVariant,
   clearMark,
   editedListingKeys,
   editedPricingKeys,
@@ -75,6 +76,126 @@ describe("mergeImport", () => {
       new Set());
     expect(listing.copy?.es?.type).toBe("doc");
     expect(listing.copy?.en).toBeNull();
+  });
+});
+
+// The banner's two lines answer different questions off different sources, and
+// getting that wrong has produced a falsehood on screen twice. The table is
+// small and the failures are all in its corners, so every corner is here.
+describe("bannerVariant", () => {
+  // `basics` owns `name`; `rules` owns `petsAllowed`; nothing owns `nearby`.
+  const v = (
+    step: Parameters<typeof bannerVariant>[0],
+    imported: string[],
+    arrived: string[] | null,
+    justLanded = false,
+  ) => bannerVariant(step, imported, arrived, justLanded);
+
+  it("says the same thing on the two policy steps whatever arrived", () => {
+    for (const step of ["photos", "paperwork"] as const) {
+      expect(v(step, [], null)).toEqual({ eyebrow: "policy", body: "policy", caution: false });
+      expect(v(step, ["name"], ["name"])).toEqual({
+        eyebrow: "policy",
+        body: "policy",
+        caution: false,
+      });
+    }
+  });
+
+  describe("in session — the arrival set is known", () => {
+    it("marks still unread: from + key", () => {
+      expect(v("basics", ["name"], ["name"])).toMatchObject({ eyebrow: "from", body: "key" });
+    });
+
+    it("fully reviewed: the eyebrow goes quiet, the BODY does not change", () => {
+      // The bug this exists to prevent. `arrived` still holds `name`, so the
+      // body must not flip to "the portal had nothing for this step" about a
+      // step the owner has just finished reading.
+      expect(v("basics", [], ["name"])).toMatchObject({ eyebrow: "nothing", body: "key" });
+    });
+
+    it("the portal genuinely sent nothing: nothing + nothing", () => {
+      expect(v("basics", [], [])).toMatchObject({ eyebrow: "nothing", body: "nothing" });
+      // …and on a step no key can reach, whatever else arrived.
+      expect(v("nearby", [], ["name", "price"])).toMatchObject({
+        eyebrow: "nothing",
+        body: "nothing",
+      });
+    });
+
+    it("shouts only when the read landed under the owner's hands", () => {
+      expect(v("basics", ["name"], ["name"], true).eyebrow).toBe("justLanded");
+      expect(v("basics", ["name"], ["name"], false).eyebrow).toBe("from");
+    });
+  });
+
+  describe("resumed draft — the arrival set is gone", () => {
+    it("live marks stand in for it: they are proof something arrived", () => {
+      expect(v("basics", ["name"], null)).toMatchObject({ eyebrow: "from", body: "key" });
+    });
+
+    it("no marks left: says LESS rather than guessing", () => {
+      // We cannot tell "received nothing" from "already reviewed", so there is
+      // no body at all. Both constant fallbacks are wrong here: "something
+      // arrived" contradicts the eyebrow on a step the import never filled,
+      // and "nothing arrived" denies the marks on a step that still has them.
+      expect(v("basics", [], null)).toMatchObject({ eyebrow: "nothing", body: "silent" });
+    });
+
+    it("still says the true thing where there is no ignorance to admit", () => {
+      // `nearby` is not a case of "we cannot tell": no key maps to it, so
+      // nothing CAN have arrived and the sentence is certain. Dropping it
+      // would be withholding a fact, not avoiding a guess.
+      expect(v("nearby", [], null)).toMatchObject({ eyebrow: "nothing", body: "nothing" });
+    });
+
+    it("does not read reachability the other way round", () => {
+      // The inference is one-directional. `rules` is reachable, which is why
+      // it must NOT be treated as "something arrived" — that was the bug.
+      // Every reachable step with no marks left is silent, none is `nothing`,
+      // and none is `key`.
+      for (const step of ["address", "basics", "description", "amenities", "pricing",
+        "rules"] as const) {
+        expect(v(step, [], null).body, `${step} with no marks, arrival unknown`).toBe("silent");
+      }
+    });
+
+    it("an importable step the import never filled is silent, not self-contradictory", () => {
+      // The case that produced this finding: an import fills address/basics
+      // and never mentions house rules. Reloaded, the eyebrow says nothing is
+      // here — so the body must not offer a key to marks that do not exist.
+      expect(v("rules", [], null)).toMatchObject({ eyebrow: "nothing", body: "silent" });
+      expect(v("rules", ["petsAllowed"], null)).toMatchObject({
+        eyebrow: "from",
+        body: "key",
+      });
+    });
+
+    it("never contradicts itself: a quiet eyebrow never sits over a fill-key", () => {
+      for (const step of ["address", "basics", "description", "amenities", "pricing", "rules",
+        "nearby"] as const) {
+        for (const imported of [[], ["name"], ["petsAllowed"], ["price"]]) {
+          const { eyebrow, body } = v(step, imported, null);
+          if (eyebrow === "nothing") expect(body).not.toBe("key");
+        }
+      }
+    });
+  });
+
+  describe("the calendar-month caution", () => {
+    it("rides on the price still being unread, on the pricing step only", () => {
+      expect(v("pricing", ["price"], ["price"]).caution).toBe(true);
+      expect(v("pricing", [], ["price"]).caution).toBe(false);
+      expect(v("basics", ["name"], ["name"]).caution).toBe(false);
+    });
+
+    it("survives a just-landed read, which is about volume and not about price", () => {
+      expect(v("pricing", ["price"], ["price"], true).caution).toBe(true);
+    });
+
+    it("still shows on a resumed draft whose price is unread", () => {
+      expect(v("pricing", ["price"], null).caution).toBe(true);
+    });
   });
 });
 

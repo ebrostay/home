@@ -2128,6 +2128,148 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
 
 ---
 
+## ADR-033 — AI-assisted import: an async job the API owns and an extractor it does not trust
+
+- **Status:** ✅ locked 2026-07-30 (product owner: Raphael); 🔜 **not built**.
+  Carries the design at
+  `docs/superpowers/specs/2026-07-30-ai-assisted-import-design.md` into the
+  log. **Extends ADR-030** (the wizard gains a step 0 in front of it; nothing
+  inside the nine steps changes but one banner and one glyph) and **sits
+  beside ADR-020** (the DeepSeek assistant) rather than replacing it.
+- **Context.** Most owners arriving at *Add a property* already have the flat
+  listed on a portal, and retyping it is why drafts get abandoned. The design
+  reads a pasted portal URL and proposes a filled form. Extraction takes 30
+  seconds or more and the computational work is going to a separate pipeline
+  that does not exist yet and will be operated by a third party.
+
+### Decision 1 — Asynchronous, because SWA leaves no other option
+
+SWA caps every `/api` request at **45 seconds** and managed functions accept
+**HTTP triggers only**. A 30s+ synchronous endpoint was never available. The
+reading screen of §10.2 is therefore the architecture, not a UX flourish, and
+the escape hatch on it (*Start filling it in meanwhile*) is what turns the
+constraint into a feature.
+
+### Decision 2 — Stay on managed functions; do not move to Standard/BYOF
+
+Nothing in the design needs a non-HTTP trigger: API→queue is an SDK *write*,
+pipeline→API is HTTP, client→API is HTTP. The one job a timer would do —
+reaping a stuck job — is done lazily on read instead, the same pattern
+`RouteCache` uses for stale geometry.
+
+Moving would cost ~$9/mo, a second Function App with its own storage and
+deploy pipeline, and **SWA pull-request preview environments** (bring-your-own
+backends cannot be linked to them), in exchange for capabilities this design
+does not use. The C# is portable either way — hosting configuration, not code
+— so this stays cheap to revisit if the pipeline ever needs something HTTP
+cannot carry.
+
+### Decision 3 — A Storage Queue, not the Cosmos change feed
+
+The storage account already exists for photos, so the queue adds no resource
+and no cost floor, and it brings visibility timeout, dequeue count and a poison
+queue — retry semantics for free. The change feed brings none of those and we
+would rebuild them; it needs a lease container (extra RU on a free-tier
+account); and it delivers *every* write to the job document, including our own
+stage updates, so the consumer must filter and be idempotent.
+
+The deciding argument is the integration contract. For a service that does not
+exist yet and is not ours, "read a queue message" is universally implementable;
+"host a change-feed processor against our database" couples someone else's
+roadmap to our schema.
+
+A 10-second queue poll costs ~8,640 transactions/day ≈ **$0.0004/day**. The
+polling-cost worry that motivated the question is real for a hosted HTTP
+service and negligible for a storage queue. A wakeup ping exists behind
+`PIPELINE_WAKEUP_URL` and is **advisory** — the queue stays the source of
+truth, so a failed ping costs latency, not the job.
+
+### Decision 4 — The result lands on the job, never on the listing
+
+`importJobs` (partition `/id`, 7-day TTL) holds the proposal. The **merge is
+client-side**, because only the client knows which fields the owner has already
+typed into — §10.2 requires that an arriving import fill only untouched fields,
+and during *Start filling it in meanwhile* there may be no draft at all yet.
+
+Three consequences, and they are the reason for the shape:
+
+- The pipeline needs **no Cosmos credential and no knowledge of `PropertyDoc`**.
+- `HostWrites.cs` validation is untouched: the import adds **no new writer to
+  the `properties` container**. The listing is still only ever written by the
+  wizard's own save.
+- A forged callback can poison **one job's proposal**, which arrives visibly
+  marked and editable. That blast radius is what makes an anonymous callback
+  endpoint acceptable at all.
+
+### Decision 5 — Per-job callback tokens, not a shared secret
+
+The pipeline is third-party. Its entire credential surface is a process-only
+queue SAS and, per job, a random token minted at enqueue and compared with
+`FixedTimeEquals`. A leaked token is scoped to one job and dies with it. A
+mismatch answers `404`, never `403` — a job id is not a thing to confirm the
+existence of.
+
+### Decision 6 — The callback enforces policy rather than trusting the extractor
+
+`imported[]` is validated against a closed key vocabulary and **never inferred
+from "field is non-empty"** (a field the owner typed and a field we filled look
+identical in the data). Values are clamped against `HostValidation`'s limits.
+And the **English is stripped, silently and always** — §10.5's rule that the
+English is never imported even from a portal's English tab is enforced at the
+boundary, so a pipeline that returns it does not get to change the product.
+
+### Decision 7 — Progress is a stage enum; polling is the transport
+
+`queued → fetching → reading → matching → done | failed | cancelled`, reported
+through the same callback. **No percentage and no bar**: the duration is not
+knowable, and a bar that stalls at 80% is a lie with a number on it. Where the
+pipeline reports only `done`/`failed`, the client advances the three status
+lines on elapsed time and a real reported stage always overrides the estimate.
+
+The client polls `GET /api/import/{id}` — a Cosmos **point read, 1 RU** —
+every 2s, and the response carries the result in the same body as the `done`
+stage. SSE and long-polling are refused by the same 45-second cap; Web PubSub
+or SignalR is an entire service for one screen with one viewer.
+
+### Decision 8 — `imported[]` persists on the property document
+
+`PropertyDoc` gains `imported: string[]` and `importSource`. Not optional: the
+design cut the summary screen and made the marks the entire review surface, so
+marks living only in client state would mean a reload returns the owner to a
+form in which twenty machine-proposed values are indistinguishable from their
+own.
+
+### Decision 9 — The URL flow ships first; the document flow waits on a privacy answer
+
+Not merely a size decision. ADR-020's rule is *property text only, never
+personal data*. A pasted portal URL is a public advert; an uploaded agency
+dossier can carry the owner's NIE, bank details, a signed mandate. Sending that
+to a third-party extractor is a different question and is answered before Card
+B ships (OD-7). `source` is a discriminated union from day one, so adding
+`{ kind: "document" }` is additive and does not version the pipeline contract.
+
+### Consequences
+
+- New: `importJobs` container, `import-jobs` storage queue,
+  `api/Functions/ImportFunctions.cs`, `app/lib/import.ts`. No SWA plan change.
+- ADR-020's assistant stays what it is — short, synchronous, in-function text
+  operations on text the owner already typed. **Do not merge the two paths**;
+  they are different latency classes and one of them cannot fit in 45 seconds.
+- The step numbers in the design handoff's §10.3–10.5 predate the ninth step
+  and are off by one past the first. Banner variants are chosen by `StepKey`,
+  never by number. `nearby` takes the did-not-touch banner: nothing an advert
+  publishes belongs in a measured walking time.
+- The price is carried across unchanged and flagged, never multiplied by 30/31.
+  Portals quote a calendar month; ADR-023's field is thirty days flat, and a
+  guess about the owner's intent has no business in the one field with contract
+  consequences.
+- Rate limits (2 running, 20/day per owner) reuse the `serviceBudget`
+  container, which exists for exactly this cross-instance counting.
+- We never fetch the portal, never store the source page, and never re-host its
+  images. Only the pipeline reads the page the owner pointed at.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their
@@ -2141,3 +2283,5 @@ resolution paths.
 | OD-4 | **Supabase decommission snapshot** | 🔜 | v1 prod data stays in Supabase until decommission (ADR-016). What is kept, and when is the project deleted? | After cutover + a settling period: export full `pg_dump` + storage bucket archive to operator-held storage, verify readability, then delete the Supabase project. Date to be set with OD-1. |
 | OD-5 | **Published-edit review visibility** | 🔜 | §2.2.1 takes the simple rule: editing a published listing pulls it from public view until re-approved. Should the prior published version instead stay live while the edit awaits review (draft-over-live)? | Keep the simple rule for launch; revisit if hosts complain about visibility gaps. Draft-over-live = store a `pendingRevision` sub-document on the property; approve = promote. Pure additive change. |
 | OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Leaning (2026-07-29): count **working days**. Blocked on one operational fact — does the turnaround crew work Saturdays? If yes, the problem collapses to holidays only. Decide once real stays flow; needs a hand-maintained Zaragoza holiday list (national + Aragón + local: Pilar, San Valero, Cincomarzada) served from ONE place, because the C# projection and the client calendar must agree day-for-day. Raised with ADR-031. |
+| OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
+| OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |

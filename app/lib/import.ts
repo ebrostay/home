@@ -178,8 +178,17 @@ export function bannerVariant(
 
   const here = (keys: string[]) => keys.some((k) => IMPORT_STEP_OF[k as ImportKey] === step);
   const unreviewed = here(imported);
+  // GATED ON THIS STEP, and that gate is the whole point. `justLanded` is a
+  // fact about the SESSION — a result landed while the owner was in the form —
+  // and it outranks everything below it in this ladder, so ungated it says
+  // "just arrived from Idealista" on all nine steps including the ones the
+  // import never touched. Over a body reading "Idealista had nothing for this
+  // step", which is the same self-contradiction the `arrived`/`imported` split
+  // above exists to prevent, pointed the other way.
+  const landedHere = justLanded && here(arrived ?? []);
+
   return {
-    eyebrow: justLanded ? "justLanded" : unreviewed ? "from" : "nothing",
+    eyebrow: landedHere ? "justLanded" : unreviewed ? "from" : "nothing",
     body:
       arrived !== null
         ? here(arrived)

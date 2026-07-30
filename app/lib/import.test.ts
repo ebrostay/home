@@ -131,6 +131,45 @@ describe("bannerVariant", () => {
       expect(v("basics", ["name"], ["name"], false).eyebrow).toBe("from");
     });
 
+    it("shouts only on a step the read actually filled", () => {
+      // `justLanded` is a fact about the SESSION and it outranks everything
+      // else in the eyebrow ladder, so ungated it announced an arrival on all
+      // nine steps — including ones the import never touched. On `nearby`,
+      // which no key can even reach, that put "JUST ARRIVED · Idealista" over
+      // "Idealista had nothing for this step", in the same banner.
+      expect(v("nearby", [], ["address", "name"], true)).toMatchObject({
+        eyebrow: "nothing",
+        body: "nothing",
+      });
+      // …and on a reachable step this particular read passed over.
+      expect(v("rules", [], ["address", "name"], true)).toMatchObject({
+        eyebrow: "nothing",
+        body: "nothing",
+      });
+      // Where it DID land, it still shouts.
+      expect(v("basics", ["name"], ["address", "name"], true).eyebrow).toBe("justLanded");
+      // Including once that step has been fully reviewed: the arrival is
+      // still a true thing to have said about this step, and `arrived` — the
+      // set that never shrinks — is what says it.
+      expect(v("basics", [], ["name"], true).eyebrow).toBe("justLanded");
+    });
+
+    it("never contradicts itself, whatever just landed", () => {
+      // The same invariant the resumed-draft block asserts, extended over
+      // `justLanded`: an eyebrow announcing an arrival may not sit above a
+      // body saying nothing arrived, and a quiet eyebrow may not sit above a
+      // key to marks that do not exist.
+      for (const step of ["address", "basics", "description", "amenities", "pricing", "rules",
+        "nearby"] as const) {
+        for (const arrived of [[], ["name"], ["petsAllowed"], ["price"], ["name", "price"]]) {
+          for (const imported of [[], ["name"], ["petsAllowed"], ["price"]]) {
+            const { eyebrow, body } = v(step, imported, arrived, true);
+            if (eyebrow === "justLanded") expect(body, `${step} just-landed`).toBe("key");
+            if (eyebrow === "nothing") expect(body, `${step} quiet`).not.toBe("key");
+          }
+        }
+      }
+    });
   });
 
   describe("resumed draft — the arrival set is gone", () => {

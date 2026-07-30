@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   HeartPulse,
   Loader2,
@@ -41,12 +41,16 @@ type EntryStatus =
   | { kind: "error"; status: number }
   | { kind: "ready" };
 
-export function Nearby({
-  propertyId,
-  entries,
-  locale,
-  onRouteChange,
-}: {
+/** Imperative handle so a sibling section (the description's place chips,
+ *  ADR-028 as amended for the rich-text renderer) can select an entry here
+ *  without this component handing its internal `activeId`/`status` state to
+ *  the parent — the same reasoning `onRouteChange` already documents for why
+ *  the map only ever gets the two derived values, not the state itself. */
+export type NearbyHandle = {
+  select: (entryId: string) => void;
+};
+
+export const Nearby = forwardRef<NearbyHandle, {
   propertyId: string;
   entries: PublicNearbyEntry[];
   locale: string;
@@ -56,7 +60,12 @@ export function Nearby({
    *  never disappearing on a failed lookup), and the polyline follows once
    *  ORS answers. `(null, null)` means nothing is active. */
   onRouteChange: (destination: NeighbourhoodMapDestination | null, polyline: string | null) => void;
-}) {
+  /** So the description section (RichText) can label its own place chips
+   *  under whichever profile is active here — the two sections show the same
+   *  figures, and a chip that disagreed with the list beside it would read as
+   *  a bug. */
+  onProfileChange?: (profile: NearbyProfile) => void;
+}>(function Nearby({ propertyId, entries, locale, onRouteChange, onProfileChange }, ref) {
   const t = useTranslations("detail.nearby");
   const tType = useTranslations("nearby");
 
@@ -138,6 +147,7 @@ export function Nearby({
 
   const selectProfile = (next: NearbyProfile) => {
     setProfile(next);
+    onProfileChange?.(next);
     if (!activeId) return;
     const entry = entryLookup.get(activeId);
     if (!entry || !reachFor(entry, next)) {
@@ -161,6 +171,17 @@ export function Nearby({
     setStatus({ kind: "loading" });
     setAttempt((n) => n + 1);
   };
+
+  // The only thing exposed to the parent beyond `onRouteChange`: a place
+  // chip in the description asking this list to select an entry it already
+  // knows about. An id this listing doesn't have (should never happen — the
+  // document only ever references ids the server validated) is a no-op
+  // rather than a crash.
+  useImperativeHandle(ref, () => ({
+    select: (id: string) => {
+      if (entryLookup.has(id)) selectEntry(id);
+    },
+  }));
 
   // A known machine type reads through the catalogue; a type the catalogue
   // has no label for (served before its string shipped) falls back to
@@ -260,4 +281,4 @@ export function Nearby({
       )}
     </div>
   );
-}
+});

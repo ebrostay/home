@@ -3,26 +3,29 @@
 // Property detail. URL: /{locale}/property?id={slug} (v1's URL model — plays
 // nicely with static export; pretty paths can come later via SWA rewrites).
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ApiError, biText, fetchProperty, type PropertyDetail } from "@/lib/api";
+import { ApiError, biText, fetchProperty, type PropertyDetail, type PropertyPhoto } from "@/lib/api";
 import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
+import type { NearbyProfile } from "@/lib/nearby";
 import { formatEuro } from "@/lib/pricing";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
+import { RichText } from "@/components/ui/RichText";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
-import { Nearby } from "@/components/detail/Nearby";
+import { Nearby, type NearbyHandle } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
 
@@ -122,7 +125,11 @@ function DetailBody({
   const t = useTranslations();
   const td = useTranslations("detail");
 
-  const gallery = p.photos.filter((ph) => !ph.isFloorplan);
+  // `hiddenFromGallery` photos exist only to be referenced from the
+  // description (Task 11) — they must never show up in the mosaic or the
+  // "all photos" overlay, even though the document below can still resolve
+  // and display them itself.
+  const gallery = p.photos.filter((ph) => !ph.isFloorplan && !ph.hiddenFromGallery);
   const floorplan = p.photos.find((ph) => ph.isFloorplan);
 
   // Which nearby entry Nearby.tsx currently has active, and the route line
@@ -134,6 +141,34 @@ function DetailBody({
     null,
   );
   const [nearbyRoute, setNearbyRoute] = useState<string | null>(null);
+
+  // The description (RichText, Task 11) needs two things Nearby.tsx owns:
+  // a way to select one of its entries from a place chip, and the profile
+  // that's currently active so a place chip's minutes match the list beside
+  // it. Nearby keeps owning the state (same reasoning as `onRouteChange`
+  // above); this page only gets a ref to ask it to select something, and a
+  // mirror of its profile to read.
+  const nearbyRef = useRef<NearbyHandle>(null);
+  const [nearbyProfile, setNearbyProfile] = useState<NearbyProfile>("foot");
+  const selectNearbyEntry = (entryId: string) => {
+    nearbyRef.current?.select(entryId);
+    document
+      .getElementById("neighbourhood")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // A photo chip/figure in the description opens a lightbox for that one
+  // photo — deliberately not the mosaic's "all photos" overlay, which now
+  // excludes `hiddenFromGallery` photos: a description-only photo has to
+  // stay viewable when the text points at it, just never discoverable by
+  // browsing the gallery. Resolved against the FULL photo list (including
+  // floorplan and hidden ones), matching what the document itself can
+  // reference.
+  const [lightboxPhoto, setLightboxPhoto] = useState<PropertyPhoto | null>(null);
+  const openGalleryAt = (url: string) => {
+    const photo = p.photos.find((ph) => ph.url === url);
+    if (photo) setLightboxPhoto(photo);
+  };
 
   const booked: DateRange[] = useMemo(
     () =>
@@ -279,9 +314,14 @@ function DetailBody({
 
           {/* 2 — About */}
           <Section title={td("about")} plain>
-            <p className="text-[0.96875rem] leading-relaxed">
-              {biText(p.copy, locale)}
-            </p>
+            <RichText
+              doc={locale === "es" ? (p.copy?.es ?? null) : (p.copy?.en ?? null)}
+              photos={p.photos}
+              nearby={p.nearby}
+              profile={nearbyProfile}
+              onPhoto={openGalleryAt}
+              onPlace={selectNearbyEntry}
+            />
             {biText(p.details, locale) && (
               <p className="mt-3 text-[0.96875rem] leading-relaxed">
                 {biText(p.details, locale)}
@@ -383,7 +423,7 @@ function DetailBody({
               draws has to land in the same viewport as the list itself, so
               the map and the list are now siblings in one section instead of
               two apart. */}
-          <Section title={td("whereYouWillBe")}>
+          <Section id="neighbourhood" title={td("whereYouWillBe")}>
             <NeighbourhoodMap
               home={{ lat: p.lat, lng: p.lng }}
               homeLabel={p.name}
@@ -402,6 +442,7 @@ function DetailBody({
             {p.nearby.length > 0 && (
               <div className="mt-8">
                 <Nearby
+                  ref={nearbyRef}
                   propertyId={p.id}
                   entries={p.nearby}
                   locale={locale}
@@ -409,6 +450,7 @@ function DetailBody({
                     setNearbyDestination(destination);
                     setNearbyRoute(polyline);
                   }}
+                  onProfileChange={setNearbyProfile}
                 />
               </div>
             )}
@@ -447,6 +489,21 @@ function DetailBody({
           searched={searched}
         />
       </div>
+
+      <Dialog
+        open={!!lightboxPhoto}
+        onClose={() => setLightboxPhoto(null)}
+        title={p.name}
+      >
+        {lightboxPhoto && (
+          // eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized
+          <img
+            src={lightboxPhoto.detailUrl ?? lightboxPhoto.url}
+            alt=""
+            className="w-full rounded-(--radius-control) object-contain"
+          />
+        )}
+      </Dialog>
     </main>
   );
 }

@@ -228,8 +228,11 @@ public static class HostProjection
             p.Bathrooms,
             p.SizeM2,
             p.PriceNumber,
+            // Same bug class as PublicProjection.ToSummary's cover pick: a
+            // photo the owner hid from the gallery must not become the
+            // portfolio-row thumbnail either, just because it sorts first.
             p.Photos
-                .Where(ph => !ph.IsFloorplan)
+                .Where(ph => !ph.IsFloorplan && !ph.HiddenFromGallery)
                 .OrderBy(ph => ph.SortOrder)
                 .Select(ph => ph.Url)
                 .FirstOrDefault(),

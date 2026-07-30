@@ -163,11 +163,14 @@ public static class PublicProjection
 
     public static PropertySummary ToSummary(PropertyDoc p, DateTimeOffset now)
     {
-        // The cover is the first non-floorplan photo. Pulled out once so all
-        // three URLs come from the SAME photo — selecting each independently is
-        // how a card ends up with one photo's small size beside another's.
+        // The cover is the first non-floorplan photo the owner hasn't hidden
+        // from the gallery — a photo kept out of the gallery on purpose (Task
+        // 11) must not become the single most prominent image on the site by
+        // sorting first. Pulled out once so all three URLs come from the SAME
+        // photo — selecting each independently is how a card ends up with one
+        // photo's small size beside another's.
         var cover = p.Photos
-            .Where(ph => !ph.IsFloorplan)
+            .Where(ph => !ph.IsFloorplan && !ph.HiddenFromGallery)
             .OrderBy(ph => ph.SortOrder)
             .FirstOrDefault();
 

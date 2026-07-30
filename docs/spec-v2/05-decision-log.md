@@ -2248,6 +2248,14 @@ to a third-party extractor is a different question and is answered before Card
 B ships (OD-7). `source` is a discriminated union from day one, so adding
 `{ kind: "document" }` is additive and does not version the pipeline contract.
 
+Card B **renders disabled with a "coming soon" label** rather than being
+hidden: the start screen's job is to tell an owner what this feature is before
+they spend effort on it, and a card saying "documents, not yet" answers a
+question an absent card leaves them guessing at. It is `disabled` +
+`aria-disabled` with **no drop, dragover or change handler attached at all** —
+the design's rule that a dead control must be plainly dead applies with more
+force to a whole card than to a button.
+
 ### Consequences
 
 - New: `importJobs` container, `import-jobs` storage queue,

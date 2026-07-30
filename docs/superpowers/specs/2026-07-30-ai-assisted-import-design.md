@@ -25,9 +25,25 @@ without touching the wizard.
 screen, job spine in the API, marks and banners in the wizard, client-side
 merge. Verified against a stub extractor.
 
-**Phase 1 does not ship:** the document flow. Card B of the start screen is not
-rendered. See *Open questions* — the document flow has an unresolved privacy
-question that the URL flow does not have.
+**Phase 1 does not ship:** the document flow. See *Open questions* — it has an
+unresolved privacy question the URL flow does not have.
+
+**Card B still renders, disabled, with a bilingual "coming soon" label**
+(decided 2026-07-30). The alternative was hiding it, on the design's own
+argument that a control which looks actionable and silently does nothing is
+worse than a plainly dead one. Shown wins here because the start screen's job
+is to tell an owner what this feature *is* before they spend any effort on it,
+and a card that says "documents, not yet" answers a question that an absent
+card leaves them to guess at.
+
+That argument only holds if the card is **plainly** dead, so:
+
+- the drop button carries `disabled` **and** `aria-disabled`, not a guard
+  inside the handler — the same rule §10.1 sets for the read button;
+- no `drop`, `dragover` or `change` handler is attached at all, so a dragged
+  file cannot be silently swallowed;
+- the "coming soon" label sits in the card, not in a tooltip, and is a real
+  `es.json`/`en.json` string like everything else.
 
 **Never in scope:** the extraction pipeline itself. It is a third-party service
 that does not exist yet. This spec defines the contract it must honour and

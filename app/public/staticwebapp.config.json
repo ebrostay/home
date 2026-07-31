@@ -23,51 +23,7 @@
             "loginParameterNames": []
           }
         },
-        "ebrostay-hint-live": {
-          "registration": {
-            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "name",
-            "scopes": [
-              "openid",
-              "profile",
-              "email"
-            ],
-            "loginParameterNames": [
-              "domain_hint=live.com"
-            ]
-          }
-        },
-        "ebrostay-hint-consumers": {
-          "registration": {
-            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "name",
-            "scopes": [
-              "openid",
-              "profile",
-              "email"
-            ],
-            "loginParameterNames": [
-              "domain_hint=consumers"
-            ]
-          }
-        },
-        "ebrostay-hint-loginlive": {
+        "ebrostay-msa": {
           "registration": {
             "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
             "clientCredential": {
@@ -86,28 +42,6 @@
             ],
             "loginParameterNames": [
               "domain_hint=login.live.com"
-            ]
-          }
-        },
-        "ebrostay-prompt-login": {
-          "registration": {
-            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "name",
-            "scopes": [
-              "openid",
-              "profile",
-              "email"
-            ],
-            "loginParameterNames": [
-              "prompt=login"
             ]
           }
         }

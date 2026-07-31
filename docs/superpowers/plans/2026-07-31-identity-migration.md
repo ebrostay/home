@@ -40,7 +40,7 @@ Two steps spend money or destroy resources. Both are pre-approved by the user as
 **Files:** none — this task produces configuration values consumed by Task 3.
 
 **Interfaces:**
-- Produces: `TENANT_NAME` (the subdomain, e.g. `ebrostayid`), `TENANT_ID` (a GUID), `OIDC_CLIENT_ID` (app registration Application ID), `OIDC_CLIENT_SECRET` (a secret string). Task 3 consumes all four.
+- Produces: `TENANT_NAME` (the subdomain, e.g. `ebrostay`), `TENANT_ID` (a GUID), `OIDC_CLIENT_ID` (app registration Application ID), `OIDC_CLIENT_SECRET` (a secret string). Task 3 consumes all four.
 
 - [ ] **Step 1: Create the external tenant**
 
@@ -61,12 +61,12 @@ it** — it is a throwaway that would have to be recreated and rewired. Choose
 | Field | Value | Changeable later? |
 | --- | --- | --- |
 | Tenant Name | `Ebrostay` | Yes — display name only |
-| Domain Name | `ebrostayid` | **No — permanent** |
+| Domain Name | `ebrostay` | **No — permanent** |
 | Country/Region | **Spain** | **No — permanent** |
 
-Domain Name yields `ebrostayid.onmicrosoft.com` and the sign-in host
-`ebrostayid.ciamlogin.com`, which appears in the visitor's address bar. Every
-config value and privacy paragraph in this plan assumes `ebrostayid`; a
+Domain Name yields `ebrostay.onmicrosoft.com` and the sign-in host
+`ebrostay.ciamlogin.com`, which appears in the visitor's address bar. Every
+config value and privacy paragraph in this plan assumes `ebrostay`; a
 different choice means editing Task 3 and Task 8 to match.
 
 Country/Region is what makes the EU data-residency statement in the privacy
@@ -90,10 +90,14 @@ subscriptions** → find it in the **Directory name** list → **Switch**. Then
 Two directories in this account already display as "Azure subscription 1". Write down, in the team password manager:
 
 ```
-Entra external tenant name: ebrostayid
-Entra external tenant ID:   <GUID from Tenant overview>
+Entra external tenant name: ebrostay        (ebrostay.onmicrosoft.com)
+Entra external tenant ID:   172e1505-039e-4565-87e9-4fad91983d51
 Azure subscription ID:      2cda7364-dba2-4b44-aff0-f5a6fcfac010
 ```
+
+**Done 2026-07-31.** Verified from the tenant's own discovery document:
+`tenant_region_scope: EU` (the privacy policy's residency claim is fact, not
+assumption), `end_session_endpoint` present, and `name` in `claims_supported`.
 
 - [ ] **Step 3: Register the application**
 
@@ -101,9 +105,12 @@ In the external tenant: **Entra ID** → **App registrations** → **New registr
 
 - Name: `Ebrostay web`
 - Supported account types: accounts in this organizational directory only
-- Redirect URI: **Web** → `https://<SWA_HOSTNAME>/.auth/login/ebrostay/callback`
+- Redirect URI: **Web** → `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/login/ebrostay/callback`
 
-`<SWA_HOSTNAME>` comes from Task 2. If Task 2 has not run yet, register the URI afterwards — the app registration can be edited freely.
+Make sure you are **switched into the external tenant** first (Settings icon →
+Directories + subscriptions → Ebrostay → Switch). Registering in the workforce
+directory by mistake is the common failure here, and it fails confusingly later
+rather than immediately.
 
 Record the **Application (client) ID** as `OIDC_CLIENT_ID`.
 
@@ -126,7 +133,7 @@ Do **not** choose "Email one-time passcode". The decision (spec D3) is password,
 First, in <https://console.cloud.google.com>: create a project, then **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID** → **Web application**. Set the authorised redirect URI to:
 
 ```
-https://ebrostayid.ciamlogin.com/ebrostayid.onmicrosoft.com/federation/oauth2
+https://ebrostay.ciamlogin.com/ebrostay.onmicrosoft.com/federation/oauth2
 ```
 
 Copy the Google **Client ID** and **Client secret**.
@@ -334,7 +341,7 @@ Replace the whole of `app/public/staticwebapp.config.json` with:
               "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
             },
             "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://ebrostayid.ciamlogin.com/<TENANT_ID>/v2.0/.well-known/openid-configuration"
+              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
             }
           },
           "login": {
@@ -365,7 +372,31 @@ Replace the whole of `app/public/staticwebapp.config.json` with:
 }
 ```
 
-Substitute the real `<TENANT_ID>`. The 401 override is the second half of the sign-out fix: without it an anonymous visitor to `/es/host/manage` gets a bare platform error instead of a login prompt.
+The 401 override is the second half of the sign-out fix: without it an anonymous visitor to `/es/host/manage` gets a bare platform error instead of a login prompt.
+
+#### The issuer host does not match the discovery host — expect this to be the failure point
+
+Verified 2026-07-31. The tenant publishes discovery on **two** hosts, and only one is self-consistent:
+
+| Discovery host | `issuer` it declares | OIDC-compliant? | Address bar the guest sees |
+| --- | --- | --- | --- |
+| `ebrostay.ciamlogin.com` | `https://172e1505-….ciamlogin.com/…` | **No** — issuer host differs | `ebrostay.ciamlogin.com` ✅ |
+| `172e1505-….ciamlogin.com` | `https://172e1505-….ciamlogin.com/…` | Yes | `172e1505-039e-4565-87e9-4fad91983d51.ciamlogin.com` ✖ |
+
+OIDC Discovery requires the returned issuer to be identical to the URL it was
+fetched from. A strict client rejects the first row.
+
+**Use the pretty host (as configured above) and test it.** If SWA rejects it,
+there is a real decision to make, not a mechanical fallback:
+
+1. Switch to the tenant-ID discovery host — guaranteed to work, but guests
+   signing in would see a raw GUID hostname while being asked to hand over
+   identity documents. That is arguably a worse trust signal than the
+   "Azure Static Web Apps" consent screen this migration set out to remove.
+2. Buy `login.ebrostay.com` via Azure Front Door (~$35/month; spec D9 deferred
+   it). Solves the branding and the mismatch together.
+
+Do not silently take option 1 — it defeats the purpose of the work. Raise it.
 
 - [ ] **Step 3: Deploy**
 
@@ -389,7 +420,7 @@ Check all four:
 3. `userId` is a stable GUID-like string.
 4. **Sign out, then sign in again.** Visit `/.auth/logout`, then `/.auth/login/ebrostay`. If you are signed straight back in with no prompt, the Entra session survived SWA's logout — a real privacy problem on a shared computer. Record it; the fix is to chain sign-out through the tenant's `end_session_endpoint`, which is a change to Task 5's `logoutUrl` rather than to this config.
 
-**Fallback if the custom OIDC provider is rejected outright:** swap the `customOpenIdConnectProviders` block for an `azureActiveDirectory` block with `"openIdIssuer": "https://ebrostayid.ciamlogin.com/<TENANT_ID>/v2.0"` and `clientIdSettingName` / `clientSecretSettingName`. The login path then becomes `/.auth/login/aad`, and every `ebrostay` literal in Tasks 3–7 becomes `aad`.
+**Fallback if the custom OIDC provider is rejected outright:** swap the `customOpenIdConnectProviders` block for an `azureActiveDirectory` block with `"openIdIssuer": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0"` and `clientIdSettingName` / `clientSecretSettingName`. The login path then becomes `/.auth/login/aad`, and every `ebrostay` literal in Tasks 3–7 becomes `aad`.
 
 - [ ] **Step 5: Verify the 401 override**
 
@@ -952,7 +983,7 @@ Append to `docs/spec-v2/05-decision-log.md`, and add the row to the index table 
     *nominated organisation*, not "any Microsoft account". Federating a
     specific corporate tenant remains available if a client asks.
   - Changing the local-account method later affects **only new users**.
-  - Sign-in pages live at `ebrostayid.ciamlogin.com`. A custom login domain
+  - Sign-in pages live at `ebrostay.ciamlogin.com`. A custom login domain
     needs Azure Front Door at $35/month — deferred, additive.
   - **Apple deferred:** $99/year Apple Developer Program plus a manual
     client-secret renewal every 6 months.
@@ -982,7 +1013,7 @@ The current §3.1 states "exactly two providers: GitHub and Microsoft (`aad`)", 
 
 v2 uses **SWA custom authentication** on the **Standard** plan, with exactly
 one identity provider: a **Microsoft Entra External ID external tenant**
-(`ebrostayid`, EU-located), registered under
+(`ebrostay`, EU-located), registered under
 `auth.identityProviders.customOpenIdConnectProviders.ebrostay`.
 
 The tenant brokers three sign-in methods internally — **email + password**
@@ -1060,8 +1091,8 @@ Nothing in Tasks 1–10 depends on this. Apple is one more provider in the same 
 In the Apple Developer portal (paid membership required): **Certificates, IDs, & Profiles** → register an **App ID** with the **Sign in with Apple** capability. Note the **Team ID**. Then register a **Services ID** — its identifier is the client ID.
 
 Configure Sign in with Apple on the Services ID:
-- Domains: `ebrostayid.ciamlogin.com`
-- Return URL: `https://ebrostayid.ciamlogin.com/<TENANT_ID>/federation/oauth2`
+- Domains: `ebrostay.ciamlogin.com`
+- Return URL: `https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/federation/oauth2`
 
 - [ ] **Step 2: Create the signing key**
 

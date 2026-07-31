@@ -78,7 +78,7 @@ reset, are free.
 
 | Resource | Region | Plan | Change |
 | --- | --- | --- | --- |
-| Entra external tenant `ebrostayid` | EU data location | Basic | **Created** |
+| Entra external tenant `ebrostay` | EU data location | Basic | **Created** |
 | SWA `ebrostay-home` | **West Europe** | **Standard** | **Created** |
 | Cosmos `ebrostay-cosmos` | spaincentral | Free tier | unchanged |
 | Storage `ebrostayphotos` | spaincentral | Standard LRS | unchanged |
@@ -102,7 +102,7 @@ Google on a phone.
 
 ```
 browser → /.auth/login/ebrostay
-        → ebrostayid.ciamlogin.com  (branded user flow)
+        → ebrostay.ciamlogin.com  (branded user flow)
              ├── email + password   (local account)
              ├── Google             (federated)
              └── Apple              (federated)
@@ -134,7 +134,7 @@ the existing 404 override are unchanged.
               "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
             },
             "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://ebrostayid.ciamlogin.com/<TENANT_ID>/v2.0/.well-known/openid-configuration"
+              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
             }
           },
           "login": {
@@ -149,7 +149,7 @@ the existing 404 override are unchanged.
 }
 ```
 
-`<TENANT_ID>` is produced by step 1 of the rollout. `nameClaimType` must be
+`172e1505-039e-4565-87e9-4fad91983d51` is produced by step 1 of the rollout. `nameClaimType` must be
 confirmed against a real token in step 4 — SWA maps `userDetails` from it, and
 if it is wrong the account menu shows a blank initial.
 

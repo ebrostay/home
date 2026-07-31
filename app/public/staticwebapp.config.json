@@ -25,9 +25,9 @@
         },
         "ebrostay-msa": {
           "registration": {
-            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
+            "clientIdSettingName": "EBROSTAY_MSA_OIDC_CLIENT_ID",
             "clientCredential": {
-              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
+              "clientSecretSettingName": "EBROSTAY_MSA_OIDC_CLIENT_SECRET"
             },
             "openIdConnectConfiguration": {
               "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
@@ -40,9 +40,7 @@
               "profile",
               "email"
             ],
-            "loginParameterNames": [
-              "domain_hint=login.live.com"
-            ]
+            "loginParameterNames": []
           }
         }
       }

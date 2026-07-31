@@ -15,11 +15,15 @@
           },
           "login": {
             "nameClaimType": "name",
-            "scopes": ["openid", "profile", "email"],
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
             "loginParameterNames": []
           }
         },
-        "ebrostay-hint-a": {
+        "ebrostay-hint-live": {
           "registration": {
             "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
             "clientCredential": {
@@ -31,11 +35,17 @@
           },
           "login": {
             "nameClaimType": "name",
-            "scopes": ["openid", "profile", "email"],
-            "loginParameterNames": ["domain_hint=login.microsoftonline.com"]
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": [
+              "domain_hint=live.com"
+            ]
           }
         },
-        "ebrostay-hint-b": {
+        "ebrostay-hint-consumers": {
           "registration": {
             "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
             "clientCredential": {
@@ -47,25 +57,114 @@
           },
           "login": {
             "nameClaimType": "name",
-            "scopes": ["openid", "profile", "email"],
-            "loginParameters": ["domain_hint=login.microsoftonline.com"]
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": [
+              "domain_hint=consumers"
+            ]
+          }
+        },
+        "ebrostay-hint-loginlive": {
+          "registration": {
+            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "name",
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": [
+              "domain_hint=login.live.com"
+            ]
+          }
+        },
+        "ebrostay-prompt-login": {
+          "registration": {
+            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "name",
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": [
+              "prompt=login"
+            ]
           }
         }
       }
     }
   },
   "routes": [
-    { "route": "/", "redirect": "/es/", "statusCode": 302 },
-    { "route": "/es/account/*", "allowedRoles": ["authenticated"] },
-    { "route": "/en/account/*", "allowedRoles": ["authenticated"] },
-    { "route": "/es/host/*", "allowedRoles": ["authenticated"] },
-    { "route": "/en/host/*", "allowedRoles": ["authenticated"] },
-    { "route": "/es/admin/*", "allowedRoles": ["admin"] },
-    { "route": "/en/admin/*", "allowedRoles": ["admin"] }
+    {
+      "route": "/",
+      "redirect": "/es/",
+      "statusCode": 302
+    },
+    {
+      "route": "/es/account/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/en/account/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/es/host/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/en/host/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/es/admin/*",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
+      "route": "/en/admin/*",
+      "allowedRoles": [
+        "admin"
+      ]
+    }
   ],
   "responseOverrides": {
-    "401": { "statusCode": 302, "redirect": "/.auth/login/ebrostay" },
-    "404": { "rewrite": "/404.html" }
+    "401": {
+      "statusCode": 302,
+      "redirect": "/.auth/login/ebrostay"
+    },
+    "404": {
+      "rewrite": "/404.html"
+    }
   },
   "platform": {
     "apiRuntime": "dotnet-isolated:9.0"

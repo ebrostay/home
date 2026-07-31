@@ -305,7 +305,17 @@ liability.
 
 ---
 
-## Task 3: Wire Entra as the SWA identity provider and prove a real sign-in
+## Task 3: Wire Entra as the SWA identity provider and prove a real sign-in — mostly DONE 2026-07-31
+
+**Verified so far:** SWA accepts the discovery document from `ebrostay.ciamlogin.com`
+and redirects there (issuer-mismatch risk dead, no Front Door needed). The
+branded page renders "EBROSTAY" with an email field and, once the app was
+associated with the `ebrostay-home` user flow, a **"No account? Create one"**
+link. The user flow uses **Email with password** (confirmed in the portal).
+All four gated routes 302 to `/.auth/login/ebrostay`; all public routes stay 200.
+
+**Outstanding:** Step 4 needs a real account to exist — sign-in, `userDetails`
+populated, and the sign-out session question.
 
 **Files:**
 - Modify: `app/public/staticwebapp.config.json`
@@ -314,7 +324,7 @@ liability.
 - Consumes: `TENANT_NAME`, `TENANT_ID`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` (Task 1), `SWA_HOSTNAME` (Task 2)
 - Produces: a working `/.auth/login/ebrostay` route, consumed by Tasks 4, 5 and 7
 
-- [ ] **Step 1: Store the secrets as application settings**
+- [x] **Step 1: Store the secrets as application settings**
 
 Never in the repo.
 
@@ -324,7 +334,7 @@ az staticwebapp appsettings set -n ebrostay-home -g ebrostay --setting-names \
   EBROSTAY_OIDC_CLIENT_SECRET="<OIDC_CLIENT_SECRET>"
 ```
 
-- [ ] **Step 2: Add the auth block and the 401 override**
+- [x] **Step 2: Add the auth block and the 401 override**
 
 Replace the whole of `app/public/staticwebapp.config.json` with:
 
@@ -398,7 +408,7 @@ there is a real decision to make, not a mechanical fallback:
 
 Do not silently take option 1 — it defeats the purpose of the work. Raise it.
 
-- [ ] **Step 3: Deploy**
+- [x] **Step 3: Deploy**
 
 ```bash
 git add app/public/staticwebapp.config.json
@@ -422,7 +432,7 @@ Check all four:
 
 **Fallback if the custom OIDC provider is rejected outright:** swap the `customOpenIdConnectProviders` block for an `azureActiveDirectory` block with `"openIdIssuer": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0"` and `clientIdSettingName` / `clientSecretSettingName`. The login path then becomes `/.auth/login/aad`, and every `ebrostay` literal in Tasks 3–7 becomes `aad`.
 
-- [ ] **Step 5: Verify the 401 override**
+- [x] **Step 5: Verify the 401 override**
 
 In a private window (signed out), visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/es/host/manage`. Expected: redirected to the branded sign-in page, not an error page.
 

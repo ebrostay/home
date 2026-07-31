@@ -1318,9 +1318,7 @@
     "metaDescription": "Sign in to Ebrostay to save homes, follow your bookings and manage your listings.",
     "title": "Sign in to Ebrostay",
     "lead": "Save homes, follow your bookings, and manage the ones you list.",
-    "email": "Continue with email",
-    "microsoft": "Continue with Microsoft",
-    "or": "or",
+    "continue": "Continue",
     "newAccount": "No account? One is created the first time you sign in.",
     "back": "Back to home"
   },

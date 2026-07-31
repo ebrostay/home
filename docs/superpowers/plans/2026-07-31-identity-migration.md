@@ -411,7 +411,7 @@ gh run watch --repo ebrostay/home
 
 - [ ] **Step 4: Prove a real sign-in, and check the two things most likely to be wrong**
 
-In a browser, visit `https://<SWA_HOSTNAME>/.auth/login/ebrostay`. Complete a sign-in. Then visit `https://<SWA_HOSTNAME>/.auth/me` and read the JSON.
+In a browser, visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/login/ebrostay`. Complete a sign-in. Then visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/me` and read the JSON.
 
 Check all four:
 
@@ -424,7 +424,7 @@ Check all four:
 
 - [ ] **Step 5: Verify the 401 override**
 
-In a private window (signed out), visit `https://<SWA_HOSTNAME>/es/host/manage`. Expected: redirected to the branded sign-in page, not an error page.
+In a private window (signed out), visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/es/host/manage`. Expected: redirected to the branded sign-in page, not an error page.
 
 ---
 
@@ -931,12 +931,12 @@ Each invitee must open the link **while signed in with that account**, so the ro
 
 - [ ] **Step 3: Verify a role actually landed**
 
-Signed in as an admin, visit `https://<SWA_HOSTNAME>/.auth/me` and confirm `userRoles` contains `"admin"`.
+Signed in as an admin, visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/me` and confirm `userRoles` contains `"admin"`.
 
 Then confirm the negative case still holds — a non-admin account must be refused by the **function**, not merely hidden by the route rule:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' "https://<SWA_HOSTNAME>/api/admin/review"
+curl -sS -o /dev/null -w '%{http_code}\n' "https://delightful-sand-063f8a703.7.azurestaticapps.net/api/admin/review"
 ```
 
 Expected: `401` when called without a session. A static page being reachable proves nothing; a function answering with data does (spec-v2 §3.5).

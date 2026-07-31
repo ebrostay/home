@@ -37,19 +37,23 @@ export async function fetchMe(): Promise<Me> {
   }
 }
 
-// One provider, and one is all that is reachable. The name matches the key
-// under customOpenIdConnectProviders in public/staticwebapp.config.json —
-// change one and you must change the other.
+// Two providers, two identity spaces — deliberately (ADR-036 as amended).
+// Both names match keys under customOpenIdConnectProviders in
+// public/staticwebapp.config.json — change one and you must change the other.
 //
-// A second entry carrying domain_hint was tried on 2026-07-31 to reach the
-// Microsoft sign-in directly, and removed the same day: the hint resolves to
-// Entra's built-in B2B federation rather than the tenant's OIDC provider, so
-// it creates a #EXT# guest and SWA never gets a usable token. The provider
-// choice lives on Entra's hosted page. See app/[locale]/sign-in/Choices.tsx.
+// PROVIDER goes through the Entra tenant: local accounts, the hosted page,
+// and (once configured) Google. PROVIDER_MSA points SWA DIRECTLY at
+// Microsoft's consumer endpoint — one hop to the live login, no Entra
+// involved. The price, accepted explicitly on 2026-08-01: a person who uses
+// both doors is two userIds, because each entry mints identity from its own
+// issuer's tokens. Do not "fix" that by routing MSA through the tenant —
+// every mechanism for doing so with a branded button is dead and documented
+// in ADR-036.
 export const PROVIDER = "ebrostay";
+export const PROVIDER_MSA = "ebrostay-msa";
 
-export function loginUrl(redirectTo: string): string {
-  return `/.auth/login/${PROVIDER}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
+export function loginUrl(redirectTo: string, provider: string = PROVIDER): string {
+  return `/.auth/login/${provider}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
 }
 
 // Our own sign-in page, which is where a signed-out person is sent — never

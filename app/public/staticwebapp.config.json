@@ -22,6 +22,26 @@
             ],
             "loginParameterNames": []
           }
+        },
+        "ebrostay-msa": {
+          "registration": {
+            "clientIdSettingName": "EBROSTAY_MSA_OIDC_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "EBROSTAY_MSA_OIDC_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://login.microsoftonline.com/consumers/v2.0/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "name",
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": []
+          }
         }
       }
     }

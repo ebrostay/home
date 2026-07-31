@@ -1318,8 +1318,9 @@
     "metaDescription": "Entra en Ebrostay para guardar pisos, seguir tus reservas y gestionar tus viviendas.",
     "title": "Entra en Ebrostay",
     "lead": "Guarda pisos, sigue tus reservas y gestiona las viviendas que publicas.",
-    "continue": "Continuar",
-    "methods": "Vale tu correo electrónico o tu cuenta de Microsoft.",
+    "email": "Continuar con tu correo",
+    "microsoft": "Continuar con Microsoft",
+    "or": "o",
     "newAccount": "¿No tienes cuenta? Se crea la primera vez que entras.",
     "back": "Volver al inicio"
   },

@@ -141,10 +141,11 @@ const ROUTES: RouteCase[] = [
   { path: "/", expect: { es: /Zaragoza/, en: /Zaragoza/ } },
   { path: "/about", expect: { es: /propietarios/i, en: /owners/i } },
   { path: "/privacy", expect: { es: /datos/i, en: /data/i } },
-  // Where a signed-out visitor is sent, including by the 401 override. It
-  // carries one button to Entra's hosted page; the choice of provider lives
-  // there and cannot be moved here (see Choices.tsx).
-  { path: "/sign-in", expect: { es: /Entra en Ebrostay/i, en: /Sign in to Ebrostay/i }, anonMe: true },
+  // Where a signed-out visitor is sent, including by the 401 override. Both
+  // buttons must render: email into the Entra tenant, Microsoft DIRECTLY to
+  // the consumer login (ADR-036 as amended). If this row renders without
+  // "Microsoft", the second door has gone missing.
+  { path: "/sign-in", expect: { es: /Microsoft/, en: /Microsoft/ }, anonMe: true },
   { path: "/property?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },

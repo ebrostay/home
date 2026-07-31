@@ -2759,3 +2759,27 @@ account regardless of domain; a known local account always beats the
 Microsoft routing at sign-in. Deterministic, no duplicates. Untested:
 federate-first-then-Create-one at the same address, and gmail-vs-Google
 once Google lands.
+
+### Amendment (2026-08-01, same day): one-hop Microsoft via a DIRECT provider
+
+The "therefore" above assumed identity unity was non-negotiable. Asked
+directly, the owner priced it at ~zero: two accounts for a person who
+uses both doors is acceptable, one-hop Microsoft login is not optional.
+That reverses ADR-035's rejection of the direct option, and none of the
+four dead mechanisms are needed for it:
+
+- `ebrostay-msa` points SWA straight at
+  `login.microsoftonline.com/consumers` — no Entra in the path. The
+  Microsoft button on `/sign-in` is real and lands on the live login in
+  one hop.
+- App `7a654cfb` (audience `AzureADandPersonalMicrosoftAccount`) serves
+  both roles: the Entra IdP's client AND SWA's direct client. It carries
+  the federation redirect URIs plus the SWA callback, and two secrets —
+  `Ebrostay web` (IdP, do not touch) and `swa-direct-msa` (SWA app
+  settings, expires 2028-07-31).
+- **Consequence, permanent per user:** a Microsoft-door userId is the
+  MSA `oid`; an email-door userId is a tenant `oid`. Same human, two
+  Cosmos identities. Support answer: "which button did you use?"
+- The Microsoft tile on the hosted page (enabled during testing) is now
+  redundant with the direct button but harmless; keeping it is a
+  cosmetic call, not an architectural one.

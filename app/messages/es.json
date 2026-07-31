@@ -1271,9 +1271,6 @@
     "budget_case3": "12 viviendas"
   },
   "auth": {
-    "signInWith": "Entrar con",
-    "github": "GitHub",
-    "microsoft": "Microsoft",
     "account": "Mi cuenta",
     "adminPanel": "Administración",
     "signOut": "Salir",

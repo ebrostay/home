@@ -2,7 +2,7 @@
   "authenticated": true,
   "userId": "e2e00000000000000000000000000001",
   "name": "E2E Owner",
-  "provider": "github",
+  "provider": "ebrostay",
   "roles": ["anonymous", "authenticated"],
   "isAdmin": false,
   "isDeactivated": false

@@ -37,10 +37,14 @@ export async function fetchMe(): Promise<Me> {
   }
 }
 
-export type Provider = "github" | "aad";
+// One provider: the Entra External ID tenant brokers email+password and Google
+// behind a single branded page, so there is nothing for the app to choose. The
+// name matches the key under customOpenIdConnectProviders in
+// public/staticwebapp.config.json — change one and you must change the other.
+export const PROVIDER = "ebrostay";
 
-export function loginUrl(provider: Provider, redirectTo: string): string {
-  return `/.auth/login/${provider}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
+export function loginUrl(redirectTo: string): string {
+  return `/.auth/login/${PROVIDER}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
 }
 
 export function logoutUrl(redirectTo: string): string {
@@ -51,4 +55,11 @@ export function logoutUrl(redirectTo: string): string {
 export function currentPath(): string {
   if (typeof window === "undefined") return "/";
   return window.location.pathname + window.location.search;
+}
+
+// Where sign-out lands. It must be public: by the time the redirect is
+// followed the browser holds no session, and every gated route answers 403
+// rather than bouncing to login. Returning to currentPath() was the bug.
+export function localeHome(locale: string): string {
+  return `/${locale}/`;
 }

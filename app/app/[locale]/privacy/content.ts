@@ -2,8 +2,9 @@
 // (docs/spec-v2/06 §6.7 exception). Ported faithfully from v1
 // (main:privacy.html, hardcoded ES + EN blocks) with the stack updated for
 // v2: Microsoft Azure (Static Web Apps, Cosmos DB, Blob Storage — data in the
-// EU, Spain Central region) instead of Supabase/GitHub Pages; sign-in via
-// GitHub/Microsoft accounts instead of email+password; Umami (cookieless)
+// EU, Spain Central region) instead of Supabase/GitHub Pages; sign-in via an
+// Ebrostay account (email + password) or Google, brokered by Microsoft Entra
+// External ID in an EU-located external tenant (ADR-027); Umami (cookieless)
 // analytics unchanged.
 
 interface PrivacyParagraph {
@@ -46,7 +47,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         paragraphs: [
           {
             strong: "Cuenta:",
-            text: "inicias sesión con tu cuenta de GitHub o de Microsoft; no guardamos ninguna contraseña. Conservamos tu identificador de usuario, el proveedor de acceso y tu nombre para vincular tus solicitudes, estancias y anuncios.",
+            text: "creas una cuenta de Ebrostay con tu correo y una contraseña, o entras con tu cuenta de Google. La identidad la gestiona Microsoft Entra External ID por nuestra cuenta, en un directorio alojado en la Unión Europea; nosotros nunca vemos ni almacenamos tu contraseña. Conservamos tu identificador de usuario, el método de acceso y tu nombre para vincular tus solicitudes, estancias y anuncios.",
           },
           {
             strong: "Solicitudes de reserva:",
@@ -70,7 +71,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Cookies y almacenamiento local",
         paragraphs: [
           {
-            text: "No usamos cookies de seguimiento ni publicidad. Al iniciar sesión, la plataforma establece una cookie técnica imprescindible para mantener tu sesión. Tu navegador guarda localmente el idioma y el tema elegidos.",
+            text: "No usamos cookies de seguimiento ni publicidad, por eso no verás un banner de consentimiento. Al iniciar sesión, la plataforma establece una cookie técnica imprescindible para mantener tu sesión: es estrictamente necesaria para un servicio que has solicitado tú, y por eso no requiere consentimiento (art. 22.2 LSSI-CE). Tu navegador guarda localmente el idioma, el tema y los lugares que hayas añadido a «Tus lugares».",
           },
         ],
       },
@@ -78,7 +79,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Conservación y destinatarios",
         paragraphs: [
           {
-            text: "Conservamos los datos de reservas el tiempo exigido por las obligaciones fiscales y contractuales. La web funciona sobre Microsoft Azure (Static Web Apps, Cosmos DB y Blob Storage); la base de datos y las fotos se almacenan en la Unión Europea (región Spain Central, España). El inicio de sesión lo prestan GitHub y Microsoft como proveedores de identidad.",
+            text: "Conservamos los datos de reservas el tiempo exigido por las obligaciones fiscales y contractuales. La web funciona sobre Microsoft Azure (Static Web Apps, Cosmos DB y Blob Storage); la base de datos y las fotos se almacenan en la Unión Europea (región Spain Central, España). El registro y el inicio de sesión los presta Microsoft Entra External ID como encargado del tratamiento, en un directorio ubicado en la Unión Europea. Si eliges entrar con Google, compartes con Google los datos de esa autenticación.",
           },
         ],
       },
@@ -86,7 +87,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Tus derechos",
         paragraphs: [
           {
-            text: "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a info@ebrostay.com. También puedes retirar en cualquier momento el acceso concedido a Ebrostay desde tu cuenta de GitHub o Microsoft. Si lo consideras necesario, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).",
+            text: "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a info@ebrostay.com. Si entraste con Google, también puedes revocar en cualquier momento el acceso concedido a Ebrostay desde tu cuenta de Google. Si lo consideras necesario, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).",
           },
         ],
       },
@@ -119,7 +120,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         paragraphs: [
           {
             strong: "Account:",
-            text: "you sign in with your GitHub or Microsoft account; we never store a password. We keep your user identifier, sign-in provider and name to link your requests, stays and listings.",
+            text: "you create an Ebrostay account with your email address and a password, or sign in with your Google account. Identity is handled on our behalf by Microsoft Entra External ID, in a directory hosted in the European Union; we never see or store your password. We keep your user identifier, sign-in method and name to link your requests, stays and listings.",
           },
           {
             strong: "Booking requests:",
@@ -143,7 +144,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Cookies and local storage",
         paragraphs: [
           {
-            text: "We do not use tracking or advertising cookies. When you sign in, the platform sets a strictly necessary cookie to keep your session. Your browser stores your chosen language and theme locally.",
+            text: "We use no tracking or advertising cookies, which is why you will not see a consent banner. When you sign in, the platform sets a technical cookie that is essential to keep your session: it is strictly necessary for a service you asked for, and so requires no consent (art. 22.2 LSSI-CE). Your browser locally stores your language, your theme and any places you added to “Your places”.",
           },
         ],
       },
@@ -151,7 +152,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Retention and recipients",
         paragraphs: [
           {
-            text: "We keep booking data for as long as required by tax and contractual obligations. The site runs on Microsoft Azure (Static Web Apps, Cosmos DB and Blob Storage); the database and photos are stored in the European Union (Spain Central region, Spain). Sign-in is provided by GitHub and Microsoft as identity providers.",
+            text: "We keep booking data for as long as required by tax and contractual obligations. The site runs on Microsoft Azure (Static Web Apps, Cosmos DB and Blob Storage); the database and photos are stored in the European Union (Spain Central region, Spain). Sign-up and sign-in are provided by Microsoft Entra External ID as a data processor, in a directory located in the European Union. If you choose to sign in with Google, you share that authentication data with Google.",
           },
         ],
       },
@@ -159,7 +160,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Your rights",
         paragraphs: [
           {
-            text: "You can exercise your rights of access, rectification, erasure, objection and portability by writing to info@ebrostay.com. You can also withdraw the access granted to Ebrostay from your GitHub or Microsoft account at any time. If you consider it necessary, you can lodge a complaint with the Spanish Data Protection Agency (aepd.es).",
+            text: "You can exercise your rights of access, rectification, erasure, objection and portability by writing to info@ebrostay.com. If you signed in with Google, you can also revoke the access granted to Ebrostay from your Google account at any time. If you consider it necessary, you can lodge a complaint with the Spanish Data Protection Agency (aepd.es).",
           },
         ],
       },

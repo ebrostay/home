@@ -1271,9 +1271,6 @@
     "budget_case3": "12 homes"
   },
   "auth": {
-    "signInWith": "Sign in with",
-    "github": "GitHub",
-    "microsoft": "Microsoft",
     "account": "My account",
     "adminPanel": "Admin panel",
     "signOut": "Sign out",

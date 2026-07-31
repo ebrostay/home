@@ -1,5 +1,27 @@
 {
   "trailingSlash": "auto",
+  "auth": {
+    "identityProviders": {
+      "customOpenIdConnectProviders": {
+        "ebrostay": {
+          "registration": {
+            "clientIdSettingName": "EBROSTAY_OIDC_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "EBROSTAY_OIDC_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://ebrostay.ciamlogin.com/172e1505-039e-4565-87e9-4fad91983d51/v2.0/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "name",
+            "scopes": ["openid", "profile", "email"],
+            "loginParameterNames": []
+          }
+        }
+      }
+    }
+  },
   "routes": [
     { "route": "/", "redirect": "/es/", "statusCode": 302 },
     { "route": "/es/account/*", "allowedRoles": ["authenticated"] },
@@ -10,6 +32,7 @@
     { "route": "/en/admin/*", "allowedRoles": ["admin"] }
   ],
   "responseOverrides": {
+    "401": { "statusCode": 302, "redirect": "/.auth/login/ebrostay" },
     "404": { "rewrite": "/404.html" }
   },
   "platform": {

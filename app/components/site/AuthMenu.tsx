@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "./AuthProvider";
-import { loginUrl, logoutUrl, currentPath, localeHome } from "@/lib/auth";
+import { logoutUrl, currentPath, localeHome, signInPath } from "@/lib/auth";
 
 export function AuthMenu() {
   const t = useTranslations("auth");
@@ -21,18 +21,19 @@ export function AuthMenu() {
     window.location.href = href;
   };
 
-  // Signed out there is nothing to pick. Choosing between an Ebrostay account
-  // and Google now happens on our own branded page, so the dropdown that used
-  // to offer GitHub and Microsoft went with them — one button, one hop.
+  // Signed out this goes to our own /sign-in, not straight to /.auth/login.
+  // Since the Microsoft provider was taken out of the Entra user flow, that
+  // hosted page offers email and password only — the Microsoft option now
+  // exists solely as a button we draw ourselves. Sending anyone directly to
+  // /.auth/login would strand a Microsoft user on a page with no way in.
   if (!me.authenticated) {
     return (
-      <button
-        type="button"
-        onClick={() => go(loginUrl(currentPath()))}
-        className="h-9 shrink-0 rounded-(--radius-control) bg-brand px-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong"
+      <Link
+        href={signInPath(currentPath())}
+        className="flex h-9 shrink-0 items-center rounded-(--radius-control) bg-brand px-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong"
       >
         {tn("signIn")}
-      </button>
+      </Link>
     );
   }
 

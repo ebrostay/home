@@ -162,27 +162,22 @@ body {
 }
 
 /* ---- the federated-provider box ----
-   The detached card holding "Sign in with Microsoft account". It cannot
-   be moved into the sign-in box without positioning properties, so it
-   is given the same surface, radius, border and shadow instead — a
-   sibling in the same family rather than a stray Microsoft component. */
-.ext-promoted-fed-cred-box {
-  background-color: #ffffff;                 /* --surface */
-  border: 1px solid #dbe2db;                 /* --line */
-  border-radius: 0.875rem;                   /* --radius-card */
-  box-shadow: 0 4px 12px rgba(21, 37, 31, 0.1),
-              0 24px 48px -12px rgba(21, 37, 31, 0.28);
-  padding: 1rem 1.25rem;
-  font-family: "Onest", system-ui, -apple-system, sans-serif;
-  font-size: 0.9375rem;
-  color: #15251f;                            /* --ink */
-}
+   Deliberately unstyled, and this is the note explaining why.
 
-/* The generic blue circle beside "Sign in with Microsoft account" is not
-   reachable from here. Entra gives custom OIDC providers a placeholder
-   mark and only its own built-in providers a brand one; `content:` on
-   the <img> does not survive. Don't try again in CSS — the icon needs a
-   different approach entirely. */
+   This box held "Sign in with Microsoft account", with the generic blue
+   circle Entra gives every custom OIDC provider. That mark cannot be
+   changed from CSS — only Entra's own built-in providers get a brand
+   one, and `content:` on the <img> does not survive.
+
+   So the provider was taken out of the user flow instead (2026-07-31).
+   The Microsoft option is now a button we draw ourselves, on our own
+   /sign-in page, which reaches it with domain_hint=login.live.com. This
+   page offers email and password only.
+
+   Entra still renders the container, now empty. An earlier version of
+   this file gave it a white background, border and shadow to match the
+   sign-in card; with nothing inside, that became a blank white pill
+   floating under the form. Leave it unstyled — invisible is correct. */
 
 /* ---- links inside the card ----
    Scoped to the sign-in box on purpose. A bare `a` selector also

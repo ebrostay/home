@@ -37,14 +37,38 @@ export async function fetchMe(): Promise<Me> {
   }
 }
 
-// One provider: the Entra External ID tenant brokers email+password and Google
-// behind a single branded page, so there is nothing for the app to choose. The
-// name matches the key under customOpenIdConnectProviders in
-// public/staticwebapp.config.json — change one and you must change the other.
+// Two entries, one tenant. Both names match keys under
+// customOpenIdConnectProviders in public/staticwebapp.config.json — change one
+// and you must change the other.
+//
+// PROVIDER is the plain route: it opens Entra's hosted page, which since the
+// Microsoft provider was taken out of the user flow offers email and password
+// only. PROVIDER_MSA is the same endpoint and the same credentials, and
+// differs solely in carrying domain_hint=login.live.com, which sends the
+// browser past that page straight to the Microsoft account sign-in.
+//
+// The hint value is the HOST of the provider's Issuer URI. `live.com` also
+// reaches a Microsoft page, but through Entra's built-in MSA federation — a
+// different client, and a redirect URI that is not registered in an external
+// tenant, so it dies with invalid_request. It looks close enough to working
+// to cost an afternoon.
+//
+// Verified 2026-07-31: the hint still resolves even though the provider is no
+// longer listed in the user flow. That is what lets us draw both buttons
+// ourselves instead of accepting the unbranded tile Entra renders for custom
+// OIDC providers.
 export const PROVIDER = "ebrostay";
+export const PROVIDER_MSA = "ebrostay-msa";
 
-export function loginUrl(redirectTo: string): string {
-  return `/.auth/login/${PROVIDER}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
+export function loginUrl(redirectTo: string, provider: string = PROVIDER): string {
+  return `/.auth/login/${provider}?post_login_redirect_uri=${encodeURIComponent(redirectTo)}`;
+}
+
+// Our own sign-in page, which is where a signed-out person is sent — never
+// straight to /.auth/login. It carries the destination so the round trip ends
+// where it started.
+export function signInPath(redirectTo?: string): string {
+  return redirectTo ? `/sign-in?redirect=${encodeURIComponent(redirectTo)}` : "/sign-in";
 }
 
 export function logoutUrl(redirectTo: string): string {

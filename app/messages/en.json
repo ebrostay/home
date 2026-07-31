@@ -180,11 +180,26 @@
         "addFile": "ADD FILE",
         "terms": "I own this property or I am authorised to let it, and I accept the host agreement — Ebrostay's 15% commission on rent, capped at thirty days' rent and charged once per stay; rent pro-rated daily and collected per calendar month; stays of 31 days up to just under a year; and free tenant cancellation up to 48 hours before check-in.",
         "doc": {
-          "id": { "name": "Photo ID or NIE", "hint": "Both sides, of the owner named on the deed" },
-          "deed": { "name": "Proof of ownership", "hint": "Nota simple, deed, or latest IBI receipt" },
-          "energy": { "name": "Energy certificate", "hint": "Required by law for any let in Spain" },
-          "cadastre": { "name": "Cadastral reference", "hint": "We only check the shape of it — nothing verifies it against the register yet" },
-          "iban": { "name": "IBAN for payouts", "hint": "Must belong to the owner or their company" }
+          "id": {
+            "name": "Photo ID or NIE",
+            "hint": "Both sides, of the owner named on the deed"
+          },
+          "deed": {
+            "name": "Proof of ownership",
+            "hint": "Nota simple, deed, or latest IBI receipt"
+          },
+          "energy": {
+            "name": "Energy certificate",
+            "hint": "Required by law for any let in Spain"
+          },
+          "cadastre": {
+            "name": "Cadastral reference",
+            "hint": "We only check the shape of it — nothing verifies it against the register yet"
+          },
+          "iban": {
+            "name": "IBAN for payouts",
+            "hint": "Must belong to the owner or their company"
+          }
         }
       },
       "sent": {
@@ -193,9 +208,18 @@
         "toPortfolio": "Back to my properties",
         "addAnother": "Add another home",
         "step": {
-          "sent": { "name": "Draft sent", "when": "JUST NOW" },
-          "checking": { "name": "We check the address, the pin and the photos", "when": "WITHIN 1 WORKING DAY" },
-          "live": { "name": "Live in search · companies can request it", "when": "AFTER APPROVAL" }
+          "sent": {
+            "name": "Draft sent",
+            "when": "JUST NOW"
+          },
+          "checking": {
+            "name": "We check the address, the pin and the photos",
+            "when": "WITHIN 1 WORKING DAY"
+          },
+          "live": {
+            "name": "Live in search · companies can request it",
+            "when": "AFTER APPROVAL"
+          }
         }
       },
       "error": {
@@ -909,7 +933,20 @@
     "label": "Theme"
   },
   "date": {
-    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sept",
+      "Oct",
+      "Nov",
+      "Dec"
+    ]
   },
   "monthBand": {
     "stayLength": "Stay length",
@@ -1275,6 +1312,17 @@
     "adminPanel": "Admin panel",
     "signOut": "Sign out",
     "deactivated": "Your account is deactivated. Contact us to reactivate it."
+  },
+  "signIn": {
+    "metaTitle": "Sign in — Ebrostay",
+    "metaDescription": "Sign in to Ebrostay to save homes, follow your bookings and manage your listings.",
+    "title": "Sign in to Ebrostay",
+    "lead": "Save homes, follow your bookings, and manage the ones you list.",
+    "email": "Continue with email",
+    "microsoft": "Continue with Microsoft",
+    "or": "or",
+    "newAccount": "No account? One is created the first time you sign in.",
+    "back": "Back to home"
   },
   "search": {
     "hero": {

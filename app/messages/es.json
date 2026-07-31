@@ -180,11 +180,26 @@
         "addFile": "AÑADIR",
         "terms": "Soy el propietario de esta vivienda o tengo autorización para alquilarla, y acepto el contrato de propietario: la comisión del 15% de Ebrostay sobre la renta, con tope de treinta días de renta y cobrada una sola vez por estancia; la renta prorrateada por días y cobrada por mes natural; estancias de 31 días hasta algo menos de un año; y cancelación gratuita del inquilino hasta 48 horas antes de la entrada.",
         "doc": {
-          "id": { "name": "DNI, NIE o pasaporte", "hint": "Por las dos caras, del propietario que figura en la escritura" },
-          "deed": { "name": "Justificante de propiedad", "hint": "Nota simple, escritura o el último recibo del IBI" },
-          "energy": { "name": "Certificado energético", "hint": "Obligatorio por ley para cualquier alquiler en España" },
-          "cadastre": { "name": "Referencia catastral", "hint": "Solo comprobamos que tenga la forma correcta; todavía no se verifica contra el Catastro" },
-          "iban": { "name": "IBAN para los cobros", "hint": "Tiene que ser del propietario o de su empresa" }
+          "id": {
+            "name": "DNI, NIE o pasaporte",
+            "hint": "Por las dos caras, del propietario que figura en la escritura"
+          },
+          "deed": {
+            "name": "Justificante de propiedad",
+            "hint": "Nota simple, escritura o el último recibo del IBI"
+          },
+          "energy": {
+            "name": "Certificado energético",
+            "hint": "Obligatorio por ley para cualquier alquiler en España"
+          },
+          "cadastre": {
+            "name": "Referencia catastral",
+            "hint": "Solo comprobamos que tenga la forma correcta; todavía no se verifica contra el Catastro"
+          },
+          "iban": {
+            "name": "IBAN para los cobros",
+            "hint": "Tiene que ser del propietario o de su empresa"
+          }
         }
       },
       "sent": {
@@ -193,9 +208,18 @@
         "toPortfolio": "Volver a mis viviendas",
         "addAnother": "Añadir otra vivienda",
         "step": {
-          "sent": { "name": "Borrador enviado", "when": "AHORA MISMO" },
-          "checking": { "name": "Comprobamos la dirección, el punto del mapa y las fotos", "when": "EN 1 DÍA LABORABLE" },
-          "live": { "name": "En el buscador · las empresas ya pueden solicitarla", "when": "TRAS LA APROBACIÓN" }
+          "sent": {
+            "name": "Borrador enviado",
+            "when": "AHORA MISMO"
+          },
+          "checking": {
+            "name": "Comprobamos la dirección, el punto del mapa y las fotos",
+            "when": "EN 1 DÍA LABORABLE"
+          },
+          "live": {
+            "name": "En el buscador · las empresas ya pueden solicitarla",
+            "when": "TRAS LA APROBACIÓN"
+          }
         }
       },
       "error": {
@@ -909,7 +933,20 @@
     "label": "Tema"
   },
   "date": {
-    "monthsShort": ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"]
+    "monthsShort": [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sept",
+      "oct",
+      "nov",
+      "dic"
+    ]
   },
   "monthBand": {
     "stayLength": "Duración de la estancia",
@@ -1275,6 +1312,17 @@
     "adminPanel": "Administración",
     "signOut": "Salir",
     "deactivated": "Tu cuenta está desactivada. Escríbenos para reactivarla."
+  },
+  "signIn": {
+    "metaTitle": "Entrar — Ebrostay",
+    "metaDescription": "Entra en Ebrostay para guardar pisos, seguir tus reservas y gestionar tus viviendas.",
+    "title": "Entra en Ebrostay",
+    "lead": "Guarda pisos, sigue tus reservas y gestiona las viviendas que publicas.",
+    "email": "Continuar con tu correo",
+    "microsoft": "Continuar con Microsoft",
+    "or": "o",
+    "newAccount": "¿No tienes cuenta? Se crea la primera vez que entras.",
+    "back": "Volver al inicio"
   },
   "search": {
     "hero": {

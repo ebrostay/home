@@ -94,7 +94,7 @@
   "responseOverrides": {
     "401": {
       "statusCode": 302,
-      "redirect": "/.auth/login/ebrostay"
+      "redirect": "/es/sign-in/"
     },
     "404": {
       "rewrite": "/404.html"

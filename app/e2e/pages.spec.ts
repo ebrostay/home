@@ -135,6 +135,12 @@ const ROUTES: RouteCase[] = [
   { path: "/", expect: { es: /Zaragoza/, en: /Zaragoza/ } },
   { path: "/about", expect: { es: /propietarios/i, en: /owners/i } },
   { path: "/privacy", expect: { es: /datos/i, en: /data/i } },
+  // Both buttons must render. The Microsoft one is the whole reason this page
+  // exists — Entra draws custom OIDC providers as an unbranded grey tile, so
+  // that provider was taken out of the user flow and this page replaced it.
+  // If this row ever renders only the email button, the Microsoft route has
+  // gone missing and there is no longer any way in for those accounts.
+  { path: "/sign-in", expect: { es: /Microsoft/, en: /Microsoft/ } },
   { path: "/property?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },

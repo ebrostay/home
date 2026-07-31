@@ -1,0 +1,242 @@
+/* ============================================================
+   EBROSTAY — Entra External ID sign-in page styling
+   Upload at: Entra admin center (external tenant `ebrostay`)
+     → Custom Branding → Default sign-in → Edit → Layout → Custom CSS
+
+   Lives in this repo because none of the rest of the tenant does
+   (ADR-035, "Manual setup"). If the tenant is ever rebuilt, this file
+   is the only record of how the page looked.
+
+   Design brief: the page is Entra's, the identity is ours. Every value
+   below is copied from app/app/globals.css — the same tokens the site
+   uses — so the sign-in page reads as one more Ebrostay surface rather
+   than a Microsoft page wearing a logo. Nothing decorative is added:
+   the background photograph is already the hero, so the card stays
+   quiet.
+
+   Selector reference:
+   learn.microsoft.com/entra/fundamentals/reference-company-branding-css-template
+
+   Deliberately avoids `position`, `margin`, `transform`, `opacity`,
+   `overflow` and `filter`. External ID tenants are currently exempt
+   from the deprecation of those properties, but Microsoft has called
+   it "the first step toward retiring the custom CSS feature entirely"
+   — so this file leans on padding, colour and radius, which degrade
+   gracefully if custom CSS is ever withdrawn.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Onest:wght@400;500;600&display=swap");
+
+/* ---- tokens (light theme only: the page ships a light photo ground) ---- */
+:root {
+  --eb-surface: #ffffff;
+  --eb-surface-2: #eef2ee;
+  --eb-ink: #15251f;
+  --eb-body: #3d4f47;
+  --eb-muted: #68786f;
+
+  --eb-brand: #1f8a57;         /* the logo's bridge green — actions */
+  --eb-brand-strong: #157047;  /* hover, and AA text on light */
+  --eb-brand-soft: #e3f2e9;
+
+  --eb-line: #dbe2db;
+  --eb-line-strong: #b9c4bb;
+  --eb-ring: #4a7fb5;          /* river blue: focus is informational, not an action */
+
+  --eb-danger: #b23f3f;
+
+  --eb-radius-card: 0.875rem;
+  --eb-radius-control: 0.5rem;
+  --eb-shadow-pop: 0 4px 12px rgba(21, 37, 31, 0.1),
+                   0 24px 48px -12px rgba(21, 37, 31, 0.28);
+  --eb-dur: 150ms;
+
+  --eb-display: "Familjen Grotesk", "Onest", system-ui, sans-serif;
+  --eb-body-face: "Onest", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--eb-body-face);
+  color: var(--eb-body);
+}
+
+/* ---- the card ----
+   Entra ships a hard-edged rectangle. The site's cards are
+   --radius-card with --shadow-pop; matching both is most of what makes
+   this page stop looking borrowed. */
+.ext-sign-in-box {
+  background-color: var(--eb-surface);
+  border-radius: var(--eb-radius-card);
+  box-shadow: var(--eb-shadow-pop);
+  padding: 2.25rem 2rem;
+}
+
+/* ---- type ----
+   Familjen Grotesk is the display face for headings across the site;
+   Onest carries body copy. The negative tracking on the title matches
+   the site's h1/h2 treatment. */
+.ext-title {
+  font-family: var(--eb-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  color: var(--eb-ink);
+}
+
+.ext-subtitle,
+.ext-boilerplate-text {
+  font-family: var(--eb-body-face);
+  font-size: 0.9375rem;
+  color: var(--eb-body);
+}
+
+/* ---- text inputs ----
+   Control radius, hairline border, and a river-blue focus ring. Focus
+   is deliberately NOT brand green: on this site green means "action or
+   yours" and blue means "informational", and a focus ring is neither an
+   action nor ownership. */
+.ext-input.ext-text-box {
+  font-family: var(--eb-body-face);
+  font-size: 0.9375rem;
+  color: var(--eb-ink);
+  background-color: var(--eb-surface);
+  border: 1px solid var(--eb-line);
+  border-radius: var(--eb-radius-control);
+  padding: 0.625rem 0.75rem;
+  transition: border-color var(--eb-dur) ease, box-shadow var(--eb-dur) ease;
+}
+
+.ext-input.ext-text-box:hover {
+  border-color: var(--eb-line-strong);
+}
+
+.ext-input.ext-text-box:focus,
+.ext-input.ext-text-box:focus:hover {
+  border-color: var(--eb-ring);
+  box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.28);
+  outline: none;
+}
+
+.ext-input.ext-text-box.ext-has-error {
+  border-color: var(--eb-danger);
+}
+
+/* ---- primary action ---- */
+.ext-button.ext-primary {
+  font-family: var(--eb-body-face);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #ffffff;
+  background-color: var(--eb-brand);
+  border: 1px solid var(--eb-brand);
+  border-radius: var(--eb-radius-control);
+  padding: 0.625rem 1.25rem;
+  transition: background-color var(--eb-dur) ease;
+}
+
+.ext-button.ext-primary:hover,
+.ext-button.ext-primary:focus:hover,
+.ext-button.ext-primary:active {
+  background-color: var(--eb-brand-strong);
+  border-color: var(--eb-brand-strong);
+}
+
+.ext-button.ext-primary:focus {
+  box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.28);
+  outline: none;
+}
+
+/* ---- secondary action ---- */
+.ext-button.ext-secondary {
+  font-family: var(--eb-body-face);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--eb-ink);
+  background-color: var(--eb-surface);
+  border: 1px solid var(--eb-line);
+  border-radius: var(--eb-radius-control);
+  padding: 0.625rem 1.25rem;
+  transition: background-color var(--eb-dur) ease, border-color var(--eb-dur) ease;
+}
+
+.ext-button.ext-secondary:hover,
+.ext-button.ext-secondary:focus:hover {
+  background-color: var(--eb-surface-2);
+  border-color: var(--eb-line-strong);
+}
+
+.ext-button.ext-secondary:focus {
+  box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.28);
+  outline: none;
+}
+
+/* ---- the federated-provider box ----
+   This is the detached card holding "Sign in with Microsoft account".
+   It cannot be moved into the sign-in box without positioning
+   properties, so instead it is given the same surface, radius, border
+   and shadow — it reads as a sibling in the same family rather than a
+   stray Microsoft component. */
+.ext-promoted-fed-cred-box {
+  background-color: var(--eb-surface);
+  border: 1px solid var(--eb-line);
+  border-radius: var(--eb-radius-card);
+  box-shadow: var(--eb-shadow-pop);
+  padding: 1rem 1.25rem;
+  font-family: var(--eb-body-face);
+  font-size: 0.9375rem;
+  color: var(--eb-ink);
+}
+
+/* ---- links ---- */
+a,
+a:link,
+.ext-link {
+  color: var(--eb-brand-strong);
+  text-decoration: none;
+  transition: color var(--eb-dur) ease;
+}
+
+a:hover,
+.ext-link:hover {
+  color: var(--eb-brand);
+  text-decoration: underline;
+}
+
+a:focus,
+.ext-link:focus {
+  outline: 2px solid var(--eb-ring);
+  outline-offset: 2px;
+}
+
+/* ---- errors ----
+   The site's rule: errors state what happened, they do not apologise.
+   Nothing here can change Entra's copy — only make it legible. */
+.ext-error {
+  font-family: var(--eb-body-face);
+  font-size: 0.875rem;
+  color: var(--eb-danger);
+}
+
+/* ---- footer ----
+   Terms and privacy links. Quiet: they are reference, not navigation. */
+.ext-footer {
+  background-color: transparent;
+}
+
+.ext-footer-item,
+.ext-footer-links {
+  font-family: var(--eb-body-face);
+  font-size: 0.8125rem;
+  color: var(--eb-muted);
+}
+
+/* ---- reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .ext-input.ext-text-box,
+  .ext-button.ext-primary,
+  .ext-button.ext-secondary,
+  a,
+  .ext-link {
+    transition: none;
+  }
+}

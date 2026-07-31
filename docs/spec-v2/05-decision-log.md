@@ -2667,11 +2667,13 @@ Three things that cost real time and are recorded in the file itself:
    grey, and later `--brand-strong` green via a bare `a` selector, both
    produced roughly 1.5:1. Card links are now scoped to
    `.ext-sign-in-box a` so a generic rule cannot reach the footer again.
-3. **Custom OIDC providers get a generic icon.** Only built-in providers
-   get brand marks, so the Microsoft option shipped with an anonymous
-   blue circle. Replaced with the Microsoft mark via `content:` on
-   `.ext-promoted-fed-cred-box img`, which was verified against the live
-   page to match exactly one element.
+3. **Custom OIDC providers get a generic icon, and CSS cannot fix it.**
+   Only built-in providers get brand marks, so the Microsoft option
+   ships with an anonymous blue circle. `content:` on
+   `.ext-promoted-fed-cred-box img` does not take — the rule was written,
+   and removed again once it proved not to work on the live page. The
+   icon is out of reach from the stylesheet; anything better has to come
+   from somewhere other than custom CSS.
 
 #### How to change this file safely
 

@@ -178,26 +178,11 @@ body {
   color: #15251f;                            /* --ink */
 }
 
-/* ---- the federated provider's icon ----
-   Entra gives custom OIDC providers a generic blue circle
-   (cred_option_externalidp…svg); only its built-in providers get a
-   brand mark. Since ours IS Microsoft, the circle tells the user
-   nothing and looks like a placeholder.
-
-   `.ext-promoted-fed-cred-box img` was verified on the live page to
-   match exactly one element — no obfuscated class needed.
-
-   `content:` on an <img> replaces the rendered image. Supported in
-   Chromium and WebKit, and in Firefox since 128. Where it is not
-   supported the original circle simply remains, so this degrades to
-   today's behaviour rather than to a broken icon.
-
-   Size is deliberately left alone: the layout is built around a 32px
-   box and adjusting it without positioning properties risks
-   misalignment. */
-.ext-promoted-fed-cred-box img {
-  content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjYuNSIgaGVpZ2h0PSI2LjUiIGZpbGw9IiNmMjUwMjIiLz48cmVjdCB4PSI4LjUiIHk9IjEiIHdpZHRoPSI2LjUiIGhlaWdodD0iNi41IiBmaWxsPSIjN2ZiYTAwIi8+PHJlY3QgeD0iMSIgeT0iOC41IiB3aWR0aD0iNi41IiBoZWlnaHQ9IjYuNSIgZmlsbD0iIzAwYTRlZiIvPjxyZWN0IHg9IjguNSIgeT0iOC41IiB3aWR0aD0iNi41IiBoZWlnaHQ9IjYuNSIgZmlsbD0iI2ZmYjkwMCIvPjwvc3ZnPg==");
-}
+/* The generic blue circle beside "Sign in with Microsoft account" is not
+   reachable from here. Entra gives custom OIDC providers a placeholder
+   mark and only its own built-in providers a brand one; `content:` on
+   the <img> does not survive. Don't try again in CSS — the icon needs a
+   different approach entirely. */
 
 /* ---- links inside the card ----
    Scoped to the sign-in box on purpose. A bare `a` selector also

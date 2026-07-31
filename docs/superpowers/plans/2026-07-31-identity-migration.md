@@ -118,6 +118,29 @@ Record the **Application (client) ID** as `OIDC_CLIENT_ID`.
 
 **Certificates & secrets** → **New client secret**. Set the longest available expiry and put a calendar reminder two weeks before it. Copy the **Value** (not the Secret ID) immediately — it is shown once. This is `OIDC_CLIENT_SECRET`.
 
+- [ ] **Step 4b: Grant admin consent — otherwise every guest sees a scary consent screen**
+
+In external tenants, customer users **cannot consent to permissions
+themselves**; the admin consents once on behalf of all of them. Skip this and
+every guest signing up is shown a "Permissions requested" dialog headed
+**"This application is not published by Microsoft"** — reintroducing, in new
+wording, exactly the trust problem this migration exists to remove.
+
+**Entra ID → App registrations → Ebrostay web → API permissions → Grant admin
+consent for Ebrostay.**
+
+The permissions being consented are `profile` (supplies the name claim that
+populates `userDetails`) and `offline_access` (lets SWA refresh the session).
+Both are required.
+
+While on that page, remove **Microsoft Graph `User.Read`** if present. Entra
+adds it to new registrations by default and SWA never calls Graph, so it is
+consent surface bought for nothing.
+
+Publisher verification would remove the "not published by Microsoft" wording,
+but with admin consent granted no user reaches that screen, so it is not worth
+the process.
+
 - [ ] **Step 5: Create the sign-up and sign-in user flow**
 
 **Entra ID** → **External Identities** → **User flows** → **New user flow**.

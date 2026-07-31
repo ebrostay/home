@@ -206,15 +206,21 @@ a:focus,
   color: #b23f3f;                            /* --danger */
 }
 
-/* ---- footer: reference, not navigation ---- */
-.ext-footer {
-  background-color: transparent;
-}
-
+/* ---- footer: reference, not navigation ----
+   Entra marks these `.ext-has-background` when they sit over the
+   background photograph, and applies its own contrast-aware colour.
+   An earlier version of this file overrode that with --muted grey and
+   made "Terms of use" / "Privacy & cookies" nearly unreadable against
+   a bright part of the image. So: set the face and size always, but
+   only take over the colour when there is NO photograph behind it. */
 .ext-footer-item,
 .ext-footer-links {
   font-family: "Onest", system-ui, -apple-system, sans-serif;
   font-size: 0.8125rem;
+}
+
+.ext-footer-item:not(.ext-has-background),
+.ext-footer-links:not(.ext-has-background) {
   color: #68786f;                            /* --muted */
 }
 

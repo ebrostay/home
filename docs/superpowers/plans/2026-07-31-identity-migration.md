@@ -1005,12 +1005,12 @@ function answering with data does (spec-v2 §3.5).
 - Modify: `docs/spec-v2/01-architecture.md`
 - Modify: `docs/spec-v2/07-legal-notes.md`
 
-- [ ] **Step 1: Add ADR-027 superseding ADR-013**
+- [ ] **Step 1: Add ADR-035 superseding ADR-013**
 
 Append to `docs/spec-v2/05-decision-log.md`, and add the row to the index table at the top:
 
 ```markdown
-## ADR-027 — Entra External ID: an Ebrostay account, Google, and our own branding
+## ADR-035 — Entra External ID: an Ebrostay account, Google, and our own branding
 
 - **Status:** ✅ locked 2026-07-31. **Supersedes ADR-013.**
 - **Context:** ADR-013 chose SWA built-in auth on the Free tier with GitHub and
@@ -1049,7 +1049,7 @@ Append to `docs/spec-v2/05-decision-log.md`, and add the row to the index table 
 In the ADR-021 entry, add:
 
 ```markdown
-- **Amended 2026-07-31 (ADR-027):** West Europe was retried on the **Standard**
+- **Amended 2026-07-31 (ADR-035):** West Europe was retried on the **Standard**
   plan. Outcome: <record "accepted, app recreated in westeurope" or "still
   refused, remains eastus2">.
 - **Correction:** §1 recorded the v1 SWA `ebrostay-home` as being in
@@ -1063,7 +1063,7 @@ In the ADR-021 entry, add:
 The current §3.1 states "exactly two providers: GitHub and Microsoft (`aad`)", "no email/password", and "v2 stays on Free". All three are now false. Replace the section body (from the `## 3.1` heading down to, but not including, `## 3.2`) with:
 
 ```markdown
-## 3.1 SWA custom auth via Entra External ID ✅ (ADR-027, supersedes ADR-013)
+## 3.1 SWA custom auth via Entra External ID ✅ (ADR-035, supersedes ADR-013)
 
 v2 uses **SWA custom authentication** on the **Standard** plan, with exactly
 one identity provider: a **Microsoft Entra External ID external tenant**
@@ -1096,7 +1096,7 @@ Not carried: **GitHub** and **Microsoft** (ADR-013's two providers) and
 "any Microsoft account", so the old Microsoft button has no equivalent;
 email + password removes the reach argument that justified it. **Apple** is
 supported by the tenant but deferred — $99/year plus a manual secret
-rotation every 6 months (ADR-027).
+rotation every 6 months (ADR-035).
 ```
 
 - [ ] **Step 4: Update §3.3 and the §3.4 example**
@@ -1139,7 +1139,7 @@ Append to `docs/spec-v2/07-legal-notes.md`: Microsoft as processor for authentic
 
 ```bash
 git add docs/spec-v2/
-git commit -m "docs(spec): ADR-027 retires the borrowed sign-in
+git commit -m "docs(spec): ADR-035 retires the borrowed sign-in
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```

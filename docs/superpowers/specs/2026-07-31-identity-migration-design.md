@@ -310,7 +310,7 @@ on top of them.
 
 ## 9. Spec amendments
 
-- **New ADR-027** — Entra External ID with email + password, Google and Apple.
+- **New ADR-035** — Entra External ID with email + password, Google and Apple.
   Supersedes ADR-013. Records the dropped providers and why.
 - **Amend ADR-021** — West Europe retried on Standard, with the outcome. Also
   correct the record: `docs/spec-v2/01-architecture.md` states the v1 SWA

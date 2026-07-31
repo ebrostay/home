@@ -11,21 +11,30 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR | Title | Status |
 | --- | --- | --- |
 | ADR-011 | Azure stack replaces Supabase (SWA + Functions + Cosmos + Blob) | ✅ locked |
-| ADR-012 | Next.js static export + TypeScript + Tailwind + next-intl | ✅ locked |
+| ADR-012 | Next.js static export + TypeScript + Tailwind v4 + next-intl | ✅ locked |
 | ADR-013 | SWA built-in auth, GitHub + Microsoft only | ✅ locked |
 | ADR-014 | Marketplace model with admin review queue | ✅ locked |
 | ADR-015 | Booking = login-gated log-then-draft | ✅ locked |
-| ADR-016 | Fresh start — no data migration from v1 | ✅ locked |
+| ADR-016 | Fresh start, no data migration | ✅ locked |
 | ADR-017 | Drop the graceful-degradation fallback | ✅ locked |
 | ADR-018 | .NET 9 on managed functions now; .NET 10 when supported | ✅ locked |
-| ADR-019 | Cosmos free tier NoSQL + Blob public-read, API-mediated uploads | ✅ locked |
+| ADR-019 | Cosmos free tier NoSQL + Blob public-read with API-mediated uploads | ✅ locked |
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
-| ADR-021 | Fresh SWA `ebrostay-v2` (eastus2); data in spaincentral | ✅ locked |
-| ADR-022 | Stay "up to 12 months" (calc: ≥31 & <365 days); billing monthly | ✅ locked |
-| ADR-023 | Rent pro-rated daily at price÷30; collected per calendar month | ✅ locked |
-| ADR-024 | Listings are `paused`, not `archived` — and reopen without re-review | ✅ locked |
+| ADR-021 | Fresh SWA `ebrostay-v2` in eastus2; data in spaincentral | ✅ locked |
+| ADR-022 | Stay duration ≥31 days & ≤12 months; billing stays monthly | ✅ locked |
+| ADR-023 | Rent is pro-rated daily at price÷30; rent collected per calendar month | ✅ locked |
+| ADR-024 | Off-market listings are `paused`, not `archived`, and reopen without re-review | ✅ locked |
 | ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
-| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked & built |
+| ADR-026 | Turnover days between stays, and who is paid for the clean | ✅ locked |
+| ADR-027 | The listing editor: one diff, one save, and what it deliberately cannot do | ✅ locked |
+| ADR-028 | "What's nearby": measured, not typed; numbers eager, geometry lazy | ✅ locked |
+| ADR-029 | The guest page answers to its own owner in every lifecycle state | ✅ locked |
+| ADR-030 | "Add a property": a wizard over the editor's own components | ✅ locked |
+| ADR-031 | No turnaround after the owner's own use | ✅ locked |
+| ADR-032 | The listing description is a closed rich-text schema, not HTML | ✅ locked |
+| ADR-033 | AI-assisted import: an async job the API owns and an extractor it does not trust | ✅ locked |
+| ADR-034 | The listing description field is `description`, not `copy` | ✅ locked |
+| ADR-035 | Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding | ✅ locked & built |
 
 ---
 
@@ -2485,3 +2494,134 @@ resolution paths.
 | OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Leaning (2026-07-29): count **working days**. Blocked on one operational fact — does the turnaround crew work Saturdays? If yes, the problem collapses to holidays only. Decide once real stays flow; needs a hand-maintained Zaragoza holiday list (national + Aragón + local: Pilar, San Valero, Cincomarzada) served from ONE place, because the C# projection and the client calendar must agree day-for-day. Raised with ADR-031. |
 | OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
 | OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |
+
+
+## ADR-035 — Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding
+
+- **Status:** ✅ locked & built 2026-07-31. **Supersedes ADR-013.** Amends ADR-021.
+- **Context:** v2 shipped on SWA **Free** with the platform's *preconfigured*
+  providers — a single Microsoft-owned app registration shared by every
+  Free-plan static web app. Three problems followed. The OAuth consent screen
+  asked guests to grant **"Azure Static Web Apps"** access to their account:
+  an app that is not ours, whose name we cannot change, shown to someone about
+  to hand over identity documents to rent a flat. There was **no
+  email/password sign-up**, so anyone without a GitHub or Microsoft account
+  could not book or host. And GitHub is a poor fit for people renting homes.
+  ADR-013 accepted this and named the escape hatch: *"SWA Standard tier +
+  custom OIDC or Entra External ID"*. This is that hatch.
+
+- **Decision:** A **Microsoft Entra External ID external tenant**
+  (`ebrostay`, `172e1505-039e-4565-87e9-4fad91983d51`, EU-located) is the
+  single OIDC provider Static Web Apps sees, registered as
+  `customOpenIdConnectProviders.ebrostay`. It brokers, behind one
+  Ebrostay-branded page:
+  - **Ebrostay account** — email + password, hosted by Entra
+  - **Microsoft account** — personal MSAs, via custom OIDC federation
+  - Google 🔜 planned; Apple 🗑️ not carried
+
+  SWA moves to the **Standard** plan (custom auth requires it) and the app is
+  recreated as `ebrostay-home` in **West Europe**.
+
+- **Rationale:** Entra brokering keeps `userId` stable per person. Registering
+  each provider directly against SWA would mint a separate principal — and so
+  a separate `profiles` document and a disjoint set of listings — for the same
+  human depending on which button they pressed. `userId` is the Entra
+  `objectidentifier`, one per user object.
+
+  Email + password over one-time passcode because **hosts** carry the economic
+  stake, sign in most often, and expect a conventional login. Password reset,
+  email verification and lockout are all provided by the platform; we store no
+  credential.
+
+- **Consequences:**
+  - **~$9/month** for SWA Standard. Entra External ID is **$0** below 50,000
+    MAU; expected usage is dozens.
+  - Sign-in pages live at `ebrostay.ciamlogin.com`. A custom login domain would
+    need Azure Front Door at ~$35/month — deferred, purely additive.
+  - Changing the local-account method later affects **only new users**.
+  - **Apple deferred:** $99/year Apple Developer Program plus a manual client
+    secret rotation every 6 months whose failure mode is silent.
+  - `userDetails` carries the **display name**, not the email. The email
+    arrives as `preferred_username`.
+  - Federated users carry a
+    `http://schemas.microsoft.com/identity/claims/identityprovider` claim
+    naming the upstream provider — the only way to tell an MSA user from a
+    local account, since SWA reports `identityProvider: "ebrostay"` for both.
+  - The privacy policy changes: Microsoft becomes a **processor** for
+    credentials (§5.6 of the design spec). No cookie banner follows — the
+    session cookie was always strictly necessary.
+
+### Correction to the original analysis
+
+The first draft of this decision **dropped Microsoft** on the grounds that
+external tenants federate only *one nominated organisation*, not "any Microsoft
+account". **That was wrong.** Personal Microsoft accounts are supported via a
+custom OIDC provider against
+`https://login.microsoftonline.com/consumers/v2.0/.well-known/openid-configuration`
+with issuer `https://login.live.com` — documented by Microsoft, not a
+workaround. Microsoft is **included**.
+
+### Scope decision: `openid email`, without `profile`
+
+The MSA federation requests **`openid email`** only. OIDC's `profile` scope is
+a coarse bundle — name, picture, website, gender, birthdate, locale — and
+Microsoft renders it to the user as *"View your basic profile (name, picture,
+username)"*. On a page preceding an identity-document exchange, asking for a
+profile picture we never read is a cost with no benefit.
+
+**These two settings are coupled and must move together.** Dropping `profile`
+removes the only source of a name, so the display name now comes from the user
+flow's **attribute collection** step, which prompts for it at sign-up. Remove
+Display Name from the user flow's user attributes and `userDetails` goes empty
+for federated users, giving blank avatars. Verified working 2026-07-31:
+`userDetails: "Raphael Goj"` from a `name` claim that Microsoft never sent.
+
+Invoicing data (legal name, NIF/CIF, fiscal address) was never obtainable from
+an identity provider and belongs in our own account page, collected explicitly.
+So the narrower consent screen costs nothing we would have used.
+
+### Two consent screens, only one of which we can remove
+
+| Screen | Removable? |
+| --- | --- |
+| Entra permissions prompt, on sign-up | **Yes** — grant admin consent on the app registration. External tenants do not let customer users consent for themselves, so without it every guest reads *"This application is not published by Microsoft."* |
+| `login.live.com` consumer consent, on Microsoft sign-in | **No.** Personal account holders consent individually; there is no tenant admin to pre-consent. Only improvable — logo, terms and privacy links, and eventually publisher verification to clear *"unverified"*. |
+
+A consequence worth designing around: the **Ebrostay account path shows no
+permission screen at all**, the Microsoft path always will.
+
+### Manual setup — not reproducible from this repository
+
+None of the following is in code or Bicep. It was done by hand in the portals
+on 2026-07-31 and would have to be repeated by hand to rebuild the tenant.
+
+**Entra external tenant `ebrostay`** — created in the Microsoft Entra admin
+center (the Azure portal creates workforce tenants only). **Country/Region and
+domain name are immutable.** Linked to subscription
+`2cda7364-dba2-4b44-aff0-f5a6fcfac010`.
+
+| Object | Where | Detail |
+| --- | --- | --- |
+| App registration `Ebrostay web` | external tenant | `c6e22d86-c3e4-44a8-aa8a-089e84a1a5b9`. Audience: this directory only. Redirect URI `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/login/ebrostay/callback`. Client secret → SWA app settings `EBROSTAY_OIDC_CLIENT_ID` / `EBROSTAY_OIDC_CLIENT_SECRET`. **Admin consent granted.** |
+| App registration `Ebrostay` (MSA federation) | external tenant | `7a654cfb-f11c-48c9-abfa-2512aa512cd3`. Audience **All Microsoft account users**. **Two** redirect URIs — `…ciamlogin.com/<tenant-id>/federation/oauth2` and `…ciamlogin.com/ebrostay.onmicrosoft.com/federation/oauth2`; Entra uses either. Branding & properties carries the logo, terms and privacy URLs shown on the consumer consent screen. |
+| Custom OIDC provider `Microsoft account` | external tenant → External Identities → All identity providers → **Custom** | Well-known `https://login.microsoftonline.com/consumers/v2.0/.well-known/openid-configuration`; issuer `https://login.live.com`; client auth **`client_secret_post`** (`client_secret_basic` unsupported, `private_key_jwt` offered but unsupported); scope `openid email`; response type `code`; default claims mapping. |
+| User flow `ebrostay-home` | external tenant | Type *Sign up and sign in*. Identity providers: **Email with password** + Microsoft account. User attributes: **Display Name**, Email. **The application must be added under Applications** — without it the page serves sign-in with no way to sign up. |
+| Company branding | external tenant → Custom Branding | Favicon, background image, banner logo, terms/privacy footer links. |
+
+**Traps that cost time and are not obvious from any error message:**
+
+1. **Redirect URI mismatch is silent until it isn't** — register both spellings.
+2. **`unauthorized_client: not enabled for consumers`** means the client ID in
+   the OIDC provider does not match an app whose audience includes personal
+   accounts. In our case the provider simply held the **wrong client ID**; the
+   app was fine. Compare the ID in the failing `login.live.com` URL against the
+   registration before changing anything.
+3. **IdP edits do not take effect on a live user flow** — untick the provider,
+   Save, tick it, Save.
+4. **Testing a changed scope against an existing user proves nothing.** The
+   user object already holds a consent grant and attributes. Delete the user
+   from **Entra ID → Users** and sign up again.
+5. SWA accepts the discovery document from `ebrostay.ciamlogin.com` even though
+   it declares an issuer on the tenant-ID host — an OIDC Discovery violation
+   that would justify rejection. It works, and guests see the branded host, so
+   no Front Door is needed. **This is tolerated behaviour, not a guarantee.**

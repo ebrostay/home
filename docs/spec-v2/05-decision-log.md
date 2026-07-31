@@ -2708,3 +2708,54 @@ hard reload before concluding an upload did nothing.
    it declares an issuer on the tenant-ID host — an OIDC Discovery violation
    that would justify rejection. It works, and guests see the branded host, so
    no Front Door is needed. **This is tolerated behaviour, not a guarantee.**
+
+## ADR-036 — The provider choice stays on Entra's hosted page
+
+**Date:** 2026-08-01 · **Status:** accepted · **Amends:** ADR-035
+
+A Microsoft-branded button on our own `/sign-in` that hands the browser
+straight to the Microsoft account login **cannot be built** while sign-in
+goes through SWA built-in auth and Entra External ID. Every mechanism was
+tested to the wire; record them so nobody pays for this twice:
+
+1. **Custom CSS** cannot touch the provider tile's icon. `content:` on
+   the `<img>` does not survive Entra's sanitiser.
+2. **`loginParameterNames` works — as `name=value` pairs.** Bare names
+   (`["domain_hint"]`) forward nothing, which is what made an earlier
+   test conclude SWA forwards nothing at all. `["prompt=login"]` and
+   `["domain_hint=…"]` demonstrably reach the authorize URL. This is the
+   one durable positive finding.
+3. **`domain_hint` cannot reach a custom OIDC provider.** Wire-traced
+   for five values under both flow states (provider in/out of the user
+   flow): `login.live.com` triggers Entra's *built-in* MSA federation —
+   a WS-Fed hop (`wa=wsignin1.0`, `wtrealm=urn:federation:MicrosoftOnline`,
+   SAML 1.1 incoming token in the logs) that matches B2B guests instead
+   of running the CIAM user flow, so SWA never gets a session.
+   `live.com` hits the same path via Microsoft's first-party client and
+   errors. `consumers` and `login.microsoftonline.com` are ignored.
+   Unlike B2C, an External ID provider has **no Domain hint property**
+   to claim a hint value of its own; the built-in federation owns the
+   namespace.
+4. **A Microsoft-only user flow cannot exist.** Every sign-up/sign-in
+   flow must keep an email method: the portal's Email Accounts control
+   is a radio group with no "none", and Graph rejects or ignores every
+   shape that removes `EmailPassword-OAUTH` from
+   `onAuthenticationMethodLoadStart`. (Binding an app to a flow via
+   Graph also requires the service principal to carry the
+   `WindowsAzureActiveDirectoryIntegratedApp` tag, or the appId is
+   rejected as "invalid".)
+
+**Therefore:** the hosted page keeps the provider choice — email form
+plus the Microsoft tile (generic icon and all), plus Google's genuinely
+branded button once configured (Google is a built-in provider and has
+none of these problems). Our `/sign-in` page stays as the branded front
+door and states which accounts work; it forwards signed-in visitors.
+
+**Verified behaviour worth trusting** (Tests A/B/B2, 2026-08-01): an
+address Entra recognises as a Microsoft account is handed to
+`login.live.com` at *sign-in* with no password asked, even with the
+provider unticked; the *Create one* branch always makes a local password
+account regardless of domain; a known local account always beats the
+Microsoft routing at sign-in. Deterministic, no duplicates. Untested:
+federate-first-then-Create-one at the same address, and gmail-vs-Google
+once Google lands.

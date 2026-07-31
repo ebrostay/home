@@ -162,22 +162,29 @@ body {
 }
 
 /* ---- the federated-provider box ----
-   Deliberately unstyled, and this is the note explaining why.
+   Holds "Sign in with Microsoft account" (and Google, once configured).
+   The provider is back in the user flow by decision (ADR-036,
+   2026-08-01): every route to a Microsoft button on our own page was
+   tested to the wire and closed, so the visible tile here is the honest
+   option. Its generic icon is NOT fixable from CSS — `content:` on the
+   <img> does not survive; do not try again. What CSS can do is make the
+   box a sibling of the sign-in card: same surface, radius, border and
+   shadow.
 
-   This box held "Sign in with Microsoft account", with the generic blue
-   circle Entra gives every custom OIDC provider. That mark cannot be
-   changed from CSS — only Entra's own built-in providers get a brand
-   one, and `content:` on the <img> does not survive.
-
-   So the provider was taken out of the user flow instead (2026-07-31).
-   The Microsoft option is now a button we draw ourselves, on our own
-   /sign-in page, which reaches it with domain_hint=login.live.com. This
-   page offers email and password only.
-
-   Entra still renders the container, now empty. An earlier version of
-   this file gave it a white background, border and shadow to match the
-   sign-in card; with nothing inside, that became a blank white pill
-   floating under the form. Leave it unstyled — invisible is correct. */
+   If the Microsoft provider is ever unticked from the flow again, this
+   block must go with it — an empty container styled this way renders as
+   a blank white pill floating under the form. */
+.ext-promoted-fed-cred-box {
+  background-color: #ffffff;                 /* --surface */
+  border: 1px solid #dbe2db;                 /* --line */
+  border-radius: 0.875rem;                   /* --radius-card */
+  box-shadow: 0 4px 12px rgba(21, 37, 31, 0.1),
+              0 24px 48px -12px rgba(21, 37, 31, 0.28); /* --shadow-pop */
+  padding: 1rem 1.25rem;
+  font-family: "Onest", system-ui, -apple-system, sans-serif;
+  font-size: 0.9375rem;
+  color: #15251f;                            /* --ink */
+}
 
 /* ---- links inside the card ----
    Scoped to the sign-in box on purpose. A bare `a` selector also

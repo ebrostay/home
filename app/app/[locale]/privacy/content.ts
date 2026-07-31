@@ -3,7 +3,8 @@
 // (main:privacy.html, hardcoded ES + EN blocks) with the stack updated for
 // v2: Microsoft Azure (Static Web Apps, Cosmos DB, Blob Storage — data in the
 // EU, Spain Central region) instead of Supabase/GitHub Pages; sign-in via an
-// Ebrostay account (email + password) or Google, brokered by Microsoft Entra
+// Ebrostay account (email + password) or a Microsoft account, brokered by
+// Microsoft Entra
 // External ID in an EU-located external tenant (ADR-027); Umami (cookieless)
 // analytics unchanged.
 
@@ -47,7 +48,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         paragraphs: [
           {
             strong: "Cuenta:",
-            text: "creas una cuenta de Ebrostay con tu correo y una contraseña, o entras con tu cuenta de Google. La identidad la gestiona Microsoft Entra External ID por nuestra cuenta, en un directorio alojado en la Unión Europea; nosotros nunca vemos ni almacenamos tu contraseña. Conservamos tu identificador de usuario, el método de acceso y tu nombre para vincular tus solicitudes, estancias y anuncios.",
+            text: "creas una cuenta de Ebrostay con tu correo y una contraseña, o entras con tu cuenta de Microsoft. La identidad la gestiona Microsoft Entra External ID por nuestra cuenta, en un directorio alojado en la Unión Europea; nosotros nunca vemos ni almacenamos tu contraseña. Conservamos tu identificador de usuario, el método de acceso y tu nombre para vincular tus solicitudes, estancias y anuncios.",
           },
           {
             strong: "Solicitudes de reserva:",
@@ -79,7 +80,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Conservación y destinatarios",
         paragraphs: [
           {
-            text: "Conservamos los datos de reservas el tiempo exigido por las obligaciones fiscales y contractuales. La web funciona sobre Microsoft Azure (Static Web Apps, Cosmos DB y Blob Storage); la base de datos y las fotos se almacenan en la Unión Europea (región Spain Central, España). El registro y el inicio de sesión los presta Microsoft Entra External ID como encargado del tratamiento, en un directorio ubicado en la Unión Europea. Si eliges entrar con Google, compartes con Google los datos de esa autenticación.",
+            text: "Conservamos los datos de reservas el tiempo exigido por las obligaciones fiscales y contractuales. La web funciona sobre Microsoft Azure (Static Web Apps, Cosmos DB y Blob Storage); la base de datos y las fotos se almacenan en la Unión Europea (región Spain Central, España). El registro y el inicio de sesión los presta Microsoft Entra External ID como encargado del tratamiento, en un directorio ubicado en la Unión Europea. Si eliges entrar con una cuenta de Microsoft, compartes con Microsoft los datos de esa autenticación.",
           },
         ],
       },
@@ -87,7 +88,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Tus derechos",
         paragraphs: [
           {
-            text: "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a info@ebrostay.com. Si entraste con Google, también puedes revocar en cualquier momento el acceso concedido a Ebrostay desde tu cuenta de Google. Si lo consideras necesario, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).",
+            text: "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a info@ebrostay.com. Si entraste con una cuenta de Microsoft, también puedes revocar en cualquier momento el acceso concedido a Ebrostay desde esa cuenta. Si lo consideras necesario, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).",
           },
         ],
       },
@@ -120,7 +121,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         paragraphs: [
           {
             strong: "Account:",
-            text: "you create an Ebrostay account with your email address and a password, or sign in with your Google account. Identity is handled on our behalf by Microsoft Entra External ID, in a directory hosted in the European Union; we never see or store your password. We keep your user identifier, sign-in method and name to link your requests, stays and listings.",
+            text: "you create an Ebrostay account with your email address and a password, or sign in with your Microsoft account. Identity is handled on our behalf by Microsoft Entra External ID, in a directory hosted in the European Union; we never see or store your password. We keep your user identifier, sign-in method and name to link your requests, stays and listings.",
           },
           {
             strong: "Booking requests:",
@@ -152,7 +153,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Retention and recipients",
         paragraphs: [
           {
-            text: "We keep booking data for as long as required by tax and contractual obligations. The site runs on Microsoft Azure (Static Web Apps, Cosmos DB and Blob Storage); the database and photos are stored in the European Union (Spain Central region, Spain). Sign-up and sign-in are provided by Microsoft Entra External ID as a data processor, in a directory located in the European Union. If you choose to sign in with Google, you share that authentication data with Google.",
+            text: "We keep booking data for as long as required by tax and contractual obligations. The site runs on Microsoft Azure (Static Web Apps, Cosmos DB and Blob Storage); the database and photos are stored in the European Union (Spain Central region, Spain). Sign-up and sign-in are provided by Microsoft Entra External ID as a data processor, in a directory located in the European Union. If you choose to sign in with a Microsoft account, you share that authentication data with Microsoft.",
           },
         ],
       },
@@ -160,7 +161,7 @@ export const privacyContent: Record<"es" | "en", PrivacyContent> = {
         title: "Your rights",
         paragraphs: [
           {
-            text: "You can exercise your rights of access, rectification, erasure, objection and portability by writing to info@ebrostay.com. If you signed in with Google, you can also revoke the access granted to Ebrostay from your Google account at any time. If you consider it necessary, you can lodge a complaint with the Spanish Data Protection Agency (aepd.es).",
+            text: "You can exercise your rights of access, rectification, erasure, objection and portability by writing to info@ebrostay.com. If you signed in with a Microsoft account, you can also revoke the access granted to Ebrostay from that account at any time. If you consider it necessary, you can lodge a complaint with the Spanish Data Protection Agency (aepd.es).",
           },
         ],
       },

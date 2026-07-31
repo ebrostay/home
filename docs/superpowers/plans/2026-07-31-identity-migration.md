@@ -118,31 +118,45 @@ If any of these fail, stop here. Nothing downstream can work, and every later ta
 
 ---
 
-## Task 2: Create the West Europe Standard app and retire East US 2
+## Task 2: Create the West Europe Standard app and retire East US 2 ✅ DONE 2026-07-31
+
+**Outcome:** `ebrostay-home`, **West Europe**, **Standard**, host
+`delightful-sand-063f8a703.7.azurestaticapps.net`. `ebrostay-v2` (East US 2)
+deleted. Measured `/api/properties`: median **545 ms → 322 ms**, floor
+**358 ms → 271 ms**.
+
+**Two corrections found by executing this task — they were plan defects:**
+
+1. **West Europe now accepts even a Free app.** The Step 1 probe succeeded, so
+   ADR-021's eligibility refusal is simply gone. The Standard hypothesis was
+   never needed and the East US 2 fallback never came into play. Record this in
+   Task 10 Step 2 as the ADR-021 outcome.
+2. **A new SWA has no application settings, and nothing in the original plan
+   copied them.** `/api/health` passed while every Cosmos-backed route returned
+   500. One of the nine settings, `IMPORT_CALLBACK_BASE_URL`, also embeds the
+   app's own hostname and would have silently pointed import callbacks at the
+   deleted app. This is now Step 4 below. **Do not delete the source app before
+   this step has run and verified** — it is the only copy of those values.
+3. **`/api/homes` does not exist.** The routes are `/api/health`,
+   `/api/properties`, `/api/me`. Step 6 originally checked a v1 route name.
 
 **Files:**
 - Modify: `.github/workflows/swa-v2.yml` (no content change; the repository secret it reads is repointed)
 
 **Interfaces:**
-- Produces: `SWA_HOSTNAME` (the new `*.azurestaticapps.net` default host), consumed by Task 1 Step 3 and Task 3.
+- Produces: `SWA_HOSTNAME` = `delightful-sand-063f8a703.7.azurestaticapps.net`, consumed by Task 1 Step 3 and Task 3.
 
-- [ ] **Step 1: Confirm the region is still refused on Free before paying for Standard**
-
-The premise is that West Europe refused a **Free** creation (ADR-021) but may accept **Standard**. That is inference, not documented. Test the cheap half first:
+- [x] **Step 1: Confirm the region is still refused on Free before paying for Standard**
 
 ```bash
 az staticwebapp create -n swa-euw-probe -g ebrostay -l westeurope --sku Free
-```
-
-If this **succeeds**, the eligibility problem is gone entirely. Delete the probe and continue:
-
-```bash
 az staticwebapp delete -n swa-euw-probe -g ebrostay --yes
 ```
 
-If it **fails** with a location/eligibility error, continue to Step 2 — that is the case the Standard hypothesis is for.
+**Result: succeeded.** West Europe is no longer location-ineligible. Standard is
+still required — but for custom auth, not for the region.
 
-- [ ] **Step 2: Create the Standard app in West Europe**
+- [x] **Step 2: Create the Standard app in West Europe**
 
 **Cost gate: ~$9 USD/month. Approved.**
 
@@ -150,80 +164,104 @@ If it **fails** with a location/eligibility error, continue to Step 2 — that i
 az staticwebapp create -n ebrostay-home -g ebrostay -l westeurope --sku Standard
 ```
 
-If this fails with a location error, the hypothesis is disproved. **Fall back:** create in `eastus2` instead (`-l eastus2 --sku Standard`), record the outcome, and note in Task 10 that West Europe was retried on Standard and still refused. Do not attempt bring-your-own Functions as part of this plan — it changes the cost model and needs its own decision.
-
-- [ ] **Step 3: Capture the hostname and deployment token**
+- [x] **Step 3: Capture the hostname and deployment token**
 
 ```bash
 az staticwebapp show -n ebrostay-home -g ebrostay --query defaultHostname -o tsv
 az staticwebapp secrets list -n ebrostay-home -g ebrostay --query "properties.apiKey" -o tsv
 ```
 
-The first is `SWA_HOSTNAME`. The second is the deployment token.
+- [x] **Step 4: Copy the application settings from the old app**
 
-- [ ] **Step 4: Repoint the deployment secret**
+A new static web app starts with **no** application settings. The functions
+will start and `/api/health` will pass, because it touches nothing — but every
+Cosmos-backed route returns 500 until this runs.
 
-`.github/workflows/swa-v2.yml:56` reads `secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_V2`. Update that repository secret to the new token rather than renaming the secret, so the workflow file needs no edit:
-
-```bash
-gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN_V2 --repo ebrostay/home --body "<token from step 3>"
-```
-
-- [ ] **Step 5: Deploy the current code unchanged**
+Settings whose value contains the **old** hostname must be rewritten, or they
+will point at an app that is about to be deleted. `IMPORT_CALLBACK_BASE_URL` is
+one such setting.
 
 ```bash
-git commit --allow-empty -m "ci: redeploy to the West Europe app
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-git push
-gh run watch --repo ebrostay/home
+python3 - <<'EOF'
+import json, subprocess
+OLD_HOST = "gentle-plant-000592f0f.7.azurestaticapps.net"
+NEW_HOST = "delightful-sand-063f8a703.7.azurestaticapps.net"
+raw = subprocess.run(["az","staticwebapp","appsettings","list","-n","ebrostay-v2",
+                      "-g","ebrostay","-o","json"], capture_output=True, text=True,
+                     check=True).stdout
+props = json.loads(raw); props = props.get("properties", props)
+pairs = []
+for k, v in sorted(props.items()):
+    v = "" if v is None else str(v)
+    if not v:
+        print(f"  {k}: EMPTY on source - skipped"); continue
+    if OLD_HOST in v:
+        v = v.replace(OLD_HOST, NEW_HOST); print(f"  {k}: rewritten to the new host")
+    else:
+        print(f"  {k}: copied verbatim")
+    pairs.append(f"{k}={v}")
+subprocess.run(["az","staticwebapp","appsettings","set","-n","ebrostay-home",
+                "-g","ebrostay","--setting-names",*pairs,"-o","none"], check=True)
+EOF
 ```
 
-The code at this point still uses the preconfigured providers. That is correct and expected — a Standard app with no `auth` block behaves exactly like the Free app did. This step proves hosting, the API, and the build pipeline work in the new region **before** auth is layered on.
+Values are never printed — only names and whether a rewrite happened.
 
-- [ ] **Step 6: Verify the new app serves the site**
+- [x] **Step 5: Repoint the deployment secret**
+
+`.github/workflows/swa-v2.yml:56` reads `secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_V2`. Update that repository secret rather than renaming it, so the workflow file needs no edit:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' "https://<SWA_HOSTNAME>/es/"
-curl -sS "https://<SWA_HOSTNAME>/api/homes" | head -c 300
+printf '%s' "<token from step 3>" | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN_V2 --repo ebrostay/home
 ```
 
-Expected: `200` for the page, and JSON (not an error) from the API. The API call also proves the West Europe functions can reach Cosmos in Spain Central.
+- [x] **Step 6: Deploy the current code unchanged**
 
-- [ ] **Step 7: Delete the East US 2 app**
+```bash
+git push origin redesign/v2
+gh run watch --repo ebrostay/home --exit-status
+```
 
-**Destructive. Approved, conditional on Step 6 passing.** Do not run this if Step 6 failed.
+The code at this point still uses the preconfigured providers, which is correct:
+a Standard app with no `auth` block behaves exactly like the Free app did. This
+proves hosting, the API and the build pipeline work in the new region **before**
+auth is layered on.
+
+- [x] **Step 7: Verify the new app serves the site and reaches Cosmos**
+
+```bash
+H=delightful-sand-063f8a703.7.azurestaticapps.net
+curl -sS -o /dev/null -w '%{http_code}\n' "https://$H/es/"          # expect 200
+curl -sS -o /dev/null -w '%{http_code}\n' "https://$H/api/health"    # expect 200
+curl -sS "https://$H/api/properties" | head -c 200                    # expect JSON, not an error
+curl -sS "https://$H/api/me"                                          # expect the anonymous shape
+```
+
+`/api/properties` is the one that matters: it proves the West Europe functions
+can reach Cosmos in Spain Central. A 503 on the first call right after Step 4 is
+the function host restarting — retry.
+
+- [x] **Step 8: Delete the East US 2 app**
+
+**Destructive. Approved, conditional on Step 7 passing.** Do not run if Step 7
+failed, and never before Step 4 has succeeded — the old app holds the only copy
+of the application settings.
 
 ```bash
 az staticwebapp delete -n ebrostay-v2 -g ebrostay --yes
 az staticwebapp list --query "[].{name:name,location:location,sku:sku.name}" -o table
+curl -sSI https://ebrostay.com | grep -i '^server:'   # expect GitHub.com — production untouched
 ```
 
-Expected: only `ebrostay-home` remains.
+- [x] **Step 9: Retire the workflow and credential left on `main`**
 
-- [ ] **Step 8: Delete the stale workflow left on `main`**
+`main` carried `azure-static-web-apps-thankful-sea-0e236161e.yml`, targeting the
+West US 2 app deleted on 2026-07-31, plus its now-dead deployment secret. Leave
+`pages.yml` alone — it publishes production v1 to GitHub Pages.
 
-`main` still carries `azure-static-web-apps-thankful-sea-0e236161e.yml`, which targets the West US 2 app deleted on 2026-07-31. Leave `pages.yml` alone — it publishes production v1 to GitHub Pages.
-
-```bash
-git fetch origin main
-git checkout -b chore/drop-dead-swa-workflow origin/main
-git rm .github/workflows/azure-static-web-apps-thankful-sea-0e236161e.yml
-git commit -m "ci: the workflow outlived the app it deployed to
-
-The West US 2 static web app was deleted on 2026-07-31; this workflow has
-been failing against a resource that no longer exists. pages.yml stays —
-it is what actually publishes ebrostay.com.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-git push -u origin chore/drop-dead-swa-workflow
-gh pr create --base main --title "ci: drop the workflow for the deleted West US 2 app" --body "The West US 2 static web app was deleted on 2026-07-31. This workflow has been failing against a resource that no longer exists.
-
-\`pages.yml\` is untouched — it is what publishes ebrostay.com to GitHub Pages.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)"
-git checkout redesign/v2
-```
+Done as PR #61. The secret `AZURE_STATIC_WEB_APPS_API_TOKEN_THANKFUL_SEA_0E236161E`
+was deleted — a live deployment credential for a deleted resource is pure
+liability.
 
 ---
 

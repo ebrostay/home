@@ -27,8 +27,10 @@ sign-in for those who prefer it.
 ## 2. Scope
 
 **In scope.** Identity provider migration, SWA plan and region change, branded
-sign-in pages, the sign-out redirect bug, the anonymous-user 401 gap, and
-re-seeding the data whose keys change as a result.
+sign-in pages, the sign-out redirect bug, the anonymous-user 401 gap,
+re-seeding the data whose keys change as a result, and the **privacy policy
+update** (§5.6) — a direct legal consequence of changing who processes
+credentials, not of the account page.
 
 **Out of scope**, each needing its own spec:
 
@@ -197,6 +199,62 @@ Cosmos is dropped and re-seeded: every `userId` changes, and `userId` keys
 admins are re-invited through SWA Role management after cutover, since
 invitations bind to provider identity.
 
+### 5.6 Privacy policy
+
+`app/app/[locale]/privacy/page.tsx` is materially outdated by this change and
+is updated in the same work, in **both locales**.
+
+What changes:
+
+- **Microsoft becomes a processor**, handling email addresses, password
+  credentials and authentication events on our behalf. Covered automatically by
+  the Microsoft Products and Services Data Protection Addendum, but it must be
+  disclosed.
+- **We gain a credential relationship** we have never had. Microsoft stores the
+  hash; the account is ours.
+- **The external tenant's EU location** is the international-transfer answer —
+  state it explicitly.
+- **Google and Apple** as federated options: disclose that choosing one shares
+  data with that provider.
+- **GitHub and Microsoft sign-in disappear.** Remove stale references.
+
+#### No cookie banner is required — recorded so it is not re-litigated
+
+LSSI-CE Art. 22.2, implementing ePrivacy, requires consent to store or read
+information on a user's device **except** where strictly necessary for a
+service the user expressly requested. Authentication cookies are the canonical
+exempt case (EDPB Guidelines 2/2023; WP29 Opinion 04/2012 lists authentication
+and user-centric security cookies). The SWA session cookie is set only after
+the user clicks sign in.
+
+This change does not alter that. Before: an SWA session cookie after a
+Microsoft or GitHub login. After: the same SWA session cookie after an Entra
+login. Same cookie, same purpose, same exemption — what moves is which consent
+screen appears upstream, on the IdP's own domain.
+
+D2 helps here as a side effect: because Google and Apple are reached by
+redirect through Entra, **no Google client SDK (One Tap / GSI) is embedded in
+our pages**. Embedding one would touch device storage before the visitor
+requested anything, which is exactly what creates a consent obligation.
+
+Existing terminal storage is unchanged and remains exempt. Note that ePrivacy
+covers *all* terminal storage, not only cookies — `localStorage` counts:
+
+| Storage | Assessment |
+| --- | --- |
+| `ebrostay-theme` (`ThemeToggle`) | User-initiated preference — exempt |
+| YourPlaces store (`components/detail/YourPlaces.tsx`) | User-entered input — exempt |
+| Umami (`components/site/Analytics.tsx`) | Cookieless: no device storage, so no ePrivacy trigger. Still personal data (IP) under GDPR — belongs in the privacy notice with a legal basis. Currently **not mounted** into the layout. |
+
+**What would flip this conclusion:** enabling **client-side Application
+Insights** — SWA's documented path for function logs. Its browser SDK sets
+`ai_user` and `ai_session` cookies which are *not* strictly necessary, and a
+banner would then be required. Not called for by this spec; recorded because it
+is the kind of thing switched on mid-debugging.
+
+This is a reading of the regulations, not legal advice. It should go past the
+same adviser as the fianza questions in `docs/spec-v2/07-legal-notes.md`.
+
 ## 6. Testing
 
 - **Unit** (`npm test`) — `loginUrl` / `logoutUrl` in `app/lib/auth.ts` are
@@ -207,6 +265,9 @@ invitations bind to provider identity.
 - **Authorization** — the §3.5 negative matrix (anonymous → protected,
   authenticated → another user's draft, non-admin → admin endpoints,
   deactivated → everything) is unchanged and must still pass.
+- **Privacy page** — renders in `es` and `en` with no stale provider
+  references. Already an enumerated route, so the existing guard test covers
+  its reachability; the content check is manual.
 - **Manual** — the real Entra flow cannot run in Playwright. Against the
   deployed West Europe app, verify for each of the three methods: sign-up,
   sign-in, sign-out, and return to a gated page. Plus password reset, and the
@@ -237,7 +298,8 @@ on top of them.
    back per §7.
 4. **Prove the wiring with a real sign-in** before any UI work: custom OIDC
    config, `nameClaimType`, and the sign-out session behaviour.
-5. Frontend changes (§5.2), sign-out fix and 401 override (§5.4).
+5. Frontend changes (§5.2), sign-out fix and 401 override (§5.4), privacy
+   policy rewrite in both locales (§5.6).
 6. Re-seed Cosmos; re-invite the three admins.
 7. Point the deployment workflow at the new app; verify end to end.
 8. Delete SWA `ebrostay-v2` (East US 2). Delete the stale
@@ -259,3 +321,6 @@ on top of them.
   update the §3.4 principal example.
 - **Update the §1 resource table** in `docs/spec-v2/01-architecture.md`:
   regions, plan, and the note about the transatlantic data hop.
+- **Add to `docs/spec-v2/07-legal-notes.md`** — Microsoft as a processor for
+  authentication, the EU tenant location as the transfer basis, and the
+  no-cookie-banner reasoning from §5.6 with the Application Insights caveat.

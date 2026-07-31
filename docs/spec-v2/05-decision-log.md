@@ -2606,7 +2606,88 @@ domain name are immutable.** Linked to subscription
 | App registration `Ebrostay` (MSA federation) | external tenant | `7a654cfb-f11c-48c9-abfa-2512aa512cd3`. Audience **All Microsoft account users**. **Two** redirect URIs — `…ciamlogin.com/<tenant-id>/federation/oauth2` and `…ciamlogin.com/ebrostay.onmicrosoft.com/federation/oauth2`; Entra uses either. Branding & properties carries the logo, terms and privacy URLs shown on the consumer consent screen. |
 | Custom OIDC provider `Microsoft account` | external tenant → External Identities → All identity providers → **Custom** | Well-known `https://login.microsoftonline.com/consumers/v2.0/.well-known/openid-configuration`; issuer `https://login.live.com`; client auth **`client_secret_post`** (`client_secret_basic` unsupported, `private_key_jwt` offered but unsupported); scope `openid email`; response type `code`; default claims mapping. |
 | User flow `ebrostay-home` | external tenant | Type *Sign up and sign in*. Identity providers: **Email with password** + Microsoft account. User attributes: **Display Name**, Email. **The application must be added under Applications** — without it the page serves sign-in with no way to sign up. |
-| Company branding | external tenant → Custom Branding | Favicon, background image, banner logo, terms/privacy footer links. |
+| Company branding | external tenant → Custom Branding | Favicon, background image, banner + square logos, custom CSS, terms/privacy footer links. See **Branding** below — the assets and the stylesheet are in `infra/entra/`, but uploading them is manual. |
+
+### Branding — assets are in the repo, uploading them is not
+
+`infra/entra/` holds everything the tenant's appearance depends on.
+Nothing there is deployed by CI; each item is uploaded by hand at
+**Custom Branding → Default sign-in → Edit**.
+
+| File | Tab | Field |
+| --- | --- | --- |
+| `branding/entra-banner-245x36.png` | Sign-in form | Banner logo |
+| `branding/entra-banner-245x36.png` | Header | Header logo |
+| `branding/entra-square-light-240.png` | Sign-in form | Square logo (light) |
+| `branding/entra-square-dark-240.png` | Sign-in form | Square logo (dark) |
+| `signin.css` | Layout | Custom CSS |
+
+The PNGs are rendered from the `.svg` sources beside them, which reuse
+the exact paths from `app/public/brand/logo-wordmark.svg` — the arch and
+water line are the site's artwork, not a redraw. The wordmark's
+typeface substitutes when rasterised, because Familjen Grotesk is a
+Google font not installed locally; a proper export from the original
+brand assets should replace these if one exists.
+
+#### What the banner logo does *not* cover
+
+Entra emits `.ext-banner-logo` **only on the first sign-in page.** Every
+variant reached afterwards — "Pick an account", and the sign-in form
+behind "Use another account" — omits the element entirely and renders
+the **tenant name as plain text** instead. Verified on the live page:
+`document.querySelector('.ext-banner-logo')` returns `null` there.
+
+No CSS or configuration puts a logo where there is no element to hold
+one. The only lever is **Tenant properties → Name**, which is why it is
+set to `Ebrostay` and not `EBROSTAY`: that string is the branding on
+those screens, and it also appears in the verification email Entra sends
+new users and in the near-empty frame during sign-out.
+
+#### Custom CSS: available, but on borrowed time
+
+Microsoft withdrew custom CSS for Entra ID tenants created after
+5 January 2026 and is deprecating its positioning properties.
+**External ID tenants are exempt from both** — but the same notice calls
+this "the first step toward retiring the custom CSS feature entirely",
+with no carve-out for External ID. So `signin.css` is written to lose
+gracefully: no `position`, `margin`, `transform`, `opacity`, `overflow`
+or `filter`, and nothing structural depends on it.
+
+Three things that cost real time and are recorded in the file itself:
+
+1. **Entra strips CSS custom properties.** A `:root` block is discarded
+   and every `var()` resolves to nothing, so those declarations are
+   dropped *silently* while literals still apply. The result was a form
+   floating unreadably on the background photograph with the title in
+   Times. Every value in the file is now a literal, each carrying the
+   `globals.css` token name it was copied from — so drift is visible,
+   at the cost of having to sync it by hand.
+2. **The footer sits on a scrim Entra supplies** — measured as
+   `rgba(0, 0, 0, 0.6)`. It needs *light* text. Painting it `--muted`
+   grey, and later `--brand-strong` green via a bare `a` selector, both
+   produced roughly 1.5:1. Card links are now scoped to
+   `.ext-sign-in-box a` so a generic rule cannot reach the footer again.
+3. **Custom OIDC providers get a generic icon.** Only built-in providers
+   get brand marks, so the Microsoft option shipped with an anonymous
+   blue circle. Replaced with the Microsoft mark via `content:` on
+   `.ext-promoted-fed-cred-box img`, which was verified against the live
+   page to match exactly one element.
+
+#### How to change this file safely
+
+Every defect above looked correct in the stylesheet and wrong in
+`getComputedStyle`. After any edit, load the page and measure rather
+than eyeball:
+
+```js
+const b = document.querySelector('.ext-sign-in-box');
+getComputedStyle(b).backgroundColor;                    // expect rgb(255, 255, 255)
+getComputedStyle(document.querySelector('.ext-footer-item')).color; // expect rgb(246, 248, 246)
+document.querySelector('.ext-banner-logo');             // null on picker variants — expected
+```
+
+Note also that `aadcdn` caches branding hard: allow a few minutes and a
+hard reload before concluding an upload did nothing.
 
 **Traps that cost time and are not obvious from any error message:**
 

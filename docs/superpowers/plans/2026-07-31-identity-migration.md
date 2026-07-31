@@ -364,7 +364,7 @@ In a private window (signed out), visit `https://<SWA_HOSTNAME>/es/host/manage`.
 
 ---
 
-## Task 4: Collapse the auth helpers to a single provider
+## Task 4: Collapse the auth helpers to a single provider ✅ DONE 2026-07-31 (branch `feat/identity-migration`)
 
 **Files:**
 - Modify: `app/lib/auth.ts`
@@ -376,7 +376,7 @@ In a private window (signed out), visit `https://<SWA_HOSTNAME>/es/host/manage`.
 
 The `Provider` type and `loginUrl`'s provider argument are removed. `Me.provider` stays — it is returned by `/api/me` and is now always `"ebrostay"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `app/lib/auth.test.ts`:
 
@@ -415,7 +415,7 @@ describe("localeHome", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd app && npx vitest run lib/auth.test.ts
@@ -423,7 +423,7 @@ cd app && npx vitest run lib/auth.test.ts
 
 Expected: FAIL — `localeHome` and `PROVIDER` are not exported, and `loginUrl` currently takes two arguments.
 
-- [ ] **Step 3: Rewrite the helpers**
+- [x] **Step 3: Rewrite the helpers**
 
 In `app/lib/auth.ts`, replace everything from `export type Provider` to the end of the file with:
 
@@ -455,7 +455,7 @@ export function localeHome(locale: string): string {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd app && npx vitest run lib/auth.test.ts
@@ -463,7 +463,7 @@ cd app && npx vitest run lib/auth.test.ts
 
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/lib/auth.ts app/lib/auth.test.ts
@@ -474,7 +474,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 5: Replace the provider picker with a single sign-in button, and fix sign-out
+## Task 5: Replace the provider picker with a single sign-in button, and fix sign-out ✅ DONE 2026-07-31 (branch `feat/identity-migration`)
 
 **Files:**
 - Modify: `app/components/site/AuthMenu.tsx`
@@ -482,7 +482,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `loginUrl`, `logoutUrl`, `currentPath`, `localeHome` (Task 4); `useAuth()` from `./AuthProvider`
 
-- [ ] **Step 1: Rewrite the component**
+- [x] **Step 1: Rewrite the component**
 
 Replace the whole of `app/components/site/AuthMenu.tsx` with:
 
@@ -613,7 +613,7 @@ function MenuLink({
 
 The `ProviderButton` component and both inline SVGs (the GitHub mark and the Microsoft squares) are deleted with this rewrite.
 
-- [ ] **Step 2: Verify it compiles and the suite still passes**
+- [x] **Step 2: Verify it compiles and the suite still passes**
 
 ```bash
 cd app && npm run build && npm test
@@ -621,7 +621,7 @@ cd app && npm run build && npm test
 
 Expected: build succeeds, tests pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/components/site/AuthMenu.tsx
@@ -639,13 +639,13 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 6: Retire the dead provider strings
+## Task 6: Retire the dead provider strings ✅ DONE 2026-07-31 (branch `feat/identity-migration`)
 
 **Files:**
 - Modify: `app/messages/es.json`
 - Modify: `app/messages/en.json`
 
-- [ ] **Step 1: Delete three keys from each locale**
+- [x] **Step 1: Delete three keys from each locale**
 
 Remove `signInWith`, `github` and `microsoft` from the `auth` object in **both** files. Keep `account`, `adminPanel`, `signOut`, `deactivated`, and `nav.signIn`.
 
@@ -671,7 +671,7 @@ and in `app/messages/es.json`:
 }
 ```
 
-- [ ] **Step 2: Confirm nothing still references them**
+- [x] **Step 2: Confirm nothing still references them**
 
 ```bash
 cd app && grep -rn "signInWith\|auth.github\|auth.microsoft" app components lib
@@ -679,7 +679,7 @@ cd app && grep -rn "signInWith\|auth.github\|auth.microsoft" app components lib
 
 Expected: no matches.
 
-- [ ] **Step 3: Build and commit**
+- [x] **Step 3: Build and commit**
 
 ```bash
 cd app && npm run build
@@ -691,12 +691,12 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 7: Update the end-to-end fixture
+## Task 7: Update the end-to-end fixture ✅ DONE 2026-07-31 (branch `feat/identity-migration`)
 
 **Files:**
 - Modify: `app/e2e/fixtures/me.json`
 
-- [ ] **Step 1: Change the provider value**
+- [x] **Step 1: Change the provider value**
 
 `app/e2e/fixtures/me.json` currently claims `"provider": "github"`. Set it to `"ebrostay"`:
 
@@ -712,7 +712,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 }
 ```
 
-- [ ] **Step 2: Run the suite**
+- [x] **Step 2: Run the suite**
 
 ```bash
 cd app && npm run build && npm run test:e2e
@@ -720,7 +720,7 @@ cd app && npm run build && npm run test:e2e
 
 Expected: PASS. The suite opens every page in `es` and `en` and fails on any console error, so this also catches a missing translation key from Task 6.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/e2e/fixtures/me.json
@@ -731,14 +731,14 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 8: Update the privacy policy
+## Task 8: Update the privacy policy ✅ DONE 2026-07-31 (branch `feat/identity-migration`)
 
 **Files:**
 - Modify: `app/app/[locale]/privacy/content.ts`
 
 The page component needs no change — it renders whatever `privacyContent` holds. Four paragraphs and the file header comment are now false.
 
-- [ ] **Step 1: Fix the file header comment**
+- [x] **Step 1: Fix the file header comment**
 
 `app/app/[locale]/privacy/content.ts` opens by describing the v2 stack. The clause `sign-in via GitHub/Microsoft accounts instead of email+password` is now backwards. Replace that clause with:
 
@@ -747,7 +747,7 @@ The page component needs no change — it renders whatever `privacyContent` hold
 // Microsoft Entra External ID in an EU-located external tenant;
 ```
 
-- [ ] **Step 2: Rewrite the four Spanish paragraphs**
+- [x] **Step 2: Rewrite the four Spanish paragraphs**
 
 In the `es` block:
 
@@ -775,7 +775,7 @@ text: "Conservamos los datos de reservas el tiempo exigido por las obligaciones 
 text: "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a info@ebrostay.com. Si entraste con Google, también puedes revocar en cualquier momento el acceso concedido a Ebrostay desde tu cuenta de Google. Si lo consideras necesario, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).",
 ```
 
-- [ ] **Step 3: Rewrite the matching English paragraphs**
+- [x] **Step 3: Rewrite the matching English paragraphs**
 
 In the `en` block:
 
@@ -803,11 +803,11 @@ text: "We keep booking data for as long as tax and contractual obligations requi
 text: "You can exercise your rights of access, rectification, erasure, objection and portability by writing to info@ebrostay.com. If you signed in with Google, you can also revoke the access granted to Ebrostay from your Google account at any time. If you consider it necessary, you can lodge a complaint with the Spanish Data Protection Agency (aepd.es).",
 ```
 
-- [ ] **Step 4: Bump the updated date in both locales**
+- [x] **Step 4: Bump the updated date in both locales**
 
 Set `updated` to the month the change ships — `"Última actualización: agosto de 2026"` and `"Last updated: August 2026"` if it lands in August; keep July if it lands in July.
 
-- [ ] **Step 5: Verify both locales render**
+- [x] **Step 5: Verify both locales render**
 
 ```bash
 cd app && npm run build && npm run test:e2e
@@ -821,7 +821,7 @@ grep -niE "github|cuenta de Microsoft|Microsoft account" "app/app/[locale]/priva
 
 Expected: no matches other than `Microsoft Entra External ID`, `Microsoft Azure`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "app/app/[locale]/privacy/content.ts"

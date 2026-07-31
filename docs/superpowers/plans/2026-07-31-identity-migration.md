@@ -44,21 +44,54 @@ Two steps spend money or destroy resources. Both are pre-approved by the user as
 
 - [ ] **Step 1: Create the external tenant**
 
-Go to <https://entra.microsoft.com> → **Entra ID** → **Overview** → **Manage tenants** → **Create**. Choose **External** configuration.
+**Prerequisite:** the **Tenant Creator** role, scoped to the subscription or a
+resource group within it. Grant it in the Azure portal under **Subscriptions →
+Access control (IAM)** if needed.
 
-Two fields are **immutable** — getting either wrong means creating a new tenant:
-- **Location / country**: must be in the **European Union** (Spain). This is the data-residency guarantee the privacy policy relies on in Task 8.
-- **Domain name**: `ebrostayid` → yields `ebrostayid.ciamlogin.com`.
+Go to <https://entra.microsoft.com> — the **Entra admin center**, not the Azure
+portal, which can only create *workforce* tenants. Then **Entra ID** →
+**Overview** → **Manage tenants** → **Create** → **External** → **Continue**.
 
-Link it to the Azure subscription when prompted (Contributor on the subscription is required).
+A **30-day free trial** requiring no subscription is offered first. **Decline
+it** — it is a throwaway that would have to be recreated and rewired. Choose
+**Use Azure Subscription**.
 
-- [ ] **Step 2: Record the identifiers where they will not be confused**
+*Basics* tab:
+
+| Field | Value | Changeable later? |
+| --- | --- | --- |
+| Tenant Name | `Ebrostay` | Yes — display name only |
+| Domain Name | `ebrostayid` | **No — permanent** |
+| Country/Region | **Spain** | **No — permanent** |
+
+Domain Name yields `ebrostayid.onmicrosoft.com` and the sign-in host
+`ebrostayid.ciamlogin.com`, which appears in the visitor's address bar. Every
+config value and privacy paragraph in this plan assumes `ebrostayid`; a
+different choice means editing Task 3 and Task 8 to match.
+
+Country/Region is what makes the EU data-residency statement in the privacy
+policy true.
+
+*Add a subscription* tab:
+- Subscription: **`2cda7364-dba2-4b44-aff0-f5a6fcfac010`** — match on the **ID**,
+  not the name. Two directories in this account both display as "Azure
+  subscription 1".
+- Resource group: **`ebrostay`** (existing, alongside Cosmos and storage).
+
+**Review + Create.** Provisioning takes **up to 30 minutes**; watch the
+Notifications pane.
+
+- [ ] **Step 2: Find the tenant ID and record it where it will not be confused**
+
+Switch into the new tenant: **Settings icon** (top right) → **Directories +
+subscriptions** → find it in the **Directory name** list → **Switch**. Then
+**Tenant overview** shows **Name**, **Tenant ID** and **Primary domain**.
 
 Two directories in this account already display as "Azure subscription 1". Write down, in the team password manager:
 
 ```
 Entra external tenant name: ebrostayid
-Entra external tenant ID:   <GUID from Overview>
+Entra external tenant ID:   <GUID from Tenant overview>
 Azure subscription ID:      2cda7364-dba2-4b44-aff0-f5a6fcfac010
 ```
 

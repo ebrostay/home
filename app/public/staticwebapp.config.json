@@ -16,7 +16,7 @@
           "login": {
             "nameClaimType": "name",
             "scopes": ["openid", "profile", "email"],
-            "loginParameterNames": []
+            "loginParameterNames": ["prompt", "domain_hint"]
           }
         }
       }

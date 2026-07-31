@@ -129,6 +129,12 @@ type RouteCase = {
   /** Console errors expected on THIS route only. Scoped per route on purpose:
    *  a global allowance would blind every other page to the same class. */
   allowConsole?: RegExp[];
+  /** Serve /api/me as signed-out for this route. The shared fixture is an
+   *  authenticated user, which suits every page except the one whose entire
+   *  job is the signed-out state: /sign-in forwards signed-in visitors away,
+   *  so under the shared fixture the test would assert against the page it
+   *  redirected to. */
+  anonMe?: true;
 };
 
 const ROUTES: RouteCase[] = [
@@ -138,7 +144,7 @@ const ROUTES: RouteCase[] = [
   // Where a signed-out visitor is sent, including by the 401 override. It
   // carries one button to Entra's hosted page; the choice of provider lives
   // there and cannot be moved here (see Choices.tsx).
-  { path: "/sign-in", expect: { es: /Entra en Ebrostay/i, en: /Sign in to Ebrostay/i } },
+  { path: "/sign-in", expect: { es: /Entra en Ebrostay/i, en: /Sign in to Ebrostay/i }, anonMe: true },
   { path: "/property?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },
@@ -178,7 +184,7 @@ const ROUTES: RouteCase[] = [
 ];
 
 for (const locale of ["es", "en"] as const) {
-  for (const { path, expect: expected, status, allowConsole = [] } of ROUTES) {
+  for (const { path, expect: expected, status, allowConsole = [], anonMe } of ROUTES) {
     const url = `/${locale}${path}`;
 
     test(`${url} renders without errors`, async ({ page }) => {
@@ -194,6 +200,20 @@ for (const locale of ["es", "en"] as const) {
       });
 
       const unstubbed = await stubBackend(page);
+
+      // Registered after stubBackend on purpose: Playwright matches routes
+      // newest-first, so this wins over the shared fixture.
+      if (anonMe) {
+        await page.route("**/api/me", (route: Route) =>
+          route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              authenticated: false, userId: null, name: null, provider: null,
+              roles: ["anonymous"], isAdmin: false, isDeactivated: false,
+            }),
+          }),
+        );
+      }
 
       const response = await page.goto(url, { waitUntil: "networkidle" });
       if (status) expect(response?.status(), `HTTP status for ${url}`).toBe(status);

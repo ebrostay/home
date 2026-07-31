@@ -937,42 +937,63 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 9: Re-seed the data and restore the admins
+## Task 9: Re-seed the data and restore the admins — PREMISE CORRECTED 2026-07-31
 
-**Files:** none — this is data and portal work.
+**This task was written on a false assumption.** It claimed every `userId`
+changed, leaving seed rows pointing at principals that can never sign in again.
+In fact `infra/seed.mjs:61` reads:
 
-Every `userId` changed with the provider. `userId` keys `profiles.id`, `properties.hostId` and `bookingRequests.userId` (spec-v2 §3.4), so the existing seed rows point at principals that can never sign in again.
-
-- [ ] **Step 1: Re-seed Cosmos**
-
-```bash
-cd infra && node seed.mjs
+```js
+const HOST_ID = process.env.SEED_HOST_ID ?? "seed-host";
 ```
 
-Confirmed with the user on 2026-07-31: only seed data exists — no real hosts, listings or booking requests. Nothing is being destroyed that anyone will miss.
+The seeded listings were **always** owned by the literal string `seed-host`,
+which matched no real principal before the migration either. The file's own
+comment says so: *"a placeholder that matches no real principal, so the sample
+homes are public but belong to nobody."*
+
+So a plain re-seed destroys data and changes nothing. **Do not run it.**
+
+- [ ] **Step 1: Decide who should own the seeded listings — needs a human**
+
+The genuinely useful variant is the one `seed.mjs` documents: bind `hostId` to a
+**real** principal so the host dashboard has something in it.
+
+```bash
+SEED_HOST_ID=<a real userId> node infra/seed.mjs
+```
+
+The validated test account is `86a50118-ca69-4aa8-8f78-2d4cc3694d77`
+(`botimusmaximus@gmail.com`). **Do not use it without asking** — it is a
+throwaway whose password is being rotated, and binding four sample listings to
+an account that may be deleted trades one orphan for another. Ask which account
+should own them.
+
+Leaving `seed-host` in place is also a legitimate choice: the listings stay
+public and unowned, which is what the browsing experience needs.
 
 - [ ] **Step 2: Re-invite the three admins**
 
-Portal → Static Web App `ebrostay-home` → **Role management** → **Invite**. For each of the three admins:
+Portal → Static Web App `ebrostay-home` → **Role management** → **Invite**.
+For each admin: authorization provider `ebrostay`, the email address they sign
+in with, role `admin`. Invitations expire in hours — send promptly, and the
+invitee must open the link **while signed in with that account**.
 
-- Authorization provider: the custom provider (`ebrostay`)
-- Invitee: the email address they sign in with
-- Role: `admin`
-- Send the link promptly — invitations expire in hours.
-
-Each invitee must open the link **while signed in with that account**, so the role binds to the right principal.
+**Hold this until the Microsoft decision is made.** Invitations bind to a
+provider identity, so if the admins will sign in with Microsoft rather than an
+Ebrostay account, inviting now means inviting twice.
 
 - [ ] **Step 3: Verify a role actually landed**
 
-Signed in as an admin, visit `https://delightful-sand-063f8a703.7.azurestaticapps.net/.auth/me` and confirm `userRoles` contains `"admin"`.
-
-Then confirm the negative case still holds — a non-admin account must be refused by the **function**, not merely hidden by the route rule:
+Signed in as an admin, check `/.auth/me` contains `"admin"` in `userRoles`.
+Then confirm the negative case — the **function**, not the route rule, refuses:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' "https://delightful-sand-063f8a703.7.azurestaticapps.net/api/admin/review"
 ```
 
-Expected: `401` when called without a session. A static page being reachable proves nothing; a function answering with data does (spec-v2 §3.5).
+Expected `401` without a session. A reachable static page proves nothing; a
+function answering with data does (spec-v2 §3.5).
 
 ---
 
@@ -1090,7 +1111,21 @@ In §3.3, the invitation provider changes. Replace `Invite by provider (GitHub o
 
 Also replace `Free tier allows up to 25 custom-role users — ample.` with `Standard allows up to 25 custom-role users via invitation — ample for three.`
 
-In the §3.4 JSON example, change `"identityProvider": "github"` to `"identityProvider": "ebrostay"` and `"userDetails": "janedoe"` to `"userDetails": "jane@example.com"` — the custom provider yields an email address, not a username.
+In the §3.4 JSON example, change `"identityProvider": "github"` to
+`"identityProvider": "ebrostay"` and `"userDetails": "janedoe"` to
+`"userDetails": "Jane Doe"`.
+
+**Verified against a real principal 2026-07-31:** `userDetails` carries the
+**display name**, not the email — `nameClaimType: "name"` maps the `name`
+claim. The email is present as `preferred_username` and as the
+`.../claims/emailaddress` claim, but SWA does not surface it as `userDetails`.
+An earlier draft of this plan predicted an email address; that was wrong.
+
+Also worth recording: `userId` is the Entra `objectidentifier` (`oid`), so it
+is stable per **user object** — which is what makes D2's "one person, one
+`userId`" guarantee work, *provided* Entra links a federated sign-in to the
+same user object rather than creating a second one. That is unverified and
+must be tested when Google is added (§ below).
 
 - [ ] **Step 5: Update the §1 resource table**
 

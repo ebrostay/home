@@ -279,8 +279,8 @@ same adviser as the fianza questions in `docs/spec-v2/07-legal-notes.md`.
 | --- | --- |
 | West Europe refuses a Standard creation. ADR-021 recorded West Europe as *location-ineligible*; the provider does list it as a valid region, so that was a capacity refusal rather than an absence. The hypothesis that a **Standard** creation is accepted where **Free** was refused is **unproven** — Azure caps free-tier capacity in popular regions, but this is inference, not documented. | Create in East US 2. Evaluate bring-your-own Functions in `spaincentral` separately — it co-locates the API with Cosmos but bills as a standalone Function App plus storage account, breaking the "managed functions are included" cost model. |
 | ~~SWA cannot consume the `ciamlogin.com` issuer as a custom OIDC provider~~ — **RESOLVED 2026-07-31.** SWA accepted the discovery document from `ebrostay.ciamlogin.com` and redirects there, despite its declared issuer being on the tenant-ID host. Guests see the branded host, so D9's deferral of a custom domain stands and no Front Door spend is needed. | n/a |
-| `/.auth/logout` clears the SWA session but may leave the Entra session live, so "sign in" silently re-authenticates without a prompt | Verify in step 4. If confirmed, chain sign-out through the IdP's `end_session_endpoint`. |
-| `nameClaimType` mismatch leaves `userDetails` empty | Verify against a real token in step 4 before frontend work. |
+| ~~`/.auth/logout` may leave the Entra session live~~ — **RESOLVED 2026-07-31.** Tested against the deployed app: sign-out followed by sign-in gives a **fresh prompt**, no silent re-entry. No `end_session_endpoint` chaining needed; the `localeHome()` fix is sufficient. | n/a |
+| ~~`nameClaimType` mismatch leaves `userDetails` empty~~ — **RESOLVED 2026-07-31.** A real principal returned `userDetails: "Tester"` from the `name` claim. Note it is the **display name**, not the email (which arrives as `preferred_username`). | n/a |
 
 Steps 3 and 4 of the rollout reach both primary risks before anything is built
 on top of them.

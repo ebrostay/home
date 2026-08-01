@@ -24,6 +24,12 @@
         "http://localhost:7071"
       ],
       "port": 4280
+    },
+    {
+      "name": "swa-export",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["swa", "start", "app/out", "--port", "4281"],
+      "port": 4281
     }
   ]
 }

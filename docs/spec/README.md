@@ -33,7 +33,7 @@ decisions and everything an implementer needs that *differs* from v1.
 | [02-data-model.md](02-data-model.md) | Cosmos DB database/containers, document schemas, property status lifecycle, embedded availability, Blob storage, seed data |
 | [03-auth-and-roles.md](03-auth-and-roles.md) | SWA built-in auth, role model, admin invitations, `x-ms-client-principal` contract, profile bootstrap, deactivation |
 | [04-functional-flows.md](04-functional-flows.md) | Public browse/search, property detail & estimate, login-gated booking flow, host flow, admin flow, AI assistant, i18n/theme |
-| [05-decision-log.md](05-decision-log.md) | ADR-011 … ADR-036 + open decisions OD-1…OD-8 |
+| [05-decision-log.md](05-decision-log.md) | ADR-011 … ADR-038 + open decisions OD-1…OD-8 |
 | [06-design-language.md](06-design-language.md) | The v2 identity: palette, type, availability semantics, the month-band signature, component inventory, copy rules |
 | [07-legal-notes.md](07-legal-notes.md) | Spanish rental-law research (LAU, 2026 reform, deposits, NRA) behind ADR-022/023 — not legal advice |
 | [08-carried-v1-rules.md](08-carried-v1-rules.md) | Rules carried verbatim from the retired v1 spec: requirement IDs, money/date formatting, the booking-draft format, Nominatim/Leaflet/DeepSeek/Umami — plus the v1→v2 disposition table |

@@ -90,8 +90,10 @@ and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
   hosting and CDN-cacheable assets.
 - **Consequences:**
   - **Constraint accepted: no middleware, no SSR, no route handlers.** Locale
-    routing must be fully static (hence `localePrefix: "always"` + host-level
-    `/` → `/es/` redirect); all dynamic data is client-fetched from `/api/*`.
+    routing must be fully static (hence `localePrefix: "always"`; the bare
+    domain was a host-level `/` → `/es/` redirect until ADR-038 replaced it
+    with a client-side one that reads the visitor's language); all dynamic
+    data is client-fetched from `/api/*`.
   - Every string ships in both `messages/es.json` and `en.json` (§4.7).
   - Supersedes v1 ADR-010 (in-page dictionary) and the no-build half of
     ADR-009.
@@ -2858,6 +2860,104 @@ no data. Ungating it exposes markup, not records. `/account/*` and
   pathname. Reading `window.location.hash` in the matcher would make
   `lib/nav.ts` browser-only and untestable, which is the whole reason it
   was moved out of the component; `lib/nav.test.ts` pins that.
+
+---
+
+## ADR-038 — The bare domain picks a language; every other URL still states one
+
+**Date:** 2026-08-01 · **Status:** accepted
+
+`https://ebrostay.com/` answered `302 → /es/` for everyone. An English
+visitor landed in Spanish, switched to English, came back the next day
+and landed in Spanish again — the site had no memory of the only
+language decision they had ever made, and no interest in the one their
+browser was already broadcasting. v1 did better: `site.js` read
+`navigator.language` on first load. The behaviour was lost in the v2
+rebuild rather than retired, and nobody decided to drop it.
+
+**Decision.** The bare domain — and only the bare domain — resolves a
+language and forwards to `/es/` or `/en/`. In order:
+
+1. **A language chosen here before**, from `localStorage`
+   (`ebrostay-language`). Written by the header's language switch and by
+   nothing else.
+2. **A language the browser says they read**: the first entry of
+   `navigator.languages` whose primary subtag is `es` or `en`. Region is
+   ignored — `es-AR` and `es-419` are Spanish, `en-GB` is English.
+3. **English**, if the browser listed its languages and neither was
+   among them. A browser that has said it reads German has told us
+   something, and for companies relocating people to Zaragoza English is
+   the second language far more often than Spanish is. v1 resolved the
+   same way.
+4. **Spanish**, if there was no signal at all — no stored choice, no
+   languages. The site default (`i18n/routing.ts`), the sitemap's
+   `x-default`, and the answer a visitor with JavaScript off gets.
+
+Every other URL is unchanged. Locale prefixes stay mandatory
+(`localePrefix: "always"`), `/es/…` is always Spanish and `/en/…` always
+English, and nothing sniffs a language on a page that already names one.
+This is a decision about the one address that carries no answer, not a
+negotiation over the ones that do.
+
+**Only the switch writes the preference.** Arriving on `/en/property?id=…`
+from a link a colleague sent is not a statement about which language you
+want the site in; treating it as one would pin a Spanish-speaking
+visitor to English for every later visit on the strength of somebody
+else's link. The rule matches the theme toggle: the control writes,
+navigation does not.
+
+**Why it is a static file and not a Next page.** The redirector is
+`app/public/index.html` — 3 KB, an inline `<script>` in `<head>`, no
+framework. It could have been `app/page.tsx`, which would have made the
+rule importable from `lib/locale.ts` instead of hand-copied into a
+script tag. It is not, for two reasons. A root-level page renders
+outside the `[locale]` layout, so Next wraps it in its synthesised root
+layout and the export nests a second `<html>` inside the first — visible
+today in `out/404.html`, tolerable for a 404 and not for the site's
+entry point. And it would put the whole React runtime on the critical
+path of a page whose entire job is to leave: the inline script redirects
+during head parse, before a single chunk is fetched. The cost is the
+duplication, which is the same trade the pre-paint theme bootstrap
+already makes and is handled the same way — `resolveLocale()` in
+`app/lib/locale.ts` holds the rule and is unit-tested, the script mirrors
+it branch for branch, and the e2e suite runs the script rather than the
+function so a drift between them fails a test.
+
+**The edge redirect had to go.** `staticwebapp.config.json`'s
+`"/" → /es/ 302` was decided by the CDN before any HTML was served —
+with it in place no script anywhere could have had an opinion, which is
+why the stub sitting at that address had been dead code since it was
+written. Removing the rule lets SWA resolve `/` to `/index.html` the
+ordinary way. Putting it back would silently restore the old behaviour
+and break nothing visible, so `pages.spec.ts` asserts the rule's absence
+directly against the config file.
+
+**Consequences.**
+
+- `next dev` does not serve `public/` for `/` — it hands the path to the
+  App Router, which 404s. The bare domain therefore only works under SWA:
+  in production and via `swa start`. The e2e suite opens `/index.html`,
+  which is the same bytes and the same script; the untested link is SWA's
+  own directory-index behaviour, verified by hand against `app/out`. A
+  `swa-export` entry in `.claude/launch.json` serves the built export for
+  exactly this check.
+- The query string and hash survive the redirect, so a campaign or
+  shortened link into the bare domain keeps what it was carrying. What
+  the destination does with it is the destination's business: the home
+  page rewrites its own query to `writeResultsState()`'s output on mount
+  and drops anything it does not recognise.
+- With JavaScript off, `/` shows a two-link page and a `<noscript>` meta
+  refresh to `/es/`. Crawlers that do run JavaScript will follow the
+  script; `/` keeps `rel="canonical"` to `/es/` plus `hreflang`
+  alternates, and both locale homes are listed explicitly in the sitemap,
+  so neither is reached only through this page.
+- `location.replace`, not `location.href`: the redirector leaves no
+  history entry, so Back from `/es/` returns where the visitor came from
+  instead of bouncing through it again.
+- A visitor who has chosen a language is now sent there from `/` even if
+  they meant to see the other one. The header switch is two clicks away
+  on every page and rewrites the stored choice, which is the same escape
+  hatch the theme toggle offers.
 
 ---
 

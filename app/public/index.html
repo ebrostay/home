@@ -1,14 +1,63 @@
 <!doctype html>
-<!-- Root stub: the deploy validator requires a root index.html, and it doubles
-     as the fallback when the host-level "/" -> /es/ redirect (in
-     staticwebapp.config.json) is not in effect, e.g. plain `next dev`. -->
+<!-- The bare domain, and the only page in the app that has no language of its
+     own (ADR-038). It picks one — a language the visitor chose here before,
+     else one their browser says they read, else Spanish — and replaces itself
+     with /es/ or /en/. It is also the root index.html the deploy validator
+     requires.
+
+     Served at "/" by SWA — in production and by `swa start` on :4280 — which
+     is the only place it is reachable that way. `next dev` hands "/" to the
+     App Router, where no route matches and the 404 page answers; the file is
+     there at /index.html. The e2e suite therefore opens /index.html, and a
+     guard in pages.spec.ts watches the route rule that would take "/" back.
+
+     This runs at all because staticwebapp.config.json no longer redirects "/"
+     to /es/ at the edge: that 302 was decided before any HTML was served, so
+     nothing here ever got a chance to speak. Put the route rule back and this
+     file goes silent again. -->
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <title>Ebrostay</title>
-    <meta http-equiv="refresh" content="0; url=/es/" />
+    <!-- Runs during parse, before the <noscript> refresh below is reached, and
+         location.replace leaves no history entry — Back from /es/ or /en/ goes
+         where the visitor came from, not into a redirect loop.
+
+         Same resolution order as resolveLocale() in app/lib/locale.ts, which
+         is unit-tested and which this cannot import: no bundler runs over
+         public/. Keep the two in step. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("ebrostay-language");
+          var locale = stored === "es" || stored === "en" ? stored : null;
+          if (!locale) {
+            var tags =
+              navigator.languages && navigator.languages.length
+                ? navigator.languages
+                : navigator.language
+                  ? [navigator.language]
+                  : [];
+            for (var i = 0; i < tags.length && !locale; i++) {
+              var primary = String(tags[i]).toLowerCase().split("-")[0];
+              if (primary === "es" || primary === "en") locale = primary;
+            }
+            if (!locale) locale = tags.length ? "en" : "es";
+          }
+          location.replace("/" + locale + "/" + location.search + location.hash);
+        } catch (e) {
+          // Private mode can throw on localStorage. Spanish is the default.
+          location.replace("/es/");
+        }
+      })();
+    </script>
+    <!-- No JavaScript: the site default, the same answer as the sitemap's
+         x-default. Inside <noscript> so it can never race the script above. -->
+    <noscript><meta http-equiv="refresh" content="0; url=/es/" /></noscript>
     <link rel="canonical" href="/es/" />
-    <script>window.location.replace("/es/" + window.location.search);</script>
+    <link rel="alternate" hreflang="es" href="/es/" />
+    <link rel="alternate" hreflang="en" href="/en/" />
+    <link rel="alternate" hreflang="x-default" href="/es/" />
   </head>
   <body>
     <p><a href="/es/">Ebrostay — continuar en español</a> · <a href="/en/">continue in English</a></p>

@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { LANGUAGE_STORAGE_KEY } from "@/lib/locale";
 
 export function LanguageSwitch() {
   const locale = useLocale();
@@ -16,6 +17,16 @@ export function LanguageSwitch() {
   // than useSearchParams(): this component sits in the root layout's header,
   // and that hook would force a Suspense boundary around it on every page.
   const switchTo = (l: string) => {
+    // Remember the choice, the way the theme toggle does (ADR-038). Only this
+    // button writes the key: arriving on /en/ from a link someone sent is not
+    // the visitor telling us anything, and pinning them to English for it
+    // would be a preference they never expressed.
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, l);
+    } catch {
+      // private mode: the choice just won't outlive the visit
+    }
+
     const { search, hash } = window.location;
     router.replace(`${pathname}${search}${hash}`, { locale: l });
   };

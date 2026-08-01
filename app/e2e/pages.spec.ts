@@ -539,3 +539,111 @@ for (const locale of ["es", "en"] as const) {
     });
   }
 }
+
+// The bare domain, which since 2026-08-01 picks a language instead of always
+// answering Spanish (ADR-038).
+//
+// These open /index.html, not "/". The file IS what "/" serves — SWA resolves
+// a directory to its index, in production and under `swa start` — but the
+// suite runs on `next dev`, which hands "/" to the App Router and gets a 404
+// (public/ is never consulted for it). /index.html reaches the same bytes and
+// runs the same script; the only untested link in the chain is SWA's own
+// directory-index behaviour, and the guard below watches the one piece of
+// config that has ever broken it.
+//
+// Tested here rather than only in lib/locale.test.ts, which pins the rule
+// itself, because the code that actually runs is a hand-written copy of
+// resolveLocale() inlined in app/public/index.html — and a copy that has
+// drifted is exactly the failure a unit test on the original cannot see.
+const ROOT_CASES = [
+  { browser: "es-ES", lands: "/es/" },
+  { browser: "en-GB", lands: "/en/" },
+  // Reads neither. English is the deliberate answer, not the site default.
+  { browser: "de-DE", lands: "/en/" },
+] as const;
+
+for (const { browser, lands } of ROOT_CASES) {
+  test.describe(`the bare domain, browser language ${browser}`, () => {
+    test.use({ locale: browser });
+
+    test(`lands on ${lands}`, async ({ page }) => {
+      await stubBackend(page);
+      await page.goto("/index.html", { waitUntil: "networkidle" });
+      expect(new URL(page.url()).pathname).toBe(lands);
+    });
+  });
+}
+
+test.describe("the bare domain, with a language already chosen here", () => {
+  // A Spanish browser, so a stored "en" can only have come from the switch.
+  test.use({ locale: "es-ES" });
+
+  test("honours the stored choice over the browser", async ({ page }) => {
+    await stubBackend(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("ebrostay-language", "en");
+    });
+
+    await page.goto("/index.html", { waitUntil: "networkidle" });
+    expect(new URL(page.url()).pathname).toBe("/en/");
+  });
+
+  test("the language switch is what writes that choice", async ({ page }) => {
+    await stubBackend(page);
+    await page.goto("/es/", { waitUntil: "networkidle" });
+
+    // Nothing stored yet: arriving on a page is not a preference.
+    expect(await page.evaluate(() => localStorage.getItem("ebrostay-language"))).toBeNull();
+
+    await page
+      .getByRole("group", { name: "Idioma / Language" })
+      .first()
+      .getByRole("button", { name: "en", exact: true })
+      .click();
+    await page.waitForURL(/\/en\//);
+
+    expect(await page.evaluate(() => localStorage.getItem("ebrostay-language"))).toBe("en");
+  });
+});
+
+test.describe("the bare domain, carrying a query", () => {
+  test.use({ locale: "en-US" });
+
+  // "/" is where a campaign or shortened link lands, so the redirector has to
+  // hand its query on rather than swallow it.
+  //
+  // What is asserted is the navigation the redirector performed, not the URL
+  // the tab settles on: the home page owns its own query string and rewrites
+  // it to writeResultsState()'s output on mount ([locale]/page.tsx), which
+  // clears any param it does not recognise. That is that page's contract, and
+  // reading the final URL here would test it instead of this one.
+  test("hands the query string on to the language it picked", async ({ page }) => {
+    await stubBackend(page);
+
+    const navigated: string[] = [];
+    page.on("framenavigated", (frame) => {
+      if (frame === page.mainFrame()) navigated.push(frame.url());
+    });
+
+    await page.goto("/index.html?utm_source=newsletter", { waitUntil: "networkidle" });
+
+    expect(navigated.map((url) => new URL(url).pathname + new URL(url).search)).toContain(
+      "/en/?utm_source=newsletter",
+    );
+  });
+});
+
+// The redirector only ever runs because "/" is NOT redirected at the edge.
+// Putting that route rule back — it was there until 2026-08-01, and it is the
+// obvious-looking way to make the bare domain work — would send every visitor
+// to /es/ before a byte of HTML was served, and every test above would stay
+// green, because none of them can go through "/" on `next dev`. This is the
+// only thing standing between that rule and a silent regression.
+test("staticwebapp.config.json does not redirect / at the edge", () => {
+  const config = JSON.parse(
+    readFileSync(join(__dirname, "..", "public", "staticwebapp.config.json"), "utf8"),
+  ) as { routes?: { route: string; redirect?: string }[] };
+
+  const root = (config.routes ?? []).filter((r) => r.route === "/" && r.redirect);
+  expect(root, 'a "/" redirect rule would pre-empt the language redirector').toEqual([]);
+});

@@ -3,9 +3,6 @@
     "kicker": "Zaragoza",
     "title": "Ebrostay",
     "tagline": "Mid-term corporate rentals in Zaragoza.",
-    "heroTitle": "Calm months by the Ebro",
-    "heroTagline": "Furnished, verified homes for 1–12 month stays in Zaragoza. No surprises: amounts are clear estimates and the contract sets the final price.",
-    "heroImageAlt": "Zaragoza by the Ebro river",
     "moveIn": "Move-in",
     "guests": "Guests",
     "loading": "Loading homes…",
@@ -14,21 +11,16 @@
     "noResultsBody": "Try different dates, fewer months, or fewer filters.",
     "error": "The homes could not be loaded.",
     "retry": "Retry",
-    "clearStay": "Move-in {date} · {months} mo",
     "owner": {
       "eyebrow": "For owners",
       "title": "Your property, managed end to end",
       "tagline": "We list it, find tenants, and handle contracts, payments and support. You just watch the income arrive.",
-      "b1": "Hands-off management — we do the work",
-      "b2": "Steady corporate, mid-term demand",
-      "b3": "Clear, on-time payouts to your account",
       "cta": "List my property"
     }
   },
   "nav": {
     "mainNav": "Main navigation",
     "homes": "Homes",
-    "howWeWork": "How we work",
     "about": "About",
     "signIn": "Sign in",
     "pill": {
@@ -955,7 +947,6 @@
     "viewHome": "View home",
     "showOnMap": "Show on map",
     "refundableDeposit": "Refundable deposit",
-    "closePreview": "Close preview",
     "selectOnMap": "Show {name} on the map",
     "pinGroup": "{count} homes from {price}"
   },
@@ -963,7 +954,6 @@
     "city": "City",
     "type": "Property type",
     "budget": "Max budget",
-    "anyBudget": "No limit",
     "amenities": "Amenities",
     "sort": "Sort"
   },
@@ -1217,10 +1207,8 @@
     "commissionCap": "30-day-cap discount",
     "deposit": "Deposit (refundable)",
     "total": "Estimated total",
-    "disclaimer": "Indicative amount. The contract sets the final price; no online payment.",
     "tooLong": "Over 12 months changes the contract type — write to us and we’ll arrange it.",
     "cta": "Request to book",
-    "ctaHint": "Available once signed in — coming very soon.",
     "tooShort": "The minimum stay is 31 days. Extend the dates.",
     "days": "{count, plural, one {# day} other {# days}} × {rate} €"
   },

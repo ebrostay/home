@@ -3,9 +3,6 @@
     "kicker": "Zaragoza",
     "title": "Ebrostay",
     "tagline": "Alquiler corporativo de media estancia en Zaragoza.",
-    "heroTitle": "Meses tranquilos junto al Ebro",
-    "heroTagline": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses en Zaragoza. Sin sorpresas: los importes son estimaciones claras y el contrato fija el precio final.",
-    "heroImageAlt": "Zaragoza junto al río Ebro",
     "moveIn": "Entrada",
     "guests": "Personas",
     "loading": "Cargando viviendas…",
@@ -14,21 +11,16 @@
     "noResultsBody": "Prueba con otras fechas, menos meses o menos filtros.",
     "error": "No se pudieron cargar las viviendas.",
     "retry": "Reintentar",
-    "clearStay": "Entrada {date} · {months} m",
     "owner": {
       "eyebrow": "Para propietarios",
       "title": "Tu vivienda, gestionada de principio a fin",
       "tagline": "La publicamos, encontramos inquilinos y gestionamos contratos, cobros y soporte. Tú solo ves llegar los ingresos.",
-      "b1": "Gestión sin involucración — el trabajo lo hacemos nosotros",
-      "b2": "Demanda corporativa y de media estancia constante",
-      "b3": "Pagos claros y puntuales a tu cuenta",
       "cta": "Publicar mi vivienda"
     }
   },
   "nav": {
     "mainNav": "Navegación principal",
     "homes": "Viviendas",
-    "howWeWork": "Cómo funciona",
     "about": "Nosotros",
     "signIn": "Entrar",
     "pill": {
@@ -955,7 +947,6 @@
     "viewHome": "Ver vivienda",
     "showOnMap": "Ver en el mapa",
     "refundableDeposit": "Fianza reembolsable",
-    "closePreview": "Cerrar la vista previa",
     "selectOnMap": "Ver {name} en el mapa",
     "pinGroup": "{count} viviendas desde {price}"
   },
@@ -963,7 +954,6 @@
     "city": "Ciudad",
     "type": "Tipo de vivienda",
     "budget": "Presupuesto máx.",
-    "anyBudget": "Sin límite",
     "amenities": "Equipamiento",
     "sort": "Ordenar"
   },
@@ -1217,10 +1207,8 @@
     "commissionCap": "Descuento por tope de 30 días",
     "deposit": "Fianza (reembolsable)",
     "total": "Total estimado",
-    "disclaimer": "Importe orientativo. El contrato fija el precio final; sin pago online.",
     "tooLong": "Más de 12 meses cambia el tipo de contrato — escríbenos y lo preparamos.",
     "cta": "Solicitar reserva",
-    "ctaHint": "Disponible al iniciar sesión — muy pronto.",
     "tooShort": "La estancia mínima es de 31 días. Alarga las fechas.",
     "days": "{count, plural, one {# día} other {# días}} × {rate} €"
   },

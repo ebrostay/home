@@ -42,6 +42,13 @@ export default function NotFound() {
       <body
         className={`${familjen.variable} ${onest.variable} ${splineMono.variable} antialiased`}
       >
+        {/* Raw <a>, not <Link>: this page renders OUTSIDE the [locale] tree,
+            so there is no NextIntlClientProvider and no locale context for
+            @/i18n/navigation's Link to read — and next/link is banned
+            project-wide for exactly that reason. A 404 wants a full document
+            load into the locale tree anyway, not a client-side transition
+            from a page that was never part of it. */}
+        {/* eslint-disable @next/next/no-html-link-for-pages */}
         <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-16 text-center">
           <LogoMark size={44} />
           <p className="data mt-6 text-xs uppercase tracking-[0.16em] text-muted">
@@ -72,6 +79,7 @@ export default function NotFound() {
             </a>
           </div>
         </main>
+        {/* eslint-enable @next/next/no-html-link-for-pages */}
       </body>
     </html>
   );

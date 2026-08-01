@@ -60,25 +60,27 @@ function PropertyContent() {
   }, [params]);
 
   const [property, setProperty] = useState<PropertyDetail | null>(null);
-  const [state, setState] = useState<"loading" | "ok" | "missing" | "error">(
+  const [fetched, setFetched] = useState<"loading" | "ok" | "missing" | "error">(
     "loading",
   );
 
+  // No id in the query is knowable while rendering, so it is derived and not
+  // stored: an effect that only exists to write "missing" into state would
+  // render the skeleton first and correct itself a frame later.
+  const state = id ? fetched : "missing";
+
   useEffect(() => {
-    if (!id) {
-      setState("missing");
-      return;
-    }
+    if (!id) return;
     let cancelled = false;
     fetchProperty(id)
       .then((p) => {
         if (cancelled) return;
         setProperty(p);
-        setState("ok");
+        setFetched("ok");
       })
       .catch((e) => {
         if (cancelled) return;
-        setState(e instanceof ApiError && e.status === 404 ? "missing" : "error");
+        setFetched(e instanceof ApiError && e.status === 404 ? "missing" : "error");
       });
     return () => {
       cancelled = true;

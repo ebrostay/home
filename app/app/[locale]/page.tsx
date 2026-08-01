@@ -129,8 +129,15 @@ export default function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- the reset IS the
+       point: `reloadKey` changing means "fetch the list again", and the
+       skeleton has to come back while that runs or a retry looks like it did
+       nothing. Deriving it is not open — the previous list and the new one
+       are the same state, distinguishable only by which fetch produced them.
+       Same carve-out as the URL-restore effect above. */
     setFailed(false);
     setAll(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetchProperties()
       .then((data) => !cancelled && setAll(data))
       .catch(() => !cancelled && setFailed(true));

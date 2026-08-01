@@ -40,13 +40,46 @@ jobs:
       # which is what happened on 2026-07-28, leaving the site stuck on the
       # 07-27 build. SWA runs these functions on Windows, so pin the RID; the
       # native debug symbols are another 85 MB (libSkiaSharp.pdb) and buy
-      # nothing in a deployed function. Result: 40 MB published, 15 MB zipped.
-      # `--self-contained false` keeps worker.config.json's `dotnet
-      # Ebrostay.Api.dll` launch valid — do not drop it.
-      - name: Publish API (.NET 9 isolated)
+      # nothing in a deployed function. `--self-contained false` keeps
+      # worker.config.json's `dotnet Ebrostay.Api.dll` launch valid — do not
+      # drop it.
+      #
+      # PublishReadyToRun precompiles the IL to native at publish time so a cold
+      # start does not JIT it. These run on Consumption, where the process dies
+      # constantly, so that JIT bill is paid on every cold start — the Cosmos,
+      # Azure Storage and Newtonsoft assemblies dominate it. Measured on
+      # 2026-08-01: 39.8 → 62.3 MiB published (62% of the cap, 37.7 MiB spare),
+      # 14.5 → 24.3 MB zipped. The IL is retained alongside the native code, so
+      # anything R2R could not precompile still JITs and tiered compilation
+      # still re-optimises hot paths — steady-state throughput is unchanged.
+      #
+      # R2R makes the RID load-bearing: the embedded native code must match the
+      # host architecture or the app fails AT STARTUP rather than running slow.
+      # win-x64 is already proven by the native SkiaSharp asset this deploy
+      # ships, but if the host ever changes, this breaks loudly and the flag
+      # comes off before anything else is debugged.
+      - name: Publish API (.NET 9 isolated, ReadyToRun)
         run: |
-          dotnet publish api -c Release -r win-x64 --self-contained false -o api/bin/publish
+          dotnet publish api -c Release -r win-x64 --self-contained false \
+            -p:PublishReadyToRun=true -o api/bin/publish
           find api/bin/publish -name '*.pdb' -delete
+
+      # Nothing checked this until 2026-08-01, so the 07-28 overrun surfaced as
+      # a stale site — the upload was rejected and the previous build kept
+      # serving — rather than as an obvious build failure. Fail here instead,
+      # before the upload, where the number is printed and the cause is named.
+      - name: Check API publish size against the SWA cap
+        run: |
+          CAP=104857600
+          SIZE=$(du -sb api/bin/publish | cut -f1)
+          echo "API publish: $SIZE bytes — $((SIZE * 100 / CAP))% of the $CAP byte cap"
+          if [ "$SIZE" -gt "$CAP" ]; then
+            echo "::error::API publish is $SIZE bytes, over SWA's $CAP byte managed-functions cap. The upload would be rejected and the site would keep serving the previous build. Drop -p:PublishReadyToRun=true to recover ~22 MiB."
+            exit 1
+          fi
+          if [ "$SIZE" -gt $((CAP * 90 / 100)) ]; then
+            echo "::warning::API publish is over 90% of the SWA size cap."
+          fi
 
       # Both app and api are prebuilt; the action only uploads. The API runtime
       # comes from platform.apiRuntime in staticwebapp.config.json.
@@ -59,6 +92,7 @@ jobs:
       # at source again, that changes — and the RID-pinned publish above, the
       # only thing keeping the upload under the size cap, would be bypassed.
       - name: Deploy to Azure Static Web Apps
+        id: deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_V2 }}
@@ -67,3 +101,57 @@ jobs:
           skip_app_build: true
           api_location: api/bin/publish
           output_location: ""
+
+      # Two jobs, in this order.
+      #
+      # 1. Prove the API is actually alive. `action: upload` succeeding only
+      #    means the content was accepted, not that the worker starts — and
+      #    ReadyToRun made that a real failure mode: a RID that does not match
+      #    the host fails AT STARTUP, so every /api/* route 500s while the
+      #    static site looks perfectly fine. Without this step that is silent
+      #    until a visitor finds it.
+      # 2. Absorb the cold start. The first request after a deploy pays for the
+      #    platform allocation, the host boot and the worker start. Better this
+      #    runner than the first real visitor.
+      #
+      # /api/health is a bare OkObjectResult — no Cosmos, no storage — so it
+      # isolates "did the worker boot" from "does the app work". /api/properties
+      # is then the real read path and proves the Cosmos wiring survived. Both
+      # are AuthorizationLevel.Anonymous, so no key is needed.
+      #
+      # The action's static_web_app_url output is not documented as including a
+      # scheme, so strip one if present rather than betting on it.
+      - name: Verify the API is live and warm it
+        run: |
+          HOST="${{ steps.deploy.outputs.static_web_app_url }}"
+          HOST="${HOST#https://}"; HOST="${HOST#http://}"; HOST="${HOST%/}"
+          if [ -z "$HOST" ]; then
+            echo "::error::Deploy step exposed no static_web_app_url; cannot verify the API."
+            exit 1
+          fi
+          echo "Verifying https://$HOST"
+
+          # SWA propagation is not instant. Poll health for up to ~5 minutes.
+          for i in $(seq 1 30); do
+            READ=$(curl -sS -o /dev/null -m 30 \
+              -w '%{http_code} %{time_total}' "https://$HOST/api/health" || echo "000 0")
+            CODE=${READ% *}; SECS=${READ#* }
+            echo "  attempt $i: /api/health -> $CODE in ${SECS}s"
+            [ "$CODE" = "200" ] && break
+            if [ "$i" = "30" ]; then
+              echo "::error::/api/health never returned 200 (last: $CODE). The API is down. If this began with the ReadyToRun flag, the RID does not match the host — drop -p:PublishReadyToRun=true."
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Cold start (first successful /api/health): ${SECS}s"
+
+          READ=$(curl -sS -o /dev/null -m 60 \
+            -w '%{http_code} %{time_total}' "https://$HOST/api/properties" || echo "000 0")
+          CODE=${READ% *}; SECS=${READ#* }
+          echo "/api/properties -> $CODE in ${SECS}s"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::/api/properties returned $CODE. The worker is up but the data path is broken — check Cosmos app settings before assuming this is a ReadyToRun problem."
+            exit 1
+          fi
+          echo "API live and warm."

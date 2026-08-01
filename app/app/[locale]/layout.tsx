@@ -8,6 +8,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Analytics } from "@/components/site/Analytics";
 import { AuthProvider } from "@/components/site/AuthProvider";
+import { ThemeSync } from "@/components/site/ThemeSync";
 import "../globals.css";
 
 // Display face: Familjen Grotesk (chosen 2026-07-22 via /design/type
@@ -85,6 +86,11 @@ export default async function LocaleLayout({
            background under it. dvh tracks the visible viewport. */
         className={`${familjen.variable} ${onest.variable} ${splineMono.variable} flex min-h-dvh flex-col antialiased`}
       >
+        {/* Covers what the script above cannot: a language switch is a client
+            navigation across the [locale] segment, so this layout remounts and
+            React wipes every attribute off <html> — data-theme included — on
+            its way to re-mounting the singleton. See ThemeSync. */}
+        <ThemeSync />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <Header />

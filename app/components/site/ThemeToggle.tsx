@@ -2,50 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-
-type Theme = "light" | "dark";
-
-// The header renders this twice — in the bar from sm up, inside CompactNav's
-// popover below it — and only ever shows one. But both mount, and two copies
-// of useState are two answers to the same question: toggle on a phone, widen
-// past 640px, and the bar's copy is still drawing yesterday's icon. So the
-// document attribute is the truth and this event is how the copies hear about
-// a change. dispatchEvent is synchronous, so the instance that was clicked
-// updates through the same path as its sibling.
-const THEME_EVENT = "ebrostay-theme-change";
-
-function applyTheme(next: Theme) {
-  document.documentElement.dataset.theme = next;
-  try {
-    localStorage.setItem("ebrostay-theme", next);
-  } catch {
-    // private mode: theme just won't persist
-  }
-  window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: next }));
-}
+import {
+  applyTheme,
+  resolveTheme,
+  useBeforePaint,
+  THEME_EVENT,
+  type Theme,
+} from "./theme";
 
 export function ThemeToggle() {
   const t = useTranslations("theme");
-  // The bootstrap script stamps <html data-theme> pre-paint on full loads,
-  // but client-side navigations re-render <html> and can drop the attribute —
-  // so on every mount we re-resolve from storage and re-stamp.
+  // Which icon to draw. The attribute on <html> stays the truth — ThemeSync
+  // owns writing it — this is only the copy React renders from.
   const [theme, setTheme] = useState<Theme | null>(null);
 
-  useEffect(() => {
-    let resolved: Theme;
-    try {
-      const stored = localStorage.getItem("ebrostay-theme");
-      resolved =
-        stored === "light" || stored === "dark"
-          ? stored
-          : matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-    } catch {
-      resolved = "light";
-    }
-    document.documentElement.dataset.theme = resolved;
-    setTheme(resolved);
+  // Before paint, not after: the sun/moon swap is on the same control the
+  // theme flash was, and resolving in a passive effect made the button paint
+  // its moon once before correcting itself on a dark-theme page load.
+  useBeforePaint(() => {
+    setTheme(resolveTheme());
   }, []);
 
   useEffect(() => {

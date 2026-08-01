@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { formatEuro } from "@/lib/pricing";
+import { useBeforePaint } from "@/components/site/theme";
 import { Chip } from "./Chip";
 import type { SearchQuery } from "./SearchHero";
 import { Button } from "@/components/ui/Button";
@@ -76,8 +77,13 @@ export function FilterBar({
   // (viewport − header − bar). The bar's height isn't fixed — the chip row
   // wraps as filters are added — so publish the live height as --filter-h for
   // that calc to read. Written to :root so any sticky element can consume it.
+  // Before paint, not after: a language switch remounts the locale layout, and
+  // React strips every attribute off <html> — this inline style included — on
+  // its way to re-mounting the singleton (see ThemeSync). Republishing from a
+  // passive effect leaves the token at its 4.5rem CSS fallback for a frame,
+  // and the sticky map column jumps.
   const barRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useBeforePaint(() => {
     const el = barRef.current;
     if (!el) return;
     const publish = () =>

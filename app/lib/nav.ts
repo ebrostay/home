@@ -35,13 +35,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     match: (p) => p === "/host" || p.startsWith("/host/"),
     icon: "building",
   },
-  // An anchor on /about, which no segment owns — /about is also where "About"
-  // in the footer goes. Highlighting it would mean highlighting on arrival
-  // from either, so it highlights on neither.
+  // Owns the whole of /about, not just its #how anchor — decided 2026-08-01.
+  // It used to match nothing, on the reasoning that /about is also where
+  // "About" in the footer goes, so highlighting here would highlight for
+  // someone who arrived by the other door. Overruled: a segment that can
+  // never light up reads as broken to the person looking at it, and the
+  // footer link is the rarer arrival. Matching the path (not the hash) is
+  // also the only thing that CAN work — usePathname() never sees a hash.
   {
     key: "how",
     href: "/about#how",
-    match: () => false,
+    match: (p) => p === "/about" || p.startsWith("/about/"),
     icon: null,
   },
 ] as const;

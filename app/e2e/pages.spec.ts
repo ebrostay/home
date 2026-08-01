@@ -482,3 +482,60 @@ for (const anon of [false, true]) {
     );
   });
 }
+
+// Every segment, on the route it owns, in both languages — and exactly one lit
+// at a time. The per-route unit tests live in lib/nav.test.ts; this is the
+// assertion that the model is actually WIRED to what the header renders, which
+// is the half that broke: the matcher was right about /host all along, the
+// href was pointing somewhere else.
+//
+// "How it works" owns the whole of /about as of 2026-08-01. It matched nothing
+// before that, and a segment that can never light up reads as broken.
+// The landmark's own accessible name is translated too — the pre-existing
+// owner-segment test above hardcodes the English one and only ever visits
+// /en, which is why it never noticed.
+const SEGMENTS = {
+  es: {
+    nav: "Navegación principal",
+    find: "Buscar vivienda",
+    list: "Gestiona tu vivienda",
+    how: "Cómo funciona",
+  },
+  en: {
+    nav: "Main navigation",
+    find: "Find a home",
+    list: "Manage Property",
+    how: "How it works",
+  },
+} as const;
+
+for (const locale of ["es", "en"] as const) {
+  for (const [key, route] of [
+    ["find", "/"],
+    ["list", "/host"],
+    ["how", "/about"],
+  ] as const) {
+    test(`/${locale}${route} lights exactly the ${key} nav segment`, async ({ page }) => {
+      await stubBackend(page);
+      await page.goto(`/${locale}${route}`, { waitUntil: "networkidle" });
+
+      const { nav: navLabel, ...labels } = SEGMENTS[locale];
+      const nav = page.getByRole("navigation", { name: navLabel });
+
+      for (const [otherKey, label] of Object.entries(labels)) {
+        const link = nav.getByRole("link", { name: label, exact: true });
+        if (otherKey === key) {
+          await expect(link, `${label} should be current on ${route}`).toHaveAttribute(
+            "aria-current",
+            "page",
+          );
+        } else {
+          await expect(link, `${label} should NOT be current on ${route}`).not.toHaveAttribute(
+            "aria-current",
+            "page",
+          );
+        }
+      }
+    });
+  }
+}

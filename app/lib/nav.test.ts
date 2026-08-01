@@ -29,17 +29,29 @@ describe("navMatch", () => {
   });
 
   it("highlights nothing on pages no segment owns", () => {
-    expect(navMatch("/about")).toBeNull();
     expect(navMatch("/privacy")).toBeNull();
     expect(navMatch("/sign-in")).toBeNull();
     expect(navMatch("/property")).toBeNull();
   });
 
-  // "How it works" is an anchor on /about, which "About" does not own either.
-  // It is deliberately never highlighted — asserted so a later change to make
-  // it highlight is a decision someone makes, not one they trip over.
-  it("never highlights how it works", () => {
-    expect(navMatch("/about")).not.toBe("how");
+  // "How it works" owns the whole of /about, not just its #how anchor —
+  // decided 2026-08-01, reversing the earlier "matches nothing". A segment
+  // that can never light up reads as broken to the person looking at it.
+  it("highlights how it works across the whole about page", () => {
+    expect(navMatch("/about")).toBe("how");
+    expect(navMatch("/about/")).toBe("how");
+  });
+
+  // The hash is NOT part of the match, and cannot be: usePathname() never
+  // sees one. Arriving at #hosts and arriving at #how are the same pathname,
+  // so both light the same segment. Pinned because the obvious "fix" for that
+  // — reading window.location.hash in the matcher — would make this module
+  // browser-only and untestable, which is the whole reason it lives in lib.
+  it("ignores the hash, because the router never gives it one", () => {
+    expect(navMatch("/about")).toBe(navMatch("/about"));
+    const how = NAV_ITEMS.find((i) => i.key === "how");
+    expect(how?.href).toBe("/about#how");
+    expect(how?.match("/about#hosts")).toBe(false);
   });
 
   it("sends the owner segment to one place", () => {

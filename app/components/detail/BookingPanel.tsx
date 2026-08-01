@@ -1,9 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Info, Mail } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ChevronDown, LogIn, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useShortMonths } from "@/i18n/dates";
+import { useAuth } from "@/components/site/AuthProvider";
+import { signInPath } from "@/lib/auth";
 import { shortDate } from "@/lib/dates";
 import type { PropertyDetail } from "@/lib/api";
 import { stayFits } from "@/lib/availability";
@@ -48,6 +52,18 @@ export function BookingPanel({
   const t = useTranslations("detail.booking");
   const months = useShortMonths();
   const tc = useTranslations("estimate");
+  const { me, loading } = useAuth();
+
+  // Where the login sends them back to: this exact URL, dates and all. The
+  // sign-in page takes `redirect` verbatim (see sign-in/Choices.tsx), so it
+  // has to carry the locale prefix. Built from the router's own view of the
+  // URL rather than `currentPath()` — this runs during render, and a
+  // `window` read there would differ between the prerendered HTML and the
+  // first client frame.
+  const query = useSearchParams().toString();
+  const signInHref = signInPath(
+    `/${locale}${usePathname()}${query ? `?${query}` : ""}`,
+  );
 
   // The listing may cap the stay tighter than the law does.
   const maxMonths = clamp(p.maxStayMonths || MAX_MONTHS, MIN_MONTHS, MAX_MONTHS);
@@ -292,45 +308,93 @@ export function BookingPanel({
           </p>
         )}
 
-        {/* VAT hint */}
-        <div className="mt-4 flex gap-2.5 rounded-(--radius-control) bg-surface-2 p-3">
-          <Info size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-muted" aria-hidden />
-          <p className="text-xs leading-relaxed text-body">{t("vatHint")}</p>
-        </div>
+        {/* The VAT hint that used to sit here was pulled on 2026-08-01. It
+            explained why we ask for every tenant's name — a control this
+            panel never built (R-Prop-9's `≥1 tenant name` gate is still
+            unimplemented; the draft carries a blank names line and nothing
+            collects it). It was design copy from the rebuild, backed by no
+            ADR, and its second half described a reverse charge that does not
+            obviously apply to a Spanish landlord invoicing a Spanish company.
+            It comes back WITH the field, and not before someone who does tax
+            for a living has read it. See §4.3 of the spec. */}
 
-        {/* CTAs */}
+        {/* CTAs — login-gated, which is ADR-015: the widget is visible to
+            everyone, actionable only signed in. Everything above this point
+            is the estimate, and the estimate is the reason to visit; only the
+            two channels that put a real message in front of the operator are
+            behind the door.
+
+            The gate is a courtesy, not a boundary: both hrefs are a mailto:
+            and a wa.me link that anyone could type by hand. What it buys is
+            the identity ADR-015 wants on a request, and it is the client half
+            of the flow whose server half is POST /api/booking-requests. */}
         <div className="mt-4 flex flex-col gap-2">
-          <a
-            href={blocked ? undefined : waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-disabled={blocked}
-            className={`flex items-center justify-center gap-2 rounded-(--radius-control) px-4 py-3 text-sm font-semibold transition-colors duration-(--dur-standard) ${
-              blocked
-                ? "pointer-events-none bg-brand/45 text-white"
-                : "bg-brand text-white hover:bg-brand-strong"
-            }`}
-          >
-            <WhatsAppGlyph />
-            {t("requestWhatsApp")}
-          </a>
-          <a
-            href={blocked ? undefined : mailHref}
-            aria-disabled={blocked}
-            className={`flex items-center justify-center gap-2 rounded-(--radius-control) border border-line px-4 py-3 text-sm font-semibold transition-colors duration-(--dur-standard) ${
-              blocked
-                ? "pointer-events-none text-muted"
-                : "text-ink hover:bg-surface-2"
-            }`}
-          >
-            <Mail size={16} strokeWidth={2} aria-hidden />
-            {t("requestEmail")}
-          </a>
+          {loading ? (
+            // One bar, the signed-out face's exact geometry — not the
+            // signed-in one. This is the frame a stranger paints: the page is
+            // prerendered at build time, where nobody is signed in yet (same
+            // reasoning as ADR-037), and most people who open a listing are
+            // signed out. Matching the common outcome means the panel settles
+            // without moving for almost everyone; a signed-in visitor gets a
+            // grow, which costs nothing at the bottom of the card.
+            <div className="skeleton h-[2.875rem] rounded-(--radius-control)" />
+          ) : me.authenticated ? (
+            <>
+              <a
+                href={blocked ? undefined : waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={blocked}
+                className={`flex items-center justify-center gap-2 rounded-(--radius-control) px-4 py-3 text-sm font-semibold transition-colors duration-(--dur-standard) ${
+                  blocked
+                    ? "pointer-events-none bg-brand/45 text-white"
+                    : "bg-brand text-white hover:bg-brand-strong"
+                }`}
+              >
+                <WhatsAppGlyph />
+                {t("requestWhatsApp")}
+              </a>
+              <a
+                href={blocked ? undefined : mailHref}
+                aria-disabled={blocked}
+                className={`flex items-center justify-center gap-2 rounded-(--radius-control) border border-line px-4 py-3 text-sm font-semibold transition-colors duration-(--dur-standard) ${
+                  blocked
+                    ? "pointer-events-none text-muted"
+                    : "text-ink hover:bg-surface-2"
+                }`}
+              >
+                <Mail size={16} strokeWidth={2} aria-hidden />
+                {t("requestEmail")}
+              </a>
+            </>
+          ) : (
+            // No explanatory line above it: signing in to send a request is
+            // what a visitor already expects, and a sentence defending an
+            // ordinary step draws more attention to it than the step deserves.
+            //
+            // Deliberately NOT disabled by `blocked` either. Bad dates are a
+            // reason to fix the dates, not a reason to withhold the login —
+            // and they come straight back here to fix them.
+            <Link
+              href={signInHref}
+              className="flex items-center justify-center gap-2 rounded-(--radius-control) bg-brand px-4 py-3 text-sm font-semibold text-white transition-colors duration-(--dur-standard) hover:bg-brand-strong"
+            >
+              <LogIn size={16} strokeWidth={2} aria-hidden />
+              {t("signInToRequest")}
+            </Link>
+          )}
         </div>
 
-        <p className="mt-3 text-center text-[0.6875rem] leading-relaxed text-muted">
-          {t("reassurance")}
-        </p>
+        {/* Answers "what happens when I press that?" — so it belongs to the
+            request buttons, not to the sign-in door. Signed out there is
+            nothing yet to reassure anybody about, and a cancellation policy
+            quoted before the request exists is noise in front of the one
+            action on offer. It reappears with the buttons it describes. */}
+        {me.authenticated && (
+          <p className="mt-3 text-center text-[0.6875rem] leading-relaxed text-muted">
+            {t("reassurance")}
+          </p>
+        )}
       </div>
     </aside>
   );

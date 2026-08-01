@@ -150,6 +150,15 @@ const ROUTES: RouteCase[] = [
   // "Microsoft", the second door has gone missing.
   { path: "/sign-in", expect: { es: /Microsoft/, en: /Microsoft/ }, anonMe: true },
   { path: "/property?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
+  // The same page signed out, where the booking panel shows a sign-in door
+  // instead of the two request channels (ADR-015). The estimate above it is
+  // unchanged, so the case still asserts the home actually rendered; what
+  // the gate itself does is pinned by its own test further down.
+  {
+    path: "/property?id=pedro1",
+    expect: { es: /Entrar para solicitar/, en: /Sign in to request/ },
+    anonMe: true,
+  },
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },
   { path: "/host", expect: { es: /vivienda/i, en: /home/i } },
@@ -360,6 +369,86 @@ for (const locale of ["es", "en"] as const) {
     expect(unstubbed, "endpoints with no fixture, reached from the import").toEqual([]);
   });
 }
+
+// The booking gate (ADR-015). Two halves, and both have to hold: signed out
+// the two request channels must be GONE — not merely styled as disabled,
+// which a `pointer-events-none` link already looks like and which leaves the
+// mailto: and wa.me hrefs sitting in the markup — and the sign-in link must
+// carry this exact URL back, query string included, so the round trip ends on
+// the home they were looking at rather than the front page.
+for (const locale of ["es", "en"] as const) {
+  const label = locale === "es" ? "Entrar para solicitar" : "Sign in to request";
+  // Belongs to the request buttons, not to the sign-in door: it answers "what
+  // happens when I press that?", and signed out there is no request to
+  // reassure anybody about yet.
+  const reassurance =
+    locale === "es" ? "Todavía no se te cobra nada" : "You won't be charged yet";
+
+  test(`/${locale}/property — the request channels are behind the login`, async ({ page }) => {
+    await stubBackend(page);
+    await page.route("**/api/me", (route: Route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          authenticated: false, userId: null, name: null, provider: null,
+          roles: ["anonymous"], isAdmin: false, isDeactivated: false,
+        }),
+      }),
+    );
+
+    await page.goto(`/${locale}/property?id=pedro1`, { waitUntil: "networkidle" });
+
+    const panel = page.getByRole("complementary");
+    await expect(panel.getByRole("link", { name: label })).toBeVisible();
+    await expect(panel.locator('a[href^="mailto:"]')).toHaveCount(0);
+    await expect(panel.locator('a[href*="wa.me"]')).toHaveCount(0);
+
+    // The whole point of the door: it comes back here, query string and all.
+    // Trailing slashes on both paths — `trailingSlash` is on, so that is what
+    // the router hands out, and it is the same shape ADR-037 documents for
+    // the owner bounce (/es/sign-in/?redirect=/es/host/manage/?id=pedro1).
+    await expect(panel.getByRole("link", { name: label })).toHaveAttribute(
+      "href",
+      `/${locale}/sign-in/?redirect=${encodeURIComponent(`/${locale}/property/?id=pedro1`)}`,
+    );
+
+    await expect(panel).not.toContainText(reassurance);
+
+    // The estimate is NOT gated — it is the reason to be on the page at all.
+    await expect(panel).toContainText("€");
+  });
+}
+
+// The signed-in face, which the route case above cannot distinguish from a
+// gate that simply never engages: with the shared (authenticated) fixture
+// both channels must be back, hrefs and all.
+//
+// The dates are in the URL and they are not incidental. The panel's own
+// default stay (today → a month on) collides with the fixture's August block,
+// and a blocked panel renders both channels with NO href — so an <a> without
+// one is not a link at all, and this test would fail against a perfectly
+// working gate. These two are a free window after the last block, and long
+// enough to clear ADR-022's 31-day floor.
+test("/en/property — a signed-in visitor gets both request channels", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/property?id=pedro1&from=2026-09-01&to=2026-10-05", {
+    waitUntil: "networkidle",
+  });
+
+  const panel = page.getByRole("complementary");
+  await expect(panel.getByRole("link", { name: "Request on WhatsApp" })).toHaveAttribute(
+    "href",
+    /^https:\/\/wa\.me\/\d+\?text=/,
+  );
+  await expect(panel.getByRole("link", { name: "Request by email" })).toHaveAttribute(
+    "href",
+    /^mailto:.+@.+\?subject=/,
+  );
+  await expect(panel.getByRole("link", { name: "Sign in to request" })).toHaveCount(0);
+
+  // And the line that describes those buttons comes back with them.
+  await expect(panel).toContainText("You won't be charged yet");
+});
 
 // A page added later must not quietly escape this file. Without this, the
 // suite only ever covers the routes someone remembered to list — and the

@@ -182,6 +182,41 @@ Actors: signed-in user on a published property page. The widget and
 `computeEstimate` are live; `POST /api/booking-requests` is the next build
 step (the container and the parity contract below are ready for it).
 
+**The login gate is live as of 2026-08-01.** `components/detail/BookingPanel.tsx`
+reads `useAuth()`: signed out, the two request channels are **not rendered at
+all** — replaced by a single sign-in link carrying this exact URL back
+(`signInPath()`, the same round-trip ADR-037 documents), so the visitor lands
+on the home they were reading rather than the front page. Everything above
+the CTAs — price, dates, itemised estimate, payment schedule — stays visible
+to everyone, which is ADR-015's "visible to all, actionable only signed-in".
+The gate is a courtesy, not a boundary: both hrefs are a `mailto:` and a
+`wa.me` link anyone could type by hand. What it buys is the identity ADR-015
+wants on a request, and it is the client half of the flow whose server half
+is step 2 below. Still **not** implemented from step 1: the `tenantNames ≥ 1`
+condition — the panel puts a blank "name(s) on the booking" line in the draft
+and does not collect the names itself.
+
+**The VAT hint was pulled on 2026-08-01, and comes back with that field.**
+The panel carried a note ("add every tenant's name so the rent is VAT-exempt;
+booked under a company without named tenants a 21% VAT applies that the
+company self-accounts for") whose only job was to justify an input the panel
+never had. Two reasons it went rather than staying until the field arrives:
+
+1. It explained a requirement the page did not impose — the one piece of
+   friction it asked visitors to accept was invisible to them.
+2. It is an unsourced tax assertion on a public page, in the operator's name.
+   It entered in the design-handoff rebuild (`4827190`), not from v1 and not
+   from any ADR — the only VAT this log carries is ADR-004's "commission 15%,
+   VAT incl.". The first half tracks the real position (a residential lease
+   is IVA-exempt, and a company-signed lease turns on the contract naming the
+   occupants); the **second half looks wrong** — self-assessment is a
+   cross-border B2B reverse charge, and a Spanish landlord invoicing a
+   Spanish company would normally just charge the VAT.
+
+**Before it returns:** someone who does Spanish VAT for a living reads it,
+and the rule it states lands in the decision log rather than in a message
+file. The old wording is in git at `06f63e4:app/messages/es.json`.
+
 ```
 1. CLIENT   computeEstimate(start, end)  — per ADR-022/023/026 (§4.2);
             CTAs enable when status == "ok" AND tenantNames ≥ 1.

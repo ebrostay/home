@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Ebrostay.Api.Functions;
 
-// The "what's nearby" surface (spec-v2, ADR-028): the vocabulary the editor
+// The "what's nearby" surface (spec, ADR-028): the vocabulary the editor
 // draws from, the owner's candidate search and route preview, and the public,
 // anonymous route lookup a guest's map renders.
 //

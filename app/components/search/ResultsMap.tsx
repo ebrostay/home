@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { clusterPins, type Cluster } from "@/lib/mapCluster";
 import "leaflet/dist/leaflet.css";
 
-// Leaflet + OSM tiles (carried from v1, docs/spec/07 §7.5). The design's
+// Leaflet + OSM tiles (carried from v1, docs/spec/08-carried-v1-rules.md §8.4.2). The design's
 // hatch-and-river diagram was an explicit prototype stand-in; what carries
 // over is the BEHAVIOUR — a card and its pin are the same object seen twice.
 // Hovering either lights both; selecting either pans the map to that pin and

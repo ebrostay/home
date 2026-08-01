@@ -1,7 +1,7 @@
 # Ebrostay v2 Target Spec — §2 Data Model
 
 > Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
-> v1 reference: [docs/spec/04-data-model.md](../spec/04-data-model.md) (conceptual fields carry over; storage moves Postgres → Cosmos). Decisions: [ADR-011, ADR-014, ADR-016, ADR-019, ADR-028](05-decision-log.md).
+> v1 data model: conceptual fields carry over; storage moves Postgres → Cosmos (v1 spec on `main`). Decisions: [ADR-011, ADR-014, ADR-016, ADR-019, ADR-028](05-decision-log.md).
 
 Storage moves from Supabase Postgres to **Azure Cosmos DB (free tier,
 provisioned 1000 RU/s shared, NoSQL API)**. This is a **fresh start** (ADR-016): no v1 production data is
@@ -12,7 +12,7 @@ invariants** — the C# functions are the only writers (§3.5).
 
 Conventions: all dates are ISO `YYYY-MM-DD` strings; all `*At` timestamps are
 ISO 8601 UTC; money fields are numbers in euros (integers for authored prices,
-2-decimal numbers for computed amounts, matching docs/spec/05 §5.1); bilingual
+2-decimal numbers for computed amounts, v1 practice carried); bilingual
 text uses `{ es, en }` objects instead of v1's `*_es`/`*_en` column pairs.
 
 ---
@@ -21,7 +21,7 @@ text uses `{ es, en }` objects instead of v1's `*_es`/`*_en` column pairs.
 
 Cosmos account **`ebrostay-cosmos`** (free tier, NoSQL, spaincentral, §1.2)
 → database **`ebrostay`** (shared **1000 RU/s** — the free-tier allowance —
-across all containers) → seven containers:
+across all containers) → eight containers:
 
 | Container | Partition key | One document per | Writers (via API only) |
 | --- | --- | --- | --- |
@@ -31,7 +31,8 @@ across all containers) → seven containers:
 | `inquiries` | `/id` | contact-form inquiry | anyone incl. anonymous (insert), admin (read) |
 | `nearbyCandidates` | `/cell` | cached Overpass answer for one rounded cell + group | the candidate lookup (§2.2.5, ADR-028) |
 | `nearbyRoutes` | `/propertyId` | one routed geometry, `(entryId, profile)` | the anonymous public route lookup, write-through (§2.2.5, ADR-028) |
-| `serviceBudget` | `/id` | one calendar day's outbound ORS call count | `OrsBudget` (§2.2.5, ADR-028) |
+| `serviceBudget` | `/id` | one calendar day's outbound service-call count (ORS; also the import rate limits) | `OrsBudget` (§2.2.5, ADR-028), `ImportFunctions` (ADR-033) |
+| `importJobs` | `/id` | one AI-assisted import job (7-day TTL) — stage, per-job callback token, and the proposal, which **never** lands on a listing (ADR-033 Decision 4) | `ImportFunctions` (start/poll/reap/cancel), the pipeline via the token-checked callback |
 
 Partition-key rationale:
 
@@ -49,6 +50,10 @@ Partition-key rationale:
 - `serviceBudget` partitions on `/id`, one document per calendar day, because
   every read-then-write is a point operation against that single counter
   (§2.2.5, ADR-028 "Consequences to watch").
+- `importJobs` partitions on `/id`: every access — the owner's 2-second poll,
+  the pipeline callback, the reaper — is a 1-RU point read/replace of one job,
+  under ETag concurrency (ADR-033 Decisions 7, 11). The 7-day TTL is the
+  retention rule.
 - No container for **favorites** (🚫 out of MVP scope, carried from v1),
   **bookings** (🗑️ Stripe path not carried, ADR-016), **owner_leads** (🗑️
   superseded by the self-serve host flow, ADR-014), **owner_payout_details**
@@ -113,8 +118,10 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "selfCheckin": true,
   "videoUrl": null,
 
-  // — pricing (drives docs/spec/05 §5.1 verbatim) —
-  "priceNumber": 950,                 // monthly rent, whole EUR — all math
+  // — pricing (ADR-023: the headline price is a price for THIRTY DAYS;
+  //   rent = stayDays × price÷30, collected per calendar month. v1 §5.1's
+  //   whole-month math is superseded) —
+  "priceNumber": 950,                 // price per 30 days, whole EUR — all math
   "priceLabel": "950 EUR",
   "depositAmount": 950,               // nullable → treated as 0
   "upfrontRentEur": 950,
@@ -122,7 +129,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   the legacy billsIncluded boolean is 🗑️
                                       //   dropped — fresh start, no legacy rows)
   "utilitiesCapEur": null,
-  "minStayMonths": 1, "maxStayMonths": 11,   // hard cap 11 regardless
+  "minStayMonths": 1, "maxStayMonths": 11,   // 11, not 12: 12 calendar months is
+                                      //   365 days on the nose, which the
+                                      //   <365-day ceiling disallows (ADR-022/023)
 
   // — turnover (ADR-026) —
   "turnoverDays": 3,                  // ✅ days shut after a stay for
@@ -136,8 +145,10 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   PLATFORM_CLEANING_FEE_EUR app
                                       //   setting, not a listing field
 
-  // — badges / flags —
-  "rating": 4.8, "isNew": false, "checked": true, "depositProtected": true,
+  // — badges / flags (no `rating`: ratings were dropped with the `best`
+  //   sort — with no review system a stored rating is an unverifiable
+  //   claim, §4.1) —
+  "isNew": false, "checked": true, "depositProtected": true,
   "availableFrom": "2026-07-01",
 
   // — embedded photos (§2.2.2) —
@@ -162,10 +173,22 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   // — embedded availability (§2.2.3) —
   "availability": [
     { "start": "2026-07-04", "end": "2026-07-11", "status": "confirmed",
+      "kind": "own_use",              // ✅ own_use = owner-closed dates, no
+                                      //   turnaround after them; null/absent =
+                                      //   a stay, full buffer (ADR-031). The
+                                      //   owner's endpoint STAMPS it, never
+                                      //   accepts it
       "note": "Reforma cocina" },
     { "start": "2026-09-01", "end": "2026-10-01", "status": "hold",
       "holdExpiresAt": "2026-07-20T11:30:00Z" }
   ],
+
+  // — AI-assisted import provenance (ADR-033 Decision 8) —
+  "imported": ["price", "sizeM2"],    // ✅ fields whose current value arrived
+                                      //   from an import and has not been
+                                      //   reviewed — the marks ARE the review
+                                      //   surface, so they survive reload
+  "importSource": "https://…",        // the portal URL the proposal came from
 
   // — embedded "what's nearby" entries (§2.2.5, ADR-028) —
   "nearby": [
@@ -188,7 +211,7 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
 `availability[].note` / `availability[].holdExpiresAt` — the public
 availability shape is date ranges only (`{start, end}` pairs), never user
 identifiers or notes. This resolves v1's `availability_blocks.user_id`/`note`
-world-readability leak **by design** (v1 open decision #1, docs/spec/11).
+world-readability leak **by design** (v1 spec §11, open decision #1).
 `nearby[].osmId` / `.measuredAt` / `.needsCheck` are stripped the same way —
 they are provenance for the owner and the (planned) admin review, not a guest
 fact (§2.2.5).
@@ -268,11 +291,12 @@ us where they live. Deleted with the photo, along with all three blobs.
 
 ### 2.2.3 Embedded availability ✅ — and why embedded
 
-Each entry: `{ start, end, status, holdExpiresAt?, note?, turnoverDaysOverride? }`.
+Each entry: `{ start, end, status, holdExpiresAt?, note?, kind?,
+turnoverDaysOverride? }`.
 
 - **`end` is EXCLUSIVE** (checkout day). ⚠️ This is a deliberate change from
   v1, where `availability_blocks.end_date` was *inclusive* and three different
-  overlap-bound conventions coexisted (docs/spec/05 §5.4.2, flagged 🐞 in
+  overlap-bound conventions coexisted (v1 §5.4.2, flagged 🐞 in
   §5.2.1). v2 normalizes every range in the system — blocks, searches, stays —
   to half-open `[start, end)` and uses **one** overlap predicate everywhere
   (client grid filter, client estimate conflict check, server booking
@@ -292,23 +316,33 @@ Each entry: `{ start, end, status, holdExpiresAt?, note?, turnoverDaysOverride? 
                          OR (entry.status == "hold" AND entry.holdExpiresAt > now)
   ```
 
-- **Turnover buffer** ✅ (ADR-026). A home is not
+- **Turnover buffer** ✅ (ADR-026, own-use exemption ADR-031). A home is not
   relettable the day the keys come back: the inventory has to be checked, the
   meters read (ADR-023 settles utilities after move-out), and a stay measured
   in months needs a deep clean, not a turnover clean. Every blocking entry
-  therefore shuts the `turnoverDays` that follow it:
+  that is a **stay** therefore shuts the `turnoverDays` that follow it —
+  dates the owner closed for themselves (`kind: "own_use"`) get **no**
+  buffer, because no clean is scheduled and none is charged (ADR-031):
 
   ```
-  turnover(entry, property) = entry.turnoverDaysOverride ?? property.turnoverDays
+  turnover(entry, property) =
+      entry.kind == "own_use" ? 0
+                              : entry.turnoverDaysOverride ?? property.turnoverDays
   effectiveEnd(entry, property) = entry.end + turnover(entry, property) days
   ```
 
   The buffer is **derived inside the predicate**, never written to
   `availability` — a stored buffer would be a second copy of a rule and would
   go stale the moment either the rule or the stay moved. `turnoverDaysOverride`
-  is admin-set, for when operations cannot get a cleaning team into the slot.
-  Owners see the buffer as a distinct **turnaround** state; guests just see
-  dates that are unavailable.
+  is admin-set, for when operations cannot get a cleaning team into the slot
+  (it outranks both kinds — the escape hatch for own use that *does* need
+  staffed work). `kind` is **stamped by the owner's availability endpoint,
+  never accepted from the payload**: a span the owner writes for the first
+  time is their own use — the only thing that endpoint can express — and a
+  span already on the document keeps what it was. Absent means "a stay", the
+  safe default: an unlabelled block over-blocks a few days rather than
+  letting a tenant into a home nobody prepared. Owners see the buffer as a
+  distinct **turnaround** state; guests just see dates that are unavailable.
 
 - `note` is host/admin-internal and is stripped from all public responses
   (§2.2 public projection).
@@ -597,8 +631,11 @@ Bootstrapped on first sign-in (§3.6). `id` = the stable SWA principal
 
 ```jsonc
 {
-  "id": "<swa userId>",          // PK + partition key
-  "provider": "github",          // identityProvider: github | aad
+  "id": "<swa userId>",          // PK + partition key — Entra objectid on the
+                                 //   `ebrostay` door, MSA oid on `ebrostay-msa`;
+                                 //   the same human using both doors is TWO
+                                 //   documents (ADR-036, §3.1)
+  "provider": "ebrostay",        // identityProvider: ebrostay | ebrostay-msa
   "name": "Jane Doe",            // userDetails at first sign-in (display only)
   "isDeactivated": false,        // admin-set; §3.7 — functions reject when true
   "createdAt": "2026-07-19T10:00:00Z",
@@ -611,11 +648,14 @@ never in the database — a profile document cannot grant privileges. "Host" is
 not a stored role either; it is the implicit state of having listings
 (`properties.hostId = profiles.id`).
 
-## 2.4 Container: `bookingRequests` ✅
+## 2.4 Container: `bookingRequests` ✅ decided · 🔜 endpoint not yet built
 
-Written **only** by `POST /api/booking-requests` (§4.3); partition key
-`/propertyId`. Carries the full logged payload plus the server's recomputed
-estimate and the mismatch flag.
+Written **only** by `POST /api/booking-requests` (§4.3 — the endpoint does not
+exist yet; the container is provisioned); partition key `/propertyId`. Carries
+the full logged payload plus the server's recomputed estimate and the mismatch
+flag. The estimate shape follows **ADR-023** (days × daily rate, not billed
+months) and must carry the **ADR-026 cleaning fee** so the parity tripwire
+covers it:
 
 ```jsonc
 {
@@ -624,23 +664,28 @@ estimate and the mismatch flag.
   "propertyName": "Pedro II el Católico 3 - 1 IZQ",   // snapshot
   "userId": "<profile id>",           // from x-ms-client-principal — never client-supplied
   "userName": "Jane Doe",             // snapshot
-  "provider": "github",
+  "provider": "ebrostay",
   "locale": "es",                     // UI language at submit
   "channel": "whatsapp",              // email | whatsapp — chosen draft channel
 
   "startDate": "2026-08-01",
-  "endDate": "2026-10-01",            // exclusive checkout
-  "months": 2,                        // billed whole months (docs/spec/05 §5.1.1)
+  "endDate": "2026-10-01",            // exclusive checkout (= return of the keys)
+  "days": 61,                         // stay days, end-exclusive (ADR-023 —
+                                      //   replaces v1's billed whole months)
   "tenantNames": "Jane Doe\nJohn Roe",  // free text, one per line, ≤800 chars
 
   "clientEstimate": {                  // as computed & displayed by the widget
-    "rent": 1900.00, "commissionRaw": 285.00, "commission": 285.00,
-    "discount": 0, "deposit": 950.00, "total": 3135.00
+    "rate": 31.67,                     //   dailyRate = price ÷ 30 (ADR-023)
+    "rent": 1931.67, "commissionRaw": 289.75, "commission": 289.75,
+    "discount": 0, "deposit": 950.00, "cleaningFee": 120.00,
+    "total": 3291.42
   },
   "serverEstimate": {                  // recomputed by the function from the
-    "rent": 1900.00, "commissionRaw": 285.00,   // property document, same
-    "commission": 285.00, "discount": 0,        // algorithm (docs/spec/05 §5.1)
-    "deposit": 950.00, "total": 3135.00
+    "rate": 31.67,                     //   property document, same algorithm
+    "rent": 1931.67, "commissionRaw": 289.75,   //   (lib/pricing.ts contract,
+    "commission": 289.75, "discount": 0,        //   ADR-023/026)
+    "deposit": 950.00, "cleaningFee": 120.00,
+    "total": 3291.42
   },
   "estimateMismatch": false,           // any field differing > €0.01 → true
 
@@ -682,7 +727,7 @@ Storage account `ebrostayphotos` (spaincentral), container `property-photos`,
 **public read** at the blob level. **All writes go through the API** ✅
 (ADR-019): the upload function validates, re-encodes into the three sizes of
 §2.2.2, writes each blob with **`Cache-Control: public, max-age=31536000,
-immutable`** (1 year, v1 practice per docs/spec/07 §7.1 Storage) and a
+immutable`** (1 year, v1 storage practice carried) and a
 `Content-Type` we set from what we encoded — never echoed from the request,
 since Blob serves whatever it is given and a client-supplied `text/html` would
 be stored XSS on our own account. Blob names are server-generated
@@ -709,8 +754,9 @@ guarantees the bytes behind it are pixels.
 ## 2.7 Seed data ✅
 
 Dev and test environments are seeded with the **4 v1 sample homes**
-(`pedro0`, `pedro2`, `movera0`, `movera1` — values per docs/spec/05 §5.3
-worked example G and v1 `data.js`), translated into the §2.2 document shape
+(`pedro0`, `pedro2`, `movera0`, `movera1` — canonical values in
+`infra/seed-source.json`, descended from v1's `data.js`; ratings were dropped
+with the `best` sort, §4.1), translated into the §2.2 document shape
 with `status: "published"` and a seed `hostId`. The seed exists **only** for
 development and automated tests — it is not deployed to production and there
 is no runtime fallback to it (ADR-017). Production starts empty and fills
@@ -729,4 +775,4 @@ through the host flow (ADR-016).
 | `profiles.is_admin` / `is_owner` columns | roles in SWA role management only; no privilege flags in data (§3.2) |
 | `favorites`, `bookings` 🗑️, `owner_leads`, `owner_payout_details`, `property_guest_info` | not carried (🚫 / 🗑️ / 🔜 per §2.1) |
 | RLS + triggers + GiST constraint | API-enforced authorization and invariants; ETag concurrency (§2.2.3) |
-| `booking_requests` written by unwired Edge Fn 🔜 | `bookingRequests` written by the **live** booking flow ✅ (ADR-015) |
+| `booking_requests` written by unwired Edge Fn 🔜 | `bookingRequests` written by the **live** booking flow (ADR-015 — decided; endpoint 🔜, see §2.4) |

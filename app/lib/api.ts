@@ -129,7 +129,7 @@ export type PropertyDetail = Omit<
   previewStatus: Exclude<PropertyStatus, "published"> | null;
 };
 
-// The five states a listing moves through (spec-v2 §2.2.1). Stored values, not
+// The five states a listing moves through (spec §2.2.1). Stored values, not
 // labels: the portfolio page maps them to owner-facing words in both locales.
 export type PropertyStatus =
   | "draft"
@@ -263,7 +263,7 @@ export type HostListing = {
 };
 
 /** A logged booking request, as the owner is allowed to see it. No tenant
- *  identity: Ebrostay owns every tenant conversation (spec-v2 §4.3). */
+ *  identity: Ebrostay owns every tenant conversation (spec §4.3). */
 export type HostRequestRow = {
   id: string;
   startDate: string | null;

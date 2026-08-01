@@ -1,9 +1,11 @@
 # CLAUDE.md
 
 Ebrostay **v2 redesign branch** (`redesign/v2`) — rebuild of ebrostay.com
-(mid-term corporate rentals, Zaragoza) on Azure. v1 (static HTML/JS + Supabase,
-still the production site) lives on `main`; its full spec is in `docs/spec/`
-and is the functional reference here.
+(mid-term corporate rentals, Zaragoza) on Azure. **The spec for this branch is
+`docs/spec/` (self-contained)** — start at its README. v1 (static HTML/JS +
+Supabase) is still the production site and lives on `main`, together with its
+own as-built spec; rules v2 carries from v1 are restated in
+`docs/spec/08-carried-v1-rules.md`.
 
 ## Stack & layout
 
@@ -12,8 +14,10 @@ and is the functional reference here.
   (CSS-first config in `app/app/globals.css`), next-intl.
 - `api/` — C# Azure Functions, **.NET 9 isolated** (SWA managed functions;
   upgrade to .NET 10 when SWA supports it). Route prefix `api` (host.json).
-- Hosting: Azure Static Web Apps — frontend + managed functions + built-in auth
-  (GitHub/Microsoft). Cosmos DB serverless (NoSQL) + Blob Storage for photos.
+- Hosting: Azure Static Web Apps (`ebrostay-home`, Standard, westeurope) —
+  frontend + managed functions + built-in auth over **Entra External ID**
+  (Ebrostay email/password account + Microsoft; ADR-035/036). Cosmos DB free
+  tier (NoSQL) + Blob Storage for photos.
 
 ## Commands
 
@@ -44,12 +48,13 @@ and is the functional reference here.
   and auth-gated routes live in `app/public/staticwebapp.config.json`.
 - **Authorization is enforced in the C# functions** (read
   `x-ms-client-principal`), never only via SWA route rules or UI gates.
-- Business rules live in `docs/spec/05-business-rules.md` (v1, still live on
-  `main`) **as amended by the v2 decision log** `docs/spec-v2/05-decision-log.md`
-  — read the ADRs before touching pricing. Current v2 rules: rent **pro-rated
-  daily at price ÷ 30**, collected per calendar month (ADR-023, supersedes v1
-  whole-month billing); 15% commission capped at 30 days' rent (ADR-004 as
-  amended); stay **≥31 and <365 days** (ADR-022).
+- Business rules live in the **decision log** `docs/spec/05-decision-log.md`
+  (ADR-011…ADR-036) plus the carried v1 rules in
+  `docs/spec/08-carried-v1-rules.md` — read the ADRs before touching pricing.
+  Current rules: rent **pro-rated daily at price ÷ 30**, collected per
+  calendar month (ADR-023); 15% commission capped at 30 days' rent (ADR-004
+  as amended); stay **≥31 and <365 days** (ADR-022); a per-stay cleaning fee
+  outside the commission base (ADR-026).
 - Secrets never in the client or repo: Functions app settings only.
 
 ## Skills & plugins

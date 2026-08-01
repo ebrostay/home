@@ -1,5 +1,5 @@
 // Seed the `properties` container with the 4 v1 sample homes translated to
-// the v2 document shape (docs/spec-v2/02-data-model.md §2.2 / §2.7).
+// the v2 document shape (docs/spec/02-data-model.md §2.2 / §2.7).
 // Photos were uploaded to Blob under {propertyId}/… beforehand.
 //
 //   COSMOS_ENDPOINT=… COSMOS_KEY=… node infra/seed.mjs [path/to/v1-resolved.json]
@@ -20,7 +20,7 @@ if (!endpoint || !key) {
 // overridden — the same rule `local-bootstrap.mjs` applies to container
 // creation, and a more urgent one here: this script now writes `description` as a
 // ProseMirror JSON document (`BilingualDoc`), a shape the pre-ADR-032 API
-// cannot read at all (docs/spec-v2/05-decision-log.md, "Legacy plain-string
+// cannot read at all (docs/spec/05-decision-log.md, "Legacy plain-string
 // `description` throws, not degrades" — it takes the whole public listings response
 // down, not just one page). Run this against the wrong database and it is
 // not adding harmless test data; it is overwriting real listings' `description`

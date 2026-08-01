@@ -4,15 +4,15 @@ import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 
 // ============================================================
-// The month-band — the system's signature. Stays are contracted
-// in whole months (1–11, docs/spec/05); these cells make that
-// domain tangible. Semantics everywhere in the product:
+// The month-band — the system's signature (docs/spec/06 §6.4). Stays are
+// marketed in months ("1–12", enforced as a ≥31/<365-day count — ADR-022);
+// these cells make that domain tangible. Semantics everywhere in the product:
 //   river wash = open · bridge green = selected/yours · ink = occupied
 // ============================================================
 
 // Coarse whole-month selector for search — friendly "up to 12 months" framing.
 // The real ceiling is a day count (< 365 days) enforced on the booking date
-// range; the ~1-day gap vs. "12 months" is immaterial (spec-v2 ADR-022).
+// range; the ~1-day gap vs. "12 months" is immaterial (spec ADR-022).
 const MAX_MONTHS = 12;
 
 export function MonthBandSelect({

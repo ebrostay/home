@@ -1,31 +1,55 @@
 # Ebrostay v2 Target Spec — §3 Auth & Roles
 
-> Target: branch `redesign/v2`, locked 2026-07-19. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
-> v1 reference: [docs/spec/08-auth-security.md](../spec/08-auth-security.md). Decisions: [ADR-013, ADR-014](05-decision-log.md).
+> Target: branch `redesign/v2`, locked 2026-07-19; providers replaced 2026-07-31/08-01 (ADR-035/036, superseding ADR-013). Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried from v1.
+> v1 auth (Supabase email/password + RLS): superseded (v1 spec on `main`). Decisions: [ADR-014, ADR-035, ADR-036](05-decision-log.md).
 
 ---
 
-## 3.1 SWA built-in auth ✅ (ADR-013)
+## 3.1 SWA built-in auth over Entra External ID ✅ (ADR-035/036; supersedes ADR-013)
 
-v2 uses **Azure Static Web Apps built-in authentication ONLY**, with exactly
-two providers: **GitHub** and **Microsoft (`aad`)**. There is **no
-email/password** sign-up and **no custom OIDC** — custom providers require the
-SWA Standard tier, and v2 stays on Free (ADR-013 records the accepted friction
-and the escape hatch).
+v2 uses **SWA built-in authentication** (sessions, cookies and the principal
+header are all still the platform's), but the identity providers are our own
+**custom OIDC registrations** — which is what forced the move to the SWA
+**Standard** plan and the `ebrostay-home` resource (§1.2). ADR-013's
+preconfigured GitHub/`aad` providers are gone: the consent screen they showed
+belonged to Microsoft's shared "Azure Static Web Apps" app, and they offered
+no email/password sign-up.
+
+Two providers, wired in `staticwebapp.config.json`:
+
+| Provider | Backed by | Offers |
+| --- | --- | --- |
+| `ebrostay` | **Entra External ID** external tenant `ebrostay` (EU; sign-in pages at `ebrostay.ciamlogin.com`, Ebrostay-branded) | **Ebrostay account** (email + password, hosted by Entra — reset/verification/lockout are the platform's; we store no credential) and **Microsoft account** via the tenant's custom OIDC federation. Google 🔜 planned; Apple 🗑️ not carried. |
+| `ebrostay-msa` | `login.microsoftonline.com/consumers` directly (no Entra in the path) | **One-hop Microsoft sign-in** from the Microsoft button on `/sign-in` (ADR-036 amendment). |
+
+**The two doors mint two identities.** A Microsoft-door `userId` is the MSA
+`oid`; an email-door `userId` (including Microsoft *federated through Entra*)
+is a tenant `oid`. Same human, two `profiles` documents and two disjoint
+listing sets — accepted by the product owner (ADR-036); the support answer is
+"which button did you use?".
+
+Our **`/sign-in` page is the branded front door**: it states which accounts
+work, carries the real one-hop Microsoft button, forwards already-signed-in
+visitors, and receives the SWA `401` response override
+(`staticwebapp.config.json` → 302 `/es/sign-in/`). The provider *choice*
+otherwise lives on Entra's hosted page — a Microsoft-branded shortcut through
+the `ebrostay` provider is not buildable (ADR-036 records the four dead
+mechanisms so nobody pays for that twice).
 
 Endpoints (all served by the SWA platform, same origin):
 
 | Endpoint | Purpose |
 | --- | --- |
-| `/.auth/login/github` · `/.auth/login/aad` | Provider sign-in; accepts `post_login_redirect_uri` (send users back to the locale-prefixed page they came from). |
+| `/.auth/login/ebrostay` · `/.auth/login/ebrostay-msa` | Provider sign-in; accepts `post_login_redirect_uri` (send users back to the locale-prefixed page they came from). |
 | `/.auth/me` | Client-side session check: returns `{ clientPrincipal }` (or `null`). This is how the frontend knows who is signed in — there is no client-side token handling at all. |
 | `/.auth/logout` | Sign out (`post_logout_redirect_uri` supported). |
 | `/.auth/purge/{provider}` | User-initiated consent/data purge (link from the account page). |
 
-Flow: browser → `/.auth/login/{provider}` → provider consent → SWA sets its
-own session cookie → every subsequent request to static assets **and** to
-`/api/*` carries the session; SWA injects the principal into function calls as
-the `x-ms-client-principal` header (§3.4). The API never sees provider tokens.
+Flow: browser → `/sign-in` → `/.auth/login/{provider}` → Entra or MSA login →
+SWA sets its own session cookie → every subsequent request to static assets
+**and** to `/api/*` carries the session; SWA injects the principal into
+function calls as the `x-ms-client-principal` header (§3.4). The API never
+sees provider tokens.
 
 ## 3.2 Role model ✅
 
@@ -44,16 +68,17 @@ can never mint an admin.
 ## 3.3 Admin invitations ✅
 
 Exactly **3 admin users**, provisioned via SWA **Role management** (portal:
-Static Web App `ebrostay-v2` → Role management → Invite):
+Static Web App `ebrostay-home` → Role management → Invite):
 
-1. Invite by provider (GitHub or Microsoft) + the email/username the person
+1. Invite by provider (`ebrostay` or `ebrostay-msa`) + the email the person
    signs in with; assign role `admin`; generate the invitation link (expires
-   in hours — send it promptly).
+   in hours — send it promptly). Because the two doors mint two identities
+   (§3.1), invite the door the person actually uses.
 2. The invitee opens the link **while signing in with that provider**; SWA
    binds the role to their principal.
 3. Verify via `/.auth/me` (`userRoles` must contain `"admin"`).
 
-Free tier allows up to 25 custom-role users — ample. Revocation is the same
+SWA allows up to 25 custom-role users — ample. Revocation is the same
 screen (remove the role assignment). Admin membership is **infrastructure
 state**, not data: it is not represented in the `profiles` container and no
 API can change it.
@@ -65,13 +90,27 @@ SWA forwards the authenticated principal to managed functions as the
 
 ```json
 {
-  "identityProvider": "github",
-  "userId": "d75b260a64504067bfc5b2905e3b8182",
-  "userDetails": "janedoe",
+  "identityProvider": "ebrostay",
+  "userId": "d75b260a-6450-4067-bfc5-b2905e3b8182",
+  "userDetails": "Jane Doe",
   "userRoles": ["anonymous", "authenticated"],
   "claims": []
 }
 ```
+
+Provider-specific facts worth knowing (ADR-035/036):
+
+- `userId` is the Entra `objectidentifier` on the `ebrostay` door and the MSA
+  `oid` on the `ebrostay-msa` door — stable per user object, but **different
+  per door for the same human** (§3.1).
+- `userDetails` carries the **display name**, not the email (the user flow's
+  attribute collection supplies it — including for Microsoft-federated users,
+  whose `openid email` scope never sends a name). The email arrives as the
+  `preferred_username` claim.
+- On the `ebrostay` door, SWA reports `identityProvider: "ebrostay"` for both
+  local and Microsoft-federated accounts; the
+  `…/identity/claims/identityprovider` claim is the only way to tell them
+  apart.
 
 Contract for every function (implemented once as a shared helper +
 `ClientPrincipal` record in `api/`):
@@ -137,9 +176,12 @@ SWA equivalent, so v2 inverts it into an **admin control**:
 - **Every authenticated function rejects deactivated principals**: after
   parsing the principal, load the profile; if `isDeactivated`, respond `403`
   (body `{"error":"account_deactivated"}`). Deactivated users can still *sign
-  in* at the SWA layer (that cannot be blocked on Free tier) but can neither
+  in* at the SWA layer (built-in auth has no per-user ban) but can neither
   book, host, nor read protected data — and the frontend shows a deactivated
-  notice when `GET /api/me` returns the flag.
+  notice when `GET /api/me` returns the flag. (An `ebrostay`-door account can
+  *additionally* be disabled in the Entra tenant, which blocks the sign-in
+  itself; the MSA door has no equivalent. The function-layer check is the rule
+  either way — the Entra disable is defence in depth, never the boundary.)
 - Reactivation: admin clears the flag. If the account held the `admin` role,
   also remove it in SWA role management (§3.3) — the 403-on-deactivated check
   runs before any role check, so a deactivated admin is locked out of the API

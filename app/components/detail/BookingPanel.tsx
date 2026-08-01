@@ -17,7 +17,7 @@ import {
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { SplitDateRangeField } from "@/components/ui/SplitDateRangeField";
 
-// Contact channels are v1's, carried over verbatim from docs/spec/06a
+// Contact channels are v1's, carried over verbatim (docs/spec/08-carried-v1-rules.md §8.3)
 // (`wa.me/34678715418`, `mailto:info@ebrostay.com`). Booking is still the
 // MVP request flow: no payment, no DB row — the message IS the request.
 const WHATSAPP_NUMBER = "34678715418";

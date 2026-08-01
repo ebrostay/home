@@ -1,4 +1,4 @@
-// SWA built-in auth client (spec-v2 §3.1/§3.6). /.auth/* is ALWAYS same-origin
+// SWA built-in auth client (spec §3.1/§3.6). /.auth/* is ALWAYS same-origin
 // on the SWA platform (never the func-host base), so those links are relative.
 // GET /api/me goes through the API base like every other call.
 

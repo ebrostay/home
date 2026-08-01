@@ -1,5 +1,5 @@
 // Long-form copy for /privacy — colocated per the long-form content rule
-// (docs/spec-v2/06 §6.7 exception). Ported faithfully from v1
+// (docs/spec/06 §6.7 exception). Ported faithfully from v1
 // (main:privacy.html, hardcoded ES + EN blocks) with the stack updated for
 // v2: Microsoft Azure (Static Web Apps, Cosmos DB, Blob Storage — data in the
 // EU, Spain Central region) instead of Supabase/GitHub Pages; sign-in via an

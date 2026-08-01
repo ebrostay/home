@@ -7,9 +7,10 @@
 
 ## 6.1 Concept — "the calm ledger of a stay"
 
-Mid-term rentals are contracts measured in whole months (1–11,
-docs/spec/05). The design speaks that language: disciplined ledger rules,
-tabular numerals, month units made tangible. Warmth comes from the
+Mid-term rentals are contracts measured in months — marketed as "1–12
+months", enforced as ≥31 and <365 days, priced by the day at price÷30
+(ADR-022/023). The design speaks the month language: disciplined ledger
+rules, tabular numerals, month units made tangible. Warmth comes from the
 photography; the UI itself stays cool, precise, and trustworthy.
 
 **Availability semantics are system-wide and non-negotiable:**
@@ -53,8 +54,9 @@ no external font requests — CSP-friendly).
 
 ## 6.4 The signature: the month-band
 
-An 11-cell strip — the product's whole domain (1–11 month stays) made
-physical. Implemented in `app/components/MonthBand.tsx`:
+A 12-cell strip — the product's whole domain ("1–12 months", ADR-022; it
+was 11 cells until the duration limits moved) made physical. Implemented in
+`app/components/MonthBand.tsx`:
 
 - **`MonthBandSelect`** — stay-length control (hero, booking widget). Cells
   1–N green (selected span), rest river-wash. Radiogroup semantics.
@@ -105,7 +107,7 @@ availability band).
 - Every user-facing string exists in `messages/es.json` **and** `en.json`;
   Spanish is the default register. ICU plurals for counts (`{n, plural, …}`).
 - Prices: force digit grouping (`useGrouping: "always"` — es-ES alone doesn't
-  group 4-digit numbers; rule R-X-2 of docs/spec/09 requires `1.350`).
+  group 4-digit numbers; rule R-X-2 (§8.1/§8.2) requires `1.350`).
 - Buttons say what they do ("Solicitar reserva", never "Enviar"); money is
   always labelled an estimate (R-CORE-2).
 - **Voice** (adopted from the v1 design system's brand-voice guideline —

@@ -16,7 +16,7 @@
 - **Import `Link`/`useRouter` from `@/i18n/navigation`**, never from `next/link` / `next/navigation`.
 - **Static export only.** No middleware, no route handlers, no dynamic SSR. `app/public/staticwebapp.config.json` carries routing and auth.
 - **Light and dark mode are both first-class.** Theme is `data-theme` on `<html>`; never use `@media (prefers-color-scheme)` directly.
-- **Authorization is enforced in the C# functions** by parsing `x-ms-client-principal`. Route rules are cosmetic (spec-v2 §3.5).
+- **Authorization is enforced in the C# functions** by parsing `x-ms-client-principal`. Route rules are cosmetic (spec §3.5).
 - **Secrets never in the client or repo.** Entra client ID and secret live in SWA application settings only.
 - `cd app && npm run build` must stay green.
 - Commit messages end with `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`.
@@ -993,21 +993,21 @@ curl -sS -o /dev/null -w '%{http_code}\n' "https://delightful-sand-063f8a703.7.a
 ```
 
 Expected `401` without a session. A reachable static page proves nothing; a
-function answering with data does (spec-v2 §3.5).
+function answering with data does (spec §3.5).
 
 ---
 
 ## Task 10: Amend the spec
 
 **Files:**
-- Modify: `docs/spec-v2/05-decision-log.md`
-- Modify: `docs/spec-v2/03-auth-and-roles.md`
-- Modify: `docs/spec-v2/01-architecture.md`
-- Modify: `docs/spec-v2/07-legal-notes.md`
+- Modify: `docs/spec/05-decision-log.md`
+- Modify: `docs/spec/03-auth-and-roles.md`
+- Modify: `docs/spec/01-architecture.md`
+- Modify: `docs/spec/07-legal-notes.md`
 
 - [ ] **Step 1: Add ADR-035 superseding ADR-013**
 
-Append to `docs/spec-v2/05-decision-log.md`, and add the row to the index table at the top:
+Append to `docs/spec/05-decision-log.md`, and add the row to the index table at the top:
 
 ```markdown
 ## ADR-035 — Entra External ID: an Ebrostay account, Google, and our own branding
@@ -1129,16 +1129,16 @@ must be tested when Google is added (§ below).
 
 - [ ] **Step 5: Update the §1 resource table**
 
-In `docs/spec-v2/01-architecture.md`: SWA name `ebrostay-home`, plan **Standard**, region per the Task 2 outcome, new default hostname. Add the external tenant as a resource. If the app landed in West Europe, rewrite the note at line 66 about compute and data being in different regions — the Atlantic hop is gone.
+In `docs/spec/01-architecture.md`: SWA name `ebrostay-home`, plan **Standard**, region per the Task 2 outcome, new default hostname. Add the external tenant as a resource. If the app landed in West Europe, rewrite the note at line 66 about compute and data being in different regions — the Atlantic hop is gone.
 
 - [ ] **Step 6: Add the legal note**
 
-Append to `docs/spec-v2/07-legal-notes.md`: Microsoft as processor for authentication under its DPA; the EU tenant location as the transfer basis; and the no-cookie-banner reasoning from the design spec §5.6, including the Application Insights caveat that would overturn it.
+Append to `docs/spec/07-legal-notes.md`: Microsoft as processor for authentication under its DPA; the EU tenant location as the transfer basis; and the no-cookie-banner reasoning from the design spec §5.6, including the Application Insights caveat that would overturn it.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add docs/spec-v2/
+git add docs/spec/
 git commit -m "docs(spec): ADR-035 retires the borrowed sign-in
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"

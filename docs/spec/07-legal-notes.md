@@ -81,7 +81,8 @@ Confirm each before relying:
   calc is a simple day count — **≥31 days and <365 days** (leap years ignored),
   which sits safely inside the reform's "≤12 months" (ADR-022).
 - **Billing:** daily proration is **legal and our free choice** (A.2); it's also
-  common in the mid-term segment via PM tooling. Decision pending — see BACKLOG.
+  common in the mid-term segment via PM tooling. ✅ **Decided 2026-07-26 —
+  ADR-023:** rent is pro-rated daily at price÷30, collected per calendar month.
 - **Contracts (out of app scope, but note):** each contract should state the
   temporality cause; don't chain >2 temporary contracts per guest.
 - **Compliance to confirm:** NRA registration + platform display/verify duty;

@@ -1,6 +1,6 @@
 namespace Ebrostay.Api.Models;
 
-// `profiles` container document (spec-v2 §2.3 / §3.6). id = principal userId.
+// `profiles` container document (spec §2.3 / §3.6). id = principal userId.
 // NO role field lives here — roles are SWA-platform state only (§3.2), so a
 // compromised DB write can never mint an admin.
 public class ProfileDoc

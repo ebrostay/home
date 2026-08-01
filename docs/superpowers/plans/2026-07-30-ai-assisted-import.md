@@ -9,7 +9,7 @@
 **Tech Stack:** C# .NET 9 isolated Azure Functions (SWA managed), Cosmos DB NoSQL, Azure Storage Queues, Next.js App Router static export, TypeScript, next-intl, Tailwind v4, vitest, Playwright, xUnit.
 
 **Spec:** `docs/superpowers/specs/2026-07-30-ai-assisted-import-design.md`
-**Decisions:** ADR-033 in `docs/spec-v2/05-decision-log.md`
+**Decisions:** ADR-033 in `docs/spec/05-decision-log.md`
 
 ## Global Constraints
 
@@ -2422,8 +2422,8 @@ git add app && git commit -m "feat(app): import marks and the per-step banner"
 
 **Files:**
 - Modify: `app/e2e/` (fixtures and a case for the new screens)
-- Modify: `docs/spec-v2/05-decision-log.md`
-- Modify: `docs/spec-v2/04-api.md` (the endpoint list)
+- Modify: `docs/spec/05-decision-log.md`
+- Modify: `docs/spec/04-api.md` (the endpoint list)
 
 **Interfaces:**
 - Consumes: everything above.
@@ -2454,7 +2454,7 @@ cd app && npx tsc --noEmit && npm test && npm run build && npm run test:e2e
 
 - [ ] **Step 4: Flip the documentation**
 
-In `docs/spec-v2/05-decision-log.md`, change ADR-033's status from `🔜 **not built**` to `✅ **built** 2026-XX-XX`, and note anything decided during implementation. In `docs/spec-v2/04-api.md`, add the four endpoints to the endpoint list with their error codes.
+In `docs/spec/05-decision-log.md`, change ADR-033's status from `🔜 **not built**` to `✅ **built** 2026-XX-XX`, and note anything decided during implementation. In `docs/spec/04-api.md`, add the four endpoints to the endpoint list with their error codes.
 
 - [ ] **Step 5: Commit**
 

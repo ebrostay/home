@@ -215,7 +215,7 @@ anywhere but a developer's machine:
 
 ## 5. Create the containers and seed
 
-The database and its four containers are created in Azure by
+The database and its eight containers (spec §2.1) are created in Azure by
 `infra/main.bicep`. Locally, one script does the same thing:
 
 ```bash
@@ -290,8 +290,10 @@ runtime, and the dev server is more forgiving than the build is.
 ## 7. Sign in as yourself
 
 The SWA emulator's login page accepts any username and mints a principal from
-it. Visit <http://localhost:4280/.auth/login/github>, enter anything, and the
-API will treat you as that user.
+it — it fakes whatever provider name is in the URL, so the real Entra tenant
+(ADR-035) is never involved locally. Visit
+<http://localhost:4280/.auth/login/ebrostay>, enter anything, and the API will
+treat you as that user.
 
 Seeded listings belong to a placeholder host (`seed-host`), so they are public
 but appear in nobody's portfolio. To own them — which you need in order to see
@@ -435,7 +437,7 @@ Azurite is not running, or `AzureWebJobsStorage` is not
 Read the error code — the pipeline refuses by reason. `photo_heic` means
 exactly that (export as JPEG); `photo_svg`, `photo_not_an_image` and
 `photo_too_large` likewise. These are deliberate refusals, not failures. Full
-rules: the ADR-019 amendment in `docs/spec-v2/05-decision-log.md`.
+rules: the ADR-019 amendment in `docs/spec/05-decision-log.md`.
 
 **`npm run test:e2e` says the browser is missing**
 `npm i` installs the Playwright package but not the browser it drives — and
@@ -470,7 +472,9 @@ then repeat §3 and §5.
 - **Azure credentials.** Nothing local needs them. Deployment is by GitHub
   Actions from `redesign/v2`; provisioning is `infra/main.bicep`, with
   `infra/provision.sh` kept as history.
-- **A test runner.** There is no automated test gate yet — verification is by
-  running the app. Adding one is open decision OD-1's dependency.
+- **A full CI test gate.** The three suites in §9 exist and run locally; CI
+  currently gates deploys on the vitest unit suite only (see
+  [BACKLOG](BACKLOG.md) — wiring e2e + dotnet tests into `swa-v2.yml` is
+  open, and the full gate is part of OD-1's cutover checklist).
 - **The DeepSeek key.** The AI assistant (ADR-020) is not built; when it is, a
   missing key degrades to `503 ai_not_configured` and the editor keeps working.

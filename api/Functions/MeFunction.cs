@@ -6,7 +6,7 @@ using Microsoft.Azure.Functions.Worker;
 
 namespace Ebrostay.Api.Functions;
 
-// GET /api/me — session probe + profile bootstrap (spec-v2 §3.6). Anonymous
+// GET /api/me — session probe + profile bootstrap (spec §3.6). Anonymous
 // callers get authenticated:false (200, not 401) so the frontend can call it
 // unconditionally. This is the one authenticated endpoint that does NOT reject
 // a deactivated principal — it reports the flag so the UI can show the notice.

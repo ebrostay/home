@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Ebrostay.Api.Functions;
 
-// The owner surface (spec-v2 §4.4). Ownership is decided HERE, from the
+// The owner surface (spec §4.4). Ownership is decided HERE, from the
 // SWA-forwarded principal — never from a query string, and never from the SWA
 // route rule alone, which only proves the caller is signed in as somebody.
 public class HostFunctions(
@@ -178,7 +178,7 @@ public class HostFunctions(
     }
 
     // ------------------------------------------------------------------
-    // One listing — the "Manage property" surface (spec-v2 §4.4).
+    // One listing — the "Manage property" surface (spec §4.4).
     // ------------------------------------------------------------------
 
     [Function("HostPropertyGet")]
@@ -203,7 +203,7 @@ public class HostFunctions(
             requests));
     }
 
-    // The listing editor (spec-v2 §4.4). The other side of the ADR-025 split:
+    // The listing editor (spec §4.4). The other side of the ADR-025 split:
     // everything here is a claim about the home, so an approved listing goes
     // back in the review queue when it is saved.
     [Function("HostDetailsUpdate")]

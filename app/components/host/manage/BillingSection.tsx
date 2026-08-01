@@ -146,7 +146,7 @@ export function BillingSection({
 }
 
 // Both cards are disabled: owner payout details are not in the v2 data model
-// yet (spec-v2 §2.1). Shown rather than hidden, because "we will pay you" with
+// yet (spec §2.1). Shown rather than hidden, because "we will pay you" with
 // no visible account to pay into is the more alarming omission.
 function AccountCard({
   label,

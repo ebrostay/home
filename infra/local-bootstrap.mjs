@@ -9,7 +9,7 @@
 // exists so a fresh machine has the same four containers without needing the
 // Bicep deployment or an Azure subscription.
 //
-// Shapes come from docs/spec-v2/02-data-model.md §2.1 — partition keys
+// Shapes come from docs/spec/02-data-model.md §2.1 — partition keys
 // especially: `bookingRequests` partitions on /propertyId so an owner's
 // request log is a single-partition query, and getting that wrong locally
 // hides the cost of getting it wrong in Azure.
@@ -28,7 +28,7 @@ if (!endpoint || !key) {
 
 // Refuse to touch anything but a local emulator. This script creates
 // containers; pointed at the real account by a stray environment variable it
-// would be writing to production data (docs/spec-v2 §2.1 — the deployed
+// would be writing to production data (docs/spec §2.1 — the deployed
 // database is provisioned by Bicep, not by a dev script).
 if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(endpoint)) {
   console.error(`Refusing to run against ${endpoint} — this is a local-only script.`);

@@ -521,7 +521,7 @@ Local stack as usual — Cosmos emulator, Azurite, SWA on **:4280** (not :3000).
 
 ## 14. Relationship to the decision log
 
-This design should get an **ADR in `docs/spec-v2/05-decision-log.md`** carrying
+This design should get an **ADR in `docs/spec/05-decision-log.md`** carrying
 D1–D14 in the project's own format, following ADR-029. That ADR is the record;
 this document is the working design that elaborates it — the shapes, the
 schema table, the failure codes, the verification list. Where the two ever
@@ -530,5 +530,5 @@ disagree, the ADR wins and this document is wrong.
 It amends two existing records rather than contradicting them: **ADR-027**
 (the editor's one-diff-one-save shape and the English approval gate, both
 preserved) and **ADR-019** (the photo pipeline, whose upload endpoint stays the
-only way bytes reach storage). `docs/spec-v2/02-data-model.md` §2.2 gains the
+only way bytes reach storage). `docs/spec/02-data-model.md` §2.2 gains the
 document shape and the `HiddenFromGallery` field.

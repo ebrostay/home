@@ -4,7 +4,7 @@ using Azure.Storage.Blobs.Models;
 
 namespace Ebrostay.Api.Services;
 
-// Blob storage for listing photos — spec-v2 §2.6, ADR-019.
+// Blob storage for listing photos — spec §2.6, ADR-019.
 //
 // The container is PUBLIC-READ, which is the fact the whole upload path is
 // designed around: a photo is not a file we keep, it is a URL we host and hand
@@ -18,7 +18,7 @@ public class PhotoStore(BlobServiceClient blobs)
 {
     public const string ContainerName = "property-photos";
 
-    /// A year, matching v1 practice (docs/spec/07 §7.1). Safe because a blob
+    /// A year, matching v1 practice (docs/spec/02 §2.6). Safe because a blob
     /// name is never reused: replacing a photo writes a new name rather than
     /// overwriting one, so a cached copy can never be the wrong image.
     private const string CacheControl = "public, max-age=31536000, immutable";

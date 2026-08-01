@@ -1,7 +1,7 @@
 // ============================================================
 // Nominatim geocoding for the listing editor.
 //
-// Client-direct, no API key (spec-v2 §1.1; carried from v1, docs/spec/07 §7.4).
+// Client-direct, no API key (spec §1.1; carried from v1, docs/spec/08-carried-v1-rules.md §8.4.1).
 // The browser's own `Referer` is what identifies the application to Nominatim,
 // which is the identification their usage policy asks of a website — a
 // `User-Agent` cannot be set from `fetch` at all, it is a forbidden header.

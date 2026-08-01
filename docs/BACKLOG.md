@@ -3,11 +3,50 @@
 Deferred ideas, polish, and follow-ups that came up during the v2 rebuild but
 were consciously postponed. This is the living "later" list — add to it freely.
 Formal product/architecture decisions live in
-[`docs/spec-v2/05-decision-log.md`](spec-v2/05-decision-log.md) (§5 open
-decisions OD-1…OD-5); this file is for the craft, ops, and content items that
-aren't spec-level decisions.
+[`docs/spec/05-decision-log.md`](spec/05-decision-log.md) (open
+decisions **OD-1…OD-8** at the end of that file); this file is for the craft,
+ops, and content items that aren't spec-level decisions — plus, since the
+2026-08-01 consolidation, the roll-up of **decided-but-unbuilt** work below so
+every open thread is findable from one place.
 
-Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** design-system · size ≈ S/M/L.
+Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** design-system · **[B]** decided build work · size ≈ S/M/L.
+
+## Remaining v2 build (decided in the spec, not yet built)
+
+The spec (`docs/spec/`) is the requirement; these are pointers, not
+re-specifications.
+
+- **[B][L]** **Booking endpoint** — `POST /api/booking-requests` (spec §4.3,
+  ADR-015): day-based validation (ADR-022), server recompute with the
+  ADR-023/026 estimate shape — the parity tripwire **must** cover
+  `cleaningFee` and stay in sync with the client's payment-schedule preview —
+  plus the ACS notification hook point (OD-2). Afterwards: the host
+  booking-interest log endpoint Manage is designed around.
+- **[B][S]** **Inquiries endpoint** — `POST /api/inquiries` (spec §2.5) and
+  the contact-form wiring.
+- **[B][L]** **Admin surface** — spec §4.5, nothing built. The review queue
+  (approve/reject with note) carries queued obligations from four ADRs: the
+  **live Catastro comparison** (ADR-027 — `luso`/surface/postcode/centroid,
+  never from a stored copy), the **photo EXIF location column** (ADR-019
+  amendment), the **declined-suggestions context row** (ADR-027 amendment,
+  Decision 6 rules), and the **per-stay `turnoverDaysOverride` control**
+  (ADR-026 — the field and enforcement exist, the control does not). Also:
+  all-properties management, users deactivate/reactivate, booking-request
+  triage, inquiries viewer. Decide reviewer preview of unpublished listings
+  (ADR-029 Decision 5) when the queue lands.
+- **[B][M]** **AI assistant port** — `POST /api/ai-assistant` (ADR-020,
+  spec §4.6): extract/translate/describe on DeepSeek with the existing key;
+  the translate button drops into ADR-027's English-approval panel. Keep it
+  separate from the async import path (ADR-033).
+- **[B][M]** **Cutover** — the OD-1 go/no-go checklist: re-list current homes
+  through the v2 editor (ADR-016), custom domain + www on `ebrostay-home`,
+  DNS move, rollback = revert to Pages. Then OD-4 (Supabase snapshot) and the
+  SWA resource cleanup below.
+- **[B][S]** **Stay record** — Manage's Stays table derives dates/length/rent
+  from availability blocks but has no stay reference, no stay type, and no
+  *agreed* rent distinct from the live price (spec §4.4; ADR-025 makes
+  price edits non-retroactive, which needs the agreed rent stored somewhere).
+  Payout details re-scope rides on it (spec §2.1).
 
 ## Design & frontend
 - **[D][M]** Rewrite the Claude Design project's `components/` library to v2. It
@@ -51,39 +90,41 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   *duration* via the month-band (not exact dates), the search should instead
   find properties with **any** window that can fit ~N months — an
   overlap/flexible search — rather than a hard fixed-range fit.
-- **[P][M]** **Exact-date / sub-month stays.** Bookings aren't limited to whole
-  months — a stay is any duration from **30 days up to just under 12 months**
-  (Raphael: `30 … 12×30−1` days). The current model simplifies to whole months
-  (billing rounds up; the hero band is 1–11). Allow exact date-range search and
-  booking, decoupled from whole-month *billing*. (Pin down the day-count basis:
-  30-day months vs. a real calendar year — matters at the boundary.)
-- **[P][S]** **Link duration ↔ dates.** When the whole-month stay-length
-  selector changes, move the to-date picker (and vice-versa). Note the current
-  layout: the hero has a month-band but no explicit checkout picker; the
+- ~~**[P][M]** **Exact-date / sub-month stays.**~~ ✅ **Done in substance —
+  ADR-022/023** (2026-07-22/26): stays are any duration **≥31 and <365 days**,
+  booked by exact dates on the property page, billed by the day. What remains
+  is the *search* granularity — the hero still expresses duration in whole
+  months — which is the overlapping-search item above plus the duration↔dates
+  link below.
+- **[P][S]** **Link duration ↔ dates.** When the stay-length selector changes,
+  move the to-date picker (and vice-versa). Note the current layout: the hero
+  has a month-band (1–12 since ADR-022) but no explicit checkout picker; the
   property page has a from/to `DateRangePicker` but no month-band — so this
   implies putting both controls on at least one surface, a small design choice.
-- **[L][M]** **Duration limits: ≥31 days and ≤12 months** (researched 2026-07-22,
-  see [spec-v2/07-legal-notes.md](spec-v2/07-legal-notes.md)). Findings: under
-  *current* LAU the regime is set by **purpose, not duration** — no statutory
-  12-month line; but a **proposed 2026 reform** (not yet law) makes it explicit:
-  min **31 days**, max **12 months**, over-12 auto-converts to a protected
-  habitual-residence tenancy, and >2 chained temporary contracts reclassify.
-  Product impact: change the model from "1–11 whole months" to **31 days up to
-  12 months**; the 31-day floor matters (not 30). Touches `pricing.ts`
-  (`MAX_STAY_MONTHS`), the picker/band caps, ADR-004/005, `docs/spec/05`.
-- **[P][S]** **Live bug at the month boundary.** Because billing rounds *up* to
-  whole months, a legal ~11½-month stay rounds to 12 billed months and wrongly
-  triggers the two-contract/over-limit message. Fix by basing the over-limit
-  trigger on **actual calendar duration** (does the stay reach 12 months?), not
-  the rounded-up billed count. Small change to `pricing.ts`.
+- ~~**[L][M]** **Duration limits: ≥31 days and ≤12 months**~~ ✅ **Decided
+  2026-07-22 — ADR-022:** ≥31 and <365 days, enforced as a day count in
+  `pricing.ts`; UI framing "1–12 months". The research lives in
+  [spec/07-legal-notes.md](spec/07-legal-notes.md); the
+  still-unverified compliance questions from it are the **platform compliance**
+  item below. Ops-side rule the app does not enforce: state the temporality
+  cause; don't chain >2 temporary contracts per guest.
+- ~~**[P][S]** **Live bug at the month boundary.**~~ ✅ **Fixed by ADR-022
+  point 2:** the over-limit trigger is the actual day count
+  (`end >= start + 365 days`), never the rounded-up billed months, so a legal
+  ~11½-month stay no longer trips it.
 - ~~**[P][M]** **Billing method — decide whole-month vs. daily proration.**~~
-  ✅ **Decided 2026-07-26 — ADR-023: daily proration, rate = price÷30.** Legally
-  **free to choose** (LAU art. 17: monthly is only the default "salvo pacto en
-  contrario"; no proration mandate or bar) and daily proration is common in the
-  mid-term segment. Recommendation leaning to **pro-rate partial edges to a daily
-  rate** — fairer for mid-term guests and it dissolves the whole-month rounding
-  distortion. Open sub-decision: daily-rate basis (rent÷30 vs. ÷actual days in
-  month vs. ×12÷365). Reworks ADR-004/005 pricing math + `app/lib/pricing.ts`.
+  ✅ **Decided 2026-07-26 — ADR-023: daily proration, rate = price÷30, fixed**
+  (the sub-decision on the daily-rate basis was settled in the same ADR);
+  collected per calendar month; built in `app/lib/pricing.ts`.
+- **[P][S]** **Per-listing minimum stay from turnover economics.** ADR-026's
+  commercial note: the turnover buffer is unsold inventory that scales against
+  short stays (~1.6% of a six-month stay, ~10% of repeated one-month stays) —
+  an argument for guiding owners to set `minStayMonths` from turnover cost
+  rather than the 31-day legal floor alone. Owner guidance/UI hint, per
+  listing.
+- **[P][S]** **Platform cleaning fee: flat vs. by size or stay length.**
+  ADR-026 left it deliberately flat (`PLATFORM_CLEANING_FEE_EUR`, placeholder
+  120 €); revisit with real cost data.
 - **[L][M]** **Platform compliance to confirm with an abogado** (see legal notes
   §C): NRA rental-registry number (RD 1312/2024) + a possible **platform duty to
   display/verify the NRA and pull non-compliant listings** — if real, this is a
@@ -93,17 +134,79 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   yet (research rate-limited mid-run).
 
 ## Infra & ops
-- **[O][S]** Delete the old v1 SWA `ebrostay-home` (westeurope) at cutover — it
-  rejects all deployment tokens and still serves a stale v1; its main-branch
-  workflow is already disabled in GitHub.
+- ~~**[O][S]** SWA resource cleanup at cutover — retire `ebrostay-v2` and the
+  dead v1 SWA.~~ ✅ **Done.** Verified 2026-08-01 with `az staticwebapp list`
+  across both subscriptions: `ebrostay-home` (Standard, westeurope, host
+  `delightful-sand-063f8a703…`) is the only Static Web App that exists.
+- ~~**[O][M]** `infra/main.bicep` missing the four ADR-035 auth settings; stale
+  `swaName` / eastus2 comments.~~ ✅ **Fixed 2026-08-01.** `swaName` now
+  defaults to `ebrostay-home`; `EBROSTAY_OIDC_CLIENT_ID` / `_SECRET` and
+  `EBROSTAY_MSA_OIDC_CLIENT_ID` / `_SECRET` are `@secure()` required params
+  wired into `swaAppSettings`, so the whole-collection PUT can no longer wipe
+  them; header/region comments corrected. Compiles (`az bicep build`).
+  `what-if` against the live app is clean on the data plane — see the item
+  below for what it could *not* check. Still **never deployed**.
+  Remaining nit: the template
+  sets `PIPELINE_WAKEUP_URL: ''`, which the live app does not have — a deploy
+  would add it empty. Harmless; decide whether it belongs.
+- **[O][M]** **`what-if` cannot check the app settings — the template's most
+  dangerous resource is the one it can't verify.** Run 2026-08-01 against the
+  live app, `Microsoft.Web/staticSites/ebrostay-home/config/appsettings`
+  returned **`Unsupported` — "Cannot get the current status of the resource via
+  the GET method."** Not masked values, not a partial diff: no preview at all.
+  So `swaAppSettings` is a whole-collection PUT whose blast radius (deleting
+  the settings that keep sign-in working) is invisible to the only
+  drift-detection we have — and the SWA resource itself comes back `Ignore`,
+  because it's declared `existing`. The manual
+  `az staticwebapp appsettings list … | jq -r 'keys[]'` diff in the file header
+  is therefore not advice, it is the **sole control**, and it depends on a
+  human remembering. Pick one:
+  - **(a) Give up the ownership.** Drop `swaAppSettings` from the template and
+    manage settings from a checked-in script. The template shrinks to the data
+    plane, where `what-if` genuinely works. Simplest and most honest.
+  - **(b) Automate the control.** Keep the block, add a preflight that diffs
+    live keys against the template's key list and refuses to deploy on
+    mismatch. Keeps IaC ownership and closes the gap `what-if` leaves.
+  - (c) Bring the SWA itself under bicep. Fixes `Ignore`, does **not** fix
+    `Unsupported`, and risks the deployment binding — buys the least.
+
+  Rest of that run, for the record: 13 × `Modify` on Cosmos/Storage, all
+  artifact (server-populated properties the template doesn't declare —
+  `sqlEndpoint`, `defaultIdentity`, per-container `indexingPolicy.automatic`
+  and `conflictResolutionPolicy.conflictResolutionPath`, encryption-scope
+  defaults). Two checked rather than assumed: `sqlDatabases/ebrostay → Create
+  properties.options` is a phantom (live is manual 1000 RU/s, matching
+  `sharedDatabaseThroughput`; throughput is a separate child resource the
+  database GET doesn't return), and `nearbyRoutes → Array
+  …indexingPolicy.excludedPaths` is the one real content diff — intended, but
+  it triggers an index transformation on deploy.
+- **[O][M]** **Nothing in the repo can recreate `ebrostay-home`.** The SWA
+  resource, its Standard SKU, the custom-auth/OIDC wiring (ADR-035/036) and the
+  deployment token exist only as CLI commands somebody ran by hand on
+  2026-07-31. `infra/provision.sh` records the *`ebrostay-v2`* build, not this
+  one. If the app were deleted, recovery means reconstructing it from the ADR
+  notes. This is the other half of "the IaC isn't in sync": the template
+  describes the data plane truthfully and the compute plane not at all. Either
+  extend it to cover the SWA, or write the ADR-035 provisioning down the way
+  `provision.sh` recorded the last one.
+- **[O][S]** **`infra/provision.sh` line 17–21 can get the live app deleted.**
+  The file is explicitly provisioning *history* (2026-07-19/20), so its
+  `ebrostay-v2` / eastus2 text is correct as a record and should not be
+  rewritten — but the paragraph saying `ebrostay-home` "rejects all deployment
+  tokens", "serves a stale v1 deploy" and "can be deleted at cutover" now names
+  the **live Standard SWA**, because ADR-035 reused the name after deleting the
+  original (West US 2, deleted 2026-07-31). Add a dated note marking that
+  paragraph as referring to the deleted West US 2 resource.
 - **[O][S]** Merge [PR #60](https://github.com/ebrostay/home/pull/60) (v1
   as-built spec refresh) into `main` — still open.
-- **[O][M]** Region split: SWA is in `eastus2`, data in `spaincentral`
-  (westeurope was ineligible for new resources). Revisit at scale — either
-  recreate the SWA in westeurope when eligible, or move to Standard tier + BYO
-  functions in Spain (pairs naturally with the .NET 10 upgrade). See ADR-021.
+- ~~**[O][M]** Region split: SWA in `eastus2`, data in `spaincentral`.~~
+  ✅ **Resolved 2026-07-31 by ADR-035** — the Standard-tier recreation landed
+  the SWA in westeurope, so both compute and data are European. (ADR-021
+  records the original constraint.)
 - **[O][S]** `.NET 9 → .NET 10` on SWA managed functions the moment SWA accepts
-  `net10` (ADR-018 / OD-3). .NET 9 is already past Microsoft support.
+  `net10` (ADR-018 / OD-3). .NET 9 is already past Microsoft support. Note the
+  CI publish is `win-x64` + ReadyToRun — re-verify the RID against the host
+  when the runtime moves (the workflow's own comments explain why).
 - **[O][S]** Azure Communication Services email on the booking-log hook when
   request volume justifies it (OD-2) — the hook point is already in the
   booking-request endpoint.
@@ -122,6 +225,57 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
   designing the description editor
   ([design §8](superpowers/specs/2026-07-29-rich-text-editor-design.md)).
 
+## Host & listing editor
+- **[P][M]** **`stayTerms` `cleaning` and `cancellation` should stop being
+  per-listing declared terms** (ADR-027 consequence, still open): `cleaning`
+  now contradicts ADR-026 — it promises the clean is arranged *and paid* by
+  Ebrostay while the tenant is charged a named cleaning fee — and is derivable
+  from `cleaningBy`/`cleaningFeeEur`; `cancellation` is platform-wide policy,
+  and carrying it per listing lets one home silently opt out of a company
+  promise.
+- **[L][M]** **Document upload subsystem** (ADR-027 records the five required
+  documents and what a decision must settle): a **private** container with
+  short-lived server-issued access (never `property-photos`, which is
+  public-read), an UPLOADED-vs-VERIFIED admin surface, the IBAN on the
+  *profile* rather than the listing, and a GDPR legal basis + retention rule
+  for ID scans. Until then the wizard's Paperwork step stays a
+  `NOT BUILT YET · DESIGN INTENT` frame (ADR-030 Decision 6). Related: OD-7.
+- **[P][S]** **"Notice to leave · 30 días" is undecided.** The design handoff
+  rendered it as settled platform policy; no ADR decides it (ADR-027
+  Decision 5). Decide the notice period before the read-only policy block may
+  show it.
+- **[P][S]** **Views/analytics for Manage's Performance section** — Umami is
+  write-only from the client, so the views figure is an honest empty state
+  (spec §4.4). Needs a read source (Umami API or App Insights) before it
+  can be real.
+- **[P][S]** **Turnover days in the payout preview** as unsold inventory
+  (ADR-026 🔜) — the owner should see what the buffer costs next to what the
+  stay earned.
+- **[P][S]** **Server-side ORS matrix cache** keyed on the exact pin + group —
+  the client memo (ADR-028) helps one session only; a server-side twin would
+  serve a second owner, a second listing, or a reload, and eases the 1,500/day
+  budget. Left open alongside the budget question in ADR-028.
+
+## Auth & accounts
+- **[P][M]** **Google sign-in** (ADR-035 🔜): a built-in Entra External ID
+  provider — genuinely branded button, none of the custom-OIDC icon problems
+  (ADR-036). Untested interaction to check when it lands: gmail-vs-Google at
+  the same address.
+- **[O][S]** **Custom login domain** — sign-in pages live at
+  `ebrostay.ciamlogin.com`; moving them under ebrostay.com needs Azure Front
+  Door (~$35/mo). Deferred, purely additive (ADR-035).
+- **[D][S]** **Entra sign-in branding debt** (ADR-035): the uploaded banner /
+  square logos were rasterised with a substituted typeface — replace with a
+  proper export from the original brand assets; the account-picker variants
+  show the tenant *name* text, not the logo (no element to style); custom CSS
+  is "on borrowed time" per Microsoft's deprecation notice, and `signin.css`
+  is written to lose gracefully — keep it that way. The now-redundant
+  Microsoft tile on the hosted page is a cosmetic call (ADR-036).
+- **[P][S]** **Self-service deactivation** — deferred by spec §3.7: the
+  account page links `/.auth/purge/{provider}` and support; a user-initiated
+  deactivation endpoint is the same flag set by self, addable without design
+  change.
+
 ## Legal & content
 - **[L][S]** Privacy: lawyer to confirm the data-location wording — the policy
   is worded around data residency (Spain Central) but compute/hosting is in
@@ -134,7 +288,13 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
 ## Testing & quality (feeds Task 14)
 - **[P][M]** Pricing parity test: the client `computeEstimate` (`app/lib/pricing.ts`)
   vs the server recompute in the booking endpoint — must agree to the cent
-  (spec-v2 §4.3 parity guard).
+  (spec §4.3 parity guard), on the **ADR-023/026 shape**: rate, rent,
+  commission + cap/discount, deposit, **cleaningFee**, total, and the
+  payment-schedule preview staying in sync with what the endpoint quotes.
 - **[P][M]** Authorization negative-test matrix (v1's biggest gap): anon →
   host/admin endpoints, host A → host B's listing, non-admin → review
-  endpoints.
+  endpoints, deactivated → everything (spec §3.5).
+- **[O][S]** **CI runs only the vitest unit suite** (`npm test` in
+  `swa-v2.yml`). The Playwright e2e suite (hermetic, fixture-served — no
+  services needed, so it *can* run in CI) and `dotnet test
+  api/Ebrostay.Api.Tests` are not gates yet.

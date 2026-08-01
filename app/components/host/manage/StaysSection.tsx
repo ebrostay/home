@@ -12,7 +12,7 @@ import { SectionCard } from "./SectionCard";
 // decline control anywhere on this page — Ebrostay handles every tenant
 // conversation, so the owner's version of a stay is dates, length and money.
 //
-// A stay is currently stored as a confirmed availability block (spec-v2 §4.5),
+// A stay is currently stored as a confirmed availability block (spec §4.5),
 // which is why the first column carries the owner's own note rather than a
 // stay reference: there is no stay record to take a reference from yet. The
 // rent is likewise derived at today's price. Both are stated in the footnote

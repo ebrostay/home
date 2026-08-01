@@ -11,7 +11,7 @@ var builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureFunctionsWebApplication();
 
 // Singleton CosmosClient (skill: sdk-singleton-client). camelCase so C#
-// PascalCase properties map onto the spec-v2 document shape.
+// PascalCase properties map onto the spec document shape.
 builder.Services.AddSingleton(_ =>
 {
     var endpoint = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")

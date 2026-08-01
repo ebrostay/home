@@ -21,7 +21,7 @@ import { dailyRate, paymentSchedule, stayDays, COMMISSION_RATE } from "@/lib/pri
 // anywhere but `availability` and `pricing`.
 //
 // Two honest gaps, both flagged in the UI rather than papered over:
-//   · There is no stay record yet (spec-v2 §4.5 — an accepted stay is stored
+//   · There is no stay record yet (spec §4.5 — an accepted stay is stored
 //     as a confirmed availability block with a free-text note). So a stay has
 //     no reference, no type, and no *agreed* rent distinct from today's price.
 //   · There is no payout record. The billing table is what the pricing rules

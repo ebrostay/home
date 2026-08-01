@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Ebrostay.Api.Models;
 
-// The SWA-forwarded principal (spec-v2 §3.4). userRoles is the ONLY
+// The SWA-forwarded principal (spec §3.4). userRoles is the ONLY
 // authorization input; userId is the ONLY identity key. Never trust a
 // client-supplied user id or derive privileges from Cosmos data.
 public record ClientPrincipal

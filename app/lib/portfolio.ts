@@ -24,7 +24,7 @@ export const TABS = [
 
 export type Tab = (typeof TABS)[number];
 
-/** Stored lifecycle value (spec-v2 §2.2.1) → the owner-facing bucket. */
+/** Stored lifecycle value (spec §2.2.1) → the owner-facing bucket. */
 const BUCKET: Record<PropertyStatus, Exclude<Tab, "all">> = {
   published: "live",
   rejected: "changes",

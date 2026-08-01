@@ -1998,7 +1998,7 @@ git commit -m "feat(app): the guest page renders description documents"
 
 **Files:**
 - Modify: `infra/local-bootstrap.mjs`
-- Modify: `docs/spec-v2/02-data-model.md`, `docs/spec-v2/05-decision-log.md`
+- Modify: `docs/spec/02-data-model.md`, `docs/spec/05-decision-log.md`
 
 - [ ] **Step 1: Seed `copy` as documents**
 
@@ -2039,7 +2039,7 @@ Write these as a checked-in script under `api/Ebrostay.Api.Tests/` or as documen
 
 - [ ] **Step 4: Write the ADR**
 
-Add an ADR to `docs/spec-v2/05-decision-log.md` following ADR-029's format, carrying D1–D14 from the design. That ADR is the record; the design document elaborates it. Update `docs/spec-v2/02-data-model.md` §2.2 with the document shape and `HiddenFromGallery`.
+Add an ADR to `docs/spec/05-decision-log.md` following ADR-029's format, carrying D1–D14 from the design. That ADR is the record; the design document elaborates it. Update `docs/spec/02-data-model.md` §2.2 with the document shape and `HiddenFromGallery`.
 
 - [ ] **Step 5: Full verification sweep**
 
@@ -2053,7 +2053,7 @@ cd .. && ~/.dotnet/dotnet build api && ~/.dotnet/dotnet test api/Ebrostay.Api.Te
 - [ ] **Step 6: Commit**
 
 ```bash
-git add infra/local-bootstrap.mjs docs/spec-v2
+git add infra/local-bootstrap.mjs docs/spec
 git commit -m "feat: seed description documents, and record the decision"
 ```
 

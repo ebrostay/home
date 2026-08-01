@@ -6,7 +6,7 @@ using Microsoft.Azure.Cosmos;
 
 namespace Ebrostay.Api.Services;
 
-// Profile bootstrap (spec-v2 §3.6) + the shared authenticated-endpoint guard
+// Profile bootstrap (spec §3.6) + the shared authenticated-endpoint guard
 // (§3.4/§3.7). Roles are NEVER read from here — only the principal.
 public class ProfileService(Database database)
 {

@@ -579,7 +579,7 @@ End-to-end checks:
 
 ## 12. Relationship to the decision log
 
-**`ADR-028` in `docs/spec-v2/05-decision-log.md` is the primary record.** It
+**`ADR-028` in `docs/spec/05-decision-log.md` is the primary record.** It
 holds the decisions and their rationale in the project's own format, and is
 what should be read before touching this feature.
 
@@ -588,6 +588,6 @@ container definitions, the ASCII layouts, the failure table and the
 verification list — build-level detail an ADR should not carry. Where the two
 ever disagree, the ADR wins and this document is wrong.
 
-Still to be written during implementation: `docs/spec-v2/02-data-model.md`
+Still to be written during implementation: `docs/spec/02-data-model.md`
 gains the entry and route shapes, and `04-functional-flows.md` gains the
 lookup and route flows.

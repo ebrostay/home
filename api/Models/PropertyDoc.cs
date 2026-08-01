@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Ebrostay.Api.Models;
 
-// The `properties` container document — docs/spec-v2/02-data-model.md §2.2.
+// The `properties` container document — docs/spec/02-data-model.md §2.2.
 // Serialized camelCase via CosmosClientOptions (Program.cs).
 
 public record Bilingual(string? Es, string? En);

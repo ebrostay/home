@@ -1,18 +1,26 @@
-# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-024)
+# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-036)
 
 > Target: branch `redesign/v2`, locked 2026-07-19 (product owner: Raphael).
-> Continues the v1 log ([docs/spec/11-decision-log.md](../spec/11-decision-log.md), ADR-001–010) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
+> Continues the v1 log (v1 spec §11, ADR-001–010 — on `main`; the v1→v2 disposition map is in [§8.5](08-carried-v1-rules.md)) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
 
 v1 ADRs that remain in force in v2 unchanged: **ADR-001** (no online payment),
 **ADR-004** (commission 15% VAT incl., cap restated as 30 days' rent by
 ADR-023), **ADR-008** (three-state `billsPolicy`; the legacy
 boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entry.
 
+Supersessions **within** this log: **ADR-013** (SWA preconfigured providers)
+is superseded by **ADR-035** (Entra External ID); **ADR-021** (fresh SWA in
+eastus2) is amended by **ADR-035** (SWA Standard, recreated in West Europe);
+point 4 of **ADR-022** (monthly billing) is replaced by **ADR-023** (daily
+proration). Open items every locked decision deliberately left behind are
+collected in the **Open decisions** table at the end of this file (OD-1…OD-8)
+and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
+
 | ADR | Title | Status |
 | --- | --- | --- |
 | ADR-011 | Azure stack replaces Supabase (SWA + Functions + Cosmos + Blob) | ✅ locked |
 | ADR-012 | Next.js static export + TypeScript + Tailwind v4 + next-intl | ✅ locked |
-| ADR-013 | SWA built-in auth, GitHub + Microsoft only | ✅ locked |
+| ADR-013 | SWA built-in auth, GitHub + Microsoft only | ⛔ superseded by ADR-035 |
 | ADR-014 | Marketplace model with admin review queue | ✅ locked |
 | ADR-015 | Booking = login-gated log-then-draft | ✅ locked |
 | ADR-016 | Fresh start, no data migration | ✅ locked |
@@ -20,8 +28,8 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-018 | .NET 9 on managed functions now; .NET 10 when supported | ✅ locked |
 | ADR-019 | Cosmos free tier NoSQL + Blob public-read with API-mediated uploads | ✅ locked |
 | ADR-020 | DeepSeek retained for the AI assistant | ✅ locked |
-| ADR-021 | Fresh SWA `ebrostay-v2` in eastus2; data in spaincentral | ✅ locked |
-| ADR-022 | Stay duration ≥31 days & ≤12 months; billing stays monthly | ✅ locked |
+| ADR-021 | Fresh SWA `ebrostay-v2` in eastus2; data in spaincentral | ✅ locked · amended by ADR-035 (SWA now `ebrostay-home`, Standard, West Europe) |
+| ADR-022 | Stay duration ≥31 days & ≤12 months; billing stays monthly | ✅ locked · point 4 replaced by ADR-023 |
 | ADR-023 | Rent is pro-rated daily at price÷30; rent collected per calendar month | ✅ locked |
 | ADR-024 | Off-market listings are `paused`, not `archived`, and reopen without re-review | ✅ locked |
 | ADR-025 | Pricing and availability edits apply live; only content edits re-review | ✅ locked |
@@ -35,6 +43,7 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 | ADR-033 | AI-assisted import: an async job the API owns and an extractor it does not trust | ✅ locked |
 | ADR-034 | The listing description field is `description`, not `copy` | ✅ locked |
 | ADR-035 | Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding | ✅ locked & built |
+| ADR-036 | The provider choice stays on Entra's hosted page; one-hop Microsoft via a direct provider | ✅ locked & built |
 
 ---
 
@@ -89,7 +98,13 @@ boolean is dropped in v2 — fresh start). Superseded v1 ADRs are noted per entr
 
 ## ADR-013 — SWA built-in auth, GitHub + Microsoft only
 
-- **Status:** ✅ locked 2026-07-19.
+> ⛔ **Superseded by ADR-035** (2026-07-31), which exercised exactly the escape
+> hatch this ADR named: SWA moved to Standard tier and sign-in now goes through
+> **Entra External ID** (Ebrostay email/password account + Microsoft), behind
+> custom OIDC providers. The preconfigured GitHub/`aad` providers are gone.
+> Kept for the reasoning; §3 describes the current state.
+
+- **Status:** ⛔ superseded 2026-07-31 (was ✅ locked 2026-07-19).
 - **Context:** v2 needs sign-in for booking and hosting (ADR-014/-015). v1
   used Supabase email/password auth. SWA Free tier offers preconfigured
   GitHub and Microsoft (`aad`) providers; email/password does not exist and
@@ -431,7 +446,14 @@ projection, and deleted with the photo.
 
 ## ADR-021 — Fresh SWA `ebrostay-v2` in eastus2; data in spaincentral
 
-- **Status:** ✅ locked 2026-07-19; amended 2026-07-20 (reuse → fresh resource).
+> ⚠️ **Amended by ADR-035** (2026-07-31): the move to SWA **Standard** for
+> custom auth recreated the app as **`ebrostay-home` in West Europe** (host
+> `delightful-sand-063f8a703.7.azurestaticapps.net`) — West Europe accepted new
+> resources again by then, dissolving the region constraint this ADR recorded.
+> Data stays in spaincentral. The superseded `ebrostay-v2` resource was
+> deleted — `ebrostay-home` is the only SWA (verified 2026-08-01).
+
+- **Status:** ✅ locked 2026-07-19; amended 2026-07-20 (reuse → fresh resource); amended 2026-07-31 by ADR-035 (fresh Standard resource in West Europe).
 - **Context:** Azure made **westeurope location-ineligible for new resources**
   at provisioning time — both for SWAs and for the data accounts. Data
   (`ebrostay-cosmos`, `ebrostayphotos`) went to **spaincentral**. For the SWA,
@@ -577,10 +599,10 @@ projection, and deleted with the photo.
     the schedule is **a quotation, not a commitment**. Instalment capture,
     prepayment choice and the final-bill flow land with the booking flow
     (§4.3); the preview must stay in sync with it.
-  - `docs/spec/05-business-rules.md` §5.1.1–5.1.2 describe the v1 whole-month
-    behaviour and remain accurate **for v1** (still live on `main`); they are no
-    longer the v2 rule. CLAUDE.md points at that file — v2 pricing now follows
-    this ADR.
+  - The v1 spec's §5.1.1–5.1.2 (on `main`) describe the v1 whole-month
+    behaviour and remain accurate **for v1** (still the live production site);
+    they are no longer the v2 rule. CLAUDE.md and §4.2/§4.3 point at this ADR
+    for pricing.
   - Seed data: `maxStayMonths` corrected 12 → 11 (12 calendar months is 365
     days on the nose, which ADR-022 disallows).
   - **`stayTerms` is a controlled vocabulary, not free text** (confirmed
@@ -2479,23 +2501,6 @@ object with the wrong key.
 
 ---
 
-## Open decisions
-
-The v2 residue — items locked decisions deliberately left open, with their
-resolution paths.
-
-| # | Decision | Status | Question | Resolution path |
-| --- | --- | --- | --- | --- |
-| OD-1 | **Cutover date criteria** | 🔜 | When exactly does DNS move from GitHub Pages to the SWA? Locked only as "early: once the redesigned public site + API are solid; host/admin ship incrementally after". | Define the go/no-go checklist: public pages + search + property detail + booking flow green under the (pending) test gate; current homes re-listed via the v2 editor (ADR-016); custom domain + www configured on the SWA; rollback = DNS revert to Pages. |
-| OD-2 | **ACS email timing** | 🔜 | When to wire Azure Communication Services email into the booking hook point (staff notification, guest copy)? | Ship after cutover once request volume justifies it; the hook point in `POST /api/booking-requests` (§4.3) is the only touch point. Requires ACS resource + verified sender domain. |
-| OD-3 | **.NET 10 availability watch** | 🔜 | SWA managed functions do not yet accept `net10`. | Check the SWA supported-runtimes list on each Azure update cycle; upgrade immediately on availability per §1.6 / ADR-018. |
-| OD-4 | **Supabase decommission snapshot** | 🔜 | v1 prod data stays in Supabase until decommission (ADR-016). What is kept, and when is the project deleted? | After cutover + a settling period: export full `pg_dump` + storage bucket archive to operator-held storage, verify readability, then delete the Supabase project. Date to be set with OD-1. |
-| OD-5 | **Published-edit review visibility** | 🔜 | §2.2.1 takes the simple rule: editing a published listing pulls it from public view until re-approved. Should the prior published version instead stay live while the edit awaits review (draft-over-live)? | Keep the simple rule for launch; revisit if hosts complain about visibility gaps. Draft-over-live = store a `pendingRevision` sub-document on the property; approve = promote. Pure additive change. |
-| OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Leaning (2026-07-29): count **working days**. Blocked on one operational fact — does the turnaround crew work Saturdays? If yes, the problem collapses to holidays only. Decide once real stays flow; needs a hand-maintained Zaragoza holiday list (national + Aragón + local: Pilar, San Valero, Cincomarzada) served from ONE place, because the C# projection and the client calendar must agree day-for-day. Raised with ADR-031. |
-| OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
-| OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |
-
-
 ## ADR-035 — Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding
 
 - **Status:** ✅ locked & built 2026-07-31. **Supersedes ADR-013.** Amends ADR-021.
@@ -2783,3 +2788,22 @@ four dead mechanisms are needed for it:
 - The Microsoft tile on the hosted page (enabled during testing) is now
   redundant with the direct button but harmless; keeping it is a
   cosmetic call, not an architectural one.
+
+---
+
+## Open decisions
+
+The v2 residue — items locked decisions deliberately left open, with their
+resolution paths. Mirrored (with the craft/ops/content items that are not
+spec-level decisions) in [`docs/BACKLOG.md`](../BACKLOG.md).
+
+| # | Decision | Status | Question | Resolution path |
+| --- | --- | --- | --- | --- |
+| OD-1 | **Cutover date criteria** | 🔜 | When exactly does DNS move from GitHub Pages to the SWA? Locked only as "early: once the redesigned public site + API are solid; host/admin ship incrementally after". | Define the go/no-go checklist: public pages + search + property detail + booking flow green under the (pending) test gate; current homes re-listed via the v2 editor (ADR-016); custom domain + www configured on the SWA; rollback = DNS revert to Pages. |
+| OD-2 | **ACS email timing** | 🔜 | When to wire Azure Communication Services email into the booking hook point (staff notification, guest copy)? | Ship after cutover once request volume justifies it; the hook point in `POST /api/booking-requests` (§4.3) is the only touch point. Requires ACS resource + verified sender domain. |
+| OD-3 | **.NET 10 availability watch** | 🔜 | SWA managed functions do not yet accept `net10`. | Check the SWA supported-runtimes list on each Azure update cycle; upgrade immediately on availability per §1.6 / ADR-018. |
+| OD-4 | **Supabase decommission snapshot** | 🔜 | v1 prod data stays in Supabase until decommission (ADR-016). What is kept, and when is the project deleted? | After cutover + a settling period: export full `pg_dump` + storage bucket archive to operator-held storage, verify readability, then delete the Supabase project. Date to be set with OD-1. |
+| OD-5 | **Published-edit review visibility** | 🔜 | §2.2.1 takes the simple rule: editing a published listing pulls it from public view until re-approved. Should the prior published version instead stay live while the edit awaits review (draft-over-live)? | Keep the simple rule for launch; revisit if hosts complain about visibility gaps. Draft-over-live = store a `pendingRevision` sub-document on the property; approve = promote. Pure additive change. |
+| OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Leaning (2026-07-29): count **working days**. Blocked on one operational fact — does the turnaround crew work Saturdays? If yes, the problem collapses to holidays only. Decide once real stays flow; needs a hand-maintained Zaragoza holiday list (national + Aragón + local: Pilar, San Valero, Cincomarzada) served from ONE place, because the C# projection and the client calendar must agree day-for-day. Raised with ADR-031. |
+| OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
+| OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |

@@ -1,5 +1,5 @@
 // Long-form copy for /about — colocated per the long-form content rule
-// (docs/spec-v2/06 §6.7 exception): prose lives next to the page, not in the
+// (docs/spec/06 §6.7 exception): prose lives next to the page, not in the
 // central messages dictionary. Condensed from v1 (main:about.html, about.* /
 // how.* keys), updated for the v2 marketplace model: any signed-in user can
 // list a home; the Ebrostay team reviews every listing before publication.

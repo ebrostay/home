@@ -1,9 +1,9 @@
 namespace Ebrostay.Api.Models;
 
-// Public (anonymous) projections — spec-v2 §2.2 "Public projection":
+// Public (anonymous) projections — spec §2.2 "Public projection":
 // published docs only; hostId, reviewNote, availability notes/hold internals
 // are stripped. Public availability = blocking {start, end} ranges only,
-// with EXPIRED holds excluded (spec-v2 §2.2.3 / v1 open decision #2).
+// with EXPIRED holds excluded (spec §2.2.3 / v1 open decision #2).
 
 public record PublicRange(string Start, string End);
 

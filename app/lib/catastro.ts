@@ -1,5 +1,5 @@
 // ============================================================
-// The Catastro's free public services (spec-v2 §1.1; documented in
+// The Catastro's free public services (spec §1.1; documented in
 // "Servicios web libres de la Sede Electrónica del Catastro", v2.6).
 //
 // Client-direct, no key, no registration — the same shape as Nominatim, and

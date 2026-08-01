@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **Primary record is `ADR-028`** in `docs/spec-v2/05-decision-log.md`. Where it and `docs/superpowers/specs/2026-07-28-whats-nearby-design.md` disagree, the ADR wins.
+- **Primary record is `ADR-028`** in `docs/spec/05-decision-log.md`. Where it and `docs/superpowers/specs/2026-07-28-whats-nearby-design.md` disagree, the ADR wins.
 - **Bilingual ES/EN is a hard requirement.** Every user-facing string goes in `app/messages/es.json` **and** `en.json`. Spanish is default.
 - **Light and dark mode both first-class.** Theme is `data-theme` on `<html>`; use the Tailwind `dark:` variant. Never `@media (prefers-color-scheme)`.
 - **Static export.** No middleware, no route handlers, no server components at runtime. Dynamic data is fetched client-side from `/api/*`.
@@ -72,7 +72,7 @@
 | `app/messages/{es,en}.json` | All new strings + shared `nearby.type.*` |
 | `app/package.json` | Vitest |
 | `infra/local-bootstrap.mjs`, `infra/main.bicep` | Three containers |
-| `docs/spec-v2/02-data-model.md`, `04-functional-flows.md` | Shapes and flows |
+| `docs/spec/02-data-model.md`, `04-functional-flows.md` | Shapes and flows |
 
 **Deleted:** `app/lib/detail-placeholders.ts`
 
@@ -2056,7 +2056,7 @@ git commit -m "feat(app): merge the neighbourhood section and draw real nearby r
 ## Task 13: Docs and end-to-end verification
 
 **Files:**
-- Modify: `docs/spec-v2/02-data-model.md`, `docs/spec-v2/04-functional-flows.md`, `docs/spec-v2/05-decision-log.md`
+- Modify: `docs/spec/02-data-model.md`, `docs/spec/04-functional-flows.md`, `docs/spec/05-decision-log.md`
 
 - [ ] **Step 1: Document the shapes**
 

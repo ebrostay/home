@@ -10,7 +10,7 @@ export type MapPin = {
   label: string; // accessible name for the marker, e.g. the home's name
 };
 
-// Leaflet + OSM tiles (carried from v1, docs/spec/07 §7.5). Pins are styled
+// Leaflet + OSM tiles (carried from v1, docs/spec/08-carried-v1-rules.md §8.4.2). Pins are styled
 // divIcons (no image-asset plumbing) speaking the system language: green =
 // listing. Client-only; Leaflet touches window at import-use time, so we
 // import the library inside useEffect.

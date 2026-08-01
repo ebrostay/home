@@ -65,7 +65,7 @@ export function PropertyCard({
   const t = useTranslations("listing");
   const list = view === "list";
 
-  // v1 formatting rule (docs/spec/09 R-X-2): ES "1.350", EN "1,350" — es-ES
+  // v1 formatting rule (R-X-2, docs/spec/08-carried-v1-rules.md §8.2): ES "1.350", EN "1,350" — es-ES
   // only groups from 10000 by default, so force grouping.
   const price = new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-GB", {
     useGrouping: "always" as Intl.NumberFormatOptions["useGrouping"],

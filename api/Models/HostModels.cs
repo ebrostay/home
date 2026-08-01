@@ -1,6 +1,6 @@
 namespace Ebrostay.Api.Models;
 
-// Owner projection — what a host sees of their OWN listings (spec-v2 §4.4).
+// Owner projection — what a host sees of their OWN listings (spec §4.4).
 // Wider than the public one: it keeps `status`, `reviewNote` and the
 // availability notes, because those are the three things the portfolio page
 // exists to show. It is still a projection, not the raw document: `hostId`
@@ -44,7 +44,7 @@ public record HostProperty(
     HostAvailabilityRange[] Availability);
 
 // ---------------------------------------------------------------------------
-// The single-listing surface ("Manage property", spec-v2 §4.4). The portfolio
+// The single-listing surface ("Manage property", spec §4.4). The portfolio
 // row answers "what is this home doing"; this answers "is it priced right, is
 // it full, and what is owed" — so it carries the pricing block and the
 // booking-interest log that the list projection has no use for.

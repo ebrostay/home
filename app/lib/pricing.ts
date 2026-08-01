@@ -1,9 +1,9 @@
 // Booking math. Billing is PRO-RATED DAILY (ADR-023, which supersedes ADR-005's
 // whole-month rule and the billing clause of ADR-022); duration LIMITS follow
-// the Spanish-law research (spec-v2/07-legal-notes.md §D + ADR-022): a legal
+// the Spanish-law research (spec/07-legal-notes.md §D + ADR-022): a legal
 // temporary stay is >= 31 days and < 365 days.
 // Dates are "YYYY-MM-DD" strings; ranges are half-open [start, end).
-// The C# booking endpoint recomputes and flags mismatches (spec-v2 §4.3).
+// The C# booking endpoint recomputes and flags mismatches (spec §4.3).
 
 export const MIN_STAY_DAYS = 31; // legal floor ("no inferior a treinta y un días")
 export const MAX_STAY_DAYS = 365; // ceiling: stay must be < 365 days (under a year; leap year ignored — ADR-022)
@@ -177,7 +177,7 @@ export function paymentSchedule(
   return out;
 }
 
-// One overlap predicate for the whole product (spec-v2 §2.2.3): half-open
+// One overlap predicate for the whole product (spec §2.2.3): half-open
 // ranges overlap iff aStart < bEnd && bStart < aEnd.
 export function rangesOverlap(
   aStart: string,

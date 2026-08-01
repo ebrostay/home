@@ -40,7 +40,7 @@ credentials, not of the account page.
 - **Payments** (payment methods, deposits, payouts). ADR-016 dropped the
   Stripe path and `owner_payout_details` was deliberately not carried
   (§2.1). Re-opening it needs a PSP decision and legal input on Aragón
-  fianza registration — see `docs/spec-v2/07-legal-notes.md`.
+  fianza registration — see `docs/spec/07-legal-notes.md`.
 
 ## 3. Decisions
 
@@ -253,7 +253,7 @@ banner would then be required. Not called for by this spec; recorded because it
 is the kind of thing switched on mid-debugging.
 
 This is a reading of the regulations, not legal advice. It should go past the
-same adviser as the fianza questions in `docs/spec-v2/07-legal-notes.md`.
+same adviser as the fianza questions in `docs/spec/07-legal-notes.md`.
 
 ## 6. Testing
 
@@ -313,14 +313,14 @@ on top of them.
 - **New ADR-035** — Entra External ID with email + password, Google and Apple.
   Supersedes ADR-013. Records the dropped providers and why.
 - **Amend ADR-021** — West Europe retried on Standard, with the outcome. Also
-  correct the record: `docs/spec-v2/01-architecture.md` states the v1 SWA
+  correct the record: `docs/spec/01-architecture.md` states the v1 SWA
   `ebrostay-home` was in **westeurope**; it was in **West US 2**. The
   conclusion stands, but the stated evidence does not.
 - **Rewrite §3.1** (providers and endpoints) and **§3.3** (admin invitations,
-  now bound to `ebrostay` identities) of `docs/spec-v2/03-auth-and-roles.md`;
+  now bound to `ebrostay` identities) of `docs/spec/03-auth-and-roles.md`;
   update the §3.4 principal example.
-- **Update the §1 resource table** in `docs/spec-v2/01-architecture.md`:
+- **Update the §1 resource table** in `docs/spec/01-architecture.md`:
   regions, plan, and the note about the transatlantic data hop.
-- **Add to `docs/spec-v2/07-legal-notes.md`** — Microsoft as a processor for
+- **Add to `docs/spec/07-legal-notes.md`** — Microsoft as a processor for
   authentication, the EU tenant location as the transfer basis, and the
   no-cookie-banner reasoning from §5.6 with the Application Insights caveat.

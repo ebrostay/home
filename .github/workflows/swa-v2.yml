@@ -50,6 +50,14 @@ jobs:
 
       # Both app and api are prebuilt; the action only uploads. The API runtime
       # comes from platform.apiRuntime in staticwebapp.config.json.
+      #
+      # `skip_app_build` is the only skip this action has. There is no
+      # `skip_api_build` — passing one only earns an "Unexpected input(s)"
+      # annotation on every run, which is what it did until 2026-07-31. The API
+      # is not rebuilt because `api/bin/publish` is compiled output with no
+      # project file in it, so Oryx finds nothing to build. If this ever points
+      # at source again, that changes — and the RID-pinned publish above, the
+      # only thing keeping the upload under the size cap, would be bypassed.
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -58,5 +66,4 @@ jobs:
           app_location: app/out
           skip_app_build: true
           api_location: api/bin/publish
-          skip_api_build: true
           output_location: ""

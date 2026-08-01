@@ -140,9 +140,13 @@ export default async function AboutPage({ params }: Props) {
           >
             {c.ctaFind}
           </Link>
-          {/* Sign-in entry point; wired to /.auth in the auth task */}
+          {/* /host, which answers this button in either state: signed out it
+              is the owner pitch with its own sign-in button, signed in it is
+              the portfolio (ADR-037). It pointed at /account until
+              2026-08-01 — a route that has never existed, so the one CTA
+              aimed at owners on this page was a 404 for the whole of v2. */}
           <Link
-            href="/account"
+            href="/host"
             className="rounded-(--radius-control) border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-line-strong"
           >
             {c.ctaList}

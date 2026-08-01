@@ -275,12 +275,23 @@ re-specifications.
   account page links `/.auth/purge/{provider}` and support; a user-initiated
   deactivation endpoint is the same flag set by self, addable without design
   change.
-- **[P][S]** **`/about`'s "List my home" CTA is a 404** — `app/[locale]/about/page.tsx`
-  links to `/account`, a route that has never existed (the comment beside it
-  still says "wired to /.auth in the auth task"). Point it at `/host`, which
-  since 2026-08-01 serves the owner pitch to signed-out visitors, or build the
-  account page the link was written for. Left alone deliberately when `/host`
-  was made public.
+- ~~**[P][S]** **`/about`'s "List my home" CTA is a 404**~~ ✅ **Fixed
+  2026-08-01:** it linked to `/account`, a route that has never existed, so
+  the one CTA aimed at owners on that page was dead for the whole of v2. Now
+  `/host`, which answers it in either state — the owner pitch signed out, the
+  portfolio signed in (ADR-037).
+- **[B][S]** **The account menu points at two pages that do not exist**
+  (found 2026-08-01 while fixing the CTA above). `components/site/AuthMenu.tsx`
+  links `/account` (line 79) and, for admins, `/admin` (line 83). Neither
+  route is built, and both are gated in `staticwebapp.config.json`, so a
+  signed-in user who opens their own menu and clicks "Account" passes the auth
+  check and lands on the 404 page. Unlike the `/about` CTA these cannot be
+  repointed — they want the pages that were always intended. `/admin` is the
+  **Admin surface** item at the top of this file; `/account` is spec §3.7,
+  which already assumes it exists (it is where `/.auth/purge/{provider}` and
+  support are meant to live — see **Self-service deactivation** below).
+  Until one of them ships, the honest interim is to hide the menu entry
+  rather than offer a link to a 404.
 
 ## Legal & content
 - **[L][S]** Privacy: lawyer to confirm the data-location wording — the policy

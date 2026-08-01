@@ -226,10 +226,6 @@
         "ors_unavailable": "No hemos podido medir las distancias ahora mismo. Prueba otra vez en un momento."
       }
     },
-    "signedOut": {
-      "title": "Inicia sesión para gestionar tus viviendas",
-      "body": "Tus anuncios, solicitudes y disponibilidad están en tu cuenta."
-    },
     "pitch": {
       "eyebrow": "PARA PROPIETARIOS",
       "title": "Publica tu vivienda.",

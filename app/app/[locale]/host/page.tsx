@@ -11,6 +11,8 @@ import { PendingRollup } from "@/components/host/PendingRollup";
 import { StatusTabs } from "@/components/host/StatusTabs";
 import { PropertyRow } from "@/components/host/PropertyRow";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/components/site/AuthProvider";
+import { HostPitch } from "@/components/host/HostPitch";
 
 // The owner's home. One question: what is my portfolio doing right now, and
 // what is waiting for me. Everything on the page answers it from a single
@@ -28,6 +30,8 @@ type State =
 export default function HostPage() {
   const t = useTranslations("host");
   const locale = useLocale();
+
+  const { me, loading: authLoading } = useAuth();
 
   const [state, setState] = useState<State>({ kind: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -73,6 +77,22 @@ export default function HostPage() {
   );
   const pending = (data ?? []).filter((p) => p.requestCount > 0);
 
+  // Signed out, this route is not the portfolio at all: it is the pitch, with
+  // its own <main>. Returning before the owner chrome is deliberate — the
+  // signed-out branch used to render a notice *under* an <h1>Manage
+  // Property</h1> and beside an "Add property" button that led somewhere the
+  // visitor could not go.
+  //
+  // Driven by /api/me rather than by the portfolio's own 401, because the two
+  // arrive at different times: AuthProvider is already fetching /api/me when
+  // this page mounts, while `state` sits in `loading` until the owner
+  // endpoint answers. Waiting for the 401 would paint the owner chrome —
+  // "Manage Property", "Add property" — at a stranger for as long as that
+  // request takes, then swap it for the pitch. The 401 is still honoured
+  // below as the late signal it is: a session that expired mid-visit.
+  if (!authLoading && !me.authenticated) return <HostPitch />;
+  if (state.kind === "signedOut") return <HostPitch />;
+
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24 pt-6">
       <header className="flex flex-wrap items-start justify-between gap-6">
@@ -106,10 +126,6 @@ export default function HostPage() {
           <div className="skeleton h-40 rounded-(--radius-card)" />
           <p className="sr-only">{t("loading")}</p>
         </>
-      )}
-
-      {state.kind === "signedOut" && (
-        <Notice title={t("signedOut.title")} body={t("signedOut.body")} />
       )}
 
       {state.kind === "error" && (

@@ -226,10 +226,6 @@
         "ors_unavailable": "We could not measure the distances just now. Try again in a moment."
       }
     },
-    "signedOut": {
-      "title": "Sign in to manage your homes",
-      "body": "Your listings, requests and availability live behind your account."
-    },
     "pitch": {
       "eyebrow": "FOR OWNERS",
       "title": "List your home.",

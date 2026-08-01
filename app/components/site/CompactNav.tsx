@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { NAV_ITEMS } from "./MainNav";
+import { Link, usePathname } from "@/i18n/navigation";
+import { NAV_ITEMS, navMatch } from "@/lib/nav";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -18,8 +18,10 @@ export function CompactNav() {
   const t = useTranslations("nav");
   const tt = useTranslations("theme");
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   const how = NAV_ITEMS.find((i) => i.key === "how")!;
+  const howActive = navMatch(pathname) === "how";
 
   return (
     <div className="relative shrink-0 min-[54rem]:hidden">
@@ -59,8 +61,8 @@ export function CompactNav() {
           >
             <Link
               role="menuitem"
-              href={how.href()}
-              aria-current={how.match() ? "page" : undefined}
+              href={how.href}
+              aria-current={howActive ? "page" : undefined}
               onClick={() => setOpen(false)}
               className="block rounded-(--radius-control) px-2.5 py-2 text-sm text-body transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-ink min-[46rem]:hidden"
             >

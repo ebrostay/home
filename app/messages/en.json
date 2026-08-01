@@ -230,6 +230,19 @@
       "title": "Sign in to manage your homes",
       "body": "Your listings, requests and availability live behind your account."
     },
+    "pitch": {
+      "eyebrow": "FOR OWNERS",
+      "title": "List your home.",
+      "lead": "Anyone with an account can list on Ebrostay. You bring the home; we bring the bridge to the companies that need it — mid-term tenants, checked before they reach you.",
+      "steps": [
+        { "title": "Sign in", "copy": "Create an account or sign in with the one you have. It takes a minute and costs nothing." },
+        { "title": "Describe the home", "copy": "Photos, monthly price, and the months it is free. Our import can read an existing listing and fill most of it for you." },
+        { "title": "We review it", "copy": "Our team checks every listing before it goes live — the address, the photos, and that both languages read well." },
+        { "title": "Take requests", "copy": "Manage availability and booking requests from your dashboard. You confirm the final price on each one." }
+      ],
+      "cta": "Sign in to list your home",
+      "ctaSignedIn": "Go to your portfolio"
+    },
     "empty": {
       "title": "No homes yet",
       "body": "Start a draft in a few minutes. We review every listing before it goes live — usually within two working days."

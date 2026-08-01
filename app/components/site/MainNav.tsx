@@ -3,17 +3,17 @@
 import { Search, Building2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { useAuth } from "./AuthProvider";
+import { NAV_ITEMS, navMatch } from "@/lib/nav";
 
 // The primary decision — am I looking for a home, or do I have one to let? —
 // reads as a segmented control in the header rather than a row of links, so
 // the two audiences are visibly a choice between siblings. "How it works"
 // rides along as the third, quieter segment.
 //
-// The owner segment points at two different places on purpose. Signed in, it
-// is the portfolio. Signed out it is the pitch, because /host is role-gated
-// (staticwebapp.config.json) and bouncing a curious owner straight into a
-// sign-in screen answers a question they have not asked yet.
+// The model, including which segment is active for a path, is lib/nav.ts.
+// This file is rendering only. The owner segment points at /host in every
+// auth state: signed out that route is the pitch, signed in it is the
+// portfolio.
 //
 // THE CONTROL NEVER LEAVES THE BAR. It gets smaller instead, in three steps,
 // and what it gives up is ordered by how much each thing is worth: the third
@@ -26,43 +26,25 @@ import { useAuth } from "./AuthProvider";
 //   ≥46rem  the same three, ES|EN and theme now in the popover
 //   ≥28rem  "Buscar" · "Gestionar", how it works now in the popover
 //    <28rem the same two as icons          (ES is the wide case: 168px / 95px)
-export const NAV_ITEMS = [
-  {
-    key: "find",
-    href: () => "/",
-    match: (p: string) => p === "/",
-    Icon: Search,
-  },
-  {
-    key: "list",
-    href: (authed: boolean) => (authed ? "/host" : "/about#hosts"),
-    match: (p: string) => p.startsWith("/host"),
-    Icon: Building2,
-  },
-  {
-    key: "how",
-    href: () => "/about#how",
-    match: () => false,
-    Icon: null,
-  },
-] as const;
+const ICONS = { search: Search, building: Building2 } as const;
 
 export function MainNav() {
   const t = useTranslations("nav");
   const pathname = usePathname();
-  const { me } = useAuth();
+  const activeKey = navMatch(pathname);
 
   return (
     <nav
       aria-label={t("mainNav")}
       className="flex shrink-0 items-center gap-[3px] rounded-full border border-line bg-surface-2 p-1"
     >
-      {NAV_ITEMS.map(({ key, href, match, Icon }) => {
-        const active = match(pathname);
+      {NAV_ITEMS.map(({ key, href, icon }) => {
+        const active = key === activeKey;
+        const Icon = icon ? ICONS[icon] : null;
         return (
           <Link
             key={key}
-            href={href(me.authenticated)}
+            href={href}
             aria-current={active ? "page" : undefined}
             // The full label is the accessible name at every step, so the
             // icons are named and the short labels ("Buscar") stay contained

@@ -2927,10 +2927,18 @@ function so a drift between them fails a test.
 `"/" → /es/ 302` was decided by the CDN before any HTML was served —
 with it in place no script anywhere could have had an opinion, which is
 why the stub sitting at that address had been dead code since it was
-written. Removing the rule lets SWA resolve `/` to `/index.html` the
-ordinary way. Putting it back would silently restore the old behaviour
-and break nothing visible, so `pages.spec.ts` asserts the rule's absence
-directly against the config file.
+written. In its place `/` carries a **rewrite** to `/index.html`, which
+serves the redirector rather than pre-empting it.
+
+The rewrite is not decoration. In production SWA would resolve the
+directory index on its own, but the everyday local stack is
+`swa start http://localhost:3000` — the emulator in proxy mode, where
+there is no directory to index: it hands `/` to `next dev`, which has no
+route for it and answers its 404 page. Deleting the redirect without
+adding the rewrite fixed the bare domain in production and broke it on
+the machine of everyone working on it. `pages.spec.ts` asserts only that
+no **redirect** rule sits on `/`, which is the thing that would silence
+the redirector; a rewrite is what makes it reachable.
 
 **Consequences.**
 

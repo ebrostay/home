@@ -49,10 +49,11 @@ own as-built spec; rules v2 carries from v1 are restated in
   `useBeforePaint` in `components/site/theme.ts` is the shared one.
 - **Static export limits**: no Next middleware, no route handlers, no dynamic
   SSR. Dynamic data is fetched client-side from `/api/*`. Auth-gated routes
-  live in `app/public/staticwebapp.config.json`. The bare domain is **not**
-  redirected there: `app/public/index.html` resolves a language client-side
-  and forwards to `/es/` or `/en/` (ADR-038, rule in `app/lib/locale.ts`).
-  `next dev` 404s on `/` — use `swa start` to exercise it.
+  live in `app/public/staticwebapp.config.json`. The bare domain is **rewritten**
+  there, never redirected: `app/public/index.html` resolves a language
+  client-side and forwards to `/es/` or `/en/` (ADR-038, rule in
+  `app/lib/locale.ts`). Bare `next dev` 404s on `/` — it never serves
+  `public/` for that path — so browse `:4280`, where the rewrite applies.
 - **Authorization is enforced in the C# functions** (read
   `x-ms-client-principal`), never only via SWA route rules or UI gates.
 - Business rules live in the **decision log** `docs/spec/05-decision-log.md`

@@ -53,6 +53,24 @@
       "statusCode": 302
     },
     {
+      "route": "/_next/static/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/brand/*",
+      "headers": {
+        "Cache-Control": "public, max-age=3600, must-revalidate"
+      }
+    },
+    {
+      "route": "/favicon.ico",
+      "headers": {
+        "Cache-Control": "public, max-age=3600, must-revalidate"
+      }
+    },
+    {
       "route": "/es/account/*",
       "allowedRoles": [
         "authenticated"

@@ -40,9 +40,13 @@ own as-built spec; rules v2 carries from v1 are restated in
   always locale-prefixed (`localePrefix: "always"`); import `Link`/`useRouter`
   from `@/i18n/navigation`, never from `next/link`/`next/navigation`.
 - **Light and dark mode** both first-class. Theme is `data-theme` on `<html>`
-  (set pre-paint by the bootstrap script in `app/app/[locale]/layout.tsx`);
-  Tailwind `dark:` variant keys off it. Never use `@media (prefers-color-scheme)`
-  directly.
+  (set pre-paint by the bootstrap script in `app/app/[locale]/layout.tsx`,
+  re-stamped on every mount by `components/site/ThemeSync.tsx` because a
+  locale switch remounts the root layout and React strips every attribute off
+  the `<html>` singleton); Tailwind `dark:` variant keys off it. Never use
+  `@media (prefers-color-scheme)` directly. **Anything that must be true of
+  the first painted frame belongs in a layout effect, not `useEffect`** —
+  `useBeforePaint` in `components/site/theme.ts` is the shared one.
 - **Static export limits**: no Next middleware, no route handlers, no dynamic
   SSR. Dynamic data is fetched client-side from `/api/*`. `/` → `/es/` redirect
   and auth-gated routes live in `app/public/staticwebapp.config.json`.

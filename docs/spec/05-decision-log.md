@@ -2791,6 +2791,76 @@ four dead mechanisms are needed for it:
 
 ---
 
+## ADR-037 — `/host` is public, and the sign-in bounce moved into the app
+
+**Date:** 2026-08-01 · **Status:** accepted
+
+`/es/host/*` and `/en/host/*` carried `allowedRoles: ["authenticated"]`.
+An owner following a bookmark while signed out was therefore 401'd at the
+edge and redirected to a bare sign-in form before the app could say
+anything — answering a question they had not asked yet. Two things were
+wrong with that redirect, both structural:
+
+1. **It was always Spanish.** `responseOverrides` is a **single global
+   map** in Static Web Apps: one 401 target for the whole site, no
+   per-route variant. `/en/host/` therefore sent English visitors to
+   `/es/sign-in/`. There is no configuration-only fix; the platform
+   cannot express it.
+2. **It discarded the destination.** SWA does not pass the original URL
+   to the redirect target, so even a correct-locale bounce landed the
+   visitor on sign-in with nowhere to return to.
+
+**Decision.** `/host` becomes a public route with two faces: signed out
+it is the owner pitch (`components/host/HostPitch.tsx`), signed in it is
+the portfolio. Its three working sub-routes — `/host/new`, `/host/edit`,
+`/host/manage` — lose their edge rules too and bounce in-app through
+`components/host/RequireOwner.tsx`, which reads `useAuth()` and sends the
+visitor to `signInPath(currentPath())`. That is locale-correct by
+construction and round-trips the destination, query string included:
+`/es/host/manage?id=pedro1` → `/es/sign-in/?redirect=/es/host/manage/?id=pedro1`.
+
+**Why this is safe, and why it was never really a weakening.** §3.5 is
+already explicit that route rules are cosmetic and the C# functions are
+the boundary: every `Host*` function calls
+`profiles.RequireActiveAsync(ClientPrincipal.Parse(req))` before any read
+or write. What the rules gated was a **prerendered HTML shell** holding
+no data. Ungating it exposes markup, not records. `/account/*` and
+`/admin/*` keep their rules — nothing there has a public face — and
+`responseOverrides.401` stays as their backstop.
+
+**Consequences.**
+
+- The pages are prerendered at build time, where no visitor exists, so
+  the auth-unresolved render is what a stranger paints. It must name
+  nobody: `/host` renders a bare skeleton until `/api/me` answers, and
+  the sub-routes render `RequireOwner`'s skeleton. A first cut branched
+  on the portfolio endpoint's 401 instead and shipped
+  `<h1>Gestiona tu vivienda</h1>` plus an "Add property" button into the
+  static HTML of a public page.
+- Ungating made the sub-routes crawlable. They carry
+  `robots: { index: false, follow: false }` via a `layout.tsx` each, or
+  six near-empty pages enter the index.
+- `/host` is now an acquisition surface and needs its own metadata; the
+  page is a client component, so it comes from `host/layout.tsx`.
+- The nav's owner segment collapses to a single href in both auth
+  states. It previously pointed at `/about#hosts` when signed out while
+  its matcher only recognised `/host`, so the segment silently never
+  highlighted — the bug that surfaced all of the above. The model now
+  lives in `app/lib/nav.ts`, where it is unit-tested.
+- **"How it works" now owns the whole of `/about`**, reversing its
+  earlier `match: () => false`. That was defended on the grounds that
+  `/about` is also where the footer's "About" link goes, so highlighting
+  would fire for someone who arrived by the other door — overruled the
+  same day: a segment that can never light up reads as broken to the
+  person looking at it, and the footer link is the rarer arrival. Note
+  the hash is not, and cannot be, part of the match — `usePathname()`
+  never sees one, so `/about#how` and `/about#hosts` are the same
+  pathname. Reading `window.location.hash` in the matcher would make
+  `lib/nav.ts` browser-only and untestable, which is the whole reason it
+  was moved out of the component; `lib/nav.test.ts` pins that.
+
+---
+
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their

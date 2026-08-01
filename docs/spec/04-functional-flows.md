@@ -539,3 +539,13 @@ conventions):
   admin surfaces: theme = `data-theme` on `<html>`, set pre-paint by the
   layout bootstrap script; Tailwind `dark:` variant keys off it; never
   `@media (prefers-color-scheme)` directly.
+  - The bootstrap script covers full document loads. A **language switch does
+    not go through one**: it is a client navigation across the `[locale]`
+    segment, so the root layout remounts, and React remounts `<html>` as a
+    singleton — `releaseSingletonInstance` strips every attribute off it and
+    only re-applies the props React knows about, which does not include
+    `data-theme` (imperative) or the inline style carrying `--filter-h`.
+    `components/site/ThemeSync.tsx` re-stamps the attribute in a **layout**
+    effect, i.e. in the same commit and before the paint. A passive
+    `useEffect` is one frame too late and shows as the whole page flashing
+    light. Same rule, same reason, for `FilterBar`'s `--filter-h`.

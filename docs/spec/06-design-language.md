@@ -92,7 +92,10 @@ ornamental rule was considered and rejected.
 
 `app/components/`: `site/Header` (sticky, frosted `bg-surface/92`),
 `site/Footer`, `site/Logo` (inline SVG mark + wordmark), `site/ThemeToggle`
-(persists `ebrostay-theme`, pre-paint bootstrap in layout), 
+(persists `ebrostay-theme`; draws the icon only — `site/ThemeSync` owns
+`<html data-theme>`, re-stamping it in a layout effect on every mount because
+a locale switch remounts the root layout and React strips the attribute; the
+pre-paint bootstrap script in the layout covers full loads), 
 `site/LanguageSwitch` (locale-preserving route swap), `ui/Button`
 (primary/secondary/ghost/danger × sm/md/lg), `ui/Field` + `Input`/`Textarea`
 (label/hint/error, `aria-describedby` wired), `ui/Select` (**Radix UI

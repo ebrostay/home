@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/site/AuthProvider";
-import { currentPath, signInPath } from "@/lib/auth";
+import { signInPath } from "@/lib/auth";
 
 // What /host is to someone who is not signed in. The route is public since
 // 2026-08-01: an owner following an old bookmark used to be 401'd by the SWA
@@ -17,12 +16,11 @@ import { currentPath, signInPath } from "@/lib/auth";
 export function HostPitch() {
   const t = useTranslations("host.pitch");
   const { me, loading } = useAuth();
+  const locale = useLocale();
 
-  // Read in an effect, not during render: this page is prerendered at build
-  // time and window.location does not exist there, so a value read during
-  // render would disagree with the server's HTML on hydration.
-  const [back, setBack] = useState("/");
-  useEffect(() => setBack(currentPath()), []);
+  // The locale is deterministic at render time (a route param), so we can
+  // build the destination synchronously without reading window.location,
+  // which would not exist at build time and would cause hydration mismatch.
 
   const steps = t.raw("steps") as { title: string; copy: string }[];
 
@@ -68,7 +66,7 @@ export function HostPitch() {
           </Link>
         ) : (
           <Link
-            href={signInPath(back)}
+            href={signInPath(`/${locale}/host`)}
             className="inline-flex h-[42px] items-center rounded-(--radius-control) bg-brand px-[18px] text-sm font-semibold text-white transition-colors duration-(--dur-standard) hover:bg-brand-strong"
           >
             {t("cta")}

@@ -44,7 +44,13 @@ export default function HostPage() {
     setReloadKey((k) => k + 1);
   };
 
+  // Gated on auth so a signed-out stranger never fires the owner fetch: it
+  // would only ever come back 401 and log a stray console error. A session
+  // that expires mid-visit still has `me.authenticated === true` at mount, so
+  // the fetch still runs for it and the 401 still lands on `state.kind ===
+  // "signedOut"` below — that branch is a late signal, not the only signal.
   useEffect(() => {
+    if (authLoading || !me.authenticated) return;
     let cancelled = false;
     fetchHostProperties()
       .then((data) => {
@@ -58,7 +64,7 @@ export default function HostPage() {
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, [reloadKey, authLoading, me.authenticated]);
 
   const data = state.kind === "ready" ? state.data : null;
 

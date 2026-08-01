@@ -143,12 +143,21 @@ Rules:
 Mirroring v1's "RLS is the boundary, the JS admin gate is cosmetic" (v1
 ADR-006) in the new world:
 
-> **`staticwebapp.config.json` route rules (`allowedRoles` on `/es/host/*`,
+> **`staticwebapp.config.json` route rules (`allowedRoles` on `/es/account/*`,
 > `/es/admin/*`, …) are convenience/UX only** — they bounce signed-out users
 > to login and hide admin pages, nothing more. **REAL authorization is
 > enforced in every C# function** by parsing `x-ms-client-principal` (§3.4)
 > and checking role + ownership against the data (e.g. `hostId == UserId`)
 > before any read or write.
+>
+> `/host/*` is not among them: since 2026-08-01 `/host/new`, `/host/edit`, and
+> `/host/manage` bounce a signed-out visitor in-app, via
+> `components/host/RequireOwner.tsx`, instead of an edge route rule — that
+> component reads the locale the visitor is already on and preserves the
+> destination, which SWA's single global `responseOverrides.401` could not do.
+> `/host` itself carries no rule at all: it is public, serving the owner pitch
+> to a signed-out visitor and the portfolio to a signed-in one. Same
+> conclusion either way — none of this is the authorization boundary.
 
 Consequences (as in v1): authorization is tested at the **API layer** with a
 negative-test matrix (anonymous → protected endpoints, authenticated → other

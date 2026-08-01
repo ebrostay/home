@@ -19,6 +19,15 @@ describe("navMatch", () => {
     expect(navMatch("/host/manage")).toBe("list");
   });
 
+  // next.config.ts sets trailingSlash: true, so real pathnames the router
+  // hands the matcher can carry a trailing slash, not just the slashless form
+  // above. A future "simplification" of the matcher to `p === "/host"` would
+  // keep this file green while going blank on every production pathname.
+  it("highlights list with a trailing slash, which real pathnames carry", () => {
+    expect(navMatch("/host/")).toBe("list");
+    expect(navMatch("/host/new/")).toBe("list");
+  });
+
   it("highlights nothing on pages no segment owns", () => {
     expect(navMatch("/about")).toBeNull();
     expect(navMatch("/privacy")).toBeNull();

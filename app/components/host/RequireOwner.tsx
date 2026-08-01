@@ -26,7 +26,7 @@ export function RequireOwner({ children }: { children: React.ReactNode }) {
 
   if (loading || !me.authenticated) {
     return (
-      <main className="mx-auto max-w-7xl px-6 pt-6">
+      <main aria-busy="true" className="mx-auto max-w-7xl px-6 pt-6">
         <div className="skeleton h-40 rounded-(--radius-card)" />
       </main>
     );

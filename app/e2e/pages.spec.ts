@@ -160,12 +160,6 @@ const ROUTES: RouteCase[] = [
     path: "/host",
     expect: { es: /Publica tu vivienda/i, en: /List your home/i },
     anonMe: true,
-    allowConsole: [
-      // The 401 from /api/host/properties is the late signal that drives
-      // state.kind === "signedOut"; the app handles it, but the browser
-      // still logs the failed fetch as a console error.
-      /Failed to load resource.*401/,
-    ],
   },
   // The offer, not step 1 (ADR-033): /host/new opens on the import start
   // screen now, and the nine steps sit behind "Start with a blank form".

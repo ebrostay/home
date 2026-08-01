@@ -30,6 +30,19 @@ Legend: **[P]** polish · **[O]** ops/infra · **[L]** legal/content · **[D]** 
 - **[P][M]** Pretty property URLs (`/property/{slug}` instead of `?id={slug}`)
   via SWA rewrites — cosmetic + marginally better SEO. Current `?id=` model
   works with static export today.
+- **[P][S]** **Finish or drop `app/public/site.webmanifest`** (found 2026-08-01
+  during the pre-admin-queue cleanup). It ships on every deploy and is inert on
+  three counts: nothing links it (`metadata` in `app/app/[locale]/layout.tsx`
+  sets `icons` but not `manifest`, so no `<link rel="manifest">` is ever
+  emitted); both icons it names — `/brand/ebrostay-icon-192.png` and `-512.png`
+  — were deleted in `0e1a236` as outdated branding, so they would 404 if it
+  *were* linked; and its description still says "1 to 11 months" against
+  ADR-022. Its colours are current (`#1f8a57` = light-mode `--brand`,
+  `#f6f8f6` = `--inverse`). To finish: regenerate the two PNGs from the current
+  mark, add `manifest: "/site.webmanifest"` to the metadata, fix the copy. To
+  drop: delete the file — no user-visible change, since nothing fetches it.
+  Only affects Add-to-Home-Screen / desktop install, never normal browsing or
+  SEO, so the honest default is drop unless mobile-install polish is wanted.
 
 ## Search & stay model
 - **[P][M]** **Overlapping availability search when the month selector is used**

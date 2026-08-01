@@ -129,11 +129,14 @@ type RouteCase = {
   /** Console errors expected on THIS route only. Scoped per route on purpose:
    *  a global allowance would blind every other page to the same class. */
   allowConsole?: RegExp[];
-  /** Serve /api/me as signed-out for this route. The shared fixture is an
-   *  authenticated user, which suits every page except the one whose entire
-   *  job is the signed-out state: /sign-in forwards signed-in visitors away,
-   *  so under the shared fixture the test would assert against the page it
-   *  redirected to. */
+  /** Simulate a signed-out visitor for this route: /api/me answers
+   *  unauthenticated AND the owner endpoints (e.g. /api/host/properties)
+   *  answer 401, matching what a real signed-out visitor gets everywhere.
+   *  The shared fixture is an authenticated user, which suits every page
+   *  except the ones whose entire job is the signed-out state: /sign-in
+   *  forwards signed-in visitors away, so under the shared fixture the test
+   *  would assert against the page it redirected to; /host shows a
+   *  different component entirely when signed out. */
   anonMe?: true;
 };
 
@@ -150,6 +153,20 @@ const ROUTES: RouteCase[] = [
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },
   { path: "/host", expect: { es: /vivienda/i, en: /home/i } },
+  // The same route signed out, which since 2026-08-01 is a different page:
+  // the owner pitch, not the portfolio. Both faces are covered because the
+  // bug that made this route public was that only one of them existed.
+  {
+    path: "/host",
+    expect: { es: /Publica tu vivienda/i, en: /List your home/i },
+    anonMe: true,
+    allowConsole: [
+      // The 401 from /api/host/properties is the late signal that drives
+      // state.kind === "signedOut"; the app handles it, but the browser
+      // still logs the failed fetch as a console error.
+      /Failed to load resource.*401/,
+    ],
+  },
   // The offer, not step 1 (ADR-033): /host/new opens on the import start
   // screen now, and the nine steps sit behind "Start with a blank form".
   // This case therefore renders StartScreen and nothing else — the nine steps
@@ -188,7 +205,7 @@ for (const locale of ["es", "en"] as const) {
   for (const { path, expect: expected, status, allowConsole = [], anonMe } of ROUTES) {
     const url = `/${locale}${path}`;
 
-    test(`${url} renders without errors`, async ({ page }) => {
+    test(`${url}${anonMe ? " (signed out)" : ""} renders without errors`, async ({ page }) => {
       const crashes: string[] = [];
       const consoleErrors: string[] = [];
 
@@ -213,6 +230,13 @@ for (const locale of ["es", "en"] as const) {
               roles: ["anonymous"], isAdmin: false, isDeactivated: false,
             }),
           }),
+        );
+
+        // A signed-out visitor is signed out everywhere. Without this the
+        // owner endpoint keeps answering 200 from the fixture and the page
+        // under test is the portfolio, not the pitch.
+        await page.route("**/api/host/properties", (route: Route) =>
+          route.fulfill({ status: 401, contentType: "application/json", body: "{}" }),
         );
       }
 
@@ -425,3 +449,42 @@ test("a listing with an unreadable timestamp does not take down the portfolio", 
   const named = rows.filter((r) => r.name).slice(1, 4);
   for (const row of named) expect(body).toContain(row.name);
 });
+
+// The reported bug: signed out, the owner segment pointed at /about#hosts
+// while its matcher only knew /host, so the pill went blank. It is one href
+// now — asserted in both auth states, because the whole failure was that the
+// two states disagreed.
+for (const anon of [false, true]) {
+  test(`the owner nav segment is highlighted on /host${anon ? " (signed out)" : ""}`, async ({
+    page,
+  }) => {
+    await stubBackend(page);
+
+    if (anon) {
+      await page.route("**/api/me", (route: Route) =>
+        route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            authenticated: false, userId: null, name: null, provider: null,
+            roles: ["anonymous"], isAdmin: false, isDeactivated: false,
+          }),
+        }),
+      );
+      await page.route("**/api/host/properties", (route: Route) =>
+        route.fulfill({ status: 401, contentType: "application/json", body: "{}" }),
+      );
+    }
+
+    await page.goto("/en/host", { waitUntil: "networkidle" });
+
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+    await expect(nav.getByRole("link", { name: "Manage Property" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(nav.getByRole("link", { name: "Find a home" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+}

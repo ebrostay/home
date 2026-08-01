@@ -1,16 +1,22 @@
 // Ebrostay v2 infrastructure — desired state for resource group `ebrostay`.
 //
+// All five @secure() params below are REQUIRED — see their comments for why.
+//
 //   preview: az deployment group what-if -g ebrostay -f infra/main.bicep \
-//              -p orsApiKey="$ORS_KEY"
+//              -p orsApiKey="$ORS_KEY" \
+//                 ebrostayOidcClientId="$OIDC_ID" \
+//                 ebrostayOidcClientSecret="$OIDC_SECRET" \
+//                 ebrostayMsaOidcClientId="$MSA_ID" \
+//                 ebrostayMsaOidcClientSecret="$MSA_SECRET"
 //   deploy:  az deployment group create  -g ebrostay -f infra/main.bicep \
-//              -p orsApiKey="$ORS_KEY"
+//              -p (same five)
 //
 // ⚠️ `swaAppSettings` is a WHOLE-COLLECTION PUT: any app setting that exists on
 // the SWA but is absent from this template is DELETED by the deployment. Before
 // deploying, diff the live settings against this file and add anything missing
 // as a parameter — do not assume this file is complete:
 //
-//   az staticwebapp appsettings list -n ebrostay-v2 -g ebrostay \
+//   az staticwebapp appsettings list -n ebrostay-home -g ebrostay \
 //     --query "properties" -o json | jq -r 'keys[]'
 //
 // That is also where the current ORS key comes from; it has never lived here.
@@ -20,19 +26,19 @@
 // nothing sensitive lives in this file or in parameters). The SWA RESOURCE
 // itself is referenced, not managed — see the `swa` resource below for why.
 //
-// NOT covered (see infra/provision.sh + docs/spec-v2/01-architecture.md):
+// NOT covered (see infra/provision.sh + docs/spec/01-architecture.md):
 // GitHub secret AZURE_STATIC_WEB_APPS_API_TOKEN_V2, GoDaddy DNS, SWA role
 // invitations, app/api code deploys (CI: .github/workflows/swa-v2.yml).
-// Region notes (why data is spaincentral but the SWA is eastus2) are in
-// ADR-021, docs/spec-v2/05-decision-log.md.
+// Region notes are in ADR-021 as amended by ADR-035 (the SWA was recreated in
+// westeurope, so compute and data are both European), docs/spec/05-decision-log.md.
 
 @description('Region for data resources (Cosmos, Storage).')
 param dataLocation string = 'spaincentral'
 
-// The SWA's own region (eastus2 — SWA offers no eligible EU region, and the
-// region only places the managed functions) is not a parameter here: the SWA is
-// referenced, not managed. See the `swa` resource below and ADR-021.
-param swaName string = 'ebrostay-v2'
+// The SWA's own region (westeurope — the region only places the managed
+// functions) is not a parameter here: the SWA is referenced, not managed.
+// See the `swa` resource below, ADR-021 and ADR-035.
+param swaName string = 'ebrostay-home'
 param cosmosAccountName string = 'ebrostay-cosmos'
 param databaseName string = 'ebrostay'
 param storageAccountName string = 'ebrostayphotos'
@@ -54,6 +60,30 @@ param sharedDatabaseThroughput int = 1000
 @description('OpenRouteService API key. Never stored in this file or in a parameters file — pass it at deploy time.')
 @secure()
 param orsApiKey string
+
+// Entra External ID credentials for SWA custom auth (ADR-035/036). Same
+// deliberate treatment as orsApiKey and for the same reason: these were wired
+// by hand during the identity build and never lived in this template, so every
+// deployment of it would have deleted all four from the live app — taking
+// sign-in down for everyone, with the two secrets recoverable only by minting
+// new ones in Entra. Required parameters turn that silent wipe into a
+// deployment that refuses to start. Read the IDs out before deploying (see the
+// header comment); the secrets come from the Entra app registrations.
+@description('Entra External ID client ID for the Ebrostay app registration.')
+@secure()
+param ebrostayOidcClientId string
+
+@description('Entra External ID client secret for the Ebrostay app registration.')
+@secure()
+param ebrostayOidcClientSecret string
+
+@description('Entra External ID client ID for the direct Microsoft-account provider (ADR-036).')
+@secure()
+param ebrostayMsaOidcClientId string
+
+@description('Entra External ID client secret for the direct Microsoft-account provider (ADR-036).')
+@secure()
+param ebrostayMsaOidcClientSecret string
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: cosmosAccountName
@@ -107,7 +137,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
 // which is live and populated. Deploying it (including this round's
 // addition of `/description/*`) triggers a Cosmos background index transformation
 // (non-disruptive, but not instant) — see ADR-028, "Consequences to watch",
-// docs/spec-v2/05-decision-log.md.
+// docs/spec/05-decision-log.md.
 var propertiesIndexingPolicy = {
   indexingMode: 'consistent'
   includedPaths: [
@@ -251,6 +281,10 @@ resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
     IMPORTS_CONNECTION: storageConnectionString
     PHOTOS_CONTAINER: photosContainerName
     ORS_API_KEY: orsApiKey
+    EBROSTAY_OIDC_CLIENT_ID: ebrostayOidcClientId
+    EBROSTAY_OIDC_CLIENT_SECRET: ebrostayOidcClientSecret
+    EBROSTAY_MSA_OIDC_CLIENT_ID: ebrostayMsaOidcClientId
+    EBROSTAY_MSA_OIDC_CLIENT_SECRET: ebrostayMsaOidcClientSecret
     PIPELINE_WAKEUP_URL: ''
     IMPORT_CALLBACK_BASE_URL: 'https://${swa.properties.defaultHostname}'
   }

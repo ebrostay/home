@@ -606,7 +606,7 @@ with `npm run dev --prefix app` and `func start` (from `api/`) already running.
 
 - [ ] **Step 2: Look at it signed out**
 
-`/host` is still gated at this point — Task 6 removes the gate. To see the signed-out page now, sign out via the account menu and browse to `http://localhost:4280/es/host/`; you will be bounced to sign-in. That bounce **is** the bug Task 6 fixes, so confirm it happens, then temporarily preview the page by visiting `http://localhost:3000/es/host` with the Functions host stopped.
+`/host` is still gated at this point — Task 6 removes the gate — so `http://localhost:4280/es/host/` still bounces to sign-in. Confirm that bounce happens (it is the bug Task 6 fixes), then view the page itself at `http://localhost:3000/es/host`: the dev server has no `/api/*`, so `fetchMe()` falls back to `ANON` and the pitch renders on exactly the path a real signed-out visitor takes. Do **not** stop the Functions host to force this — it is the user's process and nothing here needs it down.
 
 - [ ] **Step 3: Check both locales, both themes**
 

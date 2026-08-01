@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "app", "--", "-p", "3020"],
       "port": 3020
+    },
+    {
+      "name": "swa",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "swa",
+        "start",
+        "http://localhost:3000",
+        "--api-devserver-url",
+        "http://localhost:7071"
+      ],
+      "port": 4280
     }
   ]
 }

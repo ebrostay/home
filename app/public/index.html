@@ -54,6 +54,11 @@
     <!-- No JavaScript: the site default, the same answer as the sitemap's
          x-default. Inside <noscript> so it can never race the script above. -->
     <noscript><meta http-equiv="refresh" content="0; url=/es/" /></noscript>
+    <!-- The locale layouts declare these too, but this page is what "/" serves
+         and "/" is what gets bookmarked — without them the bare domain is the
+         one address with no icon. -->
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="canonical" href="/es/" />
     <link rel="alternate" hreflang="es" href="/es/" />
     <link rel="alternate" hreflang="en" href="/en/" />

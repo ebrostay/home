@@ -83,18 +83,6 @@
       ]
     },
     {
-      "route": "/es/host/*",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/en/host/*",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
       "route": "/es/admin/*",
       "allowedRoles": [
         "admin"

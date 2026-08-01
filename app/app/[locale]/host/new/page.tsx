@@ -79,6 +79,7 @@ import {
   submitBlockers,
   type StepKey,
 } from "@/lib/wizard";
+import { RequireOwner } from "@/components/host/RequireOwner";
 import { SectionNav, type SectionStatus } from "@/components/host/SectionNav";
 import { usePublishedBarHeight } from "@/components/host/manage/ContextBar";
 import { StepCard } from "@/components/host/new/StepCard";
@@ -118,9 +119,11 @@ type Saved = {
 
 export default function NewPropertyPage() {
   return (
-    <Suspense fallback={<Skeleton />}>
-      <NewPropertyContent />
-    </Suspense>
+    <RequireOwner>
+      <Suspense fallback={<Skeleton />}>
+        <NewPropertyContent />
+      </Suspense>
+    </RequireOwner>
   );
 }
 

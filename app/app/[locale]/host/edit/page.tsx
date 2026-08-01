@@ -49,6 +49,7 @@ import {
   richTextError,
   type SectionKey,
 } from "@/lib/listing";
+import { RequireOwner } from "@/components/host/RequireOwner";
 import { ContextBar } from "@/components/host/manage/ContextBar";
 import { SectionCard } from "@/components/host/manage/SectionCard";
 import { SectionNav, type SectionStatus } from "@/components/host/SectionNav";
@@ -77,9 +78,11 @@ type State =
 
 export default function EditPage() {
   return (
-    <Suspense fallback={<Skeleton />}>
-      <EditContent />
-    </Suspense>
+    <RequireOwner>
+      <Suspense fallback={<Skeleton />}>
+        <EditContent />
+      </Suspense>
+    </RequireOwner>
   );
 }
 

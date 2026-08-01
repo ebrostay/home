@@ -40,6 +40,7 @@ import {
 } from "@/lib/manage";
 import { formatEuro } from "@/lib/pricing";
 import { LedgerStrip, type LedgerCell } from "@/components/host/LedgerStrip";
+import { RequireOwner } from "@/components/host/RequireOwner";
 import { ContextBar } from "@/components/host/manage/ContextBar";
 import { SectionNav } from "@/components/host/SectionNav";
 import { StaysSection } from "@/components/host/manage/StaysSection";
@@ -70,9 +71,11 @@ type State =
 
 export default function ManagePage() {
   return (
-    <Suspense fallback={<Skeleton />}>
-      <ManageContent />
-    </Suspense>
+    <RequireOwner>
+      <Suspense fallback={<Skeleton />}>
+        <ManageContent />
+      </Suspense>
+    </RequireOwner>
   );
 }
 

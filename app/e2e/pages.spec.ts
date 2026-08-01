@@ -93,6 +93,14 @@ async function stubBackend(page: Page): Promise<string[]> {
       return json(fixture(id === REVIEW_ID ? "host-property-review.json" : "host-property.json"));
     }
 
+    // Both route lookups under a property — the saved nearby entry's
+    // (`…/nearby/{entryId}/route`) and a guest's own saved place
+    // (`…/place-route`, ADR-039). Matched BEFORE the detail fixture below,
+    // which would otherwise answer them with a whole listing document.
+    if (/\/route$/.test(path) || path.endsWith("/place-route")) {
+      return json(fixture("route.json"));
+    }
+
     if (path.startsWith("/api/properties/")) return json(fixture("property-detail.json"));
 
     unstubbed.push(path);
@@ -448,6 +456,106 @@ test("/en/property — a signed-in visitor gets both request channels", async ({
 
   // And the line that describes those buttons comes back with them.
   await expect(panel).toContainText("You won't be charged yet");
+});
+
+// "Your places" (ADR-039), which the route case above cannot reach: a fresh
+// browser context has an empty store, so the section renders its empty state
+// and measures nothing. Seeded with two places BEFORE the page loads, the
+// three things that make the section worth having must hold — the figures
+// come from the route endpoint and not from arithmetic on a typed distance,
+// the foot/car toggle re-measures against a different key, and a route drawn
+// for a selected place lands on this section's own map.
+//
+// `addInitScript` rather than an `evaluate` after load: the store is read in a
+// mount effect, so writing it afterwards would race the very render under
+// test.
+const SEEDED_PLACES = [
+  { id: "seed-a", label: "Plaza del Pilar", detail: "Casco Histórico · 50003", lat: 41.6564, lng: -0.8785 },
+  { id: "seed-b", label: "Estación Delicias", detail: "Delicias · 50011", lat: 41.6588, lng: -0.9109 },
+];
+
+test("/en/property — saved places are measured, and the toggle re-measures", async ({ page }) => {
+  await stubBackend(page);
+  await page.addInitScript((places) => {
+    localStorage.setItem("ebrostay-your-places", JSON.stringify(places));
+    localStorage.removeItem("ebrostay-place-routes");
+  }, SEEDED_PLACES);
+
+  await page.goto("/en/property?id=pedro1", { waitUntil: "networkidle" });
+
+  // Both lists now live inside the neighbourhood section (ADR-040), so they
+  // are addressed by their own anchors — a `section` filter would match the
+  // outer one too and count the nearby entries as places.
+  const section = page.locator("#your-places");
+  const rows = section.getByRole("listitem");
+  await expect(rows).toHaveCount(2);
+
+  // route.json: 340 m in 260 s. Both figures are the SERVER's — a row showing
+  // anything else means the section went back to computing its own.
+  for (const label of ["Plaza del Pilar", "Estación Delicias"]) {
+    const row = rows.filter({ hasText: label });
+    await expect(row).toContainText("4 min");
+    await expect(row).toContainText("340 m");
+  }
+
+  // ONE map on the page (ADR-040), and it belongs to the neighbourhood
+  // section — the places list mounts none of its own. This assertion is what
+  // fails if a second one ever comes back.
+  const neighbourhood = page.locator("#neighbourhood");
+  await expect(page.locator(".leaflet-container")).toHaveCount(1);
+  await expect(section.locator(".leaflet-container")).toHaveCount(0);
+
+  // One selection across BOTH lists, because there is one line to draw.
+  // `[aria-pressed]` picks a row's own select button over the remove button
+  // beside it, which carries the same place name in its label.
+  await rows.first().locator("button[aria-pressed]").click();
+  await expect(neighbourhood.locator('button[aria-pressed="true"]')).toHaveCount(1);
+
+  // Selecting in the nearby list takes the selection away from the places
+  // list rather than lighting up a second row.
+  await page.locator("#whats-nearby").locator("button[aria-pressed]").first().click();
+  await expect(neighbourhood.locator('button[aria-pressed="true"]')).toHaveCount(1);
+  await expect(section.locator('button[aria-pressed="true"]')).toHaveCount(0);
+
+  // The one travel toggle lives with the map, not inside either list, and it
+  // re-measures the places list too. The wrapping label, not the radio:
+  // `Segmented` renders a visually-hidden input (arrow-key navigation for
+  // free) behind visible label text, and the label is what a guest clicks.
+  await expect(section.getByRole("radiogroup")).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Travel mode" })).toHaveCount(1);
+  const carRequest = page.waitForRequest(
+    (r) => r.url().includes("place-route") && r.url().includes("profile=car"),
+  );
+  await neighbourhood.locator("label").filter({ hasText: "By car" }).click();
+  await carRequest;
+});
+
+test("/en/property — the fifth saved place is the last one", async ({ page }) => {
+  await stubBackend(page);
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "ebrostay-your-places",
+      JSON.stringify(
+        // Six offered, five kept: the cap is enforced on the way in, not only
+        // at the button, because a store this build did not write is not a
+        // store it controls.
+        Array.from({ length: 6 }, (_, i) => ({
+          id: `seed-${i}`,
+          label: `Place ${i}`,
+          detail: "",
+          lat: 41.65 + i / 1000,
+          lng: -0.88,
+        })),
+      ),
+    );
+  });
+
+  await page.goto("/en/property?id=pedro1", { waitUntil: "networkidle" });
+
+  const section = page.locator("#your-places");
+  await expect(section.getByRole("listitem")).toHaveCount(5);
+  await expect(section.getByRole("button", { name: "Add a place" })).toHaveCount(0);
+  await expect(section).toContainText("Remove one to add another");
 });
 
 // A page added later must not quietly escape this file. Without this, the

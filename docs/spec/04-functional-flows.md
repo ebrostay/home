@@ -113,16 +113,28 @@ For anonymous visitors the Email/WhatsApp CTAs are replaced by a **"Sign in to
 book"** CTA that routes to `/sign-in` (the branded front door, §3.1) with a
 `post_login_redirect_uri` back to the property page.
 
-### 4.2.1 Neighbourhood: the merged section and the lazy route ✅ (ADR-028)
+### 4.2.1 Neighbourhood: the merged section and the lazy route ✅ (ADR-028, ADR-040)
 
 v1's sections 7 ("Where you'll be") and 9 ("What's nearby") are **one section**
-in v2: a `Nearby` list (`app/components/detail/Nearby.tsx`) beside a
-`NeighbourhoodMap`, because the two halves fix each other's weakness — a map
-with nothing to click is inert, a list of places with no map is abstract.
-`YourPlaces` (search-to-address, straight-line `km ÷ speed`) is deliberately
-untouched (ADR-028 "What this deliberately does not do"): it routes to
-arbitrary guest-typed addresses, which is exactly the unbounded,
-guest-triggered workload the lazy-route design below exists to avoid.
+in v2 — and since ADR-040 so is "Your places" (§4.2.2), which used to sit
+below it as its own section. All three are one `<section id="neighbourhood">`:
+a `NeighbourhoodMap` at the top, sticky from `lg` up, with the page's single
+`foot`/`car` toggle beside it, then the `Nearby` list (`#whats-nearby`) and
+the places list (`#your-places`) below. The two halves fix each other's
+weakness — a map with nothing to click is inert, a list of places with no map
+is abstract — and sticky only helps within one section, which is why the
+third block moved in rather than staying a sibling.
+
+**One map, one toggle, one selection** (ADR-040). Neither list renders a
+travel control or mounts a map; both report a route up and the page draws it.
+Exactly one row is selected across both lists at a time, because there is
+exactly one line. Clearing is the page's alone: a list that cleared its own
+line would race the other list drawing, since effects run in tree order.
+`YourPlaces` is the guest's own half of the same question and is measured the
+same way since 2026-08-01 — see §4.2.2. ADR-028 originally left it alone on
+the grounds that it would route to arbitrary guest-typed addresses; ADR-039
+overturns that, and the paragraph below on what the public route endpoint
+refuses is scoped to `PropertyNearbyRoute` accordingly.
 
 **Everything a guest sees on page load is already on the document.** The
 detail response's `nearby[]` (public projection, §2.2.5) carries a group, a
@@ -167,14 +179,71 @@ third party is on the critical path for the list itself.
   (`routeMissing` for 404, `routeUnavailable` for anything else) beside a
   figure that is still correct — the distance and duration shown in the list
   came from the document, not from this call.
-- **The public endpoint takes `(propertyId, entryId, profile)`, never a
-  coordinate.** This is the security property the whole lazy design exists
-  for: an anonymous caller cannot make the account route arbitrary points at
-  Ebrostay's expense. `RouteCache` is the only place a `from`/`to` pair is
-  ever constructed for this endpoint.
+- **This endpoint takes `(propertyId, entryId, profile)`, never a
+  coordinate.** `RouteCache` is the only place a `from`/`to` pair is ever
+  constructed for it. §4.2.2's endpoint does take a destination, under its own
+  bounds (ADR-039); what both keep is that the **origin** is read from the
+  stored document and never from the request, which is what stops an anonymous
+  caller routing points of their own choosing at Ebrostay's expense.
 - **A missing entry never touches ORS.** `RouteCache.GetAsync` looks the
   `entryId` up on the loaded property document first; only a match proceeds
   to the cache read and, on a miss, the outbound call.
+
+### 4.2.2 Your places: the guest's own destinations ✅ (ADR-039, ADR-040)
+
+The commute question, asked from the guest's side: not what is around this
+home, but how far it is from the one address they cannot change.
+`app/components/detail/YourPlaces.tsx` renders inside the neighbourhood
+section (`#your-places`) for every listing, including one with no `nearby[]`
+entries at all — the map and the toggle above it belong to the section, not
+to the nearby list, so nothing here depends on that list existing.
+
+**Nothing about a saved place reaches the server as data.** The places live in
+`localStorage` (`app/lib/places.ts`), five at most; so do the routes measured
+for them. No account is needed, and none of it appears in a Cosmos document.
+
+```
+1. GUEST     "Add a place" → types a street. Debounced 800 ms, ≥4 chars, then
+             `geocode()` (Nominatim, client-direct, throttled to 1 req/s —
+             the same lookup and the same throttle the listing editor uses).
+             Up to 5 matches, Zaragoza ranked first.
+2. GUEST     picks one → saved under Nominatim's own place id, with the
+             street line, the barrio + postcode, and the point. Picking the
+             same place twice is one entry; a sixth is refused at the button
+             and again in `parsePlaces`.
+3. CLIENT    for each saved place, under the active profile:
+               - `readCachedRoute` (localStorage, keyed listing + destination
+                 rounded to ~1 m + profile). Hit → render, no call.
+               - Miss → GET /api/properties/{id}/place-route?lat&lng&profile
+                 and write the answer into that cache.
+4. SERVER    PropertyPlaceRoute (ANONYMOUS) validates the profile, bounds-
+             checks the DESTINATION to the Zaragoza box, loads the PUBLISHED
+             (or PAUSED) listing, and calls OrsClient.RouteAsync with the
+             listing's own pin as ORIGIN — read from the document, never from
+             the request. Stores nothing. `private, max-age=86400`.
+5. GUEST     the row shows the measured minutes and distance. Clicking it
+             draws the polyline on the SECTION's map — the same one the
+             nearby list draws on — and takes the selection away from that
+             list; clicking again clears the line. Below `lg`, where the map
+             is not sticky, selecting also scrolls it back into view.
+6. GUEST     switches the section's foot/car toggle → step 3 re-runs per
+             place for the other profile, which is a different cache key
+             (and the nearby list re-ranks at the same time, from figures it
+             already has). Switching back is free in both.
+```
+
+- **A first view of a listing with five places costs five ORS calls; a
+  revisit costs none.** Both profiles fully explored is ten, then nothing.
+  That, plus `OrsBudget`'s 1,500/day fail-closed ceiling, is the whole bound
+  on a guest-triggered workload — see ADR-039 for why the destination may be
+  caller-supplied here when §4.2.1's endpoint refuses one.
+- **Nothing is cached server-side, on purpose.** A guest's destination keyed
+  by the home they were looking at is a record we would rather not hold, and
+  the hit rate across guests would be near zero anyway.
+- **A failed measurement is one row, not the section.** The other places keep
+  their figures, and the failed key is retried on the next profile switch.
+- **Places saved under the pre-ADR-039 shape** carried a typed distance and no
+  coordinates. They cannot be routed and are dropped on first read.
 
 ## 4.3 Booking flow — login-gated, log-then-draft ✅ decided (ADR-015) · 🔜 endpoint not yet built
 

@@ -1,4 +1,4 @@
-# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-036)
+# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-040)
 
 > Target: branch `redesign/v2`, locked 2026-07-19 (product owner: Raphael).
 > Continues the v1 log (v1 spec §11, ADR-001–010 — on `main`; the v1→v2 disposition map is in [§8.5](08-carried-v1-rules.md)) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
@@ -1417,6 +1417,14 @@ Two guardrails, and they are the load-bearing part:
   is exactly the unbounded, guest-triggered, uncacheable workload Decision 4
   exists to avoid.
 
+  **Superseded 2026-08-01 by ADR-039.** "Briefly" ran for four days. The two
+  standards of rigour turned out to be the real cost — a typed guess and a
+  measured route, in the same type, one row apart — and it is paid every time
+  a guest reads the page, whereas the workload this paragraph refuses is
+  bounded by five saved places and a browser-side cache. `YourPlaces` is now
+  measured. What survives intact is the sentence Decision 4 actually protects:
+  the origin still comes from the stored document, never from the request.
+
 ### What this deliberately does not do
 
 - **No city-wide POI set.** Hospitals and the AVE station are shared city
@@ -1516,7 +1524,8 @@ Two guardrails, and they are the load-bearing part:
   straight line for guest-typed addresses. Left as-is per the ADR — it solves
   a different, unbounded problem (arbitrary destinations, not a fixed list of
   owner-picked places) that the lazy-route design is specifically built to
-  avoid taking on.
+  avoid taking on. **Closed 2026-08-01 by ADR-039**: the second standard was
+  the more expensive of the two problems, and it is now measured.
 - **⚠️ The account's first real call surfaced a build defect that fixtures
   structurally could not catch.** Task 13 ran the full verification list with
   `ORS_FIXTURES` unset — the first time any request actually left the process
@@ -2966,6 +2975,180 @@ the redirector; a rewrite is what makes it reachable.
   they meant to see the other one. The header switch is two clicks away
   on every page and rewrites the stored choice, which is the same escape
   hatch the theme toggle offers.
+
+---
+
+## ADR-039 — "Your places" is measured, not estimated, and the browser keeps it
+
+**Date:** 2026-08-01 · **Status:** accepted · **Amends:** ADR-028
+
+The "Your places" section on the property page asked a guest to type a
+label, pick a travel mode from five, and **type a distance in kilometres**.
+It then multiplied that distance by a table of average speeds for
+Zaragoza and printed a number of minutes. Every part of that is now gone.
+
+The number was the problem. It was rendered in the same type, in the same
+row position, as the measured figures the "What's nearby" list shows two
+sections above — and it was arithmetic on a guess. A guest comparing two
+homes had no way to tell that one column was routed and the other was the
+output of `km ÷ 4.8 km/h`, and the section that asked for the distance was
+also the section that presented the answer as fact. Nothing about the
+layout admitted that the person reading the figure had supplied its only
+input.
+
+**Decision.** The guest gives an address, and nothing else. It is
+geocoded (Nominatim, client-direct, the same lookup the listing editor
+uses), and the route from this listing to it is measured by
+OpenRouteService under the same two profiles the nearby list offers —
+`foot` and `car`. Distance, time and the line on the map all come from
+one answer. Five places, and the browser keeps them.
+
+**The places stay in the browser.** Not "for now": that is the decision.
+An office address, a school and a gym are a description of somebody's
+life, and Ebrostay has no use for them — nothing in the booking flow,
+the listing flow or the admin flow reads a saved place. Keeping them in
+`localStorage` (`app/lib/places.ts`) means they need no account, work on
+the first visit, survive a locale switch, and never appear in a Cosmos
+document or a backup. If they ever have to follow a guest between
+devices, that is a new decision with a new privacy question, not a
+migration of this one.
+
+**The endpoint takes a destination, which the anonymous route endpoint
+deliberately does not.** `GET /api/properties/{id}/place-route?lat&lng&profile`.
+`PropertyNearbyRoute` refuses coordinates on purpose — it takes ids and
+`RouteCache` resolves both ends from the stored document — and the reason
+that rule cannot be kept here is structural: a saved place is not on the
+listing and has no id we could resolve. So the bound moves rather than
+disappearing:
+
+- The **origin** is still read from the stored listing and never from the
+  request. A caller cannot route between two points of their own choosing;
+  they can only route *from one of our published homes*.
+- The destination is bounds-checked to the Zaragoza box, the same check
+  `HostNearbyPreviewRoute` already makes.
+- `OrsBudget` caps the day at 1,500 calls and fails closed, so the worst
+  an abusive caller achieves is degraded routing for a day. Never a bill.
+- Nothing is written. This path does **not** go through `RouteCache`.
+
+That last one is a deliberate departure from how the nearby routes work,
+and it is a privacy decision before it is a cost one. Caching a guest's
+own destination server-side would store *where somebody works*, keyed by
+*the home they were looking at* — a record we would then own, in exchange
+for a hit rate close to zero, because these destinations are personal and
+two guests rarely share one. The browser caches instead
+(`ebrostay-place-routes`, bounded at 80 entries, keyed on listing +
+destination rounded to ~1 m + profile), which is what actually keeps an
+ordinary visit to five calls and a revisit to none. The response is
+`private, max-age=86400` for the same reason: the URL carries the guest's
+destination, and a shared cache keyed on it has no business holding one.
+
+**Five.** Enough for the office, the school, the gym and two more; few
+enough that the list stays a glanceable comparison rather than a second
+results page, and that one listing view can never cost more than five
+measurements per profile. Enforced at the add button and again in
+`parsePlaces`, because a store written by an older build is not a store
+we control.
+
+**Its own profile toggle, and its own map.** The nearby section owns a
+`foot`/`car` toggle already, and one shared control would have been
+tidier. It is not shared because this section renders for every listing
+while the nearby section renders only for a listing that has entries —
+binding a guest's places to a toggle that may not exist would make the
+common case depend on the optional one. The two controls offer the same
+two profiles and read the same figures, so they agree about everything
+except which one you last touched.
+
+> **Reversed the same day by ADR-040.** The dependency this avoids is
+> real, and duplicating the control was the wrong way out of it: the
+> toggle and the map belong to the *section*, not to the nearby list, so
+> moving them up costs nothing and sharing them costs a page that asks
+> one question twice. "They agree about everything except which one you
+> last touched" was the tell — two controls that must agree are one
+> control in the wrong place.
+
+**Consequences.**
+
+- Saved places from the previous shape have no coordinates and cannot be
+  routed. `parsePlaces` drops them silently on first read rather than
+  showing a row with no figure — one key that cleans itself up, pinned by
+  `lib/places.test.ts`.
+- Adding a place needs Nominatim, so it fails where the address lookup
+  fails. That is a convenience lost, not a section: the places already
+  saved keep measuring, and the field says what happened.
+- The class comments on `NearbyFunctions` and `RouteCache` asserted that
+  no anonymous path routes to a caller-supplied point. Both were rewritten
+  rather than left to rot — a security invariant that has quietly stopped
+  being true is worse than one that was never claimed.
+
+---
+
+## ADR-040 — One map, one travel toggle, one selection
+
+**Date:** 2026-08-01 · **Status:** accepted · **Amends:** ADR-028, ADR-039
+
+ADR-039 gave "Your places" its own `foot`/`car` toggle and its own map,
+reasoning that binding the guest's list to controls owned by the nearby
+list would make the common case depend on the optional one — the nearby
+section renders only for a listing that has entries, the places list
+renders for every listing. The reasoning was sound and the conclusion was
+wrong: it duplicated the control instead of moving it.
+
+What it produced was a page asking one question twice. Two travel toggles
+that could disagree, two maps a route could land on, and two independent
+selections — so a guest could have a nearby entry highlighted in one list
+and a place highlighted in the other while exactly one line was drawn,
+with nothing on screen saying which list the line belonged to.
+
+**Decision.** One map, one toggle, one selection, all owned by the
+property page, which is the only node above everything that reads them.
+`Nearby` and `YourPlaces` both render no control and mount no map.
+
+**The places list moved inside the neighbourhood section.** That is what
+makes the map sticky in a way that helps: `position: sticky` is scoped to
+the sticky element's own parent, so a map inside section 7 stops being
+visible the moment section 7 scrolls past — which is exactly when a guest
+reading a list in section 8 needs it. One section, map pinned at its top,
+both lists scrolling under it. This is the same argument Task 12 used to
+merge sections 7 and 9 in the first place, applied one list further.
+
+Sticky from `lg` up only, matching the booking panel's own rule. A 240 px
+map plus a toggle pinned to the top of a phone leaves almost nothing to
+scroll; below that breakpoint the map stays where it is and selecting a
+place scrolls it back into view (`block: "nearest"`, so a map already on
+screen does not jump).
+
+**The toggle rides with the map**, not above either list. It governs both
+lists and the line on the map, and a control that scrolls away from the
+figures it changes is a control you have to remember.
+
+**Clearing the map belongs to the page, and nowhere else.** Both lists
+call `onRoute` only with a destination they actually have; neither ever
+calls it with `(null, null)`. This is not stylistic. Effects run in tree
+order, so if each list cleared its own line, moving the selection from one
+list to the other would be correct in one direction and would erase the
+new line in the other, depending on which list happened to render first.
+The page clears in the same handler that changes the selection, so there
+is no ordering to get wrong.
+
+**Consequences.**
+
+- `Nearby` lost its internal profile state, its `Segmented`, and its
+  `useImperativeHandle`. A description place chip now selects through the
+  page directly, and the "does this entry have a figure under the active
+  profile" guard moved there with it — the page is what knows both the
+  entries and the profile.
+- Both lists now key their fetched routes by entry **and** profile and
+  store only terminal states, so "measuring" is the absence of an entry.
+  Switching profile and back redraws from memory instead of re-fetching,
+  and every `setState` happens in a promise callback rather than
+  synchronously in an effect.
+- `#whats-nearby` and `#your-places` are now anchors on the page. They
+  exist because both lists live inside one `<section>`, so "the places
+  list" is no longer addressable as a section — the e2e suite says so
+  first, but a future in-page nav will want them too.
+- `detail.places.profileLabel`, `.profile.*` and `.mapLabel` are gone from
+  both message files. They named a control and a map this list no longer
+  owns.
 
 ---
 

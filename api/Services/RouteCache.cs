@@ -13,12 +13,14 @@ namespace Ebrostay.Api.Services;
 /// arbitrary points at our expense. There is no code path here that reads
 /// coordinates from a request.
 ///
-/// The deliberate exception is `HostNearbyPreviewRoute` (NearbyFunctions.cs),
-/// which calls `OrsClient.RouteAsync` directly with owner-supplied
-/// coordinates — bounds-checked to the Zaragoza box and behind owner auth, a
-/// different and narrower trust boundary than an anonymous caller, so it does
-/// not go through this class. Do not read this comment as "nothing else in
-/// the codebase calls RouteAsync with request coordinates" — that is false.
+/// Two endpoints in NearbyFunctions.cs deliberately call
+/// `OrsClient.RouteAsync` directly with a destination from the request, and
+/// therefore do NOT go through this class: `HostNearbyPreviewRoute` (owner
+/// auth) and `PropertyPlaceRoute` (anonymous, "your places", ADR-039 — origin
+/// still from the stored document, destination bounds-checked, nothing
+/// stored). Do not read this comment as "nothing else in the codebase calls
+/// RouteAsync with request coordinates" — that is false. What stays true is
+/// the narrower claim above, about THIS class and the endpoint it serves.
 public sealed class RouteCache(
     Container routes, OrsClient ors, ILogger<RouteCache> log)
 {

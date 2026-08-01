@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   HeartPulse,
   Loader2,
@@ -12,27 +12,28 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { ApiError, fetchNearbyRoute, type PublicNearbyEntry } from "@/lib/api";
-import {
-  DEFAULT_NEARBY_PROFILE,
-  NEARBY_GROUPS,
-  NEARBY_PROFILES,
-  reachFor,
-  type NearbyGroup,
-  type NearbyProfile,
-} from "@/lib/nearby";
+import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteLine } from "@/lib/api";
+import { NEARBY_GROUPS, reachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
-import { Segmented } from "@/components/host/fields/Segmented";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
 // The guest's half of "what's nearby" (ADR-028, design §9 as amended by
 // Task 12's merge): a card per group, entries ranked by the active profile's
-// minutes, and a click that asks the map beside this list to draw the real
-// route. This component owns the profile toggle and the per-entry
-// loading/error state; it only ever hands the PARENT the two things the map
-// needs — which point is active and what line (if any) to draw — via
-// `onRouteChange`, because the map lives in a sibling section (NeighbourhoodMap),
-// not inside this one.
+// minutes, and a click that asks the map above this list to draw the real
+// route.
+//
+// This list owns almost nothing. The travel profile and the current selection
+// both live on the property page (ADR-040), because they are shared with
+// "Your places" one list down and with the map both lists draw on — three
+// components reading one answer, so exactly one of them can hold it, and it
+// cannot be either list. What is left here is the part nobody else needs: the
+// routes this list has already fetched.
+//
+// `onRoute` is only ever called WITH a destination, never with `(null, null)`
+// to clear. Clearing belongs to whoever changed the selection — the page — and
+// a list that cleared on its own would race the other list setting it: effects
+// run in tree order, so "place selected, then nearby clears" and "nearby
+// selected, then place clears" cannot both be right.
 
 const CATEGORY_ICONS: Record<NearbyGroup, LucideIcon> = {
   transport: TramFront,
@@ -42,54 +43,58 @@ const CATEGORY_ICONS: Record<NearbyGroup, LucideIcon> = {
   health: HeartPulse,
 };
 
-type EntryStatus =
-  | { kind: "idle" }
-  | { kind: "loading" }
-  | { kind: "error"; status: number }
-  | { kind: "ready" };
+/** This listing's route for one entry under one profile. */
+const routeKey = (entryId: string, profile: NearbyProfile) => `${entryId}|${profile}`;
 
-/** Imperative handle so a sibling section (the description's place chips,
- *  ADR-028 as amended for the rich-text renderer) can select an entry here
- *  without this component handing its internal `activeId`/`status` state to
- *  the parent — the same reasoning `onRouteChange` already documents for why
- *  the map only ever gets the two derived values, not the state itself. */
-export type NearbyHandle = {
-  select: (entryId: string) => void;
-};
-
-export const Nearby = forwardRef<NearbyHandle, {
+export function Nearby({
+  propertyId,
+  entries,
+  locale,
+  profile,
+  activeId,
+  onSelect,
+  onRoute,
+}: {
   propertyId: string;
   entries: PublicNearbyEntry[];
   locale: string;
-  /** Fired whenever the active entry or its route changes: the destination
-   *  point appears as soon as an entry is clicked (before the route
-   *  resolves — it comes from the document, same reasoning as the figures
-   *  never disappearing on a failed lookup), and the polyline follows once
-   *  ORS answers. `(null, null)` means nothing is active. */
-  onRouteChange: (destination: NeighbourhoodMapDestination | null, polyline: string | null) => void;
-  /** So the description section (RichText) can label its own place chips
-   *  under whichever profile is active here — the two sections show the same
-   *  figures, and a chip that disagreed with the list beside it would read as
-   *  a bug. */
-  onProfileChange?: (profile: NearbyProfile) => void;
-}>(function Nearby({ propertyId, entries, locale, onRouteChange, onProfileChange }, ref) {
+  /** The page's toggle. This list renders no control of its own. */
+  profile: NearbyProfile;
+  /** The entry this list currently has selected, or null — including when the
+   *  selection belongs to the places list instead. */
+  activeId: string | null;
+  onSelect: (entryId: string) => void;
+  /** Fired when the active entry resolves: the destination point appears as
+   *  soon as an entry is clicked (it comes from the document, so it never
+   *  waits on ORS), and the polyline follows once the route arrives. */
+  onRoute: (destination: NeighbourhoodMapDestination, polyline: string | null) => void;
+}) {
   const t = useTranslations("detail.nearby");
   const tType = useTranslations("nearby");
 
-  const [profile, setProfile] = useState<NearbyProfile>(DEFAULT_NEARBY_PROFILE);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const [status, setStatus] = useState<EntryStatus>({ kind: "idle" });
+  // Only the terminal states are stored, keyed by entry AND profile: absence
+  // is "still measuring". That is what keeps every `setState` below inside a
+  // promise callback instead of synchronously in an effect, and it means
+  // switching profile and back redraws from memory rather than re-fetching.
+  const [routes, setRoutes] = useState<Record<string, RouteLine>>({});
+  const [errors, setErrors] = useState<Record<string, number>>({});
 
   // Read inside the fetch effect rather than named as a dependency: a new
   // arrow function arrives from the parent on every render, and reacting to
   // that would refetch the route on every unrelated re-render. Written in an
-  // effect, not during render, for the reason NearbyMap's header gives for
-  // its own handler refs.
-  const onRouteChangeRef = useRef(onRouteChange);
+  // effect, not during render, because a ref is not render output.
+  const onRouteRef = useRef(onRoute);
   useEffect(() => {
-    onRouteChangeRef.current = onRouteChange;
-  }, [onRouteChange]);
+    onRouteRef.current = onRoute;
+  }, [onRoute]);
+  const routesRef = useRef(routes);
+  useEffect(() => {
+    routesRef.current = routes;
+  }, [routes]);
+  const errorsRef = useRef(errors);
+  useEffect(() => {
+    errorsRef.current = errors;
+  }, [errors]);
 
   const entryLookup = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
@@ -112,91 +117,64 @@ export const Nearby = forwardRef<NearbyHandle, {
     [entries, profile],
   );
 
-  // Fetch the route whenever the active entry, the profile, or a retry
-  // (`attempt`) changes. A profile switch re-runs this for whichever entry
-  // is still active, which is what "redraws any drawn line" means in
-  // practice; `selectProfile` below clears the selection first if the newly
-  // active profile has no figure for it at all (the entry would otherwise
-  // vanish from the grid while still "active").
-  //
-  // The transition INTO "loading" happens in the event handlers below
-  // (`selectEntry`/`selectProfile`), never synchronously here — same
-  // reasoning as NearbyEditor's candidate search and preview-route effects:
-  // this effect's own body only ever calls `setStatus` from inside the
-  // fetch's `.then`/`.catch`.
+  // Draw the active entry, fetching its route the first time this profile
+  // needs it. A profile switch re-runs this for whichever entry is still
+  // selected, which is what "redraws any drawn line" means in practice; an
+  // entry with no reach under the new profile has just left the grid, so it
+  // draws nothing and the page's own selection is simply pointing at
+  // something invisible until the guest clicks elsewhere.
   useEffect(() => {
     if (!activeId) return;
     const entry = entryLookup.get(activeId);
-    if (!entry) return;
+    if (!entry || !reachFor(entry, profile)) return;
 
+    const key = routeKey(activeId, profile);
     const destination: NeighbourhoodMapDestination = {
       lat: entry.lat,
       lng: entry.lng,
       label: entry.name,
     };
-    // Clear any previous line immediately: the destination pin should never
-    // lag behind the click, even though the route itself takes a moment.
-    onRouteChangeRef.current(destination, null);
+
+    // The pin lands immediately — it is already known, and the same figure is
+    // already on screen — carrying whatever line we have for it, which is the
+    // real one on a revisit and none at all the first time.
+    const known = routesRef.current[key];
+    onRouteRef.current(destination, known?.polyline ?? null);
+    if (known || errorsRef.current[key] !== undefined) return;
 
     const controller = new AbortController();
     fetchNearbyRoute(propertyId, activeId, profile, controller.signal)
       .then((route) => {
         if (controller.signal.aborted) return;
-        setStatus({ kind: "ready" });
-        onRouteChangeRef.current(destination, route.polyline);
+        setRoutes((prev) => ({ ...prev, [key]: route }));
+        onRouteRef.current(destination, route.polyline);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (controller.signal.aborted || (err as Error).name === "AbortError") return;
-        setStatus({ kind: "error", status: err instanceof ApiError ? err.status : 0 });
+        setErrors((prev) => ({
+          ...prev,
+          [key]: err instanceof ApiError ? err.status : 0,
+        }));
       });
     return () => controller.abort();
-  }, [activeId, profile, attempt, propertyId, entryLookup]);
+  }, [activeId, profile, propertyId, entryLookup]);
 
-  const selectProfile = (next: NearbyProfile) => {
-    setProfile(next);
-    onProfileChange?.(next);
-    if (!activeId) return;
-    const entry = entryLookup.get(activeId);
-    if (!entry || !reachFor(entry, next)) {
-      // The active entry has nothing to show under the new profile — it is
-      // about to disappear from the grid, so there is nothing left to be
-      // "active" and no line left to draw.
-      setActiveId(null);
-      setStatus({ kind: "idle" });
-      onRouteChangeRef.current(null, null);
-    } else {
-      setStatus({ kind: "loading" });
+  // Selecting an entry that failed clears the failure first, so the effect
+  // above measures again instead of returning the remembered error. Only on
+  // the way IN: clicking the active entry puts the line away, and clearing
+  // then would hide the message the guest is still reading.
+  const click = (entryId: string) => {
+    if (activeId !== entryId) {
+      const key = routeKey(entryId, profile);
+      setErrors((prev) => {
+        if (prev[key] === undefined) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
     }
+    onSelect(entryId);
   };
-
-  // Every click re-triggers a fetch, including a second click on the entry
-  // already active — the `/route` response is cached for 86400s server-side
-  // (NearbyFunctions.Route), so a repeat click costs the browser's HTTP
-  // cache, not a fresh call.
-  const selectEntry = (id: string) => {
-    setActiveId(id);
-    setStatus({ kind: "loading" });
-    setAttempt((n) => n + 1);
-  };
-
-  // The only thing exposed to the parent beyond `onRouteChange`: a place
-  // chip in the description asking this list to select an entry it already
-  // knows about. An id this listing doesn't have (should never happen — the
-  // document only ever references ids the server validated) is a no-op
-  // rather than a crash. Also guarded on reach under the ACTIVE profile,
-  // same check `selectProfile` above makes when a profile switch would
-  // otherwise leave a dropped entry "active" — `groups` below drops any
-  // entry with no reach for the current profile, but a description chip
-  // still renders (RichText shows the reach figure only when present).
-  // Without this guard, selecting one would scroll to an entry invisible in
-  // the list, hide its own loading/error row (it lives inside the dropped
-  // `<li>`), and still draw a route to a place the list doesn't show.
-  useImperativeHandle(ref, () => ({
-    select: (id: string) => {
-      const entry = entryLookup.get(id);
-      if (entry && reachFor(entry, profile)) selectEntry(id);
-    },
-  }));
 
   // A known machine type reads through the catalogue; a type the catalogue
   // has no label for (served before its string shipped) falls back to
@@ -218,8 +196,8 @@ export const Nearby = forwardRef<NearbyHandle, {
     return tType("unknownType");
   };
 
-  // No entries on this listing at all: nothing to rank, nothing to toggle.
-  // The caller keeps the map and the address; this half simply isn't there.
+  // No entries on this listing at all: nothing to rank. The caller keeps the
+  // map, the address and the places list; this half simply isn't there.
   if (entries.length === 0) return null;
 
   return (
@@ -228,14 +206,6 @@ export const Nearby = forwardRef<NearbyHandle, {
         <h3 className="font-display text-[1.375rem] font-semibold text-ink">{t("title")}</h3>
         <p className="mt-1 text-sm text-muted">{t(`subtitle.${profile}`)}</p>
       </div>
-
-      <Segmented
-        label={t("profileLabel")}
-        name="nearby-profile"
-        value={profile}
-        options={NEARBY_PROFILES.map((p) => ({ value: p, label: t(`profile.${p}`) }))}
-        onChange={selectProfile}
-      />
 
       {groups.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -252,11 +222,14 @@ export const Nearby = forwardRef<NearbyHandle, {
                 <ul className="mt-3 flex flex-col gap-2">
                   {list.map(({ entry, reach }) => {
                     const active = activeId === entry.id;
+                    const key = routeKey(entry.id, profile);
+                    const failed = errors[key];
+                    const loading = active && !routes[key] && failed === undefined;
                     return (
                       <li key={entry.id}>
                         <button
                           type="button"
-                          onClick={() => selectEntry(entry.id)}
+                          onClick={() => click(entry.id)}
                           aria-pressed={active}
                           className="flex w-full items-baseline justify-between gap-3 text-left"
                         >
@@ -273,16 +246,16 @@ export const Nearby = forwardRef<NearbyHandle, {
                             </span>
                           </span>
                         </button>
-                        {active && status.kind === "loading" && (
+                        {loading && (
                           <p role="status" className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
                             <Loader2 size={12} strokeWidth={2.2} className="animate-spin" aria-hidden />
                             {t("loadingRoute")}
                           </p>
                         )}
-                        {active && status.kind === "error" && (
+                        {active && failed !== undefined && (
                           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-warn">
                             <TriangleAlert size={12} strokeWidth={2.2} aria-hidden />
-                            {status.status === 404 ? t("routeMissing") : t("routeUnavailable")}
+                            {failed === 404 ? t("routeMissing") : t("routeUnavailable")}
                           </p>
                         )}
                       </li>
@@ -296,4 +269,4 @@ export const Nearby = forwardRef<NearbyHandle, {
       )}
     </div>
   );
-});
+}

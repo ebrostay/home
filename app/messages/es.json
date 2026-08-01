@@ -1111,25 +1111,22 @@
     },
     "places": {
       "title": "Tus sitios",
-      "intro": "Guarda los sitios a los que irás a menudo — la oficina, el gimnasio, el colegio — y verás el trayecto desde cada vivienda que mires. Se guardan en este navegador.",
+      "intro": "Guarda los sitios a los que irás a menudo — el trabajo, el colegio, el gimnasio — y verás la ruta real desde esta vivienda hasta cada uno. Hasta cinco, guardados en este navegador.",
       "add": "Añadir un sitio",
-      "empty": "Todavía no has guardado ningún sitio.",
-      "nameLabel": "Nombre",
-      "namePlaceholder": "Oficina",
-      "modeLabel": "Cómo vas",
-      "kmLabel": "Distancia (km)",
-      "save": "Guardar",
+      "empty": "Todavía no has guardado ningún sitio. Empieza por el que más vayas a visitar.",
+      "addressLabel": "Dirección",
+      "addressPlaceholder": "Calle Alfonso I 20",
+      "addressHint": "Escribe una calle de Zaragoza y elige la coincidencia.",
+      "searching": "Buscando…",
+      "noMatch": "Sin coincidencias en Zaragoza. Prueba con la calle sin el número.",
+      "lookupFailed": "El buscador de direcciones no responde. Inténtalo dentro de un momento.",
+      "alreadySaved": "Ya guardado",
       "cancel": "Cancelar",
+      "limitReached": "Ya tienes {count} sitios. Quita uno para añadir otro.",
       "remove": "Quitar {name}",
+      "measuring": "Midiendo…",
       "minutes": "{count} min",
-      "estimateNote": "Los tiempos son estimaciones calculadas a partir de la distancia que indicas y del medio de transporte.",
-      "mode": {
-        "walk": "andando",
-        "bike": "en bici",
-        "tram": "en tranvía",
-        "bus": "en bus",
-        "car": "en coche"
-      }
+      "routeUnavailable": "Sin ruta ahora mismo"
     },
     "booking": {
       "month": "mes",

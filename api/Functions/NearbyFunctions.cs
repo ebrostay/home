@@ -14,17 +14,22 @@ namespace Ebrostay.Api.Functions;
 // draws from, the owner's candidate search and route preview, and the public,
 // anonymous route lookup a guest's map renders.
 //
-// The public, ANONYMOUS endpoint (`PropertyNearbyRoute`) is the
-// security-critical one. It takes a propertyId, an entryId and a profile —
-// never coordinates — and `RouteCache` is the ONLY place that turns those ids
-// into a `from`/`to` pair for that endpoint, always read from the stored
-// document. That is what stops an anonymous caller from routing arbitrary
-// points at our expense on a paid ORS account.
+// `PropertyNearbyRoute` takes a propertyId, an entryId and a profile — never
+// coordinates — and `RouteCache` is the ONLY place that turns those ids into a
+// `from`/`to` pair for that endpoint, always read from the stored document.
 //
-// `HostNearbyPreviewRoute` below is the deliberate, narrower exception: it
-// calls `OrsClient.RouteAsync` directly with owner-supplied coordinates, but
-// it is owner-authenticated and bounds-checked to the Zaragoza box — a
-// different trust boundary, not a hole in the claim above.
+// TWO endpoints here deliberately route to a caller-supplied point instead,
+// and neither is a hole in the sentence above — they are different trust
+// boundaries, each with its own bound:
+//
+//   · `HostNearbyPreviewRoute` — owner-authenticated, and bounds-checked to
+//     the Zaragoza box.
+//   · `PropertyPlaceRoute` — ANONYMOUS, for "your places" (ADR-039). The
+//     ORIGIN is still read from the stored document and never from the
+//     request; only the destination comes from the caller, bounds-checked to
+//     the same box, and nothing is written to Cosmos. The exposure that
+//     remains is our daily ORS allowance, which `OrsBudget` already caps and
+//     fails closed on. Read ADR-039 before widening this.
 public class NearbyFunctions(
     Database database,
     ProfileService profiles,
@@ -155,6 +160,72 @@ public class NearbyFunctions(
             // HTTP status, not the body, so one opaque code costs nothing.
             // The two owner-authenticated endpoints above are trusted callers
             // and keep returning the real reason.
+            return new ObjectResult(new { error = "ors_unavailable" }) { StatusCode = 503 };
+        }
+    }
+
+    // GET /api/properties/{id}/place-route?lat=&lng=&profile=
+    // ANONYMOUS. The guest's own saved destination — their office, the school
+    // — measured from this listing (ADR-039, spec §4.2.2).
+    //
+    // Why this one takes coordinates when `PropertyNearbyRoute` above refuses
+    // to: a saved place is not on the listing. It is typed by the guest, held
+    // in their browser and never sent to us for storage, so there is no id to
+    // resolve it from. Four things keep that from being a general-purpose
+    // router pointed at our ORS allowance:
+    //
+    //   1. the ORIGIN is the stored listing's pin, read here and never taken
+    //      from the request — a caller cannot route between two points of
+    //      their own choosing, only from one of our published homes;
+    //   2. the destination is bounds-checked to the Zaragoza box, the same
+    //      check the owner-authenticated preview makes;
+    //   3. `OrsBudget` caps the day and fails closed, so the worst an abusive
+    //      caller achieves is degrading routing for a day — never a bill;
+    //   4. nothing is written. Unlike `PropertyNearbyRoute` this does not go
+    //      through `RouteCache`, because caching a guest's own destination
+    //      server-side would store where they work, keyed by the home they
+    //      were looking at, in exchange for a hit rate close to zero — these
+    //      destinations are personal, not shared. The browser caches the
+    //      answer instead (`app/lib/places.ts`), which is what actually keeps
+    //      an ordinary visit to five calls and a revisit to none.
+    [Function("PropertyPlaceRoute")]
+    public async Task<IActionResult> PlaceRoute(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get",
+            Route = "properties/{id}/place-route")]
+        HttpRequest req, string id)
+    {
+        var profile = req.Query["profile"].ToString();
+        if (string.IsNullOrEmpty(profile)) profile = "foot";
+        if (!NearbyGroups.Profiles.Contains(profile)) return BadRequest("bad_profile");
+
+        if (!TryPoint(req, out var toLat, out var toLng)) return BadRequest("bad_point");
+        if (!NearbyGroups.InZaragoza(toLat, toLng)) return BadRequest("out_of_area");
+
+        var (doc, loadError) = await LoadPublishedAsync(id, req.HttpContext.RequestAborted);
+        if (loadError is not null) return loadError;
+        if (doc is null) return new NotFoundResult();
+
+        try
+        {
+            var route = await ors.RouteAsync(new GeoPoint(doc.Lat, doc.Lng),
+                new GeoPoint(toLat, toLng), profile, req.HttpContext.RequestAborted);
+
+            // `private`, not `public`: the URL carries a guest's own
+            // destination, and a shared cache keyed on it would put where
+            // somebody works into infrastructure that has no reason to hold
+            // it. The browser store is the cache that matters here anyway.
+            req.HttpContext.Response.Headers.CacheControl = "private, max-age=86400";
+            return new OkObjectResult(new
+            {
+                polyline = route.Polyline,
+                metres = route.Metres,
+                seconds = route.Seconds,
+            });
+        }
+        catch (OrsUnavailableException)
+        {
+            // Opaque, for the reason `PropertyNearbyRoute` gives: an anonymous
+            // caller must not learn from us whether our ORS quota is spent.
             return new ObjectResult(new { error = "ors_unavailable" }) { StatusCode = 503 };
         }
     }

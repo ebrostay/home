@@ -592,6 +592,34 @@ export async function fetchNearbyRoute(
   return (await res.json()) as RouteLine;
 }
 
+/** Measuring one of the guest's own saved places from this listing ("your
+ *  places", ADR-039). Anonymous, and the one public call that names a
+ *  destination: a saved place is held in the browser and has no id the server
+ *  could resolve. The server still supplies the origin from the stored
+ *  listing, bounds-checks the destination and stores nothing — see
+ *  `PropertyPlaceRoute`.
+ *
+ *  Callers cache the answer themselves (`lib/places.ts`); nothing here does,
+ *  so a caller that forgets pays a fresh measurement every render. */
+export async function fetchPlaceRoute(
+  propertyId: string,
+  to: { lat: number; lng: number },
+  profile: NearbyProfile,
+  signal?: AbortSignal,
+): Promise<RouteLine> {
+  const params = new URLSearchParams({
+    lat: String(to.lat),
+    lng: String(to.lng),
+    profile,
+  });
+  const res = await fetch(
+    `${BASE}/api/properties/${encodeURIComponent(propertyId)}/place-route?${params}`,
+    { signal },
+  );
+  if (!res.ok) throw new ApiError(res.status, await errorCode(res));
+  return (await res.json()) as RouteLine;
+}
+
 export const biText = (b: Bilingual | null | undefined, locale: string) =>
   (locale === "en" ? b?.en ?? b?.es : b?.es ?? b?.en) ?? "";
 

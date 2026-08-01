@@ -3,7 +3,7 @@
 // Property detail. URL: /{locale}/property?id={slug} (v1's URL model — plays
 // nicely with static export; pretty paths can come later via SWA rewrites).
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -14,11 +14,17 @@ import { ApiError, biDoc, biText, fetchProperty, type PropertyDetail, type Prope
 import { resultsQueryFor } from "@/components/search/resultsHandoff";
 import { AMENITY_ICONS } from "@/lib/amenity-icons";
 import { monthStates } from "@/lib/availability";
-import { DEFAULT_NEARBY_PROFILE, type NearbyProfile } from "@/lib/nearby";
+import {
+  DEFAULT_NEARBY_PROFILE,
+  NEARBY_PROFILES,
+  reachFor,
+  type NearbyProfile,
+} from "@/lib/nearby";
 import { SIZES, srcSet } from "@/lib/photos";
 import { formatEuro } from "@/lib/pricing";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
+import { Segmented } from "@/components/host/fields/Segmented";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { RichText } from "@/components/ui/RichText";
@@ -28,7 +34,7 @@ import { Gallery } from "@/components/detail/Gallery";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
-import { Nearby, type NearbyHandle } from "@/components/detail/Nearby";
+import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
 
@@ -139,29 +145,71 @@ function DetailBody({
   const gallery = p.photos.filter((ph) => !ph.isFloorplan && !ph.hiddenFromGallery);
   const floorplan = p.photos.find((ph) => ph.isFloorplan);
 
-  // Which nearby entry Nearby.tsx currently has active, and the route line
-  // (if any) it resolved for it — the two things NeighbourhoodMap needs.
-  // Lifted here because the map and the list that drives it are siblings in
-  // the merged section below (Task 12: the whole reason they were merged is
-  // that a route has to draw in the same viewport as the list it came from).
-  const [nearbyDestination, setNearbyDestination] = useState<NeighbourhoodMapDestination | null>(
+  // ------------------------------------------------------------------
+  // The neighbourhood section's shared state (ADR-040).
+  //
+  // FOUR things read the travel profile — the nearby list, the places list,
+  // the description's place chips, and the map's route — and TWO lists can
+  // put a line on the one map. Both therefore live here, at the only node
+  // above all of them. Neither list owns a toggle or mounts a map of its own.
+  // ------------------------------------------------------------------
+  const [profile, setProfile] = useState<NearbyProfile>(DEFAULT_NEARBY_PROFILE);
+
+  // Which list holds the selection, and which row in it. One selection across
+  // both, because there is one map: a row highlighted in each while a single
+  // line is drawn would be two answers to "what am I looking at".
+  const [selection, setSelection] = useState<{ source: "nearby" | "place"; id: string } | null>(
     null,
   );
-  const [nearbyRoute, setNearbyRoute] = useState<string | null>(null);
+  const [mapDestination, setMapDestination] = useState<NeighbourhoodMapDestination | null>(null);
+  const [mapRoute, setMapRoute] = useState<string | null>(null);
 
-  // The description (RichText, Task 11) needs two things Nearby.tsx owns:
-  // a way to select one of its entries from a place chip, and the profile
-  // that's currently active so a place chip's minutes match the list beside
-  // it. Nearby keeps owning the state (same reasoning as `onRouteChange`
-  // above); this page only gets a ref to ask it to select something, and a
-  // mirror of its profile to read.
-  const nearbyRef = useRef<NearbyHandle>(null);
-  const [nearbyProfile, setNearbyProfile] = useState<NearbyProfile>(DEFAULT_NEARBY_PROFILE);
+  // Clearing the map happens HERE and nowhere else. The lists only ever push a
+  // destination they actually have; if each cleared on its own, moving the
+  // selection between them would race — effects run in tree order, so exactly
+  // one of "the new list draws, then the old one clears" and the reverse would
+  // be wrong, depending on which list happened to be rendered first.
+  const select = (source: "nearby" | "place", id: string) => {
+    const same = selection?.source === source && selection.id === id;
+    setSelection(same ? null : { source, id });
+    // The old line goes immediately either way: on a new selection the list
+    // replaces it within the frame, and a line left over from the previous
+    // one would briefly point at the wrong place.
+    setMapRoute(null);
+    if (same) setMapDestination(null);
+  };
+
+  const drawRoute = useCallback(
+    (destination: NeighbourhoodMapDestination, polyline: string | null) => {
+      setMapDestination(destination);
+      setMapRoute(polyline);
+    },
+    [],
+  );
+
+  // A place chip in the description (RichText, Task 11) selects the entry it
+  // names and brings the map to it. The guard lives here rather than in the
+  // list because the page is what knows both the entries and the active
+  // profile: a chip still renders for an entry the current profile has no
+  // figure for, and selecting one would scroll to a row that is not in the
+  // grid and draw a route to a place the list does not show.
   const selectNearbyEntry = (entryId: string) => {
-    nearbyRef.current?.select(entryId);
+    const entry = p.nearby.find((e) => e.id === entryId);
+    if (!entry || !reachFor(entry, profile)) return;
+    select("nearby", entryId);
     document
       .getElementById("neighbourhood")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Below `lg` the map is not sticky (see the section), so a click far down
+  // the places list would draw a line nobody can see. `block: "nearest"`
+  // leaves an already-visible map exactly where it is, which is the desktop
+  // case — no jump on the viewport that does not need one.
+  const revealMap = () => {
+    document
+      .getElementById("neighbourhood-map")
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   // A photo chip/figure in the description opens a lightbox for that one
@@ -325,7 +373,7 @@ function DetailBody({
               doc={biDoc(p.description, locale)}
               photos={p.photos}
               nearby={p.nearby}
-              profile={nearbyProfile}
+              profile={profile}
               onPhoto={openGalleryAt}
               onPlace={selectNearbyEntry}
             />
@@ -426,46 +474,91 @@ function DetailBody({
             </dl>
           </Section>
 
-          {/* 7 — Where you'll be, merged with what used to be a separate
-              "Nearby" section (9): the route line a click on the list below
-              draws has to land in the same viewport as the list itself, so
-              the map and the list are now siblings in one section instead of
-              two apart. */}
+          {/* 7 — Where you'll be. What used to be three things — this map,
+              the "Nearby" section, and "Your places" below it — is one
+              section with one map at the top of it (ADR-040). Task 12 merged
+              the first two because a route has to draw in the same viewport
+              as the list it came from; the places list wants exactly the
+              same thing, and giving it a second map and a second toggle was
+              answering one question twice. */}
           <Section id="neighbourhood" title={td("whereYouWillBe")}>
-            <NeighbourhoodMap
-              home={{ lat: p.lat, lng: p.lng }}
-              homeLabel={p.name}
-              mapLabel={td("location")}
-              destination={nearbyDestination}
-              routePolyline={nearbyRoute}
-              className="h-60"
-            />
-            <p className="mt-2 text-xs text-muted">{t("nearby.attribution")}</p>
+            {/* Sticky from `lg` up, so the map is still there when the guest
+                has scrolled down to a list. It sticks within THIS section,
+                which is the whole reason the places list moved inside it.
+                Not on small screens: a 240px map plus a toggle pinned to the
+                top of a phone leaves almost nothing to scroll, so there the
+                map stays put and a selection scrolls it back into view
+                (`revealMap`). Same breakpoint and offset as the booking
+                panel's own sticky rule. */}
+            <div
+              id="neighbourhood-map"
+              className="scroll-mt-24 lg:sticky lg:top-[calc(var(--header-h)+20px)] lg:z-10 lg:bg-page lg:pb-4"
+            >
+              <NeighbourhoodMap
+                home={{ lat: p.lat, lng: p.lng }}
+                homeLabel={p.name}
+                mapLabel={td("location")}
+                destination={mapDestination}
+                routePolyline={mapRoute}
+                className="h-60"
+              />
+              <p className="mt-2 text-xs text-muted">{t("nearby.attribution")}</p>
+              {/* The one travel control on this page. It rides with the map
+                  because it governs everything the map and both lists below
+                  show — a toggle that scrolled away from the figures it
+                  changes would be a control you have to remember. */}
+              <div className="mt-3">
+                <Segmented
+                  label={t("detail.nearby.profileLabel")}
+                  name="travel-profile"
+                  value={profile}
+                  options={NEARBY_PROFILES.map((x) => ({
+                    value: x,
+                    label: t(`detail.nearby.profile.${x}`),
+                  }))}
+                  onChange={setProfile}
+                />
+              </div>
+            </div>
+
             {p.address && (
               <p className="mt-3 flex items-center gap-1.5 text-sm text-body">
                 <MapPin size={15} strokeWidth={2} aria-hidden />
                 {p.address}
               </p>
             )}
+
             {p.nearby.length > 0 && (
-              <div className="mt-8">
+              <div id="whats-nearby" className="mt-8">
                 <Nearby
-                  ref={nearbyRef}
                   propertyId={p.id}
                   entries={p.nearby}
                   locale={locale}
-                  onRouteChange={(destination, polyline) => {
-                    setNearbyDestination(destination);
-                    setNearbyRoute(polyline);
-                  }}
-                  onProfileChange={setNearbyProfile}
+                  profile={profile}
+                  activeId={selection?.source === "nearby" ? selection.id : null}
+                  onSelect={(id) => select("nearby", id)}
+                  onRoute={drawRoute}
                 />
               </div>
             )}
-          </Section>
 
-          {/* 8 — Your places */}
-          <YourPlaces />
+            {/* Last, because it is the guest's own list rather than the
+                listing's — and it is the one part of this section that keeps
+                showing for a home with no nearby entries at all. */}
+            <div id="your-places" className="mt-8">
+              <YourPlaces
+                propertyId={p.id}
+                locale={locale}
+                profile={profile}
+                activeId={selection?.source === "place" ? selection.id : null}
+                onSelect={(id) => {
+                  select("place", id);
+                  revealMap();
+                }}
+                onRoute={drawRoute}
+              />
+            </div>
+          </Section>
 
           {/* 9 — Floor plan */}
           {floorplan && (

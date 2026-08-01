@@ -1111,25 +1111,22 @@
     },
     "places": {
       "title": "Your places",
-      "intro": "Save the places you'll go often — the office, the gym, school — and see the trip from every home you look at. They're kept in this browser.",
+      "intro": "Save the places you'll travel to often — work, school, the gym — and see the real route from this home to each one. Up to five, kept in this browser.",
       "add": "Add a place",
-      "empty": "You haven't saved any places yet.",
-      "nameLabel": "Name",
-      "namePlaceholder": "Work",
-      "modeLabel": "How you travel",
-      "kmLabel": "Distance (km)",
-      "save": "Save",
+      "empty": "No places saved yet. Start with the one you'll go to most.",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Calle Alfonso I 20",
+      "addressHint": "Type a street in Zaragoza, then pick the match.",
+      "searching": "Searching…",
+      "noMatch": "No match in Zaragoza. Try the street without the number.",
+      "lookupFailed": "The address lookup isn't answering. Try again in a moment.",
+      "alreadySaved": "Already saved",
       "cancel": "Cancel",
+      "limitReached": "You've saved {count} places. Remove one to add another.",
       "remove": "Remove {name}",
+      "measuring": "Measuring…",
       "minutes": "{count} min",
-      "estimateNote": "Times are estimates worked out from the distance you enter and how you travel.",
-      "mode": {
-        "walk": "walk",
-        "bike": "bike",
-        "tram": "tram",
-        "bus": "bus",
-        "car": "drive"
-      }
+      "routeUnavailable": "No route right now"
     },
     "booking": {
       "month": "month",

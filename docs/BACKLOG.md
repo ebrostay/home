@@ -275,6 +275,12 @@ re-specifications.
   account page links `/.auth/purge/{provider}` and support; a user-initiated
   deactivation endpoint is the same flag set by self, addable without design
   change.
+- **[P][S]** **`/about`'s "List my home" CTA is a 404** — `app/[locale]/about/page.tsx`
+  links to `/account`, a route that has never existed (the comment beside it
+  still says "wired to /.auth in the auth task"). Point it at `/host`, which
+  since 2026-08-01 serves the owner pitch to signed-out visitors, or build the
+  account page the link was written for. Left alone deliberately when `/host`
+  was made public.
 
 ## Legal & content
 - **[L][S]** Privacy: lawyer to confirm the data-location wording — the policy

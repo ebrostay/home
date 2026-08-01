@@ -15,13 +15,6 @@
     "error": "No se pudieron cargar las viviendas.",
     "retry": "Reintentar",
     "clearStay": "Entrada {date} · {months} m",
-    "audience": {
-      "ariaLabel": "Qué quieres hacer",
-      "findLabel": "Buscar alojamiento",
-      "manageLabel": "Gestiona mi piso",
-      "findNote": "Viviendas amuebladas y verificadas para estancias de 1 a 12 meses.",
-      "manageNote": "Publica tu vivienda y delega toda la gestión."
-    },
     "owner": {
       "eyebrow": "Para propietarios",
       "title": "Tu vivienda, gestionada de principio a fin",

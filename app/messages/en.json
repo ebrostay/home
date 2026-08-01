@@ -15,13 +15,6 @@
     "error": "The homes could not be loaded.",
     "retry": "Retry",
     "clearStay": "Move-in {date} · {months} mo",
-    "audience": {
-      "ariaLabel": "What do you want to do",
-      "findLabel": "Find a stay",
-      "manageLabel": "Manage my flat",
-      "findNote": "Furnished, verified homes for 1–12 month stays.",
-      "manageNote": "List your property and delegate the whole management."
-    },
     "owner": {
       "eyebrow": "For owners",
       "title": "Your property, managed end to end",

@@ -17,6 +17,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Compiles every route serially before any worker starts. `webServer` below
+  // documents the corruption this exists to prevent; `reuseExistingServer`
+  // rules out one way into it and this rules out the other. Measured over 6
+  // cold-cache runs without it, one went red with 271 manifest read failures
+  // and 49 tests down.
+  globalSetup: "./e2e/global-setup.ts",
   webServer: {
     // `next dev`, not the static export: the pages are client-rendered, so
     // this exercises the same component code, and `npm run build` already
@@ -32,6 +38,14 @@ export default defineConfig({
     // documents, 30-40 tests go red at once, and none of them are about the
     // code you changed. Refusing to reuse turns that into "port 3021 is
     // already used", which says what is wrong and what to do about it.
+    //
+    // Two runs at once was never the only way to tear that manifest, though —
+    // ONE run does it too, because four workers requesting fifty-seven routes
+    // make many first compiles overlap, and each one rewrites the file. That
+    // is what `globalSetup` above is for. The byte offset differs every time
+    // (992, 756, …) because what is left behind is the tail of whatever
+    // longer manifest was there before, which is the tell that it is a torn
+    // write and not one poisoned file.
     // The cost is ~10s of server start per run, which is the cheaper half of
     // this trade by a wide margin.
     reuseExistingServer: false,

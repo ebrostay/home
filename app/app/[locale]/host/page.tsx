@@ -93,6 +93,23 @@ export default function HostPage() {
   if (!authLoading && !me.authenticated) return <HostPitch />;
   if (state.kind === "signedOut") return <HostPitch />;
 
+  // Auth not resolved yet — which is also the state this page is PRERENDERED
+  // in, since a static export has no visitor at build time. Anything rendered
+  // here is what a stranger paints before hydration, so it must not name the
+  // owner: no "Manage Property" heading, no "Add property" link.
+  if (authLoading) {
+    return (
+      <main
+        aria-busy="true"
+        className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24 pt-6"
+      >
+        <div className="skeleton h-[7.5rem] rounded-(--radius-card)" />
+        <div className="skeleton h-40 rounded-(--radius-card)" />
+        <div className="skeleton h-40 rounded-(--radius-card)" />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-5 px-6 pb-24 pt-6">
       <header className="flex flex-wrap items-start justify-between gap-6">

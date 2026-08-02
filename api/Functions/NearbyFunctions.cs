@@ -132,7 +132,7 @@ public class NearbyFunctions(
         if (string.IsNullOrEmpty(profile)) profile = "foot";
         if (!NearbyGroups.Profiles.Contains(profile)) return BadRequest("bad_profile");
 
-        var (doc, loadError) = await LoadPublishedAsync(id, req.HttpContext.RequestAborted);
+        var (doc, view, loadError) = await LoadVisibleAsync(req, id, req.HttpContext.RequestAborted);
         if (loadError is not null) return loadError;
         if (doc is null) return new NotFoundResult();
 
@@ -144,7 +144,10 @@ public class NearbyFunctions(
             // checks the document before it checks the cache or calls ORS.
             if (route is null) return new NotFoundResult();
 
-            req.HttpContext.Response.Headers.CacheControl = "public, max-age=86400";
+            // The owner's preview of a listing nobody else may see: publicly
+            // cacheable on every other path, never on this one.
+            req.HttpContext.Response.Headers.CacheControl =
+                view is ListingView.OwnerPreview ? "no-store" : "public, max-age=86400";
             return new OkObjectResult(new
             {
                 polyline = route.Polyline,
@@ -201,7 +204,7 @@ public class NearbyFunctions(
         if (!TryPoint(req, out var toLat, out var toLng)) return BadRequest("bad_point");
         if (!NearbyGroups.InZaragoza(toLat, toLng)) return BadRequest("out_of_area");
 
-        var (doc, loadError) = await LoadPublishedAsync(id, req.HttpContext.RequestAborted);
+        var (doc, view, loadError) = await LoadVisibleAsync(req, id, req.HttpContext.RequestAborted);
         if (loadError is not null) return loadError;
         if (doc is null) return new NotFoundResult();
 
@@ -213,8 +216,10 @@ public class NearbyFunctions(
             // `private`, not `public`: the URL carries a guest's own
             // destination, and a shared cache keyed on it would put where
             // somebody works into infrastructure that has no reason to hold
-            // it. The browser store is the cache that matters here anyway.
-            req.HttpContext.Response.Headers.CacheControl = "private, max-age=86400";
+            // it. The browser store is the cache that matters here anyway —
+            // and on an owner preview not even that.
+            req.HttpContext.Response.Headers.CacheControl =
+                view is ListingView.OwnerPreview ? "no-store" : "private, max-age=86400";
             return new OkObjectResult(new
             {
                 polyline = route.Polyline,
@@ -241,34 +246,41 @@ public class NearbyFunctions(
         & double.TryParse(req.Query[lngKey], NumberStyles.Float,
             CultureInfo.InvariantCulture, out lng);
 
-    // The public route surface is open to a paused listing too — a guest who
-    // already has the link (or a map tile that was fetched moments before the
-    // owner paused it) should not see routes break. A draft or rejected
-    // listing has never been public and stays invisible here, same as
-    // PropertiesFunctions.Get.
+    // Which listing this anonymous surface may route on — the rule itself
+    // lives in `ListingVisibility.ForRoutes`, shared with
+    // PropertiesFunctions.Get so the two cannot drift again. They did once:
+    // the owner's preview of an unpublished listing rendered a map on which
+    // every route 404'd, which the guest page reads as "this place's route
+    // isn't available anymore".
     //
-    // Returns (null, null) for "no such public listing" — a 404, same as an
-    // unknown id — and (null, error) only for an actual Cosmos failure, so an
-    // outage is never reported to an anonymous caller as if the listing does
-    // not exist.
-    private async Task<(PropertyDoc? Doc, IActionResult? Error)> LoadPublishedAsync(
-        string id, CancellationToken ct)
+    // `View` is `OwnerPreview` only on a listing that is not otherwise public,
+    // and the caller MUST answer `no-store` for it — these URLs are publicly
+    // cacheable, and a shared cache holding an unpublished listing's route
+    // would hand it to a stranger.
+    //
+    // Returns (null, Hidden, null) for "no such visible listing" — a 404, same
+    // as an unknown id — and (null, Hidden, error) only for an actual Cosmos
+    // failure, so an outage is never reported to an anonymous caller as if the
+    // listing does not exist.
+    private async Task<(PropertyDoc? Doc, ListingView View, IActionResult? Error)> LoadVisibleAsync(
+        HttpRequest req, string id, CancellationToken ct)
     {
         try
         {
             var response = await Properties.ReadItemAsync<PropertyDoc>(
                 id, new PartitionKey(id), cancellationToken: ct);
             var doc = response.Resource;
-            return doc.Status is "published" or "paused" ? (doc, null) : (null, null);
+            var view = ListingVisibility.ForRoutes(doc, ClientPrincipal.Parse(req));
+            return view is ListingView.Hidden ? (null, view, null) : (doc, view, null);
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            return (null, null);
+            return (null, ListingView.Hidden, null);
         }
         catch (CosmosException ex)
         {
             logger.LogError(ex, "Cosmos error reading property {Id}", id);
-            return (null, new StatusCodeResult(StatusCodes.Status502BadGateway));
+            return (null, ListingView.Hidden, new StatusCodeResult(StatusCodes.Status502BadGateway));
         }
     }
 

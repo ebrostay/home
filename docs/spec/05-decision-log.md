@@ -1737,6 +1737,31 @@ Two guardrails, and they are the load-bearing part:
   reaches the same seam by widening the ownership test in one function, and
   that is the moment to decide whether a reviewer sees `previewStatus` too.
 
+### Amendment (2026-08-01) — the routes the previewed page draws, too
+
+- **Context.** Decision 1 named `GET /api/properties/{id}` and only that. The
+  two anonymous route endpoints the same page calls —
+  `GET /api/properties/{id}/nearby/{entryId}/route` (ADR-028) and
+  `GET /api/properties/{id}/place-route` (ADR-039) — kept deciding on status
+  alone, so an owner previewing a `pending_review` listing got the page and
+  then a **404 on every route in it**. The guest page reads that 404 as "this
+  place's route isn't available anymore", so the preview told its owner each
+  of their own places had been removed.
+- **Decision.** Both route endpoints extend the same exception to the same
+  owner, on the same terms: the ownership test is `ListingVisibility`, shared
+  with `PropertiesFunctions.Get` so the two surfaces cannot drift apart again,
+  and Decision 3's `no-store` applies to a preview route exactly as it does to
+  a preview body.
+- What does **not** change: which statuses are public. The route surface has
+  always served a `paused` listing to everyone (a guest holding the link
+  should not watch their routes break) and the detail endpoint has always
+  served `published` only. That difference is deliberate; only the owner half
+  is shared.
+- **Cost, accepted:** previewing an unpublished listing spends ORS quota, and
+  `RouteCache` writes those routes to Cosmos before the listing is public.
+  Both are the same spend the listing incurs the moment it publishes, brought
+  forward — and a preview that cannot draw a route is not a preview.
+
 ### Consequences
 
 - Three controls that were disabled placeholders became real links:

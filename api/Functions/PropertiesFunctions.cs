@@ -84,10 +84,12 @@ public class PropertiesFunctions(
             // deliberate: not 401, not 403. A stranger walking ids must not be
             // able to tell an unpublished listing from one that never existed,
             // and an authentication challenge on a public URL would tell them.
-            var principal = ClientPrincipal.Parse(req);
-            if (principal is null
-                || !principal.IsAuthenticated
-                || !string.Equals(doc.HostId, principal.UserId, StringComparison.Ordinal))
+            //
+            // The ownership test is `ListingVisibility`'s, shared with the
+            // route endpoints in NearbyFunctions.cs: this exception used to
+            // live here alone, and the routes under this very page 404'd
+            // because of it.
+            if (!ListingVisibility.IsOwnedBy(doc, ClientPrincipal.Parse(req)))
                 return new NotFoundResult();
 
             // This body is owner-only on a URL that is otherwise public and

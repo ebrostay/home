@@ -65,7 +65,7 @@ tokens in light and dark; ES/EN labels; the open animation; and the
 
 | # | Decision | Rationale |
 | --- | --- | --- |
-| D1 | **`yet-another-react-lightbox`** (MIT, v3.32.2, ~480k/wk, zero runtime deps, 11.7 kB gz core) | The only permissively-licensed, actively-maintained candidate covering requirements #2–#8 out of the box, with React 19 in its peer range. Native `srcSet` support, so the existing `srcset`/`sizes` work carries over unchanged. |
+| D1 | **`yet-another-react-lightbox`** (MIT, v3.32.2, ~480k/wk, zero runtime deps, 11.7 kB gz core) | The only permissively-licensed, actively-maintained candidate covering requirements #2–#8 out of the box, with React 19 in its peer range. (Its `srcSet` support turned out not to carry the existing `srcset`/`sizes` work over — see §4: it needs `width` and `height` per candidate, which we do not store — but the decision stands on the grounds above regardless.) |
 | D2 | Evaluate **Fancybox v6** (`@fancyapps/ui`) as a paid alternative before committing | It ships the open transition (#1) natively rather than as our own View Transitions gamble, and is the more polished product. €29 one-time Single licence. See §6 for what the prototype must settle and §8 for the licence reading. |
 | D3 | Rejected: **fslightbox-react** (thumbnails, captions and zoom are all paid Pro), **Swiper** (a carousel, not a lightbox — we would hand-build the shell and still ship 19 kB), **lightGallery** (GPLv3 or paid; copyleft on our bundle), **react-photo-view** (Apache-2.0 and it has the open animation natively, but last released 2025-01-05 with an open, unanswered *"It's not work in React19.x"* report), **PhotoSwipe** (requires predefined width/height per image, which we do not store — see D8) | Recorded so the next person does not re-run this search. |
 | D4 | The lightbox takes an **`overlay(index)` render prop**, passed through YARL's `render.controls` slot | The mini-map becomes our own component layered on top. Nothing inside the lightbox knows what a floor plan is, so the deferred model in §7 lands without reopening this component. |
@@ -102,8 +102,11 @@ Lazy loading (#2) is YARL's own bounded preload. WebP (#7) is free — these are
 `<img>` elements.
 
 `lib/photos.ts` gains a pure `slidesFor(photos)` mapper: `PropertyPhoto[]` to
-YARL's slide shape, carrying `src`, `srcSet` and the caption field when it
-exists. Pure, so it is unit-testable under vitest per the `app/lib`-only rule.
+YARL's slide shape, carrying `src` and `alt`. No `srcSet` — YARL's
+`ImageSource` requires `width` and `height` per candidate, which the photo
+record does not store (see D8's reasoning and the comment on `slidesFor`
+itself); no caption either, since `PropertyPhoto` has no caption field yet
+(§7). Pure, so it is unit-testable under vitest per the `app/lib`-only rule.
 
 ## 5. The one risky part
 
@@ -290,8 +293,10 @@ writing from fancyapps before shipping.
 
 ## 9. Testing
 
-- **vitest** — `slidesFor` in `lib/photos.ts`: ordering, the `srcSet` passthrough,
-  the caption-absent case, and the single-photo (description reference) case.
+- **vitest** — `slidesFor` in `lib/photos.ts`: ordering, alt-text numbering,
+  the `detailUrl`/`url` fallback, the single-photo (description reference)
+  case, and the no-photos case. No `srcSet` passthrough or caption-absent
+  case to test — neither feature shipped (see §4).
 - **Playwright** — the design page is already in the route sweep, so the demo is
   covered against console errors on load. The sweep only *loads* pages, so one
   focused spec opens the lightbox, advances a slide, checks the counter, and

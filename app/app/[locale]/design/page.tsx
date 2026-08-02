@@ -686,18 +686,18 @@ export default function DesignPage() {
         </div>
       </section>
 
-      {/* Gallery — the control the lightbox spec replaces */}
+      {/* Gallery — the mosaic that opens into the lightbox below */}
       <section className="mt-14">
         <div className="ledger-rule"><span>gallery (current)</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
-          The detail page as it stands today, at eight photos.{" "}
-          <strong>All 8 photos</strong> opens a scrollable grid — no carousel,
-          no zoom, no captions, no keyboard. The mosaic photos themselves are
-          not clickable, so that chip is the only way in. Narrow the window
-          below <code>40rem</code> and only the hero survives while the chip
-          keeps counting the desktop mosaic — the bug in §2 of the lightbox
-          spec. This section is the &ldquo;before&rdquo; the prototype is
-          measured against.
+          The detail page as it stands today, at eight photos. The mosaic
+          tiles and <strong>All 8 photos</strong> both open the lightbox in
+          the next section — there is no separate grid dialog any more (that
+          was the bug documented in §1 of the lightbox spec, and D5 in that
+          spec is what removed it). This section exists to show the mosaic on
+          its own, since it is still a real, separately worth-seeing
+          component; it is no longer a &ldquo;before&rdquo; to the section
+          below it.
         </p>
         <div className="mt-6 max-w-4xl">
           <Gallery photos={GALLERY_PHOTOS} hasFloorplan={false} />
@@ -709,10 +709,12 @@ export default function DesignPage() {
         <div className="ledger-rule"><span>lightbox</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
           The same eight photos. Carousel, pinch/scroll zoom with pan,
-          thumbnail strip, counter, and arrow-key and Esc handling. The
-          captions below are invented — the field does not exist on{" "}
-          <code>PropertyPhoto</code> yet, and wiring it is deferred with the
-          rest of the photo-to-plan model. The fixed panel bottom-right is a
+          thumbnail strip, counter, and arrow-key and Esc handling. No
+          captions render — the captions plugin is wired in, but{" "}
+          <code>PropertyPhoto</code> has no caption field yet, and wiring one
+          up is deferred with the rest of the photo-to-plan model; the plugin
+          is pre-wired now so landing that field later is a projection
+          change and nothing else. The fixed panel bottom-right is a
           stand-in for the floor-plan mini-map, drawn through the{" "}
           <code>overlay</code> slot to prove the position is usable.
         </p>

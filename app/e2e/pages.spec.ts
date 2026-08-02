@@ -864,8 +864,9 @@ test("the lightbox opens, advances and closes", async ({ page }) => {
 
   // Anchored on the section's own heading, not on a `hasText: "lightbox"`
   // filter over the whole section: the "gallery (current)" section above this
-  // one says "the bug in §2 of the lightbox spec" in its prose, so that
-  // filter resolves to two sections. The heading itself is exact.
+  // one also says "lightbox" in its prose (it points at the spec that
+  // replaced its old grid dialog), so that filter resolves to two sections.
+  // The heading itself is exact.
   const lightboxSection = page.locator("section").filter({
     has: page.locator(".ledger-rule", { hasText: /^lightbox$/ }),
   });
@@ -895,7 +896,9 @@ test("the lightbox opens, advances and closes", async ({ page }) => {
 
   await page.keyboard.press("Escape");
 
-  // The close animation runs ~500ms; a retrying web-first assertion, not an
-  // immediate read, is what makes this deterministic.
+  // The close animation runs on `animation.fade` (250ms by default —
+  // `animation.swipe`, 500ms, governs slide-to-slide, not closing); a
+  // retrying web-first assertion, not an immediate read, is what makes this
+  // deterministic.
   await expect(counter).toHaveCount(0);
 });

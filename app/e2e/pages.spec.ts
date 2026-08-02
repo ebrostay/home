@@ -844,3 +844,58 @@ test("staticwebapp.config.json does not redirect / at the edge", () => {
   const root = (config.routes ?? []).filter((r) => r.route === "/" && r.redirect);
   expect(root, 'a "/" redirect rule would pre-empt the language redirector').toEqual([]);
 });
+
+// The route sweep above only LOADS pages. This is the one interaction test:
+// the lightbox is the detail page's main control, and every failure mode
+// worth having (opens blank, counter stuck, Esc dead) survives a page that
+// renders perfectly fine. The design page is the target because it serves
+// eight photos from public/brand with no fixture and no seeded data behind
+// it.
+//
+// YARL mounts through a React portal into document.body (confirmed in
+// node_modules/yet-another-react-lightbox/dist/index.js — Portal() calls
+// createPortal(..., root || document.body)), so once open its markup —
+// counter, container, the overlay slot — is NOT a descendant of the design
+// page's "lightbox" <section>. Only the eight trigger thumbnails live there;
+// everything after the click is queried from `page`, not from that section.
+test("the lightbox opens, advances and closes", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/design", { waitUntil: "networkidle" });
+
+  // Anchored on the section's own heading, not on a `hasText: "lightbox"`
+  // filter over the whole section: the "gallery (current)" section above this
+  // one says "the bug in §2 of the lightbox spec" in its prose, so that
+  // filter resolves to two sections. The heading itself is exact.
+  const lightboxSection = page.locator("section").filter({
+    has: page.locator(".ledger-rule", { hasText: /^lightbox$/ }),
+  });
+  await expect(lightboxSection).toHaveCount(1);
+
+  // Third thumbnail (index 2) — opens the lightbox on photo 3 of 8.
+  await lightboxSection.getByRole("button").nth(2).click();
+
+  // YARL's counter plugin renders `{currentIndex + 1} / {slides.length}`
+  // with its default "/" separator (dist/plugins/counter/index.js) — this is
+  // that library default, not a value chosen to make the test pass.
+  const counter = page.locator(".yarl__counter");
+  await expect(counter).toHaveText("3 / 8");
+
+  // A keydown dispatched at `document` would not reach the lightbox — it
+  // listens on its own container, which takes focus while open (confirmed in
+  // dist/index.js). page.keyboard.press targets whatever element currently
+  // has focus, which is that container, so this reaches the real handler.
+  await page.keyboard.press("ArrowRight");
+  await expect(counter).toHaveText("4 / 8");
+
+  // The overlay slot (render.controls in components/detail/Lightbox.tsx) is a
+  // zero-argument function — YARL hands it no index. It learns the current
+  // photo only through the `on.view` callback wired to local state. This is
+  // the assertion that notices if that wiring silently breaks.
+  await expect(page.getByText("floor plan slot · photo 4")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+
+  // The close animation runs ~500ms; a retrying web-first assertion, not an
+  // immediate read, is what makes this deterministic.
+  await expect(counter).toHaveCount(0);
+});

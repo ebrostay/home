@@ -411,7 +411,7 @@ function DetailBody({
       </div>
 
       <div className="mt-6">
-        <Gallery photos={gallery} hasFloorplan={!!floorplan} name={p.name} />
+        <Gallery photos={gallery} hasFloorplan={!!floorplan} />
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_minmax(0,380px)] lg:items-start">

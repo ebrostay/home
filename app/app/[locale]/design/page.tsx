@@ -700,11 +700,7 @@ export default function DesignPage() {
           measured against.
         </p>
         <div className="mt-6 max-w-4xl">
-          <Gallery
-            photos={GALLERY_PHOTOS}
-            hasFloorplan={false}
-            name="Sample home"
-          />
+          <Gallery photos={GALLERY_PHOTOS} hasFloorplan={false} />
         </div>
       </section>
 

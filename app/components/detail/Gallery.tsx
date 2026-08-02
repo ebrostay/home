@@ -5,7 +5,7 @@ import { Images, Ruler } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PropertyPhoto } from "@/lib/api";
 import { SIZES, srcSet } from "@/lib/photos";
-import { Dialog } from "@/components/ui/Dialog";
+import { Lightbox } from "@/components/detail/Lightbox";
 
 // A 2fr/1fr/1fr mosaic: one hero frame plus four supporting tiles. Anything
 // past the fifth photo lives behind "All N photos" rather than making the
@@ -13,14 +13,12 @@ import { Dialog } from "@/components/ui/Dialog";
 export function Gallery({
   photos,
   hasFloorplan,
-  name,
 }: {
   photos: PropertyPhoto[];
   hasFloorplan: boolean;
-  name: string;
 }) {
   const t = useTranslations("detail");
-  const [allOpen, setAllOpen] = useState(false);
+  const [openAt, setOpenAt] = useState<number | null>(null);
 
   if (photos.length === 0) return null;
   const [hero, ...rest] = photos;
@@ -46,6 +44,7 @@ export function Gallery({
             alt={t("photoOf", { n: 1, total: photos.length })}
             className={tiles.length >= 3 ? "sm:row-span-2" : ""}
             sizes={SIZES.hero}
+            onClick={() => setOpenAt(0)}
           />
           {tiles.map((photo, i) => (
             <Frame
@@ -53,14 +52,18 @@ export function Gallery({
               photo={photo}
               alt={t("photoOf", { n: i + 2, total: photos.length })}
               className="hidden sm:block"
+              onClick={() => setOpenAt(i + 1)}
             />
           ))}
         </div>
 
         <div className="absolute bottom-3 right-3 flex gap-2">
-          {/* Only worth offering when the grid is actually hiding something. */}
-          {photos.length > tiles.length + 1 && (
-            <PhotoButton onClick={() => setAllOpen(true)}>
+          {/* Counts PHOTOS, not tiles. The previous rule compared against the
+              four supporting tiles — which are `hidden sm:block` — so a
+              five-photo home on a phone showed one photo, hid the chip, and
+              left the other four unreachable. */}
+          {photos.length > 1 && (
+            <PhotoButton onClick={() => setOpenAt(0)}>
               <Images size={15} strokeWidth={2} aria-hidden />
               {t("allPhotos", { count: photos.length })}
             </PhotoButton>
@@ -80,19 +83,11 @@ export function Gallery({
         </div>
       </div>
 
-      <Dialog open={allOpen} onClose={() => setAllOpen(false)} title={name}>
-        <div className="grid max-h-[70vh] grid-cols-1 gap-2.5 overflow-y-auto sm:grid-cols-2">
-          {photos.map((photo, i) => (
-            <Frame
-              key={photo.url}
-              photo={photo}
-              alt={t("photoOf", { n: i + 1, total: photos.length })}
-              className="aspect-[4/3] rounded-(--radius-control)"
-              lazy
-            />
-          ))}
-        </div>
-      </Dialog>
+      <Lightbox
+        photos={photos}
+        index={openAt}
+        onClose={() => setOpenAt(null)}
+      />
     </>
   );
 }
@@ -101,8 +96,8 @@ function Frame({
   photo,
   alt,
   className = "",
-  lazy = false,
   sizes = SIZES.tile,
+  onClick,
 }: {
   photo: PropertyPhoto;
   alt: string;
@@ -110,24 +105,29 @@ function Frame({
   /** How wide this frame is actually drawn. The hero is twice the others, and
    *  one shared value would make the tiles fetch the hero's size. */
   sizes?: string;
-  /** The grid above the fold is the page's headline image — deferring it would
-   *  delay the one photo the visitor came for. Everything behind a click is a
-   *  different matter, and most visitors never open it. */
-  lazy?: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className={`overflow-hidden bg-surface-2 ${className}`}>
+    /* A button, not a div: these open the lightbox, so they must be
+       focusable and answer Enter and Space. They were bare divs until
+       2026-08-02, which meant a keyboard user had no way into the gallery
+       at all. */
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={alt}
+      className={`block cursor-zoom-in overflow-hidden bg-surface-2 ${className}`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized */}
       <img
         src={photo.detailUrl ?? photo.url}
         srcSet={srcSet(photo)}
         sizes={sizes}
-        alt={alt}
-        loading={lazy ? "lazy" : undefined}
+        alt=""
         decoding="async"
         className="h-full w-full object-cover"
       />
-    </div>
+    </button>
   );
 }
 

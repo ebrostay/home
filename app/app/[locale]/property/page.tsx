@@ -142,7 +142,17 @@ function DetailBody({
   // description (Task 11) — they must never show up in the mosaic or the
   // "all photos" overlay, even though the document below can still resolve
   // and display them itself.
-  const gallery = p.photos.filter((ph) => !ph.isFloorplan && !ph.hiddenFromGallery);
+  //
+  // MUST be memoized on `p.photos` and nothing else. `Gallery` hands this
+  // straight to `<Lightbox photos={...}>`, and Lightbox's own `photos` prop
+  // doc explains why a fresh array identity on every render of this
+  // component (this one re-renders often — `copied`, `recentre`, map
+  // selection, etc. all live here) would reset the open lightbox back to its
+  // starting slide out from under whoever is navigating it.
+  const gallery = useMemo(
+    () => p.photos.filter((ph) => !ph.isFloorplan && !ph.hiddenFromGallery),
+    [p.photos],
+  );
   const floorplan = p.photos.find((ph) => ph.isFloorplan);
 
   // ------------------------------------------------------------------
@@ -290,6 +300,15 @@ function DetailBody({
     const photo = p.photos.find((ph) => ph.url === url);
     if (photo) setReferenced(photo);
   };
+  // Same referential-stability contract as `gallery` above: built inline this
+  // would be a fresh one-element array on every render of a component that
+  // re-renders often while the lightbox sits open, which resets its zoom
+  // (there is nowhere else to reset to — a one-slide lightbox has no other
+  // index) every time something unrelated on the page changes state.
+  const referencedPhotos = useMemo(
+    () => (referenced ? [referenced] : []),
+    [referenced],
+  );
 
   const booked: DateRange[] = useMemo(
     () =>
@@ -763,7 +782,7 @@ function DetailBody({
       </div>
 
       <Lightbox
-        photos={referenced ? [referenced] : []}
+        photos={referencedPhotos}
         index={referenced ? 0 : null}
         onClose={() => setReferenced(null)}
       />

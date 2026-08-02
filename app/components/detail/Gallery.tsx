@@ -6,7 +6,7 @@ import { Images, Ruler } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PropertyPhoto } from "@/lib/api";
 import { SIZES, slideSrc, srcSet } from "@/lib/photos";
-import { Lightbox } from "@/components/detail/Lightbox";
+import { Lightbox, slidePainted } from "@/components/detail/Lightbox";
 
 type ViewTransition = { ready: Promise<void>; skipTransition: () => void };
 type Transitional = Document & {
@@ -15,34 +15,10 @@ type Transitional = Document & {
 
 /* How long the transition may hold the page still waiting for the destination
    slide. Measured 2026-08-02 against `next dev` on a warm slide: 75-92 ms over
-   six cold page loads, so this has ~60 ms of headroom and still sits under the
-   ~150 ms where a stall stops reading as "the click registered". Past it we
-   give up and take the library's cross-fade instead — see `open`. */
+   six cold page loads, so this has ~60 ms of headroom and still sits under
+   the 150 ms where a stall stops reading as "the click registered". Past it
+   we give up and take the library's cross-fade instead — see `open`. */
 const SLIDE_BUDGET_MS = 150;
-
-/** Whether the lightbox's current slide became a loaded, laid-out <img> inside
- *  the budget.
- *
- *  Polled with timers rather than rAF: rendering is suppressed while a View
- *  Transition's update callback is pending, so rAF need never fire. */
-function slidePainted(budgetMs: number) {
-  const t0 = performance.now();
-  return new Promise<boolean>((resolve) => {
-    const tick = () => {
-      const img = document.querySelector<HTMLImageElement>(
-        ".ebrostay-lightbox .yarl__slide_current img",
-      );
-      if (img?.complete && img.naturalWidth > 0 && img.clientWidth > 0) {
-        resolve(true);
-      } else if (performance.now() - t0 > budgetMs) {
-        resolve(false);
-      } else {
-        setTimeout(tick, 8);
-      }
-    };
-    tick();
-  });
-}
 
 // A 2fr/1fr/1fr mosaic: one hero frame plus four supporting tiles. Anything
 // past the fifth photo lives behind "All N photos" rather than making the

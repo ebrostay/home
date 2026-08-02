@@ -15,15 +15,62 @@ import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/counter.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-// The one place that imports the lightbox library. Everything else on the
-// detail page hands it photos and an index; if this is ever swapped out, the
-// blast radius is this file.
+// The class stamped on YARL's own root (`className` below) — the anchor
+// everything that reaches into this component's DOM from outside uses.
+// Exported alongside `slidePainted` so `Gallery.tsx` does not have to
+// hardcode a second copy of it.
+const CONTAINER_CLASS = "ebrostay-lightbox";
+
+/** Whether the lightbox's current slide became a loaded, laid-out <img>
+ *  inside the budget. Lives here rather than in the caller that uses it
+ *  (`Gallery.tsx`, for the open View Transition) because the selector it
+ *  polls is this component's own DOM output.
+ *
+ *  Polled with timers rather than rAF: rendering is suppressed while a View
+ *  Transition's update callback is pending, so rAF need never fire. */
+export function slidePainted(budgetMs: number): Promise<boolean> {
+  const t0 = performance.now();
+  return new Promise<boolean>((resolve) => {
+    const tick = () => {
+      const img = document.querySelector<HTMLImageElement>(
+        `.${CONTAINER_CLASS} .yarl__slide_current img`,
+      );
+      if (img?.complete && img.naturalWidth > 0 && img.clientWidth > 0) {
+        resolve(true);
+      } else if (performance.now() - t0 > budgetMs) {
+        resolve(false);
+      } else {
+        setTimeout(tick, 8);
+      }
+    };
+    tick();
+  });
+}
+
+// The one place that imports the lightbox library itself — but not the only
+// place coupled to its output. `app/globals.css` themes ~13 `--yarl__*`
+// custom properties plus `.yarl__slide_current img` directly (CSS cannot
+// import a JS constant), and `e2e/pages.spec.ts` selects `.yarl__counter` to
+// assert on the counter plugin. Both are known leaks a library swap would
+// have to chase down. `Gallery.tsx` used to be a third: it hardcoded
+// `.ebrostay-lightbox .yarl__slide_current img` to poll the open transition.
+// That selector and the polling function that used it now live here as
+// `CONTAINER_CLASS`/`slidePainted`, exported, so a swap only needs THIS
+// file's copies updated — Gallery.tsx just imports the function.
 export function Lightbox({
   photos,
   index,
   onClose,
   overlay,
 }: {
+  /** CALLER'S RESPONSIBILITY: must be referentially stable for as long as the
+   *  lightbox is open — the same array instance across re-renders, not just
+   *  one that is `===` by value. Build it with `useMemo` (or hoist it) rather
+   *  than inline in JSX or a plain `.filter()`/`.map()` at render time. YARL
+   *  resets `currentIndex` back to the opening slide whenever the `slides`
+   *  array it is handed changes identity (see the `useMemo` below for the
+   *  mechanism); the memo below only guards against THIS component
+   *  re-rendering, it cannot fix a caller that hands in a fresh array. */
   photos: readonly PropertyPhoto[];
   /** `null` is closed. Any number opens on that slide. */
   index: number | null;
@@ -35,7 +82,13 @@ export function Lightbox({
   overlay?: (index: number) => React.ReactNode;
 }) {
   const t = useTranslations("detail");
-  const [current, setCurrent] = useState(0);
+  // Initialised from the opening index, not 0: `key={index ?? "closed"}`
+  // below remounts this component on every open, so `useState(0)` would
+  // render `overlay(0)` for one commit even when opening on slide 5 — wrong
+  // the instant it appears, and only corrected once `on.view`'s effect
+  // fires. Invisible with today's demo overlay; a floor-plan mini-map would
+  // flash the wrong floor.
+  const [current, setCurrent] = useState(index ?? 0);
 
   /* MUST be referentially stable across renders that do not actually change
      the photo set. YARL's `LightboxStateProvider` compares `slides` with
@@ -69,7 +122,7 @@ export function Lightbox({
       slides={slides}
       plugins={[Captions, Counter, Thumbnails, Zoom]}
       on={{ view: ({ index: i }) => setCurrent(i) }}
-      className="ebrostay-lightbox"
+      className={CONTAINER_CLASS}
       counter={{ container: { className: "ebrostay-lightbox__counter" } }}
       thumbnails={{
         width: 96,

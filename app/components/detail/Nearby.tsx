@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   HeartPulse,
-  Loader2,
   ShoppingCart,
   TramFront,
   Trees,
@@ -15,6 +14,8 @@ import { useTranslations } from "next-intl";
 import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteLine } from "@/lib/api";
 import { NEARBY_GROUPS, reachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
+import { useDelayed } from "./measuring";
+import { PROFILE_ICONS } from "./profileIcons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
 // The guest's half of "what's nearby" (ADR-028, design §9 as amended by
@@ -54,10 +55,17 @@ export function Nearby({
   activeId,
   onSelect,
   onRoute,
+  onPending,
 }: {
   propertyId: string;
   entries: PublicNearbyEntry[];
   locale: string;
+  /** Raised while a route is on its way, so the map can say so on the pin it
+   *  has already drawn — the wait is reported THERE, not in this list, which
+   *  must not change height mid-click. Only this list can tell "still coming"
+   *  apart from "already failed", which is why the map cannot derive it from
+   *  a null polyline. */
+  onPending: (pending: boolean) => void;
   /** The page's toggle. This list renders no control of its own. */
   profile: NearbyProfile;
   /** The entry this list currently has selected, or null — including when the
@@ -97,6 +105,28 @@ export function Nearby({
   }, [errors]);
 
   const entryLookup = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
+
+  // Only the ACTIVE entry can be measuring, so the wait is one value on the
+  // list rather than one per row — which is also what lets `useDelayed` be a
+  // hook at all, since a hook cannot be called from inside the row loop.
+  const activeEntry = activeId ? entryLookup.get(activeId) : undefined;
+  const activeKey = activeId ? routeKey(activeId, profile) : "";
+  const measuring =
+    !!activeEntry &&
+    !!reachFor(activeEntry, profile) &&
+    !routes[activeKey] &&
+    errors[activeKey] === undefined;
+  const showMeasuring = useDelayed(measuring);
+
+  // Tell the map. Same ref dance as `onRoute`: the parent hands us a new
+  // function on every render.
+  const onPendingRef = useRef(onPending);
+  useEffect(() => {
+    onPendingRef.current = onPending;
+  }, [onPending]);
+  useEffect(() => {
+    onPendingRef.current(showMeasuring);
+  }, [showMeasuring]);
 
   // One card per group, entries with no figure for the active profile
   // dropped (reachFor returns null — a place ORS genuinely could not route
@@ -200,6 +230,8 @@ export function Nearby({
   // map, the address and the places list; this half simply isn't there.
   if (entries.length === 0) return null;
 
+  const ProfileIcon = PROFILE_ICONS[profile];
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -218,15 +250,39 @@ export function Nearby({
                   <span className="data text-[0.6875rem] uppercase tracking-[0.14em]">
                     {t(`category.${group}`)}
                   </span>
+                  {/* What the minutes below are measured on, sitting over the
+                      column they describe. Muted and small: it labels the
+                      figures, it does not head the card — the category does.
+
+                      Hidden from a screen reader on purpose. The subtitle
+                      above these cards already says "Walking times from this
+                      address" in words, and repeating it once per card is
+                      noise for the one reader who cannot see that it is the
+                      same icon every time. */}
+                  <ProfileIcon
+                    size={14}
+                    strokeWidth={2}
+                    aria-hidden
+                    className="ml-auto shrink-0 text-muted"
+                  />
                 </p>
                 <ul className="mt-3 flex flex-col gap-2">
                   {list.map(({ entry, reach }) => {
                     const active = activeId === entry.id;
                     const key = routeKey(entry.id, profile);
                     const failed = errors[key];
-                    const loading = active && !routes[key] && failed === undefined;
+                    const loading = active && showMeasuring;
                     return (
-                      <li key={entry.id}>
+                      <li
+                        key={entry.id}
+                        // The tint needs a box, and a box needs padding — but
+                        // the negative margin gives it straight back, so the
+                        // rows sit exactly where they sat before and only the
+                        // painted area is bigger.
+                        className={`-mx-2 -my-1 rounded-(--radius-control) px-2 py-1 transition-colors duration-(--dur-standard) ${
+                          active ? "bg-brand-soft" : ""
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => click(entry.id)}
@@ -234,7 +290,13 @@ export function Nearby({
                           className="flex w-full items-baseline justify-between gap-3 text-left"
                         >
                           <span className="min-w-0">
-                            <span className="block truncate text-sm text-ink">{entry.name}</span>
+                            <span
+                              className={`block truncate text-sm ${
+                                active ? "font-semibold text-brand-strong" : "text-ink"
+                              }`}
+                            >
+                              {entry.name}
+                            </span>
                             <span className="block truncate text-xs text-muted">{typeLabel(entry)}</span>
                           </span>
                           <span className="shrink-0 text-right">
@@ -246,11 +308,13 @@ export function Nearby({
                             </span>
                           </span>
                         </button>
+                        {/* The wait shows on the MAP, which a screen reader
+                            cannot see at all, so it is also said out loud —
+                            this is the only report of it in the list. */}
                         {loading && (
-                          <p role="status" className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
-                            <Loader2 size={12} strokeWidth={2.2} className="animate-spin" aria-hidden />
+                          <span role="status" className="sr-only">
                             {t("loadingRoute")}
-                          </p>
+                          </span>
                         )}
                         {active && failed !== undefined && (
                           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-warn">

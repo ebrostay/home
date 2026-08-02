@@ -1049,6 +1049,10 @@
     "minStay": "Estancia mínima",
     "maxStay": "Estancia máxima",
     "whereYouWillBe": "Dónde vas a estar",
+    "addressLabel": "Dirección",
+    "addressShowOnMap": "Ver esta vivienda en el mapa",
+    "addressCopy": "Copiar la dirección",
+    "addressCopied": "Copiada",
     "terms": {
       "billing": {
         "title": "Facturación por días",
@@ -1126,7 +1130,11 @@
       "remove": "Quitar {name}",
       "measuring": "Midiendo…",
       "minutes": "{count} min",
-      "routeUnavailable": "Sin ruta ahora mismo"
+      "routeUnavailable": "Sin ruta ahora mismo",
+      "timesBy": {
+        "foot": "Tiempos a pie",
+        "car": "Tiempos en coche"
+      }
     },
     "booking": {
       "month": "mes",

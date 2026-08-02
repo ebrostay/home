@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { decodePolyline } from "@/lib/nearby";
+import { LEAFLET_PREFIX, ORS_ATTRIBUTION, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 
 // The public "what's nearby" map (merges what used to be sections 7 and 9):
 // the home pin (map-marker — the same class ListingsMap uses for "the one
@@ -34,6 +35,8 @@ export function NeighbourhoodMap({
   mapLabel,
   destination,
   routePolyline,
+  routePending = false,
+  recentre = 0,
   className = "",
 }: {
   home: { lat: number; lng: number };
@@ -41,6 +44,15 @@ export function NeighbourhoodMap({
   mapLabel: string;
   destination: NeighbourhoodMapDestination | null;
   routePolyline: string | null;
+  /** The destination is drawn already and its line is still coming, so the pin
+   *  says so on the map — where the line is about to appear — rather than in
+   *  the list, which would have to grow a row to do it. */
+  routePending?: boolean;
+  /** Bumped by the caller to put the home back in the middle — the address
+   *  plate above the map asking "where is this, exactly". A counter, not a
+   *  flag: two clicks in a row are two requests, and a `true` that is already
+   *  `true` would answer only the first. */
+  recentre?: number;
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +60,9 @@ export function NeighbourhoodMap({
      runtime and has no types available at this import site. */
   const mapRef = useRef<any>(null);
   const destinationRef = useRef<any>(null);
+  /** The destination marker itself, so the pulse below can go on the element
+   *  already on the map. */
+  const destinationMarkerRef = useRef<any>(null);
   const lineRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -69,10 +84,17 @@ export function NeighbourhoodMap({
         [home.lat, home.lng],
         15,
       );
+      mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: OSM_ATTRIBUTION,
       }).addTo(mapRef.current);
+      // The routing credit rides in the banner, not on the tile layer: it is
+      // owed for the lines and the figures beside them, not for the tiles.
+      // Added unconditionally rather than with the first route — the two
+      // lists below this map are ABOUT openrouteservice answers, so the
+      // credit is due from the moment the map is on screen, and a credit
+      // that blinks into existence on the first click is one nobody reads.
+      mapRef.current.attributionControl.addAttribution(ORS_ATTRIBUTION);
 
       // The home pin is added directly to the map, not into a layer group:
       // it never moves and must survive layer.clearLayers() on every
@@ -113,7 +135,7 @@ export function NeighbourhoodMap({
     layer.clearLayers();
     if (!destination) return;
 
-    L.marker([destination.lat, destination.lng], {
+    destinationMarkerRef.current = L.marker([destination.lat, destination.lng], {
       title: destination.label,
       alt: destination.label,
       icon: L.divIcon({
@@ -134,6 +156,29 @@ export function NeighbourhoodMap({
     // every fit, not a reason to re-fit on its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination, mapReady]);
+
+  // A CLASS on the marker that is already drawn, never a redraw: rebuilding it
+  // would restart the pulse AND re-run the fitBounds above, twice per
+  // selection, for a pin that has not moved.
+  useEffect(() => {
+    const el = destinationMarkerRef.current?.getElement()?.querySelector(".map-marker");
+    if (!el) return;
+    el.classList.toggle("map-marker-measuring", routePending);
+  }, [routePending, destination, mapReady]);
+
+  // Centre on the home, keeping whatever zoom the reader is on — unless they
+  // have zoomed out past the point where a centred pin says anything, hence
+  // the floor. `0` is "never asked", so this does not fight the initial view.
+  useEffect(() => {
+    if (!recentre) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.setView([home.lat, home.lng], Math.max(map.getZoom(), 15), { animate: !reduced });
+    // `home` is read, never watched: the home moving is not a reason to
+    // recentre — the reader asking is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recentre, mapReady]);
 
   // Redraw the route line whenever it changes, into a layer cleared on each
   // change — same as NearbyMap — so a stale line from a previously active

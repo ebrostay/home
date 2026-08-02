@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import "leaflet/dist/leaflet.css";
 import { decodePolyline } from "@/lib/nearby";
+import { LEAFLET_PREFIX, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 
 // The nearby editor's map: the home pin (map-marker — the same divIcon class
 // ListingsMap uses for "the one listing"), candidate pins from search
@@ -124,9 +125,9 @@ export function NearbyMap({
         [home.lat, home.lng],
         15,
       );
+      mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: OSM_ATTRIBUTION,
       }).addTo(mapRef.current);
 
       // The home pin is added directly to the map, not into pinsRef, so it

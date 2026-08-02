@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
+import { LEAFLET_PREFIX, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 
 export type MapPin = {
   id: string;
@@ -42,9 +43,9 @@ export function ListingsMap({
         mapRef.current = L.map(containerRef.current, {
           scrollWheelZoom: false,
         }).setView([41.6488, -0.8891], 12); // Zaragoza
+        mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          attribution: OSM_ATTRIBUTION,
         }).addTo(mapRef.current);
         layerRef.current = L.layerGroup().addTo(mapRef.current);
       }

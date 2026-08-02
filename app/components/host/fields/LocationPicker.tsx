@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
+import { LEAFLET_PREFIX, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 
 // The map pin, draggable, with the geocoder's opinion shown beside it.
 //
@@ -86,9 +87,9 @@ export function LocationPicker({
         start,
         16,
       );
+      mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: OSM_ATTRIBUTION,
       }).addTo(mapRef.current);
 
       markerRef.current = L.marker(start, {

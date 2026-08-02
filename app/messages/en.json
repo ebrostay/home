@@ -1049,6 +1049,10 @@
     "minStay": "Minimum stay",
     "maxStay": "Maximum stay",
     "whereYouWillBe": "Where you'll be",
+    "addressLabel": "Address",
+    "addressShowOnMap": "Show this home on the map",
+    "addressCopy": "Copy the address",
+    "addressCopied": "Copied",
     "terms": {
       "billing": {
         "title": "Billed by the day",
@@ -1126,7 +1130,11 @@
       "remove": "Remove {name}",
       "measuring": "Measuring…",
       "minutes": "{count} min",
-      "routeUnavailable": "No route right now"
+      "routeUnavailable": "No route right now",
+      "timesBy": {
+        "foot": "Walking times",
+        "car": "Driving times"
+      }
     },
     "booking": {
       "month": "month",

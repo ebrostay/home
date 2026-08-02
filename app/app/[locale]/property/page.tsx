@@ -5,7 +5,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Share2 } from "lucide-react";
+import { Check, Copy, MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useShortMonths } from "@/i18n/dates";
@@ -34,6 +34,7 @@ import { Gallery } from "@/components/detail/Gallery";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
+import { PROFILE_ICONS } from "@/components/detail/profileIcons";
 import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
@@ -164,6 +165,15 @@ function DetailBody({
   const [mapDestination, setMapDestination] = useState<NeighbourhoodMapDestination | null>(null);
   const [mapRoute, setMapRoute] = useState<string | null>(null);
 
+  // Either list raises this while a route is in flight; the map turns it into
+  // a pulse on the pin it has already drawn (neither list may change height
+  // mid-click). One flag per list rather than one shared: only one selection
+  // exists at a time, but the list losing it and the list gaining it both
+  // write in the same commit, and a single flag would depend on which wrote
+  // last.
+  const [nearbyPending, setNearbyPending] = useState(false);
+  const [placePending, setPlacePending] = useState(false);
+
   // Clearing the map happens HERE and nowhere else. The lists only ever push a
   // destination they actually have; if each cleared on its own, moving the
   // selection between them would race — effects run in tree order, so exactly
@@ -206,10 +216,54 @@ function DetailBody({
   // the places list would draw a line nobody can see. `block: "nearest"`
   // leaves an already-visible map exactly where it is, which is the desktop
   // case — no jump on the viewport that does not need one.
+  // The address plate copies rather than links out. The map beside it already
+  // answers "where is this"; what a reader cannot do with a map on a page is
+  // paste the street into a message, a taxi app or a form. The confirmation
+  // lives in the plate's own eyebrow and clears itself.
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  // Clicking the address puts the home back in the middle of the map. A
+  // counter rather than a boolean: every click has to reach the map, including
+  // the second one in a row, and a flag that is already `true` says nothing.
+  const [recentre, setRecentre] = useState(0);
+  const showOnMap = () => {
+    setRecentre((n) => n + 1);
+    revealMap();
+  };
+
+  const copyAddress = async () => {
+    // The stored address is the whole postal line already ("Pedro II el
+    // Católico 3, Zaragoza"). Nothing is appended to it: a neighbourhood name
+    // glued on the end is not part of the address and makes it worse in the
+    // one place it is going — somebody else's map search.
+    if (!p.address) return;
+    try {
+      await navigator.clipboard.writeText(p.address);
+      setCopied(true);
+    } catch {
+      // No clipboard (insecure context, or the user said no). Say nothing
+      // rather than confirm a copy that did not happen.
+    }
+  };
+
+  // Bring the map back when a place is picked from a list that has scrolled
+  // past it — and ONLY then. The guard is not an optimisation: from `lg` up
+  // the map is sticky, so it is already on screen at every scroll position,
+  // and `scrollIntoView` on a stuck element does not reveal anything. It
+  // re-seats the page against the element's `scroll-mt-24` (96px) while
+  // sticky holds it at 84px, a target it cannot satisfy — so a click that
+  // should not have moved the page at all moves it by a fixed 68px.
   const revealMap = () => {
-    document
-      .getElementById("neighbourhood-map")
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = document.getElementById("neighbourhood-map");
+    if (!el) return;
+    const { top, bottom } = el.getBoundingClientRect();
+    if (top >= 0 && bottom <= window.innerHeight) return;
+    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   // A photo chip/figure in the description opens a lightbox for that one
@@ -482,51 +536,154 @@ function DetailBody({
               same thing, and giving it a second map and a second toggle was
               answering one question twice. */}
           <Section id="neighbourhood" title={td("whereYouWillBe")}>
-            {/* Sticky from `lg` up, so the map is still there when the guest
-                has scrolled down to a list. It sticks within THIS section,
-                which is the whole reason the places list moved inside it.
-                Not on small screens: a 240px map plus a toggle pinned to the
-                top of a phone leaves almost nothing to scroll, so there the
-                map stays put and a selection scrolls it back into view
-                (`revealMap`). Same breakpoint and offset as the booking
-                panel's own sticky rule. */}
+            {/* The address, above the map rather than under the travel
+                toggle. It is the section's first fact — the thing the reader
+                came to this section for — and it was sitting below two
+                controls that answer a later question. Deliberately OUTSIDE
+                the sticky block: the map is what you keep, the address is
+                what you read once (and take with you). */}
+            {p.address && (
+              // Two jobs, so two controls rather than one button doing double
+              // duty: the address takes you to the home on the map, the icon
+              // puts the line on your clipboard. A single target would have to
+              // guess which one a click meant.
+              //
+              // `lg:mb-0` because from `lg` up the gap below this plate is the
+              // sticky block's own top padding — the two together would be one
+              // gap charged twice.
+              <div className="mb-4 flex w-fit max-w-full items-center gap-2 rounded-(--radius-card) border border-line bg-surface py-3 pl-4 pr-2 shadow-(--shadow-card) transition-colors duration-(--dur-standard) focus-within:border-brand-strong hover:border-brand-strong lg:mb-0">
+                <button
+                  type="button"
+                  onClick={showOnMap}
+                  aria-label={td("addressShowOnMap")}
+                  className="group flex min-w-0 items-center gap-4 text-left"
+                >
+                  <MapPin
+                    size={18}
+                    strokeWidth={2}
+                    aria-hidden
+                    className="shrink-0 text-brand-strong transition-transform duration-(--dur-standard) group-hover:-translate-y-0.5"
+                  />
+                  <span className="min-w-0">
+                    <span className="data block text-[0.6875rem] uppercase tracking-[0.16em] text-muted">
+                      {td("addressLabel")}
+                    </span>
+                    <span className="data mt-0.5 block truncate text-[0.9375rem] font-semibold text-ink group-hover:text-brand-strong">
+                      {p.address}
+                    </span>
+                    {/* The neighbourhood, not the city: the address line above
+                        already ends in it. */}
+                    {biText(p.area, locale) && (
+                      <span className="mt-0.5 block truncate text-xs text-muted">
+                        {biText(p.area, locale)}
+                      </span>
+                    )}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyAddress}
+                  aria-label={td("addressCopy")}
+                  className="ml-auto shrink-0 rounded-(--radius-control) p-2 text-muted transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-brand-strong"
+                >
+                  {/* The confirmation happens where the eye already is — on
+                      the control just pressed — rather than in a label three
+                      lines away that nobody was looking at. Both icons are
+                      stacked in one 16px cell and cross-fade, so the button
+                      never changes size and the row never reflows. */}
+                  <span className="grid h-4 w-4 place-items-center">
+                    <Copy
+                      size={15}
+                      strokeWidth={2}
+                      aria-hidden
+                      className={`col-start-1 row-start-1 transition-opacity duration-(--dur-standard) ${
+                        copied ? "opacity-0" : "opacity-100"
+                      }`}
+                    />
+                    <Check
+                      size={16}
+                      strokeWidth={2.5}
+                      aria-hidden
+                      className={`col-start-1 row-start-1 text-brand-strong transition-opacity duration-(--dur-standard) ${
+                        copied ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                  </span>
+                  {/* The crossfade is invisible to a screen reader, so the
+                      confirmation is still said. */}
+                  {copied && (
+                    <span role="status" className="sr-only">
+                      {td("addressCopied")}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
             <div
               id="neighbourhood-map"
-              className="scroll-mt-24 lg:sticky lg:top-[calc(var(--header-h)+20px)] lg:z-10 lg:bg-page lg:pb-4"
+              // `bg-page` is what the list disappears behind on its way past,
+              // so the box that carries it has to reach both edges of the gap
+              // it is covering. It parks flush under the header — the 20px of
+              // air above the map is this box's own padding, not an offset —
+              // because a `top` that starts 20px lower leaves a 20px slot in
+              // which rows reappear between the header and the map. Nothing
+              // under it, for the same reason in reverse: padding there is a
+              // strip of empty page between the map's edge and the row
+              // sliding beneath it. The card's own border is the cut line.
+              className="scroll-mt-24 lg:sticky lg:top-(--header-h) lg:z-10 lg:bg-page lg:pt-5"
             >
-              <NeighbourhoodMap
-                home={{ lat: p.lat, lng: p.lng }}
-                homeLabel={p.name}
-                mapLabel={td("location")}
-                destination={mapDestination}
-                routePolyline={mapRoute}
-                className="h-60"
-              />
-              <p className="mt-2 text-xs text-muted">{t("nearby.attribution")}</p>
-              {/* The one travel control on this page. It rides with the map
-                  because it governs everything the map and both lists below
-                  show — a toggle that scrolled away from the figures it
-                  changes would be a control you have to remember. */}
-              <div className="mt-3">
-                <Segmented
-                  label={t("detail.nearby.profileLabel")}
-                  name="travel-profile"
-                  value={profile}
-                  options={NEARBY_PROFILES.map((x) => ({
-                    value: x,
-                    label: t(`detail.nearby.profile.${x}`),
-                  }))}
-                  onChange={setProfile}
+              <div className="relative">
+                <NeighbourhoodMap
+                  home={{ lat: p.lat, lng: p.lng }}
+                  homeLabel={p.name}
+                  mapLabel={td("location")}
+                  destination={mapDestination}
+                  routePolyline={mapRoute}
+                  routePending={nearbyPending || placePending}
+                  recentre={recentre}
+                  className="h-60"
                 />
+                {/* No credit line under the map: OpenStreetMap and
+                    openrouteservice/HeiGIT are both named in the map's own
+                    attribution banner, which is where a reader looks for them
+                    and where the licences ask for them. */}
+                {/* The one travel control on this page, and it lives ON the
+                    map, in the corner Leaflet leaves free. It governs the
+                    route line drawn right beside it and the figures in both
+                    lists below, so it belongs to the map the way the zoom
+                    buttons do — and a control that costs the pinned block no
+                    height is a control that never pushes those figures off
+                    the screen.
+
+                    19px, one inset at every width, and the number is read off
+                    the thing below it: 1px of card border + the 17px
+                    attribution band + 1px of daylight. On a phone that band
+                    runs the full width of the map and would otherwise pass
+                    behind this pill; clearing it by a hair beats a control
+                    that hops up the moment the window narrows.
+
+                    z-1000 matches Leaflet's own controls; later in the DOM
+                    than the map, so it wins the tie and sits above them. */}
+                <div className="absolute bottom-[19px] left-3 z-[1000]">
+                  <Segmented
+                    label={t("detail.nearby.profileLabel")}
+                    name="travel-profile"
+                    value={profile}
+                    options={NEARBY_PROFILES.map((x) => {
+                      const Icon = PROFILE_ICONS[x];
+                      return {
+                        value: x,
+                        label: t(`detail.nearby.profile.${x}`),
+                        icon: <Icon size={16} strokeWidth={2} aria-hidden />,
+                      };
+                    })}
+                    onChange={setProfile}
+                    variant="overlay"
+                  />
+                </div>
               </div>
             </div>
-
-            {p.address && (
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-body">
-                <MapPin size={15} strokeWidth={2} aria-hidden />
-                {p.address}
-              </p>
-            )}
 
             {p.nearby.length > 0 && (
               <div id="whats-nearby" className="mt-8">
@@ -538,6 +695,7 @@ function DetailBody({
                   activeId={selection?.source === "nearby" ? selection.id : null}
                   onSelect={(id) => select("nearby", id)}
                   onRoute={drawRoute}
+                  onPending={setNearbyPending}
                 />
               </div>
             )}
@@ -556,6 +714,7 @@ function DetailBody({
                   revealMap();
                 }}
                 onRoute={drawRoute}
+                onPending={setPlacePending}
               />
             </div>
           </Section>

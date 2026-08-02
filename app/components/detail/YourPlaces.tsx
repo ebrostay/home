@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Car, Footprints, Loader2, MapPin, Plus, TriangleAlert, X } from "lucide-react";
+import { MapPin, Plus, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { fetchPlaceRoute } from "@/lib/api";
 import { formatDistance, geocode, type GeoCandidate } from "@/lib/geocode";
@@ -18,6 +18,8 @@ import {
 } from "@/lib/places";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import { useDelayed } from "./measuring";
+import { PROFILE_ICONS } from "./profileIcons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
 // ============================================================
@@ -54,8 +56,6 @@ const DEBOUNCE_MS = 800;
  *  a better query, not a longer list. */
 const MAX_CANDIDATES = 5;
 
-const PROFILE_ICONS = { foot: Footprints, car: Car } as const;
-
 /** Only the two terminal states are stored. "Measuring" is the absence of an
  *  entry, which is what lets every `setState` here happen inside a promise
  *  callback rather than synchronously in an effect. */
@@ -68,6 +68,7 @@ export function YourPlaces({
   activeId,
   onSelect,
   onRoute,
+  onPending,
 }: {
   propertyId: string;
   locale: string;
@@ -78,6 +79,11 @@ export function YourPlaces({
   activeId: string | null;
   onSelect: (placeId: string) => void;
   onRoute: (destination: NeighbourhoodMapDestination, polyline: string | null) => void;
+  /** Raised while the SELECTED place's route is on its way, so the map can say
+   *  so on its pin — the same contract the nearby list has. Rarely true in
+   *  practice: every place measures on mount, so by the time one is clicked
+   *  its figure is usually already there. */
+  onPending: (pending: boolean) => void;
 }) {
   const t = useTranslations("detail.places");
 
@@ -169,6 +175,23 @@ export function YourPlaces({
         });
     }
   }, [places, profile, propertyId]);
+
+  // The selected place's own wait, reported to the map exactly as the nearby
+  // list reports its own — one vocabulary for "measuring" across both lists,
+  // and the same 300ms floor, so a cached route (the common case here, since
+  // every place measures on mount) never makes the pin twitch.
+  const activePlace = places.find((p) => p.id === activeId);
+  const activeMeasuring =
+    !!activePlace && !routes[routeKey(propertyId, activePlace, profile)];
+  const showMeasuring = useDelayed(activeMeasuring);
+
+  const onPendingRef = useRef(onPending);
+  useEffect(() => {
+    onPendingRef.current = onPending;
+  }, [onPending]);
+  useEffect(() => {
+    onPendingRef.current(showMeasuring);
+  }, [showMeasuring]);
 
   // ----------------------------------------------------------------
   // Adding
@@ -270,7 +293,18 @@ export function YourPlaces({
 
   return (
     <section className="rounded-(--radius-card) border border-brand bg-brand-soft p-5 sm:p-6">
-      <h2 className="font-display text-[1.375rem] font-semibold text-ink">{t("title")}</h2>
+      {/* The heading, and what the figures down the right-hand side are
+          measured on. In words as well as an icon: the nearby list can hide
+          the same icon from a screen reader because its subtitle already says
+          "Walking times from this address", and nothing in this section says
+          it at all. */}
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-[1.375rem] font-semibold text-ink">{t("title")}</h2>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+          <Icon size={14} strokeWidth={2} aria-hidden />
+          {t(`timesBy.${profile}`)}
+        </span>
+      </div>
       <p className="mt-1.5 max-w-[60ch] text-sm text-body">{t("intro")}</p>
 
       {places.length > 0 && (
@@ -301,7 +335,13 @@ export function YourPlaces({
                         : "bg-brand-soft text-brand-strong"
                     }`}
                   >
-                    <Icon size={17} strokeWidth={2} aria-hidden />
+                    {/* A pin, not the travel icon it used to be: the profile
+                        is stated once in the heading above now, and the same
+                        glyph repeated down every row said nothing a reader
+                        could act on. What the chip says instead is what the
+                        row is — a place you saved — and its fill is still
+                        what says which one is drawn on the map. */}
+                    <MapPin size={17} strokeWidth={2} aria-hidden />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-ink">
@@ -311,7 +351,15 @@ export function YourPlaces({
                       <span className="block truncate text-xs text-muted">{place.detail}</span>
                     )}
                   </span>
-                  <span className="shrink-0 text-right">
+                  {/* One height for all three states. The figures genuinely do
+                      not exist until the route lands here — unlike the nearby
+                      list, whose minutes come from the document — so this slot
+                      has to hold their place rather than fill it late: every
+                      row measures at once on mount, and a list that grew a
+                      line per row as the answers arrived would walk the whole
+                      page up under the reader. `min-h-9` is the ready state's
+                      own two lines (20px + 16px). */}
+                  <span className="flex min-h-9 shrink-0 flex-col justify-center text-right">
                     {state?.kind === "ready" ? (
                       <>
                         <span className="data block text-sm font-semibold text-ink">
@@ -327,8 +375,17 @@ export function YourPlaces({
                         {t("routeUnavailable")}
                       </span>
                     ) : (
-                      <span role="status" className="flex items-center gap-1.5 text-xs text-muted">
-                        <Loader2 size={12} strokeWidth={2.2} className="animate-spin" aria-hidden />
+                      // Still measuring: a placeholder, not a spinner. The row
+                      // is already marked as selected and the map's pin does
+                      // the "working on it" — a second animation here would
+                      // narrate the same wait twice, once in the place the
+                      // reader is not looking.
+                      <span className="data block text-sm font-semibold text-muted" aria-hidden>
+                        —
+                      </span>
+                    )}
+                    {!state && (
+                      <span role="status" className="sr-only">
                         {t("measuring")}
                       </span>
                     )}
@@ -424,7 +481,7 @@ export function YourPlaces({
       )}
       {/* No attribution line here: these figures come from the same
           OpenRouteService answer the nearby list shows, and the credit for it
-          sits once with the map both lists draw on. */}
+          sits once, in the attribution banner of the map both lists draw on. */}
     </section>
   );
 }

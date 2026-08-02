@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { clusterPins, type Cluster } from "@/lib/mapCluster";
+import { LEAFLET_PREFIX, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 import "leaflet/dist/leaflet.css";
 
 // Leaflet + OSM tiles (carried from v1, docs/spec/08-carried-v1-rules.md §8.4.2). The design's
@@ -89,10 +90,10 @@ export function ResultsMap({
           zoomControl: true,
           maxZoom: MAX_ZOOM,
         }).setView([41.6488, -0.8891], 13); // Zaragoza
+        mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: MAX_ZOOM,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          attribution: OSM_ATTRIBUTION,
         }).addTo(mapRef.current);
         // Clicking bare map dismisses the current selection.
         mapRef.current.on("click", () => handlers.current.onSelect([]));

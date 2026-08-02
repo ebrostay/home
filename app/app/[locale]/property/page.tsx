@@ -282,11 +282,9 @@ function DetailBody({
   // stay viewable when the text points at it, just never discoverable by
   // browsing the gallery. Resolved against the FULL photo list (including
   // floorplan and hidden ones), matching what the document itself can
-  // reference.
-  //
-  // A photo referenced from the description. Its own one-item lightbox rather
-  // than an index into `gallery`, because a referenced photo may be
-  // hiddenFromGallery and so absent from that array entirely.
+  // reference. It's its own one-item lightbox rather than an index into
+  // `gallery`, because a referenced photo may be `hiddenFromGallery` and so
+  // absent from that array entirely.
   const [referenced, setReferenced] = useState<PropertyPhoto | null>(null);
   const openGalleryAt = (url: string) => {
     const photo = p.photos.find((ph) => ph.url === url);

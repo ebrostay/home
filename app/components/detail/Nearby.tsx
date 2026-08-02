@@ -15,7 +15,7 @@ import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteLine } fr
 import { NEARBY_GROUPS, reachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
 import { useDelayed } from "./measuring";
-import { PROFILE_ICONS } from "./profileIcons";
+import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
 // The guest's half of "what's nearby" (ADR-028, design §9 as amended by

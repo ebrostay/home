@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { useDelayed } from "./measuring";
-import { PROFILE_ICONS } from "./profileIcons";
+import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
 // ============================================================

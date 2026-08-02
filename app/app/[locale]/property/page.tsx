@@ -34,7 +34,7 @@ import { Gallery } from "@/components/detail/Gallery";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
-import { PROFILE_ICONS } from "@/components/detail/profileIcons";
+import { PROFILE_ICONS } from "@/lib/profile-icons";
 import { Nearby } from "@/components/detail/Nearby";
 import { StayTerms } from "@/components/detail/StayTerms";
 import { YourPlaces } from "@/components/detail/YourPlaces";
@@ -206,7 +206,18 @@ function DetailBody({
   const selectNearbyEntry = (entryId: string) => {
     const entry = p.nearby.find((e) => e.id === entryId);
     if (!entry || !reachFor(entry, profile)) return;
-    select("nearby", entryId);
+    // Selects; never deselects. A row in the list is visibly lit, so a second
+    // click on it reads as "put that away" — but a chip in a sentence carries
+    // no such state, it reads as a reference to a place, and a reference
+    // followed twice should still arrive at the place. The scroll happens
+    // either way: the click was a request to go and look.
+    const already = selection?.source === "nearby" && selection.id === entryId;
+    if (!already) {
+      setSelection({ source: "nearby", id: entryId });
+      // Same reason as `select`: the previous line goes now rather than in the
+      // frame where it would be pointing at the wrong place.
+      setMapRoute(null);
+    }
     document
       .getElementById("neighbourhood")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });

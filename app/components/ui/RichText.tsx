@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { PropertyPhoto, PublicNearbyEntry } from "@/lib/api";
 import { formatDistance } from "@/lib/geocode";
 import { reachFor, type NearbyProfile } from "@/lib/nearby";
+import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { RichNode } from "@/lib/rich-text";
 
 // Renders a description document as React ELEMENTS. There is no HTML string
@@ -112,6 +113,7 @@ function Block({ node, ctx }: { node: RichNode; ctx: Ctx }) {
       const place = node.attrs?.entryId ? ctx.byId.get(node.attrs.entryId) : undefined;
       if (!place) return null;
       const reach = reachFor(place, ctx.profile);
+      const ProfileIcon = PROFILE_ICONS[ctx.profile];
       return (
         <button
           type="button"
@@ -122,9 +124,15 @@ function Block({ node, ctx }: { node: RichNode; ctx: Ctx }) {
             <MapPin size={14} strokeWidth={2} aria-hidden />
             {place.name}
           </span>
+          {/* The card has the room the inline chip does not, so its figure
+              keeps its profile beside it rather than losing the figure. */}
           {reach && (
-            <span className="data text-xs text-muted">
-              {ctx.t("minutes", { count: reach.minutes })} · {formatDistance(reach.metres, ctx.locale)}
+            <span className="flex items-center gap-1.5 text-muted">
+              <ProfileIcon size={12} strokeWidth={2} aria-hidden />
+              <span className="data text-xs">
+                {ctx.t("minutes", { count: reach.minutes })} ·{" "}
+                {formatDistance(reach.metres, ctx.locale)}
+              </span>
             </span>
           )}
         </button>
@@ -176,7 +184,11 @@ function Inline({ nodes, ctx }: { nodes?: RichNode[]; ctx: Ctx }) {
         if (n.type === "placeRef") {
           const place = n.attrs?.entryId ? ctx.byId.get(n.attrs.entryId) : undefined;
           if (!place) return null;
-          const reach = reachFor(place, ctx.profile);
+          // The name only. This chip sits inside a sentence, where there is no
+          // room to say what a figure is measured on — "3 min" mid-paragraph
+          // is a number the reader cannot use, because nothing beside it says
+          // whether that is a walk or a drive. The figure, with its profile
+          // stated, is one click away in the list this chip selects.
           return (
             <button
               key={i}
@@ -186,7 +198,6 @@ function Inline({ nodes, ctx }: { nodes?: RichNode[]; ctx: Ctx }) {
             >
               <MapPin size={12} strokeWidth={2} aria-hidden />
               {place.name}
-              {reach && <span className="data opacity-70">{ctx.t("minutes", { count: reach.minutes })}</span>}
             </button>
           );
         }

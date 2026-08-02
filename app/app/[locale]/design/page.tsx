@@ -34,6 +34,7 @@ import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
 import { Gallery } from "@/components/detail/Gallery";
 import { Lightbox } from "@/components/detail/Lightbox";
+import { FancyboxLightbox } from "@/components/detail/FancyboxLightbox";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
 import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
 
@@ -259,6 +260,7 @@ export default function DesignPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [fancyboxIndex, setFancyboxIndex] = useState<number | null>(null);
   const [propertyType, setPropertyType] = useState("all");
   const [stayRange, setStayRange] = useState<DateRange | undefined>({
     from: new Date(2026, 7, 10),
@@ -733,6 +735,44 @@ export default function DesignPage() {
           photos={GALLERY_PHOTOS}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+          overlay={(i) => (
+            <div className="absolute bottom-28 right-4 rounded-(--radius-card) bg-white/95 px-4 py-3 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card)">
+              floor plan slot · photo {i + 1}
+            </div>
+          )}
+        />
+      </section>
+
+      {/* Fancybox — Task 8 spike, NOT FOR MERGE. Same photos, same overlay
+          stand-in, driven by @fancyapps/ui instead of YARL, so the two can be
+          compared on the design page rather than from memory. This section
+          and its component do not exist on redesign/v2. */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>lightbox (fancybox spike)</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          The same eight photos, the same overlay stand-in, through{" "}
+          <code>@fancyapps/ui</code> instead of YARL. Thumbnails, counter,
+          zoom and captions are all on by default — nothing here was disabled
+          to make the comparison easier. Not free for commercial use; local
+          evaluation only, see the Task 8 write-up in the spec (§6.1).
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {GALLERY_PHOTOS.map((photo, i) => (
+            <button
+              key={photo.url}
+              type="button"
+              onClick={() => setFancyboxIndex(i)}
+              className="overflow-hidden rounded-(--radius-control) border border-line"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.url} alt="" className="h-20 w-28 object-cover" />
+            </button>
+          ))}
+        </div>
+        <FancyboxLightbox
+          photos={GALLERY_PHOTOS}
+          index={fancyboxIndex}
+          onClose={() => setFancyboxIndex(null)}
           overlay={(i) => (
             <div className="absolute bottom-28 right-4 rounded-(--radius-card) bg-white/95 px-4 py-3 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card)">
               floor plan slot · photo {i + 1}

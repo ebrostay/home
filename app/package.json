@@ -12,6 +12,7 @@
     "test:all": "vitest run && playwright test"
   },
   "dependencies": {
+    "@fancyapps/ui": "^6.1.14",
     "@radix-ui/react-select": "^2.3.4",
     "@tiptap/core": "^3.29.2",
     "@tiptap/extension-bold": "^3.29.2",

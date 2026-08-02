@@ -20,17 +20,16 @@ import {
   reachFor,
   type NearbyProfile,
 } from "@/lib/nearby";
-import { SIZES, srcSet } from "@/lib/photos";
 import { formatEuro } from "@/lib/pricing";
 import { AvailabilityBand } from "@/components/MonthBand";
 import { Badge } from "@/components/ui/Badge";
 import { Segmented } from "@/components/host/fields/Segmented";
 import { Button } from "@/components/ui/Button";
-import { Dialog } from "@/components/ui/Dialog";
 import { RichText } from "@/components/ui/RichText";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { BookingPanel } from "@/components/detail/BookingPanel";
 import { Gallery } from "@/components/detail/Gallery";
+import { Lightbox } from "@/components/detail/Lightbox";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
@@ -284,10 +283,14 @@ function DetailBody({
   // browsing the gallery. Resolved against the FULL photo list (including
   // floorplan and hidden ones), matching what the document itself can
   // reference.
-  const [lightboxPhoto, setLightboxPhoto] = useState<PropertyPhoto | null>(null);
+  //
+  // A photo referenced from the description. Its own one-item lightbox rather
+  // than an index into `gallery`, because a referenced photo may be
+  // hiddenFromGallery and so absent from that array entirely.
+  const [referenced, setReferenced] = useState<PropertyPhoto | null>(null);
   const openGalleryAt = (url: string) => {
     const photo = p.photos.find((ph) => ph.url === url);
-    if (photo) setLightboxPhoto(photo);
+    if (photo) setReferenced(photo);
   };
 
   const booked: DateRange[] = useMemo(
@@ -761,22 +764,11 @@ function DetailBody({
         />
       </div>
 
-      <Dialog
-        open={!!lightboxPhoto}
-        onClose={() => setLightboxPhoto(null)}
-        title={p.name}
-      >
-        {lightboxPhoto && (
-          // eslint-disable-next-line @next/next/no-img-element -- static export serves images unoptimized
-          <img
-            src={lightboxPhoto.detailUrl ?? lightboxPhoto.url}
-            srcSet={srcSet(lightboxPhoto)}
-            sizes={SIZES.lightbox}
-            alt={p.name}
-            className="w-full rounded-(--radius-control) object-contain"
-          />
-        )}
-      </Dialog>
+      <Lightbox
+        photos={referenced ? [referenced] : []}
+        index={referenced ? 0 : null}
+        onClose={() => setReferenced(null)}
+      />
     </main>
   );
 }

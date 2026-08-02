@@ -1034,6 +1034,17 @@
     "allHomes": "All homes in Zaragoza",
     "allPhotos": "All {count} photos",
     "floorPlan": "Floor plan",
+    "lightbox": {
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "close": "Close",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "thumbnails": "Thumbnails",
+      "showThumbnails": "Show thumbnails",
+      "hideThumbnails": "Hide thumbnails",
+      "gallery": "Photo gallery"
+    },
     "share": "Share",
     "bedrooms": "Bedrooms",
     "bathrooms": "Bathrooms",

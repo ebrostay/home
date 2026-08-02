@@ -1034,6 +1034,17 @@
     "allHomes": "Todas las viviendas en Zaragoza",
     "allPhotos": "Ver las {count} fotos",
     "floorPlan": "Plano",
+    "lightbox": {
+      "previous": "Foto anterior",
+      "next": "Foto siguiente",
+      "close": "Cerrar",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "thumbnails": "Miniaturas",
+      "showThumbnails": "Mostrar miniaturas",
+      "hideThumbnails": "Ocultar miniaturas",
+      "gallery": "Galería de fotos"
+    },
     "share": "Compartir",
     "bedrooms": "Habitaciones",
     "bathrooms": "Baños",

@@ -32,8 +32,9 @@ import { RichTextEditor } from "@/components/host/fields/RichTextEditor";
 import { PhotoPicker } from "@/components/host/fields/PhotoPicker";
 import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
+import { Gallery } from "@/components/detail/Gallery";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
-import type { HostPhoto, HostNearbyEntry } from "@/lib/api";
+import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
 
 // A plausible Zaragoza mid-term market (26 homes): the four real listings are
 // too few to show what these controls do at a normal catalogue size.
@@ -97,6 +98,29 @@ function sampleMonths(
 // before the C# validator is written against it. English throughout — this
 // page is the internal style book and never shown to a guest; Task 10 is
 // where translated copy replaces these literals.
+
+// Eight photos, because the "All N photos" chip only renders once the mosaic
+// is actually hiding something — the four real listings carry one photo each,
+// so on live data the control never appears at all. The three sample files
+// repeat behind a fragment, which the browser drops when fetching but which
+// keeps each entry's key unique.
+const GALLERY_PHOTOS: PropertyPhoto[] = [
+  "/brand/zaragoza-hero.webp",
+  "/brand/sample-home-1.jpg",
+  "/brand/sample-home-2.jpg",
+  "/brand/zaragoza-hero.webp#2",
+  "/brand/sample-home-1.jpg#2",
+  "/brand/sample-home-2.jpg#2",
+  "/brand/zaragoza-hero.webp#3",
+  "/brand/sample-home-1.jpg#3",
+].map((url, i) => ({
+  url,
+  cardUrl: null,
+  detailUrl: null,
+  isFloorplan: false,
+  sortOrder: i,
+  hiddenFromGallery: false,
+}));
 
 const RICH_TEXT_PHOTOS: HostPhoto[] = [
   { url: "/brand/sample-home-1.jpg", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0, hiddenFromGallery: false },
@@ -657,6 +681,28 @@ export default function DesignPage() {
               <Button onClick={() => setDialogOpen(false)}>{ta("book")}</Button>
             </div>
           </Dialog>
+        </div>
+      </section>
+
+      {/* Gallery — the control the lightbox spec replaces */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>gallery (current)</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          The detail page as it stands today, at eight photos.{" "}
+          <strong>All 8 photos</strong> opens a scrollable grid — no carousel,
+          no zoom, no captions, no keyboard. The mosaic photos themselves are
+          not clickable, so that chip is the only way in. Narrow the window
+          below <code>40rem</code> and only the hero survives while the chip
+          keeps counting the desktop mosaic — the bug in §2 of the lightbox
+          spec. This section is the &ldquo;before&rdquo; the prototype is
+          measured against.
+        </p>
+        <div className="mt-6 max-w-4xl">
+          <Gallery
+            photos={GALLERY_PHOTOS}
+            hasFloorplan={false}
+            name="Sample home"
+          />
         </div>
       </section>
 

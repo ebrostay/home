@@ -10,11 +10,29 @@ The detail page has **two half-galleries and no lightbox**:
 
 1. `components/detail/Gallery.tsx` renders a 2fr/1fr/1fr mosaic. "All N photos"
    opens a `Dialog` containing a scrollable **grid** — no carousel, no zoom, no
-   captions, no keyboard navigation.
+   captions, no keyboard navigation. Worse, `ui/Dialog`'s class is a fixed
+   `w-[min(92vw,28rem)]`, so on a 1280 px desktop the grid of every photo in
+   the home is a **448 px box using a third of the screen** (measured
+   2026-08-02 against the design-page demo). The photos get smaller when you
+   ask to see more of them.
 2. `app/[locale]/property/page.tsx` keeps a *second*, unrelated `Dialog` holding
    a **single** photo, opened when a description references a photo
    (`components/ui/RichText.tsx`). It is capped at `min(92vw, 28rem)` by
    `ui/Dialog`'s fixed class, so a photo reference opens a thumbnail.
+
+**On a phone, some photos are unreachable entirely.** The mosaic's four
+supporting tiles are `hidden sm:block`, so below `40rem` only the hero renders.
+But the "All N photos" chip is gated on `photos.length > tiles.length + 1`,
+where `tiles` is `rest.slice(0, 4)` — it counts what the *desktop* mosaic
+hides. At exactly five photos that is `5 > 5`, false, so the chip does not
+render; on desktop this is right, because all five are on screen. On a phone
+four of those five are not on screen, the tiles are not clickable (`Frame` is a
+bare `div` + `img` with no handler), and there is **no route to them at all**.
+
+This closes with the rest of it: once both entry points open the lightbox, the
+rule becomes "more than one photo" rather than "more than the desktop mosaic
+shows". Written down here because the odd-looking condition is otherwise the
+kind of thing that gets fixed silently and re-broken later.
 
 A visitor who wants to see photo 14 of 20 has no path to it that is not
 scrolling a grid and squinting. For a page whose entire job is to make someone
@@ -51,6 +69,7 @@ tokens in light and dark; ES/EN labels; the open animation; and the
 | D2 | Evaluate **Fancybox v6** (`@fancyapps/ui`) as a paid alternative before committing | It ships the open transition (#1) natively rather than as our own View Transitions gamble, and is the more polished product. €29 one-time Single licence. See §6 for what the prototype must settle and §8 for the licence reading. |
 | D3 | Rejected: **fslightbox-react** (thumbnails, captions and zoom are all paid Pro), **Swiper** (a carousel, not a lightbox — we would hand-build the shell and still ship 19 kB), **lightGallery** (GPLv3 or paid; copyleft on our bundle), **react-photo-view** (Apache-2.0 and it has the open animation natively, but last released 2025-01-05 with an open, unanswered *"It's not work in React19.x"* report), **PhotoSwipe** (requires predefined width/height per image, which we do not store — see D8) | Recorded so the next person does not re-run this search. |
 | D4 | The lightbox takes an **`overlay(index)` render prop**, passed through YARL's `render.controls` slot | The mini-map becomes our own component layered on top. Nothing inside the lightbox knows what a floor plan is, so the deferred model in §7 lands without reopening this component. |
+| D5a | The mosaic tiles become **buttons**, and the chip's visibility rule becomes `photos.length > 1` | Fixes the mobile dead end in §1. The tiles are focusable and keyboard-operable, which the current `div` + `img` is not. |
 | D5 | **Delete** the grid `Dialog`; both entry points open the lightbox directly | The thumbnail strip and the grid are two answers to "how do I reach photo 14". Keeping both leaves two galleries in the codebase, which is the problem this spec exists to end. |
 | D6 | The surround is **fixed dark in both themes** | Established precedent: the gallery chips at `Gallery.tsx:145` are already "fixed white/ink rather than a theme-flipping surface token" *because they sit on photography*. A lightbox is nothing but photography. Chrome — thumbnail rail, caption bar, buttons — still takes our radius and type tokens. |
 | D7 | The open animation (#1) is the **View Transitions API**, as progressive enhancement | 88% global support (Chrome/Edge 111+, Safari 18+, Firefox 144+). Where absent it degrades to a cross-fade, which is YARL's default — so there is no fallback branch to maintain. Carries genuine risk; see §5. |

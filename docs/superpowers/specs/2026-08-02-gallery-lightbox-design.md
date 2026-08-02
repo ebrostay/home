@@ -117,6 +117,62 @@ the effect is worse than no effect.
 This is measured, not assumed. If it captures empty, D7 falls back to the plain
 cross-fade and we say so rather than shipping a flicker.
 
+### 5.1 What was measured (2026-08-02)
+
+**D7 stands, but only because the transition holds itself open. Both
+sentences above turned out to be wrong, in opposite directions.**
+
+Method, repeatable: hook `document.startViewTransition`, record every element
+whose computed `view-transition-name` is not `none` immediately before the call
+(the "old" capture) and again inside the update callback (the "new" one), then
+on `ready` read `document.getAnimations()` for effects whose `pseudoElement`
+starts with `::view-transition` and dump their keyframes. The
+`::view-transition-group(lightbox-photo)` keyframes ARE the answer: two
+different rects means the photo scaled, one pseudo-element on its own means it
+did not. Driven from Playwright against `next dev` behind the SWA emulator, on
+`/en/property/?id=movera0` at 1280x800. Corroborated by pausing every
+view-transition animation on `ready` and screenshotting at fixed offsets.
+
+1. **The naive version does not work at all.** At the instant the state flip
+   returns there is nothing in the document to capture: YARL's `Portal`
+   renders `null` until a `useEffect` sets `mounted`, so `portalAtFlip` and
+   `slideImgAtFlip` are both `false`. The only pseudo-element produced was
+   `::view-transition-old(lightbox-photo)`, keyframes `opacity: 1 → 0`. The
+   browser animated the clicked tile fading out where it stood. No group, no
+   scaling, no growth.
+
+2. **Returning a promise from the update callback fixes it.** Holding the
+   callback open until `.yarl__slide_current img` is `complete` with a layout
+   box produces the full pair plus
+   `::view-transition-group(lightbox-photo)`: from `translate(953, 269)`
+   `303x185` — the clicked tile's rect to the pixel — to `translate(451, 16)`
+   `378x672`, the slide's. Identical geometry in Chromium, Firefox and WebKit.
+
+3. **"The first slide resolves to the same `srcSet` candidate" is false.**
+   `slidesFor` always asks for `detailUrl`; a mosaic tile's `sizes` (25vw for a
+   tile) usually settles on `cardUrl`. On a cold cache the slide is a fresh
+   fetch, and waiting it out measured 433 ms of frozen page followed by a
+   transition with an `opacity: 0` destination in it — visibly worse than no
+   transition, exactly the failure this section was written to catch. Hence
+   two additions the spec did not anticipate: the gallery prefetches
+   `slideSrc(photo)` on pointer-enter and focus, and the wait is capped
+   (`SLIDE_BUDGET_MS`) with `skipTransition()` past it, which lands back on
+   YARL's cross-fade.
+
+Warm-path latency, six cold page loads: 75-92 ms between the click and the
+animation starting (Chromium; Firefox 62 ms, WebKit 68 ms).
+
+**The closing transition is deliberately not done**, and not because it was
+untried. `Portal.handleClose` sets `visible = false` and only calls our
+`onClose` after `animation.fade` has elapsed — traced live, the portal goes
+`opacity` 1 → 0.075 over ~195 ms and is removed at ~263 ms — so a transition
+started in `onClose` begins from a lightbox that has already faded out. Two
+further blockers: `Gallery` is only told the *starting* index, so it cannot
+know which slide to shrink back to after the visitor navigates; and any slide
+past the fifth has no mosaic tile to shrink into. All three need
+`Lightbox.tsx` reopened, which is where Task 2's navigation regression came
+from. Left alone on purpose.
+
 ## 6. Prototype and evaluation
 
 Both candidates are built as a section on `/[locale]/design` — no new route, no

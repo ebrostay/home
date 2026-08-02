@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slidesFor } from "@/lib/photos";
+import { slideSrc, slidesFor } from "@/lib/photos";
 
 const photo = (url: string, detailUrl: string | null = null) => ({
   url,
@@ -10,6 +10,18 @@ const photo = (url: string, detailUrl: string | null = null) => ({
 // The alt formatter stands in for next-intl's t("photoOf"), which cannot be
 // imported here — lib/ is pure and vitest runs it under `environment: "node"`.
 const alt = (n: number, total: number) => `Photo ${n} of ${total}`;
+
+// The gallery prefetches this so the open transition has something to
+// snapshot. If it ever stops agreeing with the slide's own src, the prefetch
+// warms the wrong file and the transition silently stops happening.
+describe("slideSrc", () => {
+  it("is the src slidesFor gives the slide", () => {
+    const photos = [photo("/full.webp", "/detail.webp"), photo("/legacy.jpg")];
+    expect(photos.map(slideSrc)).toEqual(
+      slidesFor(photos, alt).map((s) => s.src),
+    );
+  });
+});
 
 describe("slidesFor", () => {
   it("prefers the detail variant over the full-size original", () => {

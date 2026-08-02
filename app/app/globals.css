@@ -670,6 +670,20 @@
   --yarl__thumbnails_thumbnail_active_border_color: #ffffff;
 }
 
+/* The clicked tile and the slide it becomes are the SAME element as far as
+   the browser is concerned, which is what makes the photo appear to grow out
+   of the mosaic rather than fade in on top of it. The tile carries this same
+   name for the frame before the flip only — see Gallery.tsx; two elements may
+   never hold one name in the same captured frame.
+
+   prefers-reduced-motion is honoured in Gallery.tsx rather than here: a photo
+   flying across the viewport is exactly the kind of motion that setting exists
+   to refuse, and refusing it there means no transition starts at all, instead
+   of one that animates the tile away against nothing. */
+.ebrostay-lightbox .yarl__slide_current img {
+  view-transition-name: lightbox-photo;
+}
+
 /* The counter is a measurement, so it uses the same face as every other
    number on the detail page rather than the library's default. */
 .ebrostay-lightbox__counter {

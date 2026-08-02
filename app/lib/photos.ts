@@ -223,7 +223,13 @@ export function slidesFor(
   alt: (n: number, total: number) => string,
 ): LightboxSlide[] {
   return photos.map((photo, i) => ({
-    src: photo.detailUrl ?? photo.url,
+    src: slideSrc(photo),
     alt: alt(i + 1, photos.length),
   }));
 }
+
+/** The one file the lightbox will ask for. Exported so the gallery can warm
+ *  it before the visitor clicks — a mosaic tile's `srcset` usually settles on
+ *  `card`, not this, so "the slide is already decoded" is only true if
+ *  somebody makes it true. */
+export const slideSrc = (photo: Sized): string => photo.detailUrl ?? photo.url;

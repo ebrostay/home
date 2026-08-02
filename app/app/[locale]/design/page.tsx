@@ -33,6 +33,7 @@ import { PhotoPicker } from "@/components/host/fields/PhotoPicker";
 import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
 import { Gallery } from "@/components/detail/Gallery";
+import { Lightbox } from "@/components/detail/Lightbox";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
 import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
 
@@ -257,6 +258,7 @@ export default function DesignPage() {
     }).format(d);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [propertyType, setPropertyType] = useState("all");
   const [stayRange, setStayRange] = useState<DateRange | undefined>({
     from: new Date(2026, 7, 10),
@@ -704,6 +706,43 @@ export default function DesignPage() {
             name="Sample home"
           />
         </div>
+      </section>
+
+      {/* Lightbox — the replacement */}
+      <section className="mt-14">
+        <div className="ledger-rule"><span>lightbox</span></div>
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          The same eight photos. Carousel, pinch/scroll zoom with pan,
+          thumbnail strip, counter, and arrow-key and Esc handling. The
+          captions below are invented — the field does not exist on{" "}
+          <code>PropertyPhoto</code> yet, and wiring it is deferred with the
+          rest of the photo-to-plan model. The fixed panel bottom-right is a
+          stand-in for the floor-plan mini-map, drawn through the{" "}
+          <code>overlay</code> slot to prove the position is usable.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {GALLERY_PHOTOS.map((photo, i) => (
+            <button
+              key={photo.url}
+              type="button"
+              onClick={() => setLightboxIndex(i)}
+              className="overflow-hidden rounded-(--radius-control) border border-line"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.url} alt="" className="h-20 w-28 object-cover" />
+            </button>
+          ))}
+        </div>
+        <Lightbox
+          photos={GALLERY_PHOTOS}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          overlay={(i) => (
+            <div className="absolute bottom-28 right-4 rounded-(--radius-card) bg-white/95 px-4 py-3 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card)">
+              floor plan slot · photo {i + 1}
+            </div>
+          )}
+        />
       </section>
 
       {/* Description editor */}

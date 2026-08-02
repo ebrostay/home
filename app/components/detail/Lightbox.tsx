@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import YARL from "yet-another-react-lightbox";
 import Captions from "yet-another-react-lightbox/plugins/captions";
@@ -37,6 +37,26 @@ export function Lightbox({
   const t = useTranslations("detail");
   const [current, setCurrent] = useState(0);
 
+  /* MUST be referentially stable across renders that do not actually change
+     the photo set. YARL's `LightboxStateProvider` compares `slides` with
+     `!==` on every render and, when it differs, resets `currentIndex` back
+     to the `index` prop (the STARTING index — see the `key` comment below).
+     Built inline, `slidesFor(...)` returns a fresh array every render;
+     `on.view` below calls `setCurrent`, which re-renders this component,
+     which built a fresh `slides` array, which YARL saw as "changed" and
+     used as its cue to snap back to the opening slide — a closed loop that
+     pinned every navigation input (arrows, buttons, thumbnails, swipe) to
+     the slide the lightbox opened on. Confirmed by reading
+     `LightboxStateProvider`'s reducer in
+     `node_modules/yet-another-react-lightbox/dist/index.js`, not guessed.
+     `t` is safe to depend on: next-intl memoizes it per locale/namespace
+     (`use-intl/dist/.../react.js`), so it is stable across the very
+     re-renders this memo exists to survive. */
+  const slides = useMemo(
+    () => slidesFor(photos, (n, total) => t("photoOf", { n, total })),
+    [photos, t],
+  );
+
   return (
     <YARL
       /* `index` is a STARTING index only — YARL keeps its own after that.
@@ -46,7 +66,7 @@ export function Lightbox({
       open={index !== null}
       index={index ?? 0}
       close={onClose}
-      slides={slidesFor(photos, (n, total) => t("photoOf", { n, total }))}
+      slides={slides}
       plugins={[Captions, Counter, Thumbnails, Zoom]}
       on={{ view: ({ index: i }) => setCurrent(i) }}
       className="ebrostay-lightbox"

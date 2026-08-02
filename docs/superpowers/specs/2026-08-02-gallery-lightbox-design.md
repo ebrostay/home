@@ -196,6 +196,70 @@ Everything else is settled by §3 and does not need a prototype to decide.
 prototype stays local: it must not reach the staging URL before either the €29
 is paid or the option is dropped. Local evaluation is fine; deployed is use.
 
+### 6.1 Prototype outcome
+
+Built on `spike/fancybox-comparison` (never merged, per the licence
+constraint above): a `FancyboxLightbox.tsx` wrapper with the same
+`photos`/`index`/`onClose`/`overlay` contract as `Lightbox.tsx`, a second
+section on `/[locale]/design` driving it over the same eight photos, and a
+`.ebrostay-fancybox` theming pass in `globals.css` matching
+`.ebrostay-lightbox`'s intent. Full write-up:
+`.superpowers/sdd/2026-08-02-gallery-lightbox/task-8-report.md`.
+
+**1. Open animation — YARL/Task 6 wins, and by more than expected.**
+Fancybox's native "grow from origin" effect (`zoomEffect`) needs a
+`slide.thumbEl` — a real DOM reference to the clicked thumbnail — populated
+only when Fancybox drives itself off page markup (`Fancybox.bind()` /
+`fromNodes()`). Called the way a props-driven React wrapper naturally calls
+it (`Fancybox.show(slides, options)`, plain `{src, alt, caption}` objects, no
+DOM refs), `thumbEl` is `undefined` and Fancybox silently falls back to a
+centered zoom-and-fade with no relationship to the clicked tile — confirmed
+by reading `fancybox.js`'s `we()`. Getting the real effect would mean
+threading tile `<img>` refs from `Gallery.tsx` into the lightbox, coupling two
+components the current split deliberately keeps apart. Separately, and
+visible in side-by-side screenshots: **YARL's slide fills the viewport edge
+to edge; Fancybox's default slide is letterboxed** (centered, contained,
+visible margin) — a gap `zoomEffect` doesn't close even once wired up. Task
+6's transition, by contrast, cost a 150 ms budget-with-skip and a hover
+prefetch entirely inside `Gallery.tsx`, already shipped and tested across
+three engines.
+
+**2. Overlay slot — works, at a real but modest extra cost.** Fancybox has no
+`render.controls` equivalent at all. The wrapper instead grabs
+`fancybox.getContainer()` on the `ready` event, appends a plain `<div>`, and
+`createPortal`s the caller's overlay into it, tracking the active slide
+through `Carousel.change` (the direct analogue of YARL's `on.view`). Verified
+live: the same "floor plan slot · photo N" chip, in the same position,
+tracking every navigation correctly. The difference is shape, not
+capability — YARL's slot is a typed prop; Fancybox's is DOM lifecycle
+management (create on `ready`, tear down on `destroy`/unmount, recreate every
+reopen) that the caller owns.
+
+**3. Theming reach — Fancybox reaches further, at parity on `!important`.**
+~160 `--f-*` custom properties, all scoped onto `.fancybox__container`
+itself, against YARL's ~20 `--yarl__*` — roughly 8x the surface. One extra
+class plus a `globals.css` block beats the library's own rule on ordinary
+specificity, confirmed via computed styles in the running app; no
+`!important` needed, same as `.ebrostay-lightbox`. One paper cut: the counter
+markup has no class hook, so the letter-spacing touch
+`.ebrostay-lightbox__counter` gets from YARL's `counter.container.className`
+prop requires a `Toolbar.items.counter.tpl` template override on the
+Fancybox side instead — not a CSS fight, but a different, costlier API shape
+for that one piece of chrome.
+
+**Recommendation: stay on YARL / Task 6.** The prototype was built to test
+whether "Fancybox ships the transition natively" would flip the decision; it
+does not — that claim holds only for markup-driven usage, not for a
+props-driven wrapper, and even wired up targets a letterboxed slide instead
+of the full-bleed one already shipping. Fancybox is roughly at parity on the
+overlay slot and ahead on theming surface, but neither clears the bar to
+justify the €29 licence, the licence-terms confirmation email (§8), and
+reopening five shipped, tested components (Tasks 1–7) to swap libraries. This
+would be worth revisiting only if the Gallery/Lightbox separation changes for
+unrelated reasons — that is the one thing that would put `thumbEl`-based zoom
+within reach and turn Q1 into a styling fix rather than an architecture one.
+`spike/fancybox-comparison` is kept, unmerged, in case that happens.
+
 ## 7. What this unblocks
 
 The mockup that prompted this work shows a floor-plan mini-map — "YOU ARE HERE ·

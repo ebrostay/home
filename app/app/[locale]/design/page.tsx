@@ -106,6 +106,18 @@ function sampleMonths(
 // so on live data the control never appears at all. The three sample files
 // repeat behind a fragment, which the browser drops when fetching but which
 // keeps each entry's key unique.
+//
+// Each entry carries the derivative shape production photos have, so the
+// thumbnail-to-slide resolution jump is real here too: `cardUrl` is an 800 px
+// long-edge file (sips, mirroring `PhotoPipeline.Encode`'s card cap) and
+// `detailUrl` is the original — all three sources sit under the 1600 px
+// detail cap, and the pipeline never upscales, so "detail" IS the original.
+const GALLERY_SOURCES: Record<string, string> = {
+  "/brand/zaragoza-hero.webp": "/brand/zaragoza-hero.card.jpg",
+  "/brand/sample-home-1.jpg": "/brand/sample-home-1.card.jpg",
+  "/brand/sample-home-2.jpg": "/brand/sample-home-2.card.jpg",
+};
+
 const GALLERY_PHOTOS: PropertyPhoto[] = [
   "/brand/zaragoza-hero.webp",
   "/brand/sample-home-1.jpg",
@@ -115,14 +127,18 @@ const GALLERY_PHOTOS: PropertyPhoto[] = [
   "/brand/sample-home-2.jpg#2",
   "/brand/zaragoza-hero.webp#3",
   "/brand/sample-home-1.jpg#3",
-].map((url, i) => ({
-  url,
-  cardUrl: null,
-  detailUrl: null,
-  isFloorplan: false,
-  sortOrder: i,
-  hiddenFromGallery: false,
-}));
+].map((url, i) => {
+  const [file, fragment] = url.split("#");
+  const suffix = fragment ? `#${fragment}` : "";
+  return {
+    url,
+    cardUrl: `${GALLERY_SOURCES[file]}${suffix}`,
+    detailUrl: `${file}${suffix}`,
+    isFloorplan: false,
+    sortOrder: i,
+    hiddenFromGallery: false,
+  };
+});
 
 const RICH_TEXT_PHOTOS: HostPhoto[] = [
   { url: "/brand/sample-home-1.jpg", cardUrl: null, detailUrl: null, isFloorplan: false, sortOrder: 0, hiddenFromGallery: false },
@@ -726,7 +742,11 @@ export default function DesignPage() {
               className="overflow-hidden rounded-(--radius-control) border border-line"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt="" className="h-20 w-28 object-cover" />
+              <img
+                src={photo.cardUrl ?? photo.url}
+                alt=""
+                className="h-20 w-28 object-cover"
+              />
             </button>
           ))}
         </div>
@@ -758,20 +778,29 @@ export default function DesignPage() {
           feel, not ours. Not free for commercial use; local evaluation only.
         </p>
         <p className="mt-4 max-w-2xl text-sm text-muted">
-          <strong>Two rows, one difference.</strong> The top row crops each
+          <strong>Three rows, one difference.</strong> The top row crops each
           thumbnail to a fixed box with <code>object-cover</code>, exactly as
-          our real mosaic does. The bottom row lets each thumbnail keep its
+          our real mosaic does. The middle row lets each thumbnail keep its
           photo&rsquo;s own shape. Open a few in each and watch the opening:
           the question is whether Fancybox&rsquo;s zoom needs the thumbnail to
           be the same picture as the photo, rather than a crop of it. If so it
           would never fire on our mosaic, which is <code>object-cover</code>{" "}
-          throughout.
+          throughout. The answer turned out to be yes — a hardcoded 0.1
+          aspect-ratio gate — so the third row cheats it: the tile shows the
+          same crop, but the <code>&lt;img&gt;</code> element underneath keeps
+          the photo&rsquo;s true shape, oversized and clipped by the anchor.
+          Fancybox measures the element, the gate passes, and the hidden bands
+          unfold out of the tile on open.
         </p>
         <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
           CROPPED — AS OUR MOSAIC DOES IT
         </p>
         <div className="mt-2">
-          <FancyboxGallery photos={GALLERY_PHOTOS} crop group="spike-cropped" />
+          <FancyboxGallery
+            photos={GALLERY_PHOTOS}
+            variant="crop"
+            group="spike-cropped"
+          />
         </div>
         <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
           UNCROPPED — THUMBNAIL KEEPS THE PHOTO&rsquo;S SHAPE
@@ -779,8 +808,28 @@ export default function DesignPage() {
         <div className="mt-2">
           <FancyboxGallery
             photos={GALLERY_PHOTOS}
-            crop={false}
+            variant="natural"
             group="spike-uncropped"
+          />
+        </div>
+        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
+          MASKED — SAME CROP, BUT THE ELEMENT LIES ABOUT ITS SHAPE
+        </p>
+        <div className="mt-2">
+          <FancyboxGallery
+            photos={GALLERY_PHOTOS}
+            variant="masked"
+            group="spike-masked"
+          />
+        </div>
+        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
+          CLIPPED — THE CROP WINDOW ITSELF ANIMATES OPEN AND SHUT
+        </p>
+        <div className="mt-2">
+          <FancyboxGallery
+            photos={GALLERY_PHOTOS}
+            variant="clipped"
+            group="spike-clipped"
           />
         </div>
       </section>

@@ -243,8 +243,15 @@ function PhotoButton({
       onPointerEnter={onWarm}
       onFocus={onWarm}
       /* Sits on photography in both themes, so the chip is fixed white/ink
-         rather than a theme-flipping surface token. */
-      className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-2 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card) transition-colors duration-(--dur-standard) hover:bg-white"
+         rather than a theme-flipping surface token.
+
+         The hover feedback is PropertyCard's, deliberately: card-to-pop
+         shadow over --dur-standard. That card is this chip's closest
+         relative — a clickable thing sitting on a photo — and borrowing its
+         idiom is what keeps one control from growing its own vocabulary.
+         The shadow tokens flip with the theme even though the chip does
+         not, so the lift reads on a dark page too. */
+      className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-2 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card) transition-[background-color,box-shadow] duration-(--dur-standard) hover:bg-white hover:shadow-(--shadow-pop)"
     >
       {children}
     </button>

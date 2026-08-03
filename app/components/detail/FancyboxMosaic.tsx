@@ -226,7 +226,13 @@ export function FancyboxMosaic({
         ? "sm:grid-cols-2"
         : "";
 
-  const caption = (n: number) => t("photoOf", { n, total: photos.length });
+  /* No data-caption anywhere: the bottom bar is the caption slot, and a
+     "Photo n of N" there is noise the toolbar counter already carries.
+     When PropertyPhoto grows a description field (deferred with the photo
+     model), `data-caption` on the anchor is where it goes and this bar is
+     where it will show — per slide, HTML allowed. The text stays as each
+     tile's aria-label, where it does a job the bar never did. */
+  const label = (n: number) => t("photoOf", { n, total: photos.length });
 
   return (
     <div ref={root} className="relative">
@@ -235,8 +241,7 @@ export function FancyboxMosaic({
       >
         <Tile
           photo={hero}
-          alt={caption(1)}
-          caption={caption(1)}
+          alt={label(1)}
           className={tiles.length >= 3 ? "sm:row-span-2" : ""}
           sizes={SIZES.hero}
           onWarm={() => warm(hero)}
@@ -245,8 +250,7 @@ export function FancyboxMosaic({
           <Tile
             key={photo.url}
             photo={photo}
-            alt={caption(i + 2)}
-            caption={caption(i + 2)}
+            alt={label(i + 2)}
             className="hidden sm:block"
             sizes={SIZES.tile}
             onWarm={() => warm(photo)}
@@ -260,7 +264,6 @@ export function FancyboxMosaic({
           <a
             key={photo.url}
             data-fancybox="detail-mosaic"
-            data-caption={caption(i + 6)}
             data-thumb={photo.cardUrl ?? photo.url}
             href={slideSrc(photo)}
             className="hidden"
@@ -304,14 +307,12 @@ export function FancyboxMosaic({
 function Tile({
   photo,
   alt,
-  caption,
   className = "",
   sizes,
   onWarm,
 }: {
   photo: PropertyPhoto;
   alt: string;
-  caption: string;
   className?: string;
   sizes: string;
   onWarm: () => void;
@@ -322,7 +323,6 @@ function Tile({
        `relative` because CoverImg positions itself against this box. */
     <a
       data-fancybox="detail-mosaic"
-      data-caption={caption}
       href={slideSrc(photo)}
       onPointerEnter={onWarm}
       onFocus={onWarm}

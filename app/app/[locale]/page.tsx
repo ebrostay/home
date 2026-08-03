@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useShortMonths } from "@/i18n/dates";
 import { shortDate } from "@/lib/dates";
 import { fetchProperties, biText, type PropertySummary } from "@/lib/api";
+import { lastKnown } from "@/lib/lastKnown";
 import { formatEuro } from "@/lib/pricing";
 import { monthStates, stayFits } from "@/lib/availability";
 import {
@@ -53,12 +54,20 @@ import {
 const GRID = "grid grid-cols-1 gap-[22px] @min-[31rem]:grid-cols-2 @min-[48rem]:grid-cols-3";
 const COLUMN = "grid grid-cols-1 gap-[22px]";
 
+// Module scope, not component state: the router remounts this page on every
+// return from a home, and remembering the list across that remount is the
+// whole fix for the back-swipe flash (see lib/lastKnown.ts). Session-scoped
+// by construction — a real page load starts empty again.
+const listings = lastKnown(fetchProperties);
+
 export default function HomePage() {
   const t = useTranslations();
   const locale = useLocale();
   const months = useShortMonths();
 
-  const [all, setAll] = useState<PropertySummary[] | null>(null);
+  // Seeded from the last visit's fetch so a return paints cards, not the
+  // skeleton — `null` means "never seen data this session" and nothing else.
+  const [all, setAll] = useState<PropertySummary[] | null>(listings.current);
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -130,17 +139,22 @@ export default function HomePage() {
   useEffect(() => {
     let cancelled = false;
     /* eslint-disable react-hooks/set-state-in-effect -- the reset IS the
-       point: `reloadKey` changing means "fetch the list again", and the
-       skeleton has to come back while that runs or a retry looks like it did
-       nothing. Deriving it is not open — the previous list and the new one
-       are the same state, distinguishable only by which fetch produced them.
-       Same carve-out as the URL-restore effect above. */
+       point: `reloadKey` changing means "fetch the list again", and clearing
+       `failed` is what puts the skeleton back while that runs, or a retry
+       looks like it did nothing. Same carve-out as the URL-restore effect
+       above. Note what is NOT reset: `all`. On a return visit it holds the
+       remembered list, and blanking it to a skeleton for the refetch is
+       exactly the back-swipe flash this page no longer does. */
     setFailed(false);
-    setAll(null);
     /* eslint-enable react-hooks/set-state-in-effect */
-    fetchProperties()
+    listings
+      .refresh()
       .then((data) => !cancelled && setAll(data))
-      .catch(() => !cancelled && setFailed(true));
+      .catch(() => {
+        // A failed revalidation behind remembered cards stays silent — stale
+        // homes beat an error card replacing a list the visitor can see.
+        if (!cancelled && listings.current() === null) setFailed(true);
+      });
     return () => {
       cancelled = true;
     };

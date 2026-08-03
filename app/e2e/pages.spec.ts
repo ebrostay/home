@@ -888,3 +888,50 @@ test("the lightbox opens, advances and closes", async ({ page }) => {
   // this deterministic.
   await expect(counter).toHaveCount(0);
 });
+
+// The back-swipe flash (fixed 2026-08-03): the router remounts the results
+// page on every return from a home, and it used to blank the list to its
+// skeleton while refetching — on a phone, a white flash and a scroll jump on
+// every back gesture. The list is now remembered across the remount
+// (lib/lastKnown.ts) and revalidated silently, so going back must paint
+// cards on the first frame and never create a skeleton node at all. The
+// MutationObserver is what makes "never" testable: a flash that is painted
+// and replaced within one commit would already be gone by the time an
+// after-the-fact query ran.
+test("returning from a home paints the remembered list, not the skeleton", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/", { waitUntil: "networkidle" });
+
+  const firstCard = page.locator("[id^=home-]").first();
+  await expect(firstCard).toBeVisible();
+  const cardId = await firstCard.getAttribute("id");
+
+  await firstCard.locator("a[href*='property']").first().click();
+  await expect(page).toHaveURL(/\/property\/?\?/);
+  await expect(page.locator("h1")).toBeVisible();
+
+  await page.evaluate(() => {
+    const w = window as typeof window & { __skeletons: number };
+    w.__skeletons = 0;
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (!(n instanceof Element)) continue;
+          w.__skeletons +=
+            (n.matches(".skeleton") ? 1 : 0) + n.querySelectorAll(".skeleton").length;
+        }
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  });
+
+  await page.goBack();
+  await expect(page.locator(`#${cardId}`)).toBeVisible();
+  // The card the visitor left from is put back under their eye, and no
+  // skeleton ever entered the document on the way.
+  await expect(page.locator(`#${cardId}`)).toBeInViewport();
+  expect(
+    await page.evaluate(
+      () => (window as typeof window & { __skeletons: number }).__skeletons,
+    ),
+  ).toBe(0);
+});

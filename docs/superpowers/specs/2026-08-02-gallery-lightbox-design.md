@@ -274,7 +274,10 @@ written; what changed is that the call-site markup was allowed to change
 shape (`FancyboxMosaic.tsx`, a sibling of `Gallery.tsx`, not a patch to it).
 
 What the second round established, all measured on `/[locale]/design` and
-then on the detail page itself (the exhibits remain on the design page):
+then on the detail page itself (the four comparison rows were retired from
+the design page once the decision landed — this section and the git history
+of `FancyboxGallery.tsx` are the record; the design page now shows the
+shipped `FancyboxMosaic`):
 
 - Fancybox gates its zoom on a hardcoded aspect check —
   `|slideAspect − thumbAspect| ≤ 0.1`, no option — and compensates

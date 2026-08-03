@@ -692,37 +692,3 @@
   letter-spacing: 0.04em;
 }
 
-/* SPIKE ONLY — Task 8, spike/fancybox-comparison. Not on redesign/v2.
-   Same theming intent as `.ebrostay-lightbox` above, ported to Fancybox's
-   `--f-*` custom properties (there are ~160, all scoped onto the container
-   Fancybox itself builds — see `FancyboxLightbox.tsx`'s `mainClass`). One
-   extra class on that same selector beats the library's own rule on
-   specificity with no `!important` anywhere in this block; that is the
-   finding, not just the styling. */
-.ebrostay-fancybox.fancybox__container,
-.ebrostay-fancybox .fancybox__container {
-  --fancybox-backdrop-bg: rgba(4, 8, 6, 0.94);
-  --f-button-bg: rgba(255, 255, 255, 0.12);
-  --f-button-color: rgba(255, 255, 255, 0.82);
-  --f-button-hover-color: #ffffff;
-
-  --f-counter-line-height: var(--f-button-height);
-  --f-toolbar-font: var(--font-mono, ui-monospace, monospace);
-  --f-toolbar-font-size: 0.8125rem;
-
-  --f-caption-color: rgba(255, 255, 255, 0.92);
-  --f-caption-font: var(--font-sans, inherit);
-
-  --f-thumbs-bg: rgba(4, 8, 6, 0.94);
-  --f-thumb-border-radius: var(--radius-control);
-  --f-thumb-selected-shadow: inset 0 0 0 2px #ffffff;
-}
-
-/* The one thing the variables above do NOT reach: the counter template is
-   plain text (`1/8`) with no element of its own to hang a letter-spacing
-   declaration on, unlike YARL's `counter.container.className` prop. Getting
-   `0.04em` tracking — the one refinement `.ebrostay-lightbox__counter` adds
-   over the library default — means a `Toolbar.items.counter.tpl` override
-   (a full HTML string, own class included) rather than a CSS rule reaching
-   into markup the library already generated. Not a CSS fight; a different
-   API surface than "add a class". */

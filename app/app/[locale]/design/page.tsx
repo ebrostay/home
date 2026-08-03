@@ -32,9 +32,8 @@ import { RichTextEditor } from "@/components/host/fields/RichTextEditor";
 import { PhotoPicker } from "@/components/host/fields/PhotoPicker";
 import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
-import { Gallery } from "@/components/detail/Gallery";
 import { Lightbox } from "@/components/detail/Lightbox";
-import { FancyboxGallery } from "@/components/detail/FancyboxGallery";
+import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
 import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
 
@@ -703,25 +702,25 @@ export default function DesignPage() {
         </div>
       </section>
 
-      {/* Gallery — the mosaic that opens into the lightbox below */}
+      {/* Gallery — the mosaic the detail page ships */}
       <section className="mt-14">
-        <div className="ledger-rule"><span>gallery (current)</span></div>
+        <div className="ledger-rule"><span>gallery (as shipped)</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
-          The detail page as it stands today, at eight photos. The mosaic
-          tiles and <strong>All 8 photos</strong> both open the lightbox in
-          the next section — there is no separate grid dialog any more (that
-          was the bug documented in §1 of the lightbox spec, and D5 in that
-          spec is what removed it). This section exists to show the mosaic on
-          its own, since it is still a real, separately worth-seeing
-          component; it is no longer a &ldquo;before&rdquo; to the section
-          below it.
+          The detail page&rsquo;s mosaic at eight photos, opened through{" "}
+          <code>@fancyapps/ui</code> (licensed 2026-08-03). Every tile zooms —
+          the open starts clipped to exactly the tile&rsquo;s crop and the
+          window animates open with the flight, closing the same way in
+          reverse. The caption bar is reserved for a photo description field
+          that does not exist yet; the counter carries the numbering. The
+          decision trail is §6 of the gallery lightbox spec; the YARL-driven{" "}
+          <code>Gallery</code> stays in the tree as the kept variant.
         </p>
         <div className="mt-6 max-w-4xl">
-          <Gallery photos={GALLERY_PHOTOS} hasFloorplan={false} />
+          <FancyboxMosaic photos={GALLERY_PHOTOS} hasFloorplan={false} />
         </div>
       </section>
 
-      {/* Lightbox — the replacement */}
+      {/* Lightbox — YARL, still shipped for description-referenced photos */}
       <section className="mt-14">
         <div className="ledger-rule"><span>lightbox</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
@@ -762,81 +761,6 @@ export default function DesignPage() {
             </div>
           )}
         />
-      </section>
-
-      {/* Fancybox — began as the Task 8 spike, now the adopted gallery
-          engine (commercial licence bought 2026-08-03). Same photos, same
-          overlay stand-in, driven by @fancyapps/ui instead of YARL, so the
-          two remain comparable on the design page rather than from memory.
-          The production integration is FancyboxMosaic on the detail page;
-          these rows are the exhibits the adoption decision was made on. */}
-      <section className="mt-14">
-        <div className="ledger-rule"><span>lightbox (fancybox)</span></div>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          The same eight photos through <code>@fancyapps/ui</code>, wired
-          Fancybox&rsquo;s own documented way — <code>Fancybox.bind()</code>{" "}
-          against real <code>&lt;a data-fancybox&gt;</code> anchors, not the
-          imperative <code>show()</code> the first attempt used. That is what
-          gives it the thumbnail to zoom out of, so the open animation here is
-          the real one. Near-stock options: the point is to judge its look and
-          feel, not ours. Licensed for commercial use since 2026-08-03; the
-          detail page&rsquo;s mosaic now ships the clipped variant below.
-        </p>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          <strong>Three rows, one difference.</strong> The top row crops each
-          thumbnail to a fixed box with <code>object-cover</code>, exactly as
-          our real mosaic does. The middle row lets each thumbnail keep its
-          photo&rsquo;s own shape. Open a few in each and watch the opening:
-          the question is whether Fancybox&rsquo;s zoom needs the thumbnail to
-          be the same picture as the photo, rather than a crop of it. If so it
-          would never fire on our mosaic, which is <code>object-cover</code>{" "}
-          throughout. The answer turned out to be yes — a hardcoded 0.1
-          aspect-ratio gate — so the third row cheats it: the tile shows the
-          same crop, but the <code>&lt;img&gt;</code> element underneath keeps
-          the photo&rsquo;s true shape, oversized and clipped by the anchor.
-          Fancybox measures the element, the gate passes, and the hidden bands
-          unfold out of the tile on open.
-        </p>
-        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
-          CROPPED — AS OUR MOSAIC DOES IT
-        </p>
-        <div className="mt-2">
-          <FancyboxGallery
-            photos={GALLERY_PHOTOS}
-            variant="crop"
-            group="spike-cropped"
-          />
-        </div>
-        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
-          UNCROPPED — THUMBNAIL KEEPS THE PHOTO&rsquo;S SHAPE
-        </p>
-        <div className="mt-2">
-          <FancyboxGallery
-            photos={GALLERY_PHOTOS}
-            variant="natural"
-            group="spike-uncropped"
-          />
-        </div>
-        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
-          MASKED — SAME CROP, BUT THE ELEMENT LIES ABOUT ITS SHAPE
-        </p>
-        <div className="mt-2">
-          <FancyboxGallery
-            photos={GALLERY_PHOTOS}
-            variant="masked"
-            group="spike-masked"
-          />
-        </div>
-        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
-          CLIPPED — THE CROP WINDOW ITSELF ANIMATES OPEN AND SHUT
-        </p>
-        <div className="mt-2">
-          <FancyboxGallery
-            photos={GALLERY_PHOTOS}
-            variant="clipped"
-            group="spike-clipped"
-          />
-        </div>
       </section>
 
       {/* Description editor */}

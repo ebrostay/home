@@ -163,7 +163,7 @@ export function FancyboxMosaic({
 
     let openPending = false;
     const options = {
-      mainClass: "spike-clipped",
+      mainClass: "ebrostay-mosaic",
       on: {
         init: () => {
           openPending = true;
@@ -172,7 +172,7 @@ export function FancyboxMosaic({
           if (!openPending) return;
           openPending = false;
           if (
-            document.querySelectorAll(".fancybox__container.spike-clipped")
+            document.querySelectorAll(".fancybox__container.ebrostay-mosaic")
               .length > 1
           )
             return;

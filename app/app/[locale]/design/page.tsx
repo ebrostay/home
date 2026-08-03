@@ -34,7 +34,7 @@ import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
 import { Gallery } from "@/components/detail/Gallery";
 import { Lightbox } from "@/components/detail/Lightbox";
-import { FancyboxLightbox } from "@/components/detail/FancyboxLightbox";
+import { FancyboxGallery } from "@/components/detail/FancyboxGallery";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
 import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
 
@@ -260,7 +260,6 @@ export default function DesignPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [fancyboxIndex, setFancyboxIndex] = useState<number | null>(null);
   const [propertyType, setPropertyType] = useState("all");
   const [stayRange, setStayRange] = useState<DateRange | undefined>({
     from: new Date(2026, 7, 10),
@@ -750,35 +749,17 @@ export default function DesignPage() {
       <section className="mt-14">
         <div className="ledger-rule"><span>lightbox (fancybox spike)</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
-          The same eight photos, the same overlay stand-in, through{" "}
-          <code>@fancyapps/ui</code> instead of YARL. Thumbnails, counter,
-          zoom and captions are all on by default — nothing here was disabled
-          to make the comparison easier. Not free for commercial use; local
-          evaluation only, see the Task 8 write-up in the spec (§6.1).
+          The same eight photos through <code>@fancyapps/ui</code>, wired
+          Fancybox&rsquo;s own documented way — <code>Fancybox.bind()</code>{" "}
+          against real <code>&lt;a data-fancybox&gt;</code> anchors, not the
+          imperative <code>show()</code> the first attempt used. That is what
+          gives it the thumbnail to zoom out of, so the open animation here is
+          the real one. Near-stock options: the point is to judge its look and
+          feel, not ours. Not free for commercial use; local evaluation only.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          {GALLERY_PHOTOS.map((photo, i) => (
-            <button
-              key={photo.url}
-              type="button"
-              onClick={() => setFancyboxIndex(i)}
-              className="overflow-hidden rounded-(--radius-control) border border-line"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt="" className="h-20 w-28 object-cover" />
-            </button>
-          ))}
+        <div className="mt-6">
+          <FancyboxGallery photos={GALLERY_PHOTOS} />
         </div>
-        <FancyboxLightbox
-          photos={GALLERY_PHOTOS}
-          index={fancyboxIndex}
-          onClose={() => setFancyboxIndex(null)}
-          overlay={(i) => (
-            <div className="absolute bottom-28 right-4 rounded-(--radius-card) bg-white/95 px-4 py-3 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card)">
-              floor plan slot · photo {i + 1}
-            </div>
-          )}
-        />
       </section>
 
       {/* Description editor */}

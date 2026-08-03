@@ -31,7 +31,26 @@ import { slideSrc } from "@/lib/photos";
 
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
-export function FancyboxGallery({ photos }: { photos: readonly PropertyPhoto[] }) {
+export function FancyboxGallery({
+  photos,
+  crop,
+  group,
+}: {
+  photos: readonly PropertyPhoto[];
+  /** `true` renders the thumbnails as our real mosaic does — a fixed box with
+   *  `object-cover`, so the thumbnail is a CROP of the photo and their aspect
+   *  ratios disagree. `false` lets each thumbnail keep the photo's own shape.
+   *
+   *  This is the whole experiment. Fancybox's zoom-in animates the thumbnail's
+   *  rectangle out to the slide's; when the thumbnail is a crop, the two are
+   *  not the same picture and there is no honest interpolation between them.
+   *  The observation that prompted this: sample-home-1.jpg (3% aspect
+   *  mismatch) zoomed, zaragoza-hero.webp (7%) and sample-home-2.jpg (119% —
+   *  a portrait photo in a landscape box) did not. */
+  crop: boolean;
+  /** Fancybox groups by this, so the two rows must not share one. */
+  group: string;
+}) {
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,13 +68,17 @@ export function FancyboxGallery({ photos }: { photos: readonly PropertyPhoto[] }
       {photos.map((photo, i) => (
         <a
           key={photo.url}
-          data-fancybox="spike"
+          data-fancybox={group}
           data-caption={`Photo ${i + 1} of ${photos.length}`}
           href={slideSrc(photo)}
           className="block overflow-hidden rounded-(--radius-control) border border-line"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo.url} alt="" className="h-20 w-28 object-cover" />
+          <img
+            src={photo.url}
+            alt=""
+            className={crop ? "h-20 w-28 object-cover" : "h-20 w-auto"}
+          />
         </a>
       ))}
     </div>

@@ -757,8 +757,31 @@ export default function DesignPage() {
           the real one. Near-stock options: the point is to judge its look and
           feel, not ours. Not free for commercial use; local evaluation only.
         </p>
-        <div className="mt-6">
-          <FancyboxGallery photos={GALLERY_PHOTOS} />
+        <p className="mt-4 max-w-2xl text-sm text-muted">
+          <strong>Two rows, one difference.</strong> The top row crops each
+          thumbnail to a fixed box with <code>object-cover</code>, exactly as
+          our real mosaic does. The bottom row lets each thumbnail keep its
+          photo&rsquo;s own shape. Open a few in each and watch the opening:
+          the question is whether Fancybox&rsquo;s zoom needs the thumbnail to
+          be the same picture as the photo, rather than a crop of it. If so it
+          would never fire on our mosaic, which is <code>object-cover</code>{" "}
+          throughout.
+        </p>
+        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
+          CROPPED — AS OUR MOSAIC DOES IT
+        </p>
+        <div className="mt-2">
+          <FancyboxGallery photos={GALLERY_PHOTOS} crop group="spike-cropped" />
+        </div>
+        <p className="mt-6 data text-[0.65625rem] tracking-[0.1em] text-muted">
+          UNCROPPED — THUMBNAIL KEEPS THE PHOTO&rsquo;S SHAPE
+        </p>
+        <div className="mt-2">
+          <FancyboxGallery
+            photos={GALLERY_PHOTOS}
+            crop={false}
+            group="spike-uncropped"
+          />
         </div>
       </section>
 

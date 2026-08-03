@@ -201,8 +201,8 @@ is paid or the option is dropped. Local evaluation is fine; deployed is use.
 
 ### 6.1 Prototype outcome
 
-Built on `spike/fancybox-comparison` (never merged, per the licence
-constraint above): a `FancyboxLightbox.tsx` wrapper with the same
+Built on `spike/fancybox-comparison` (unmerged at the time, per the licence
+constraint above; the branch was later merged — see §6.2): a `FancyboxLightbox.tsx` wrapper with the same
 `photos`/`index`/`onClose`/`overlay` contract as `Lightbox.tsx`, a second
 section on `/[locale]/design` driving it over the same eight photos, and a
 `.ebrostay-fancybox` theming pass in `globals.css` matching
@@ -262,6 +262,44 @@ would be worth revisiting only if the Gallery/Lightbox separation changes for
 unrelated reasons — that is the one thing that would put `thumbEl`-based zoom
 within reach and turn Q1 into a styling fix rather than an architecture one.
 `spike/fancybox-comparison` is kept, unmerged, in case that happens.
+
+### 6.2 The revisit happened, and the recommendation reversed (2026-08-03)
+
+The contingency §6.1 closed on is the thing that occurred: the spike's
+second round abandoned the props-driven wrapper entirely and rebuilt the
+integration Fancybox's own way — `Fancybox.bind()` over real
+`<a data-fancybox>` anchors — which is the markup shape that populates
+`thumbEl` and makes the native zoom real. §6.1's finding 1 stands as
+written; what changed is that the call-site markup was allowed to change
+shape (`FancyboxMosaic.tsx`, a sibling of `Gallery.tsx`, not a patch to it).
+
+What the second round established, all measured on `/[locale]/design` and
+then on the detail page itself (the exhibits remain on the design page):
+
+- Fancybox gates its zoom on a hardcoded aspect check —
+  `|slideAspect − thumbAspect| ≤ 0.1`, no option — and compensates
+  `object-fit: contain` but never `cover`, so a covered mosaic tile loses
+  the zoom by design. Two working answers were built: a tile whose `<img>`
+  keeps the photo's true shape oversized under `overflow: hidden`
+  (passes the gate; the crop "unfolds"), and, on top of that, a
+  `clip-path` driven through Fancybox's event hooks so the crop window
+  itself animates open and shut with the flight. The clipped variant is
+  the adopted one.
+- The caption bar is left empty deliberately; it is reserved for a photo
+  description field `PropertyPhoto` does not have yet (§7's model). The
+  toolbar counter carries the numbering.
+- Loading was measured, not assumed: card derivatives on page load, a
+  sliding look-ahead window of detail files at open (current ± a few),
+  one file per navigation step, nothing for photos never visited.
+
+The €29 Single licence was purchased 2026-08-03 (no key or activation
+exists; holding it is the whole obligation), the spike branch was merged,
+and `property/page.tsx` now opens the mosaic through `FancyboxMosaic`.
+`Gallery.tsx`/`Lightbox.tsx` remain in the tree as the YARL variant: the
+referenced-photo flow still opens through `Lightbox.tsx`, and §6.1's
+full-bleed-versus-letterbox observation still describes the difference
+between the two — it was judged acceptable on the real page rather than
+argued about.
 
 ## 7. What this unblocks
 

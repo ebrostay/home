@@ -762,12 +762,14 @@ export default function DesignPage() {
         />
       </section>
 
-      {/* Fancybox — Task 8 spike, NOT FOR MERGE. Same photos, same overlay
-          stand-in, driven by @fancyapps/ui instead of YARL, so the two can be
-          compared on the design page rather than from memory. This section
-          and its component do not exist on redesign/v2. */}
+      {/* Fancybox — began as the Task 8 spike, now the adopted gallery
+          engine (commercial licence bought 2026-08-03). Same photos, same
+          overlay stand-in, driven by @fancyapps/ui instead of YARL, so the
+          two remain comparable on the design page rather than from memory.
+          The production integration is FancyboxMosaic on the detail page;
+          these rows are the exhibits the adoption decision was made on. */}
       <section className="mt-14">
-        <div className="ledger-rule"><span>lightbox (fancybox spike)</span></div>
+        <div className="ledger-rule"><span>lightbox (fancybox)</span></div>
         <p className="mt-4 max-w-2xl text-sm text-muted">
           The same eight photos through <code>@fancyapps/ui</code>, wired
           Fancybox&rsquo;s own documented way — <code>Fancybox.bind()</code>{" "}
@@ -775,7 +777,8 @@ export default function DesignPage() {
           imperative <code>show()</code> the first attempt used. That is what
           gives it the thumbnail to zoom out of, so the open animation here is
           the real one. Near-stock options: the point is to judge its look and
-          feel, not ours. Not free for commercial use; local evaluation only.
+          feel, not ours. Licensed for commercial use since 2026-08-03; the
+          detail page&rsquo;s mosaic now ships the clipped variant below.
         </p>
         <p className="mt-4 max-w-2xl text-sm text-muted">
           <strong>Three rows, one difference.</strong> The top row crops each

@@ -1,13 +1,13 @@
 "use client";
 
-/* SPIKE ONLY — spike/fancybox-comparison. Not for merge.
- * `@fancyapps/ui` is not free for commercial use; this must not reach a
- * deployed environment before a licence is bought.
+/* The detail page's mosaic, opened through Fancybox (`@fancyapps/ui`,
+ * commercial Single licence bought 2026-08-03 — the GPL escape hatch does
+ * not apply to this codebase, the licence does; no key or activation step
+ * exists, holding it is the whole obligation).
  *
- * The detail page's mosaic, opened through Fancybox instead of the shipped
- * Lightbox, so the "clipped" choreography from the design page can be felt
- * on the real page: real tile sizes, real photo counts, real chips. It is
- * the design-page experiment generalised twice over:
+ * Born on spike/fancybox-comparison as the "clipped" choreography's
+ * real-page test bed: real tile sizes, real photo counts, real chips. It
+ * is the design-page experiment generalised twice over:
  *
  * - the fixed 112x80 spike tile becomes whatever box the mosaic grid gives
  *   each frame, re-measured through a ResizeObserver (`CoverImg` emulates

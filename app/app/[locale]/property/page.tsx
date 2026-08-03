@@ -28,9 +28,10 @@ import { Button } from "@/components/ui/Button";
 import { RichText } from "@/components/ui/RichText";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { BookingPanel } from "@/components/detail/BookingPanel";
-/* SPIKE ONLY — spike/fancybox-comparison, not for merge: the shipped Gallery
-   is swapped for the Fancybox-driven mosaic so its look and feel can be
-   judged on the real page. `Gallery` remains the shipped component. */
+/* The mosaic opens through Fancybox (licensed 2026-08-03) — judged on this
+   page against the YARL Lightbox and adopted. `Gallery` remains in the tree
+   as the YARL-driven variant; the referenced-photo lightbox below still
+   uses YARL's `Lightbox` directly. */
 import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
 import { Lightbox } from "@/components/detail/Lightbox";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";

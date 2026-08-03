@@ -1,8 +1,9 @@
 "use client";
 
-/* SPIKE ONLY — spike/fancybox-comparison. Not for merge.
- * `@fancyapps/ui` is not free for commercial use; this must not reach a
- * deployed environment before a licence is bought.
+/* The design page's Fancybox comparison rows, kept as the living record of
+ * how the open-animation question was answered (`@fancyapps/ui` is under a
+ * bought commercial Single licence since 2026-08-03; no activation step
+ * exists). The adopted result is `FancyboxMosaic` — these rows are its lab.
  *
  * This is Fancybox's OWN documented React integration
  * (fancyapps.com/fancybox/integration/react): a `useEffect` that calls

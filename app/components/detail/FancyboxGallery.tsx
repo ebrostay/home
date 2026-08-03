@@ -267,11 +267,13 @@ export function FancyboxGallery({
           }
         `}</style>
       )}
-      {photos.map((photo, i) => (
+      {/* No data-caption, matching FancyboxMosaic: the bottom bar is
+          reserved for a real photo description once the field exists;
+          "Photo n of N" is the toolbar counter's job. */}
+      {photos.map((photo) => (
         <a
           key={photo.url}
           data-fancybox={group}
-          data-caption={`Photo ${i + 1} of ${photos.length}`}
           href={slideSrc(photo)}
           className={`block overflow-hidden rounded-(--radius-control) border border-line${
             variant === "masked" || variant === "clipped"

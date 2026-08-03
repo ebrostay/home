@@ -14,10 +14,40 @@ public class ImportedFieldTests
     }
 
     [Fact]
-    public void UnknownKeyIsRejected()
+    public void AnUnknownKeyDoesNotBlockTheSave()
     {
-        Assert.Equal("imported_unknown_field",
-            HostValidation.CheckImported(["price", "hostBankAccount"], "idealista"));
+        // The owner's PUT ECHOES marks the server itself wrote; an unknown one
+        // is a vocabulary that shrank under a stored document, never a claim
+        // the client invented. Rejecting costs the owner every word they just
+        // typed, for an annotation that renders nothing.
+        Assert.Null(HostValidation.CheckImported(["price", "hostBankAccount"], "idealista"));
+    }
+
+    [Fact]
+    public void AnUnknownKeyIsDroppedFromWhatIsStored()
+    {
+        // ADR-034 renamed `copy` to `description`. Every draft imported before
+        // that rename carries `copy`, and the client faithfully sends it back
+        // on every save — so this is the drift that actually happened, not a
+        // hypothetical one.
+        Assert.Equal(["price"], HostValidation.KnownImported(["price", "copy"]));
+    }
+
+    [Fact]
+    public void NeverImportedStaysNull()
+    {
+        // Null and empty differ: null is "never imported", empty is "imported
+        // and fully reviewed". Sanitizing must not collapse the two.
+        Assert.Null(HostValidation.KnownImported(null));
+    }
+
+    [Fact]
+    public void ADraftWhoseMarksAreAllStaleStillSaves()
+    {
+        // Filtering leaves an empty array beside a real source — which is the
+        // "fully reviewed import" case, and must not trip the source rule.
+        Assert.Null(HostValidation.CheckImported(["copy"], "idealista"));
+        Assert.Empty(HostValidation.KnownImported(["copy"])!);
     }
 
     [Fact]

@@ -260,7 +260,10 @@ public class HostFunctions(
         doc.SmokingAllowed = update.SmokingAllowed;
         doc.CouplesAllowed = update.CouplesAllowed;
         doc.SelfCheckin = update.SelfCheckin;
-        doc.Imported = update.Imported;
+        // Filtered, not carried: a mark whose key this API no longer knows is
+        // dropped on the way in, so a vocabulary change cannot strand a draft
+        // (HostValidation.KnownImported).
+        doc.Imported = HostValidation.KnownImported(update.Imported);
         doc.ImportSource = update.ImportSource;
         // Position comes from the array's order, not from a number the client
         // sends: an index the client owns can arrive with gaps or repeats, and

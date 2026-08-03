@@ -40,8 +40,8 @@ and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
 | ADR-030 | "Add a property": a wizard over the editor's own components | ✅ locked |
 | ADR-031 | No turnaround after the owner's own use | ✅ locked |
 | ADR-032 | The listing description is a closed rich-text schema, not HTML | ✅ locked |
-| ADR-033 | AI-assisted import: an async job the API owns and an extractor it does not trust | ✅ locked |
-| ADR-034 | The listing description field is `description`, not `copy` | ✅ locked |
+| ADR-033 | AI-assisted import: an async job the API owns and an extractor it does not trust | ✅ locked · amended 2026-08-03 (unknown marks dropped by the owner's PUT) |
+| ADR-034 | The listing description field is `description`, not `copy` | ✅ locked · consequence recorded 2026-08-03 (a re-seed does not cover owner drafts) |
 | ADR-035 | Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding | ✅ locked & built |
 | ADR-036 | The provider choice stays on Entra's hosted page; one-hop Microsoft via a direct provider | ✅ locked & built |
 
@@ -2203,8 +2203,9 @@ API carrying `BilingualDoc` ships — staging must not be deployed to first.
 
 ## ADR-033 — AI-assisted import: an async job the API owns and an extractor it does not trust
 
-- **Status:** ✅ locked and ✅ **built** 2026-07-30 (product owner: Raphael).
-  Carries the design at
+- **Status:** ✅ locked and ✅ **built** 2026-07-30 (product owner: Raphael);
+  amended 2026-08-03 (an unknown mark is dropped by the owner's PUT rather
+  than rejected — see after Decision 8). Carries the design at
   `docs/superpowers/specs/2026-07-30-ai-assisted-import-design.md` into the
   log, plus five decisions made during implementation. **Extends ADR-030**
   (the wizard gains a step 0 in front of it; nothing inside the nine steps
@@ -2312,6 +2313,47 @@ design cut the summary screen and made the marks the entire review surface, so
 marks living only in client state would mean a reload returns the owner to a
 form in which twenty machine-proposed values are indistinguishable from their
 own.
+
+### Amendment 2026-08-03 — a mark this API no longer knows is dropped, not rejected
+
+Persisting the marks (Decision 8) put a **code-versioned vocabulary inside a
+stored document**, and the first change to that vocabulary stranded every
+document written before it. ADR-034 renamed the import key `copy` to
+`description` four days after this shipped. Four local drafts imported before
+that rename came back from the GET still carrying `copy`; the client echoed it
+into the PUT, as it must; `CheckImported` refused the whole save with
+`imported_unknown_field`. The listing became **permanently unsaveable** — the
+owner retypes a description, presses *Continue*, and loses it to a 400 naming
+a field they have never heard of, with no path out of it from the UI. Nothing
+in the editor can clear that mark: `clearMark` removes the key the owner just
+edited, and `copy` is not a key any current control produces.
+
+The rule now distinguishes the two directions the vocabulary travels:
+
+- **The callback ASSERTS it.** An external pipeline naming a field it filled is
+  the boundary where an unknown key means the pipeline and this API disagree
+  about what exists. `ImportValidation.CheckCallback` still refuses it, before
+  anything is written. Unchanged.
+- **The owner's PUT only ECHOES it.** Every mark on that payload was written by
+  this API and handed back on the GET, so an unknown key there cannot be a
+  client inventing a claim — it can only be a vocabulary that shrank underneath
+  a stored document. `HostValidation.KnownImported` filters those out and the
+  save proceeds; `imported_unknown_field` is no longer reachable from the
+  content PUT. The cap (`imported_too_many`) still applies to what *arrived*,
+  before filtering, because that bounds the payload rather than reading it.
+
+**This is not the repair ADR-032 Decision 8 refuses.** That decision rejects
+rather than repairs *rich text*, where silent repair deletes an owner's words.
+A mark carries no words. It is review state — "nobody has looked at this value
+yet" — and one naming a field that no longer exists is already inert: it maps
+to no step, renders no glyph and gates no completeness check. Dropping it costs
+nothing anybody wrote, and the stale mark clears itself on the first save, so
+the fix is also the migration.
+
+The general form, worth stating because the next vocabulary change will meet
+it: **a closed set that lives in code and is persisted in documents must be
+lenient on the way back in.** Otherwise every removal from that set is a
+silent, retroactive denial of service against the documents that still use it.
 
 ### Decision 9 — The URL flow ships first; the document flow waits on a privacy answer
 
@@ -2526,6 +2568,20 @@ object with the wrong key.
   than a 500 and harder to notice: nothing logs it. `PropertiesFunctions`'s
   per-document `TryParse` guard still stands, but this failure never reaches
   it. Re-seeding remains mandatory; forgetting now looks like blank listings.
+- **A re-seed does not cover owner drafts, so Decision 2's premise was
+  incomplete** (found 2026-08-03). "The cost of this rename is a re-seed" was
+  true of the *four sample homes* and of the `description` field itself. It was
+  not true of `imported[]`: the same rename moved a key inside an array that
+  ADR-033 Decision 8 persists on **every** property document, and
+  `infra/seed.mjs` regenerates the samples while leaving owner drafts
+  untouched. Four local drafts imported hours before this ADR landed kept the
+  key `copy`, and the API's refusal to recognise it made each of them
+  permanently unsaveable — a failure mode neither this ADR nor ADR-033
+  anticipated, and one that cost real debugging four days later. Fixed by
+  ADR-033's 2026-08-03 amendment (unknown marks are dropped by the owner's
+  PUT), which also self-heals the affected documents on their next save. The
+  lesson generalises past this rename: **before renaming or removing a key,
+  ask which stored arrays name it as data**, not only which fields hold it.
 - The `properties` indexing policy excludes `/description/*` where it
   excluded `/copy/*` (`infra/main.bicep`). Deploying it re-triggers the
   background index transformation ADR-028 describes.

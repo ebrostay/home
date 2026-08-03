@@ -559,18 +559,56 @@ public static class HostValidation
     /// the data, so "is it non-empty" cannot answer this.
     public static string? CheckImported(string[]? imported, string? source)
     {
-        if (imported is null || imported.Length == 0)
+        // The cap is on what ARRIVED, before filtering: it bounds the payload,
+        // and a caller sending ten thousand junk keys should be refused rather
+        // than quietly filtered down to nothing.
+        if (imported is not null && imported.Length > ImportKeys.MaxKeys)
+            return "imported_too_many";
+
+        var known = KnownImported(imported);
+
+        if (known is null || known.Length == 0)
             // No marks and no source is an ordinary listing. A source with no
             // marks is an import the owner has fully reviewed — also fine.
             return source is null || ImportSources.IsKnown(source)
                 ? null
                 : "import_source_invalid";
 
-        if (imported.Length > ImportKeys.MaxKeys) return "imported_too_many";
-        if (imported.Any(k => !ImportKeys.All.Contains(k))) return "imported_unknown_field";
         if (!ImportSources.IsKnown(source)) return "import_source_invalid";
         return null;
     }
+
+    /// The marks worth storing. An unrecognised key is DROPPED here rather
+    /// than rejected by the check above, and the asymmetry with the callback
+    /// (`ImportValidation.CheckCallback`, which still refuses one) is the
+    /// point:
+    ///
+    /// The callback is where the vocabulary is ASSERTED — an external pipeline
+    /// naming a field it filled. A key we do not know there means the pipeline
+    /// and this API disagree about what exists, and it must fail loudly before
+    /// anything is written.
+    ///
+    /// The owner's PUT only ECHOES marks this API itself wrote and handed back
+    /// on the GET. So an unknown key here cannot be a client inventing a claim
+    /// — it can only be a vocabulary that shrank underneath a stored document.
+    /// That is not hypothetical: ADR-034 renamed `copy` to `description` and
+    /// accepted a re-seed as the cost, which covered the sample homes but not
+    /// owners' in-flight drafts. Every draft imported before that rename came
+    /// back carrying `copy`, and rejecting it made the listing permanently
+    /// unsaveable — the owner retypes a description, hits Continue, and loses
+    /// the lot to a 400 naming a field they have never heard of, with no path
+    /// out of it from the UI.
+    ///
+    /// Dropping costs nothing an owner wrote. A mark is review state — "nobody
+    /// has looked at this value yet" — and a mark naming a field that no longer
+    /// exists is already inert: it maps to no step, renders no glyph and gates
+    /// nothing. This is not the repair D8 refuses for rich text, where repair
+    /// would silently delete an owner's words; here there are no words, and the
+    /// stale mark clears itself on the first save.
+    public static string[]? KnownImported(string[]? imported) =>
+        // Null and empty are DIFFERENT: null is "never imported", empty is
+        // "imported and fully reviewed". Filtering must not collapse them.
+        imported is null ? null : imported.Where(ImportKeys.All.Contains).ToArray();
 
     /// Blocks must be well-formed, non-overlapping among themselves, and must
     /// not collide with a hold the booking flow is still holding. The overlap

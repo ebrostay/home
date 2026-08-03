@@ -32,7 +32,6 @@ import { RichTextEditor } from "@/components/host/fields/RichTextEditor";
 import { PhotoPicker } from "@/components/host/fields/PhotoPicker";
 import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
-import { Lightbox } from "@/components/detail/Lightbox";
 import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
 import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
@@ -274,7 +273,6 @@ export default function DesignPage() {
     }).format(d);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [propertyType, setPropertyType] = useState("all");
   const [stayRange, setStayRange] = useState<DateRange | undefined>({
     from: new Date(2026, 7, 10),
@@ -712,55 +710,13 @@ export default function DesignPage() {
           window animates open with the flight, closing the same way in
           reverse. The caption bar is reserved for a photo description field
           that does not exist yet; the counter carries the numbering. The
-          decision trail is §6 of the gallery lightbox spec; the YARL-driven{" "}
-          <code>Gallery</code> stays in the tree as the kept variant.
+          decision trail is §6 of the gallery lightbox spec. This is the only
+          lightbox in the codebase — the YARL pair it was judged against was
+          removed once the referenced-photo flow moved over too.
         </p>
         <div className="mt-6 max-w-4xl">
           <FancyboxMosaic photos={GALLERY_PHOTOS} hasFloorplan={false} />
         </div>
-      </section>
-
-      {/* Lightbox — YARL, still shipped for description-referenced photos */}
-      <section className="mt-14">
-        <div className="ledger-rule"><span>lightbox</span></div>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          The same eight photos. Carousel, pinch/scroll zoom with pan,
-          thumbnail strip, counter, and arrow-key and Esc handling. No
-          captions render — the captions plugin is wired in, but{" "}
-          <code>PropertyPhoto</code> has no caption field yet, and wiring one
-          up is deferred with the rest of the photo-to-plan model; the plugin
-          is pre-wired now so landing that field later is a projection
-          change and nothing else. The fixed panel bottom-right is a
-          stand-in for the floor-plan mini-map, drawn through the{" "}
-          <code>overlay</code> slot to prove the position is usable.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          {GALLERY_PHOTOS.map((photo, i) => (
-            <button
-              key={photo.url}
-              type="button"
-              onClick={() => setLightboxIndex(i)}
-              className="overflow-hidden rounded-(--radius-control) border border-line"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.cardUrl ?? photo.url}
-                alt=""
-                className="h-20 w-28 object-cover"
-              />
-            </button>
-          ))}
-        </div>
-        <Lightbox
-          photos={GALLERY_PHOTOS}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          overlay={(i) => (
-            <div className="absolute bottom-28 right-4 rounded-(--radius-card) bg-white/95 px-4 py-3 text-[0.8125rem] font-semibold text-[#15251f] shadow-(--shadow-card)">
-              floor plan slot · photo {i + 1}
-            </div>
-          )}
-        />
       </section>
 
       {/* Description editor */}

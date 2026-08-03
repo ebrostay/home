@@ -298,11 +298,21 @@ shipped `FancyboxMosaic`):
 The €29 Single licence was purchased 2026-08-03 (no key or activation
 exists; holding it is the whole obligation), the spike branch was merged,
 and `property/page.tsx` now opens the mosaic through `FancyboxMosaic`.
-`Gallery.tsx`/`Lightbox.tsx` remain in the tree as the YARL variant: the
-referenced-photo flow still opens through `Lightbox.tsx`, and §6.1's
-full-bleed-versus-letterbox observation still describes the difference
-between the two — it was judged acceptable on the real page rather than
-argued about.
+§6.1's full-bleed-versus-letterbox observation still describes the
+difference between the two libraries — it was judged acceptable on the
+real page rather than argued about.
+
+YARL was then removed entirely (2026-08-03, same day): once the mosaic
+shipped on Fancybox, `Gallery.tsx` had zero call sites and the hedge it
+represented was already spent. The referenced-photo flow moved to a
+`showPhoto` helper on `FancyboxMosaic` — `Fancybox.show()`, no `thumbEl`,
+no zoom, which is honest for a trigger that is a text chip and not a
+thumbnail. `Gallery.tsx`, `Lightbox.tsx`, `slidesFor`, the
+`.ebrostay-lightbox` theming and the `yet-another-react-lightbox`
+dependency are gone; the e2e interaction test now drives the Fancybox
+mosaic. What D4's overlay slot promised (the floor-plan mini-map, §7)
+will be rebuilt on Fancybox when that model lands — finding 2 above
+proved the `getContainer()` + `createPortal` pattern works.
 
 ## 7. What this unblocks
 

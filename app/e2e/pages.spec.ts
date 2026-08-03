@@ -852,53 +852,39 @@ test("staticwebapp.config.json does not redirect / at the edge", () => {
 // eight photos from public/brand with no fixture and no seeded data behind
 // it.
 //
-// YARL mounts through a React portal into document.body (confirmed in
-// node_modules/yet-another-react-lightbox/dist/index.js — Portal() calls
-// createPortal(..., root || document.body)), so once open its markup —
-// counter, container, the overlay slot — is NOT a descendant of the design
-// page's "lightbox" <section>. Only the eight trigger thumbnails live there;
-// everything after the click is queried from `page`, not from that section.
+// Fancybox builds its dialog at document.body, so once open its markup —
+// counter, carousel, thumbnail strip — is NOT a descendant of the design
+// page's gallery <section>. Only the trigger tiles live there; everything
+// after the click is queried from `page`, not from that section.
 test("the lightbox opens, advances and closes", async ({ page }) => {
   await stubBackend(page);
   await page.goto("/en/design", { waitUntil: "networkidle" });
 
-  // Anchored on the section's own heading, not on a `hasText: "lightbox"`
-  // filter over the whole section: the "gallery (current)" section above this
-  // one also says "lightbox" in its prose (it points at the spec that
-  // replaced its old grid dialog), so that filter resolves to two sections.
-  // The heading itself is exact.
-  const lightboxSection = page.locator("section").filter({
-    has: page.locator(".ledger-rule", { hasText: /^lightbox$/ }),
+  // Anchored on the section's own heading, which is exact; the mosaic's
+  // trigger tiles are `<a data-fancybox>` anchors, Fancybox's bind contract.
+  const gallerySection = page.locator("section").filter({
+    has: page.locator(".ledger-rule", { hasText: /^gallery \(as shipped\)$/ }),
   });
-  await expect(lightboxSection).toHaveCount(1);
+  await expect(gallerySection).toHaveCount(1);
 
-  // Third thumbnail (index 2) — opens the lightbox on photo 3 of 8.
-  await lightboxSection.getByRole("button").nth(2).click();
+  // Third tile (index 2) — opens the lightbox on photo 3 of 8.
+  await gallerySection.locator("a[data-fancybox]").nth(2).click();
 
-  // YARL's counter plugin renders `{currentIndex + 1} / {slides.length}`
-  // with its default "/" separator (dist/plugins/counter/index.js) — this is
-  // that library default, not a value chosen to make the test pass.
-  const counter = page.locator(".yarl__counter");
-  await expect(counter).toHaveText("3 / 8");
+  // Fancybox's counter renders `{page + 1}/{pages}` with no spaces around
+  // the "/" (dist/fancybox — the f-counter template) — this is the library
+  // default, not a value chosen to make the test pass.
+  const counter = page.locator(".f-counter");
+  await expect(counter).toHaveText("3/8");
 
-  // A keydown dispatched at `document` would not reach the lightbox — it
-  // listens on its own container, which takes focus while open (confirmed in
-  // dist/index.js). page.keyboard.press targets whatever element currently
-  // has focus, which is that container, so this reaches the real handler.
+  // Fancybox binds its keyboard map at document level while open, so the
+  // press reaches it regardless of which element holds focus.
   await page.keyboard.press("ArrowRight");
-  await expect(counter).toHaveText("4 / 8");
-
-  // The overlay slot (render.controls in components/detail/Lightbox.tsx) is a
-  // zero-argument function — YARL hands it no index. It learns the current
-  // photo only through the `on.view` callback wired to local state. This is
-  // the assertion that notices if that wiring silently breaks.
-  await expect(page.getByText("floor plan slot · photo 4")).toBeVisible();
+  await expect(counter).toHaveText("4/8");
 
   await page.keyboard.press("Escape");
 
-  // The close animation runs on `animation.fade` (250ms by default —
-  // `animation.swipe`, 500ms, governs slide-to-slide, not closing); a
-  // retrying web-first assertion, not an immediate read, is what makes this
-  // deterministic.
+  // The close runs a 350 ms zoom-back tween before the dialog is destroyed;
+  // a retrying web-first assertion, not an immediate read, is what makes
+  // this deterministic.
   await expect(counter).toHaveCount(0);
 });

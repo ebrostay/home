@@ -57,11 +57,8 @@ type Sized = { url: string; cardUrl?: string | null; detailUrl?: string | null }
  * (`PhotoPipeline.Encode` computes it and discards it) and collapsing
  * candidates that turn out to be the same width, which is a schema change
  * across the document, both projections and the summary's flattened cover
- * fields. Deliberately deferred. The gallery control has now been rebuilt (see
- * `components/detail/Lightbox.tsx`) and this is still blocked on the same
- * thing: real per-variant widths on the photo record. It now has two
- * consumers waiting on it — these descriptors, and `slidesFor` below, which
- * cannot build a YARL `srcSet` without heights either.
+ * fields. Deliberately deferred; these descriptors are the consumer waiting
+ * on it.
  */
 export function srcSet(photo: Sized): string | undefined {
   const entries = [
@@ -93,12 +90,6 @@ export const SIZES = {
   /** The four supporting tiles beside it, and the dialog's two-column grid.
    *  Both land near a quarter of the viewport. */
   tile: "(min-width: 40rem) 25vw, 100vw",
-  /** The lightbox draws one photo across the whole viewport. This used to say
-   *  `(min-width: 28rem) 28rem, 92vw`, describing `ui/Dialog`'s fixed
-   *  `w-[min(92vw,28rem)]` box — which is why "all photos" opened into a
-   *  448 px window on a 1280 px screen and got SMALLER the more you asked to
-   *  see. The box is gone; so is the cap. */
-  lightbox: "100vw",
 } as const;
 
 /** Below this, resizing costs a decode and an encode to save nothing. */
@@ -196,40 +187,8 @@ async function decode(file: File): Promise<ImageBitmap | null> {
   }
 }
 
-/** One slide as the lightbox wants it. Deliberately not YARL's `Slide` type:
- *  `lib/` stays free of component dependencies so vitest can run it in node. */
-export type LightboxSlide = { src: string; alt: string };
-
-/**
- * `PropertyPhoto`s as lightbox slides.
- *
- * One source per slide, not a `srcSet`. YARL's `ImageSource` requires a real
- * `width` AND `height` per candidate, and we store neither — `PhotoPipeline.
- * Encode` computes each variant's true width and throws it away, which is the
- * same gap behind the descriptor bug documented on `srcSet` above. Inventing
- * numbers here would put a second wrong measurement in the codebase to keep
- * the first one company.
- *
- * So: the `detail` variant (1600 px long edge), falling back to `url` for
- * photos that predate the pipeline. Sharp on any phone and on a 1280 px
- * desktop; soft only when zoomed hard on a very large display. When the real
- * dimensions are stored, this grows a `srcSet` array and nothing else moves.
- *
- * `alt` is a callback rather than a string because this module is pure — see
- * the test file for why importing next-intl here is not an option.
- */
-export function slidesFor(
-  photos: readonly Sized[],
-  alt: (n: number, total: number) => string,
-): LightboxSlide[] {
-  return photos.map((photo, i) => ({
-    src: slideSrc(photo),
-    alt: alt(i + 1, photos.length),
-  }));
-}
-
-/** The one file the lightbox will ask for. Exported so the gallery can warm
- *  it before the visitor clicks — a mosaic tile's `srcset` usually settles on
- *  `card`, not this, so "the slide is already decoded" is only true if
+/** The one file the lightbox will ask for — Fancybox's slide src, and the
+ *  file the mosaic warms on hover: a tile's `srcset` usually settles on
+ *  `card`, not this, so "the slide is already cached" is only true if
  *  somebody makes it true. */
 export const slideSrc = (photo: Sized): string => photo.detailUrl ?? photo.url;

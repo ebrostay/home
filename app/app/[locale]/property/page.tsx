@@ -28,12 +28,11 @@ import { Button } from "@/components/ui/Button";
 import { RichText } from "@/components/ui/RichText";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { BookingPanel } from "@/components/detail/BookingPanel";
-/* The mosaic opens through Fancybox (licensed 2026-08-03) — judged on this
-   page against the YARL Lightbox and adopted. `Gallery` remains in the tree
-   as the YARL-driven variant; the referenced-photo lightbox below still
-   uses YARL's `Lightbox` directly. */
-import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
-import { Lightbox } from "@/components/detail/Lightbox";
+/* Both lightbox surfaces are Fancybox (licensed 2026-08-03): the mosaic
+   opens the gallery group, and `showPhoto` opens a description-referenced
+   photo on its own. YARL and its Gallery/Lightbox pair were removed once
+   this page stopped needing them — spec §6.2 records the decision. */
+import { FancyboxMosaic, showPhoto } from "@/components/detail/FancyboxMosaic";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
 import { PreviewNotice } from "@/components/detail/PreviewNotice";
@@ -144,15 +143,14 @@ function DetailBody({
 
   // `hiddenFromGallery` photos exist only to be referenced from the
   // description (Task 11) — they must never show up in the mosaic or the
-  // "all photos" overlay, even though the document below can still resolve
+  // "all photos" group, even though the document below can still resolve
   // and display them itself.
   //
-  // MUST be memoized on `p.photos` and nothing else. `Gallery` hands this
-  // straight to `<Lightbox photos={...}>`, and Lightbox's own `photos` prop
-  // doc explains why a fresh array identity on every render of this
-  // component (this one re-renders often — `copied`, `recentre`, map
-  // selection, etc. all live here) would reset the open lightbox back to its
-  // starting slide out from under whoever is navigating it.
+  // Still memoized on `p.photos`, though the stakes dropped with YARL's
+  // removal: the open Fancybox reads the DOM it was bound to, not this
+  // array, so a fresh identity no longer resets anyone's slide — it only
+  // re-renders every tile on each of this component's frequent state
+  // changes (`copied`, `recentre`, map selection all live here).
   const gallery = useMemo(
     () => p.photos.filter((ph) => !ph.isFloorplan && !ph.hiddenFromGallery),
     [p.photos],
@@ -290,29 +288,19 @@ function DetailBody({
     el.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
-  // A photo chip/figure in the description opens a lightbox for that one
-  // photo — deliberately not the mosaic's "all photos" overlay, which now
-  // excludes `hiddenFromGallery` photos: a description-only photo has to
-  // stay viewable when the text points at it, just never discoverable by
+  // A photo chip/figure in the description opens a single-photo lightbox —
+  // deliberately not the mosaic's "all photos" group, which now excludes
+  // `hiddenFromGallery` photos: a description-only photo has to stay
+  // viewable when the text points at it, just never discoverable by
   // browsing the gallery. Resolved against the FULL photo list (including
   // floorplan and hidden ones), matching what the document itself can
-  // reference. It's its own one-item lightbox rather than an index into
-  // `gallery`, because a referenced photo may be `hiddenFromGallery` and so
-  // absent from that array entirely.
-  const [referenced, setReferenced] = useState<PropertyPhoto | null>(null);
+  // reference. `showPhoto` opens imperatively, so nothing here holds state
+  // for it — the referential-stability contract that used to live on this
+  // list died with the props-driven lightbox it fed.
   const openGalleryAt = (url: string) => {
     const photo = p.photos.find((ph) => ph.url === url);
-    if (photo) setReferenced(photo);
+    if (photo) showPhoto(photo);
   };
-  // Same referential-stability contract as `gallery` above: built inline this
-  // would be a fresh one-element array on every render of a component that
-  // re-renders often while the lightbox sits open, which resets its zoom
-  // (there is nowhere else to reset to — a one-slide lightbox has no other
-  // index) every time something unrelated on the page changes state.
-  const referencedPhotos = useMemo(
-    () => (referenced ? [referenced] : []),
-    [referenced],
-  );
 
   const booked: DateRange[] = useMemo(
     () =>
@@ -784,12 +772,6 @@ function DetailBody({
           searched={searched}
         />
       </div>
-
-      <Lightbox
-        photos={referencedPhotos}
-        index={referenced ? 0 : null}
-        onClose={() => setReferenced(null)}
-      />
     </main>
   );
 }

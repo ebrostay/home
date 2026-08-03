@@ -110,6 +110,19 @@ function CoverImg({
   );
 }
 
+/** Open ONE photo programmatically — the description's photo chips, where
+ *  the trigger is text. `Fancybox.show()` has no `thumbEl`, so there is no
+ *  zoom — which is honest here: a chip is not a thumbnail, there is nothing
+ *  on screen to zoom out of, and the fade is the animation that does not
+ *  pretend otherwise. This helper exists so callers never touch the library
+ *  directly; this file stays the one that knows which lightbox we ship. */
+export function showPhoto(photo: PropertyPhoto) {
+  Fancybox.show(
+    [{ src: slideSrc(photo), thumbSrc: photo.cardUrl ?? photo.url }],
+    { mainClass: "ebrostay-mosaic" },
+  );
+}
+
 export function FancyboxMosaic({
   photos,
   hasFloorplan,

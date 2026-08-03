@@ -235,10 +235,22 @@
       "title": "Publica tu vivienda.",
       "lead": "Cualquier persona con una cuenta puede publicar en Ebrostay. Tú pones la vivienda; nosotros el puente hacia las empresas que la necesitan — inquilinos de media estancia, verificados antes de llegar a ti.",
       "steps": [
-        { "title": "Inicia sesión", "copy": "Crea una cuenta o entra con la que ya tienes. Lleva un minuto y no cuesta nada." },
-        { "title": "Describe la vivienda", "copy": "Fotos, precio mensual y los meses libres. Nuestra importación puede leer un anuncio existente y rellenar casi todo por ti." },
-        { "title": "La revisamos", "copy": "Nuestro equipo revisa cada anuncio antes de publicarlo — la dirección, las fotos y que ambos idiomas se lean bien." },
-        { "title": "Recibe solicitudes", "copy": "Gestiona disponibilidad y solicitudes desde tu panel. Tú confirmas el precio final en cada una." }
+        {
+          "title": "Inicia sesión",
+          "copy": "Crea una cuenta o entra con la que ya tienes. Lleva un minuto y no cuesta nada."
+        },
+        {
+          "title": "Describe la vivienda",
+          "copy": "Fotos, precio mensual y los meses libres. Nuestra importación puede leer un anuncio existente y rellenar casi todo por ti."
+        },
+        {
+          "title": "La revisamos",
+          "copy": "Nuestro equipo revisa cada anuncio antes de publicarlo — la dirección, las fotos y que ambos idiomas se lean bien."
+        },
+        {
+          "title": "Recibe solicitudes",
+          "copy": "Gestiona disponibilidad y solicitudes desde tu panel. Tú confirmas el precio final en cada una."
+        }
       ],
       "cta": "Inicia sesión para publicar tu vivienda",
       "ctaSignedIn": "Ir a tu panel"
@@ -1034,17 +1046,6 @@
     "allHomes": "Todas las viviendas en Zaragoza",
     "allPhotos": "Ver las {count} fotos",
     "floorPlan": "Plano",
-    "lightbox": {
-      "previous": "Foto anterior",
-      "next": "Foto siguiente",
-      "close": "Cerrar",
-      "zoomIn": "Acercar",
-      "zoomOut": "Alejar",
-      "thumbnails": "Miniaturas",
-      "showThumbnails": "Mostrar miniaturas",
-      "hideThumbnails": "Ocultar miniaturas",
-      "gallery": "Galería de fotos"
-    },
     "share": "Compartir",
     "bedrooms": "Habitaciones",
     "bathrooms": "Baños",

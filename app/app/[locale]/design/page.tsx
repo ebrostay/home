@@ -717,6 +717,24 @@ export default function DesignPage() {
         <div className="mt-6 max-w-4xl">
           <FancyboxMosaic photos={GALLERY_PHOTOS} hasFloorplan={false} />
         </div>
+        <p className="mt-10 max-w-2xl text-sm text-muted">
+          The same mosaic at every count it lays out differently — the live
+          listings carry one photo each, so without this bench only the
+          one-photo band would ever be seen. Each count packs the full band:
+          one companion at full height, two stacked, three with a double-width
+          tile under two squares, four as the 2×2 above.
+        </p>
+        {[1, 2, 3, 4].map((count) => (
+          <div key={count} className="mt-6 max-w-4xl">
+            <p className="mb-2 text-xs text-muted">
+              {count} {count === 1 ? "photo" : "photos"}
+            </p>
+            <FancyboxMosaic
+              photos={GALLERY_PHOTOS.slice(0, count)}
+              hasFloorplan={false}
+            />
+          </div>
+        ))}
       </section>
 
       {/* Description editor */}

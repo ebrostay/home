@@ -232,12 +232,18 @@ export function FancyboxMosaic({
   const tiles = rest.slice(0, 4);
   const overflow = rest.slice(4);
 
-  const layout =
-    tiles.length >= 3
-      ? "sm:grid-cols-[2fr_1fr_1fr] sm:grid-rows-2"
-      : tiles.length >= 1
-        ? "sm:grid-cols-2"
-        : "";
+  /* One packed arrangement per tile count — every count fills the band with
+     no empty cell: one companion sits beside the hero at full height, two
+     stack in a right-hand column, three put a double-width tile under two
+     squares, four fill the classic 2x2. The hero keeps the 2fr column
+     throughout so its dominance reads the same at every count. */
+  const layout = [
+    "",
+    "sm:grid-cols-[2fr_1fr]",
+    "sm:grid-cols-[2fr_1fr] sm:grid-rows-2",
+    "sm:grid-cols-[2fr_1fr_1fr] sm:grid-rows-2",
+    "sm:grid-cols-[2fr_1fr_1fr] sm:grid-rows-2",
+  ][tiles.length];
 
   /* No data-caption anywhere: the bottom bar is the caption slot, and a
      "Photo n of N" there is noise the toolbar counter already carries.
@@ -255,20 +261,28 @@ export function FancyboxMosaic({
         <Tile
           photo={hero}
           alt={label(1)}
-          className={tiles.length >= 3 ? "sm:row-span-2" : ""}
+          className={tiles.length >= 2 ? "sm:row-span-2" : ""}
           sizes={SIZES.hero}
           onWarm={() => warm(hero)}
         />
-        {tiles.map((photo, i) => (
-          <Tile
-            key={photo.url}
-            photo={photo}
-            alt={label(i + 2)}
-            className="hidden sm:block"
-            sizes={SIZES.tile}
-            onWarm={() => warm(photo)}
-          />
-        ))}
+        {tiles.map((photo, i) => {
+          /* Auto-placement puts the third of three tiles at row 2, column 2;
+             the span stretches it across both right columns. */
+          const wide = tiles.length === 3 && i === 2;
+          return (
+            <Tile
+              key={photo.url}
+              photo={photo}
+              alt={label(i + 2)}
+              className={wide ? "hidden sm:col-span-2 sm:block" : "hidden sm:block"}
+              /* `tile` declares a quarter of the viewport; the wide tile and
+                 the third-width tiles of the 2- and 3-photo bands draw wider
+                 than that, and `hero` is the next measured step up. */
+              sizes={wide || tiles.length < 3 ? SIZES.hero : SIZES.tile}
+              onWarm={() => warm(photo)}
+            />
+          );
+        })}
         {overflow.map((photo, i) => (
           /* Slides without tiles: present for the group and the thumbnail
              strip, invisible on the page. Their open has nothing to zoom

@@ -28,7 +28,10 @@ import { Button } from "@/components/ui/Button";
 import { RichText } from "@/components/ui/RichText";
 import type { DateRange } from "@/components/ui/DateRangePicker";
 import { BookingPanel } from "@/components/detail/BookingPanel";
-import { Gallery } from "@/components/detail/Gallery";
+/* SPIKE ONLY — spike/fancybox-comparison, not for merge: the shipped Gallery
+   is swapped for the Fancybox-driven mosaic so its look and feel can be
+   judged on the real page. `Gallery` remains the shipped component. */
+import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
 import { Lightbox } from "@/components/detail/Lightbox";
 import { NeighbourhoodMap, type NeighbourhoodMapDestination } from "@/components/detail/NeighbourhoodMap";
 import { OwnerBar } from "@/components/detail/OwnerBar";
@@ -412,7 +415,7 @@ function DetailBody({
       </div>
 
       <div className="mt-6">
-        <Gallery photos={gallery} hasFloorplan={!!floorplan} />
+        <FancyboxMosaic photos={gallery} hasFloorplan={!!floorplan} />
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_minmax(0,380px)] lg:items-start">

@@ -635,6 +635,19 @@
   animation-delay: calc(var(--cell-index) * 35ms);
 }
 
+/* Fancybox (`.ebrostay-mosaic` is our mainClass): on touch-primary devices
+   the prev/next arrows are noise — swiping is the gesture everyone reaches
+   for, and the thumbnail strip below already shows there is more to see.
+   Keyed on the pointer, not the viewport width: a narrow desktop window
+   still has a mouse and keeps its arrows. The buttons are absolutely
+   positioned overlays, so hiding them reclaims no layout and shifts
+   nothing. */
+@media (hover: none) and (pointer: coarse) {
+  .ebrostay-mosaic .f-button.is-arrow {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .month-cell-enter { animation: none; }
   .skeleton::after { animation: none; }

@@ -132,7 +132,17 @@ export function Lightbox({
         gap: 8,
         padding: 0,
         vignette: false,
+        /* The strip is how you reach photo 14 without pressing next thirteen
+           times, so it starts open. But it eats ~80 px of a phone's screen,
+           and someone studying one room wants the room, not the contact
+           sheet — hence a toggle rather than a fixed choice either way. */
+        showToggle: true,
       }}
+      /* Clicking away from the photo closes it. The backdrop is dead space
+         that looks dismissible, and a visitor who has zoomed into a corner of
+         a kitchen should not have to find the X. Esc and the pull gestures
+         still work; this is one more way out, not a replacement. */
+      controller={{ closeOnBackdropClick: true }}
       /* `scrollToZoom` makes a trackpad pinch zoom the photo instead of
          scrolling the page behind it — the gesture a laptop user will try
          first. `maxZoomPixelRatio: 2` is the honest ceiling for a 1600 px

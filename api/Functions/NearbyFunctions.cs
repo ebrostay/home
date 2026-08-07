@@ -136,9 +136,17 @@ public class NearbyFunctions(
         if (loadError is not null) return loadError;
         if (doc is null) return new NotFoundResult();
 
+        // A degraded listing (band derivation failed or never ran) shows no
+        // public map, so no route is ever requested for it — a hand-crafted
+        // request against such a listing must get the same 404 an unknown
+        // entry id gets, never a hint that the listing exists but lacks a
+        // band. Checked before RouteCache is touched, same as the unknown-id
+        // 404 below.
+        if (doc.Band is null) return new NotFoundResult();
+
         try
         {
-            var route = await cache.GetAsync(doc, entryId, profile,
+            var route = await cache.GetBandAsync(doc, entryId, profile,
                 req.HttpContext.RequestAborted);
             // An unknown entry id 404s WITHOUT having touched ORS — RouteCache
             // checks the document before it checks the cache or calls ORS.
@@ -150,9 +158,11 @@ public class NearbyFunctions(
                 view is ListingView.OwnerPreview ? "no-store" : "public, max-age=86400";
             return new OkObjectResult(new
             {
-                polyline = route.Polyline,
-                metres = route.Metres,
-                seconds = route.Seconds,
+                minutes = new[] { route.MinMinutes, route.MaxMinutes },
+                metres = new[] { route.MinMetres, route.MaxMetres },
+                trunk = route.TrunkPolyline,
+                stubA = route.StubAPolyline,
+                stubB = route.StubBPolyline,
             });
         }
         catch (OrsUnavailableException)
@@ -208,9 +218,18 @@ public class NearbyFunctions(
         if (loadError is not null) return loadError;
         if (doc is null) return new NotFoundResult();
 
+        // Same guard as `PropertyNearbyRoute`: a degraded listing shows no
+        // public map and so never offers this lookup either — a hand-crafted
+        // request gets the same 404, before ORS is ever touched.
+        if (doc.Band is null) return new NotFoundResult();
+
         try
         {
-            var route = await ors.RouteAsync(new GeoPoint(doc.Lat, doc.Lng),
+            // 3 ORS calls per uncached band route (see `RouteCache.ComputeBandAsync`)
+            // — OrsBudget already caps and fails closed; the browser-side
+            // cache (app/lib/places.ts) is what keeps real usage flat, not
+            // this endpoint.
+            var route = await cache.ComputeBandAsync(doc,
                 new GeoPoint(toLat, toLng), profile, req.HttpContext.RequestAborted);
 
             // `private`, not `public`: the URL carries a guest's own
@@ -222,9 +241,11 @@ public class NearbyFunctions(
                 view is ListingView.OwnerPreview ? "no-store" : "private, max-age=86400";
             return new OkObjectResult(new
             {
-                polyline = route.Polyline,
-                metres = route.Metres,
-                seconds = route.Seconds,
+                minutes = new[] { route.MinMinutes, route.MaxMinutes },
+                metres = new[] { route.MinMetres, route.MaxMetres },
+                trunk = route.TrunkPolyline,
+                stubA = route.StubAPolyline,
+                stubB = route.StubBPolyline,
             });
         }
         catch (OrsUnavailableException)

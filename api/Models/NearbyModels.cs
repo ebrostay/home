@@ -50,6 +50,22 @@ public record NearbyRouteDoc(
     int Seconds,          // provenance only — the entry's Reach is displayed
     string FetchedAt);
 
+/// Merged band route (ADR-041 point 5): a fan of two boundary-sample routes
+/// that share one drawn trunk once they converge. Same container/partition as
+/// `NearbyRouteDoc` (so `RouteCache.DropAsync` keeps covering it) but its own
+/// id prefix ("band-…"), so an old-shape `NearbyRouteDoc` can never be read
+/// back as one of these.
+public record BandRouteDoc(
+    string Id,            // "band-{entryId}-{profile}"
+    string PropertyId,    // partition key
+    string Profile,
+    string TrunkPolyline, // "" when the boundary routes never converge
+    string StubAPolyline,
+    string StubBPolyline,
+    int MinMinutes, int MaxMinutes,   // outward-rounded over door + both ends
+    int MinMetres, int MaxMetres,     // min/max over all three, rounded to 10 m outward
+    string FetchedAt);
+
 /// Cached Overpass answer for one rounded cell + group. POIs do not move, so
 /// this is cacheable; the ORS matrix is NOT cached, because it must run against
 /// the true pin or the distances stop being honest.

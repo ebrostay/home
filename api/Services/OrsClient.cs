@@ -55,6 +55,14 @@ public sealed class OrsClient(
     private static bool FixturesUnroutable =>
         Environment.GetEnvironmentVariable("ORS_FIXTURES_UNROUTABLE") == "1";
 
+    /// The one canned fixture route. Exposed so `RouteCache.ComputeBandAsync`'s
+    /// own band-fixture short-circuit — which must return without calling ORS
+    /// (even the fixture path here) so the three-route merge stays boring and
+    /// deterministic — builds its trunk from the same polyline this method
+    /// answers with under `ORS_FIXTURES=1`, rather than a second copy that
+    /// could drift from this one.
+    internal const string FixtureRoutePolyline = "cse}Fbq_DcBwB{@kCkCcBoAkC";
+
     public async Task<NearbyReach?[]> MatrixAsync(
         GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile,
         CancellationToken ct)
@@ -166,7 +174,8 @@ public sealed class OrsClient(
     }
 
     public async Task<OrsRoute> RouteAsync(
-        GeoPoint from, GeoPoint to, string profile, CancellationToken ct)
+        GeoPoint from, GeoPoint to, string profile, CancellationToken ct,
+        bool simplify = true)
     {
         if (Fixtures)
         {
@@ -179,7 +188,7 @@ public sealed class OrsClient(
             // map UI work look broken. `app/lib/nearby.test.ts` decodes the
             // ORIGINAL reference vector on purpose, as a decoder correctness
             // test, and is untouched.
-            return new OrsRoute("cse}Fbq_DcBwB{@kCkCcBoAkC", 340, 260);
+            return new OrsRoute(FixtureRoutePolyline, 340, 260);
         }
 
         if (!await budget.TryConsumeAsync(1, ct))
@@ -193,8 +202,11 @@ public sealed class OrsClient(
                 new[] { to.Lng, to.Lat },
             },
             // Encoded polyline rather than GeoJSON: an order of magnitude
-            // smaller, and these are stored per entry per profile.
-            geometry_simplify = true,
+            // smaller, and these are stored per entry per profile. Band
+            // boundary routes pass simplify: false — a simplified geometry
+            // can drop the exact vertex the two boundary routes converge at,
+            // and RouteSplitter needs their tails to match point-for-point.
+            geometry_simplify = simplify,
         });
 
         using var res = await SendAsync(

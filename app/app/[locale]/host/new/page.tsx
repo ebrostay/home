@@ -77,6 +77,7 @@ import {
   progressAt,
   stepBlockers,
   submitBlockers,
+  suggestedName,
   type StepKey,
 } from "@/lib/wizard";
 import { RequireOwner } from "@/components/host/RequireOwner";
@@ -508,6 +509,14 @@ function NewPropertyContent() {
       return;
     }
     if (!(await persist())) return;
+    // OD-10: the formula name, suggested once the address is behind us — a
+    // proposal like the import's own, never overwriting something typed.
+    // Raw setter, deliberately: this is the page filling the field, not the
+    // owner editing it (same reasoning as `onImportResult` above).
+    if (STEPS[step] === "address") {
+      const suggestion = suggestedName(listing);
+      if (suggestion) setListing((l) => ({ ...l, name: suggestion }));
+    }
     setStep(target);
     setReached((r) => Math.max(r, target));
   };

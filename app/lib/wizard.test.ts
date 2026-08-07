@@ -11,6 +11,7 @@ import {
   progressAt,
   stepBlockers,
   submitBlockers,
+  suggestedName,
 } from "./wizard";
 
 // A listing that would pass every check, to be broken one field at a time.
@@ -201,6 +202,21 @@ describe("progressAt", () => {
     const all = STEPS.map((_, i) => progressAt(i).minutesLeft);
     expect(all[0]).toBeGreaterThan(all[all.length - 1]);
     expect([...all]).toEqual([...all].sort((a, b) => b - a));
+  });
+});
+
+describe("suggestedName (OD-10)", () => {
+  it("suggests the formula for an unnamed listing", () => {
+    const l = { ...blankListing(), address: "Calle de Pedro II el Católico 3",
+      area: { es: "Universidad", en: "University" } };
+    expect(suggestedName(l)).toBe("Pedro II el Católico — Universidad");
+  });
+  it("never overrides a typed name", () => {
+    const l = { ...blankListing(), name: "Mi piso", address: "Gran Vía 2" };
+    expect(suggestedName(l)).toBeNull();
+  });
+  it("suggests nothing without an address", () => {
+    expect(suggestedName(blankListing())).toBeNull();
   });
 });
 

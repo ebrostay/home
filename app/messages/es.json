@@ -634,7 +634,7 @@
       },
       "basics": {
         "name": "Título del anuncio",
-        "nameHint": "Di qué es y dónde está. Es lo primero que se lee en el buscador.",
+        "nameHint": "Es público. Se rellena con la calle y el barrio. Nunca mostramos la dirección exacta a los huéspedes.",
         "type": "Tipo de vivienda",
         "size": "Superficie",
         "bedrooms": "Dormitorios",

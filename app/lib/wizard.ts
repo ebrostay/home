@@ -1,5 +1,6 @@
 import type { HostListing, HostPricing } from "@/lib/api";
 import { blockersOf, untranslated, type Blocker } from "@/lib/listing";
+import { formulaName } from "@/lib/publicName";
 import { isEmptyDoc } from "@/lib/rich-text";
 
 // ============================================================
@@ -83,6 +84,15 @@ export function blankListing(): HostListing {
     imported: null,
     importSource: null,
   };
+}
+
+/** OD-10: the suggested public name, or null when there is nothing to suggest
+ *  or the owner already typed one. Applied once, on leaving the address step
+ *  — never on every keystroke, and never over a name that is already there. */
+export function suggestedName(listing: HostListing): string | null {
+  if (listing.name.trim() !== "") return null;
+  const s = formulaName(listing.address, listing.area?.es ?? null);
+  return s === "" ? null : s;
 }
 
 /** …and the pricing block beside it. `maxStayMonths` and the platform

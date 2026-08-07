@@ -634,7 +634,7 @@
       },
       "basics": {
         "name": "Listing title",
-        "nameHint": "Say what it is and where. It is the first thing read in search.",
+        "nameHint": "This is public. It fills in from the street and neighbourhood. Guests never see the exact address.",
         "type": "Property type",
         "size": "Floor area",
         "bedrooms": "Bedrooms",

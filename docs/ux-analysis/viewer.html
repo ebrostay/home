@@ -1,0 +1,568 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listing-page structure maps — Ebrostay vs competition</title>
+<style>
+  :root {
+    --page: #f6f8f6; --surface: #ffffff; --ink: #15251f; --body: #3c4a42;
+    --muted: #64746b; --line: #d9e1da; --brand: #1f8a57; --river: #6f9fd8;
+    --shadow: 0 1px 2px rgba(21,37,31,.06), 0 8px 24px rgba(21,37,31,.08);
+    /* pattern palette — muted, ledger-like tints */
+    --c-nav-bg: #eef0ee;      --c-nav-line: #b7c0b8;
+    --c-identity-bg: #e6ebe7; --c-identity-line: #8fa096;
+    --c-media-bg: #e3edf8;    --c-media-line: #7ba3d0;
+    --c-prose-bg: #f3f1e8;    --c-prose-line: #b3a97e;
+    --c-data-bg: #e5f0e9;     --c-data-line: #6fa287;
+    --c-calendar-bg: #d9ecdf; --c-calendar-line: #3f8f63;
+    --c-map-bg: #ddeef0;      --c-map-line: #5b9aa4;
+    --c-commerce-bg: #faeedd; --c-commerce-line: #c98f45;
+    --c-trust-bg: #ece7f3;    --c-trust-line: #937fb8;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --page: #0f1713; --surface: #17211b; --ink: #e8efea; --body: #c3cec7;
+    --muted: #8b988f; --line: #2a362e; --brand: #35a873; --river: #7fa9d9;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --c-nav-bg: #1c2620;      --c-nav-line: #4d5a51;
+    --c-identity-bg: #212d26; --c-identity-line: #66786d;
+    --c-media-bg: #16283a;    --c-media-line: #4f7cad;
+    --c-prose-bg: #2a2717;    --c-prose-line: #8d8355;
+    --c-data-bg: #16301f;     --c-data-line: #4b8a67;
+    --c-calendar-bg: #123b24; --c-calendar-line: #3f9f6b;
+    --c-map-bg: #12333a;      --c-map-line: #4f8f9c;
+    --c-commerce-bg: #362813; --c-commerce-line: #b07f3c;
+    --c-trust-bg: #261e33;    --c-trust-line: #7f6aa8;
+  }}
+  :root[data-theme="light"] {
+    --page: #f6f8f6; --surface: #ffffff; --ink: #15251f; --body: #3c4a42;
+    --muted: #64746b; --line: #d9e1da; --brand: #1f8a57; --river: #6f9fd8;
+    --shadow: 0 1px 2px rgba(21,37,31,.06), 0 8px 24px rgba(21,37,31,.08);
+    --c-nav-bg: #eef0ee;      --c-nav-line: #b7c0b8;
+    --c-identity-bg: #e6ebe7; --c-identity-line: #8fa096;
+    --c-media-bg: #e3edf8;    --c-media-line: #7ba3d0;
+    --c-prose-bg: #f3f1e8;    --c-prose-line: #b3a97e;
+    --c-data-bg: #e5f0e9;     --c-data-line: #6fa287;
+    --c-calendar-bg: #d9ecdf; --c-calendar-line: #3f8f63;
+    --c-map-bg: #ddeef0;      --c-map-line: #5b9aa4;
+    --c-commerce-bg: #faeedd; --c-commerce-line: #c98f45;
+    --c-trust-bg: #ece7f3;    --c-trust-line: #937fb8;
+  }
+  :root[data-theme="dark"] {
+    --page: #0f1713; --surface: #17211b; --ink: #e8efea; --body: #c3cec7;
+    --muted: #8b988f; --line: #2a362e; --brand: #35a873; --river: #7fa9d9;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --c-nav-bg: #1c2620;      --c-nav-line: #4d5a51;
+    --c-identity-bg: #212d26; --c-identity-line: #66786d;
+    --c-media-bg: #16283a;    --c-media-line: #4f7cad;
+    --c-prose-bg: #2a2717;    --c-prose-line: #8d8355;
+    --c-data-bg: #16301f;     --c-data-line: #4b8a67;
+    --c-calendar-bg: #123b24; --c-calendar-line: #3f9f6b;
+    --c-map-bg: #12333a;      --c-map-line: #4f8f9c;
+    --c-commerce-bg: #362813; --c-commerce-line: #b07f3c;
+    --c-trust-bg: #261e33;    --c-trust-line: #7f6aa8;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--body); background: var(--page); overflow: hidden;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ---------- toolbar ---------- */
+  header.bar {
+    position: fixed; inset: 0 0 auto 0; z-index: 40; display: flex;
+    align-items: center; gap: 16px; padding: 10px 16px;
+    background: color-mix(in srgb, var(--page) 88%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .bar h1 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; letter-spacing: -.01em; }
+  .bar h1 small { font-weight: 500; color: var(--muted); margin-left: 8px; font-size: 11px; }
+  .legend { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; margin-left: auto; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid; display: inline-block; }
+  .keys { display: flex; gap: 12px; font-size: 10.5px; color: var(--muted); align-items: center; }
+  .keys svg { vertical-align: -2px; }
+  .btns { display: flex; gap: 6px; }
+  .btns button {
+    font: 600 12px/1 system-ui, sans-serif; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; cursor: pointer;
+  }
+  .btns button:hover { border-color: var(--brand); }
+  .btns button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+  /* ---------- canvas ---------- */
+  #canvas { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+  #canvas.dragging { cursor: grabbing; }
+  #world { position: absolute; transform-origin: 0 0; }
+
+  .artboard { position: absolute; }
+  .abhead { margin-bottom: 10px; width: 320px; }
+  .abhead .name { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+  .abhead .meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .abhead .thesis { font-size: 10.5px; color: var(--body); margin-top: 6px; max-width: 320px; line-height: 1.4; }
+  .sheet {
+    position: relative; width: 320px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow);
+  }
+  .lane { position: absolute; border: 1px dashed transparent; border-radius: 4px; }
+  .lane.sticky { border-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .lane.sticky::before {
+    content: "⌖ " attr(data-label); position: absolute; top: -14px; left: 0;
+    font: 500 8.5px/1 ui-monospace, Menlo, monospace; color: var(--muted);
+    letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  }
+  .blk {
+    position: absolute; border-radius: 3px; border: 1px solid; padding: 2px 5px;
+    overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 8.5px; line-height: 1.25; letter-spacing: .01em; cursor: default;
+  }
+  .blk b { display: block; font-weight: 700; font-size: 8.5px; color: var(--ink); }
+  .blk span { color: var(--body); opacity: .85; }
+  .blk .exit { position: absolute; right: 3px; bottom: 2px; font-size: 8px; color: var(--muted); font-weight: 600; }
+  .blk:hover { outline: 2px solid var(--brand); outline-offset: 0; z-index: 5; }
+
+  .sat {
+    position: absolute; width: 132px; border-radius: 6px; border: 1.5px dashed;
+    padding: 5px 7px; font-family: ui-monospace, Menlo, monospace; font-size: 8.5px;
+    background: var(--surface); box-shadow: var(--shadow);
+  }
+  .sat b { display: block; color: var(--ink); font-size: 9px; }
+  .sat span { color: var(--muted); }
+  .satlabel { position: absolute; font: 600 8.5px/1 ui-monospace, Menlo, monospace;
+    color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+  svg.wires { position: absolute; overflow: visible; pointer-events: none; }
+  .wire-jump { stroke: var(--brand); fill: none; stroke-width: 1.3; }
+  .wire-open { stroke: var(--river); fill: none; stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .wirehead-jump { fill: var(--brand); } .wirehead-open { fill: var(--river); }
+  .wirelabel { font: 500 8px ui-monospace, Menlo, monospace; fill: var(--muted); }
+
+  #tip {
+    position: fixed; z-index: 60; max-width: 280px; padding: 8px 10px; display: none;
+    background: var(--ink); color: var(--page); border-radius: 7px; font-size: 11.5px;
+    line-height: 1.4; pointer-events: none; box-shadow: var(--shadow);
+  }
+  #tip b { display: block; }
+  #tip .t2 { opacity: .75; font-size: 10px; margin-top: 3px; font-family: ui-monospace, Menlo, monospace; }
+  @media (prefers-reduced-motion: no-preference) {
+    #world { transition: transform .06s linear; }
+  }
+</style>
+
+<header class="bar">
+  <h1>Listing-page structure maps <small>desktop 1280px · scale 1:4 · captured 2026-08-07</small></h1>
+  <div class="legend" id="legend"></div>
+  <div class="keys">
+    <span><svg width="20" height="8"><line x1="0" y1="4" x2="14" y2="4" class="wire-jump"/><polygon points="14,1 20,4 14,7" class="wirehead-jump"/></svg> in-page jump</span>
+    <span><svg width="20" height="8"><line x1="0" y1="4" x2="14" y2="4" class="wire-open"/><polygon points="14,1 20,4 14,7" class="wirehead-open"/></svg> opens overlay</span>
+    <span>↗ leaves page</span>
+  </div>
+  <div class="btns">
+    <button id="zo" aria-label="Zoom out">−</button>
+    <button id="zi" aria-label="Zoom in">+</button>
+    <button id="fit">Fit</button>
+    <button id="theme" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div id="canvas"><div id="world"></div></div>
+<div id="tip" role="status"></div>
+
+<script>
+/* ================================================================
+   DATA — one object per mapped page. See README.md for the schema
+   and the capture procedure. All y/h/x/w in real CSS px at a 1280px
+   viewport; the viewer scales by S.
+   ================================================================ */
+const TYPES = {
+  nav:      'nav / chrome',
+  identity: 'identity',
+  media:    'media',
+  prose:    'prose',
+  data:     'data / facts',
+  calendar: 'calendar',
+  map:      'map / geo',
+  commerce: 'commerce',
+  trust:    'trust',
+};
+
+const PAGES = [
+{
+  id: 'ebrostay', brand: 'Ebrostay v2', capturedAt: '2026-08-07',
+  url: '/en/property?id=pedro1 (deployed v2)',
+  pageHeight: 5000,
+  note: 'Calm ledger: price honest to the day, the description is an instrument (chips drive the map), trust is one badge.',
+  columns: [
+    { id: 'full', x: 0, w: 1280 },
+    { id: 'main', x: 24, w: 828 },
+    { id: 'rail', x: 876, w: 380, sticky: true, label: 'sticky rail' },
+  ],
+  blocks: [
+    { id: 'header',   col: 'full', y: 0,    h: 64,  type: 'nav',      label: 'Header — sticky', note: 'logo · find/manage/how · ES|EN · theme · sign in' },
+    { id: 'back',     col: 'main', y: 100,  h: 26,  type: 'nav',      label: '← All homes', exit: 'results list' },
+    { id: 'title',    col: 'main', y: 150,  h: 140, type: 'identity', label: 'Badges · H1 · area', note: 'Verified + neighbourhood badges, name, location line' },
+    { id: 'gallery',  col: 'main', y: 300,  h: 470, type: 'media',    label: 'Photo mosaic', note: 'Fancybox group · floor-plan pill' },
+    { id: 'facts',    col: 'main', y: 810,  h: 100, type: 'data',     label: 'Key facts', note: '3 bed · 1 bath · 80 m² · sleeps 4 — mono numerals + share' },
+    { id: 'about',    col: 'main', y: 950,  h: 360, type: 'prose',    label: 'About', note: 'rich text; live place chips + photo figures' },
+    { id: 'amen',     col: 'main', y: 1350, h: 200, type: 'data',     label: 'Amenities', note: '2-col icon list' },
+    { id: 'avail',    col: 'main', y: 1590, h: 250, type: 'calendar', label: 'Availability — month-band', note: '12 cells · open/partial/booked legend · open-from date' },
+    { id: 'terms',    col: 'main', y: 1880, h: 330, type: 'data',     label: 'Stay terms' },
+    { id: 'cond',     col: 'main', y: 2250, h: 300, type: 'data',     label: 'Conditions', note: '3-col card grid: deposit, bills, pets, smoking…' },
+    { id: 'addr',     col: 'main', y: 2590, h: 90,  type: 'map',      label: 'Address plate', note: 'show-on-map + copy-to-clipboard' },
+    { id: 'map',      col: 'main', y: 2700, h: 300, type: 'map',      label: 'Neighbourhood map (sticky)', note: 'travel-profile toggle on map · draws routes' },
+    { id: 'nearby',   col: 'main', y: 3030, h: 330, type: 'map',      label: 'Nearby list (conditional)', note: 'rows select → route on the one map' },
+    { id: 'places',   col: 'main', y: 3390, h: 280, type: 'map',      label: 'Your places', note: 'guest’s own saved places, same map' },
+    { id: 'plan',     col: 'main', y: 3710, h: 450, type: 'media',    label: 'Floor plan (conditional)' },
+    { id: 'footer',   col: 'full', y: 4700, h: 300, type: 'nav',      label: 'Footer' },
+    { id: 'price',    col: 'rail', y: 810,  h: 80,  type: 'commerce', label: '950 € / 30 days', note: '+ 31.67 € per day — honest unit' },
+    { id: 'dates',    col: 'rail', y: 890,  h: 90,  type: 'commerce', label: 'Move-in / move-out' },
+    { id: 'breakdown',col: 'rail', y: 980,  h: 190, type: 'commerce', label: 'Itemized costs', note: 'rent · commission (+cap) · deposit · cleaning · total' },
+    { id: 'sched',    col: 'rail', y: 1170, h: 55,  type: 'commerce', label: 'Payment schedule ▾', note: 'month-by-month instalments, disclosure' },
+    { id: 'cta',      col: 'rail', y: 1225, h: 120, type: 'commerce', label: 'Request via WhatsApp / email', note: 'sign-in gated (ADR-015)', exit: 'wa.me / mailto' },
+    { id: 'reassure', col: 'rail', y: 1345, h: 45,  type: 'trust',    label: 'Reassurance line' },
+  ],
+  overlays: [
+    { id: 'lightbox', label: 'Photo lightbox', type: 'media', note: 'mosaic group + single description photos' },
+    { id: 'datepop',  label: 'Range calendar', type: 'calendar', note: 'booked days blocked' },
+  ],
+  arrows: [
+    { from: 'gallery', to: 'lightbox', kind: 'open' },
+    { from: 'about',   to: 'lightbox', kind: 'open', label: 'photo figure' },
+    { from: 'about',   to: 'map',      kind: 'jump', label: 'place chip' },
+    { from: 'gallery', to: 'plan',     kind: 'jump', label: 'floor-plan pill' },
+    { from: 'addr',    to: 'map',      kind: 'jump', label: 'recentre' },
+    { from: 'nearby',  to: 'map',      kind: 'jump', label: 'route' },
+    { from: 'places',  to: 'map',      kind: 'jump', label: 'route' },
+    { from: 'dates',   to: 'datepop',  kind: 'open' },
+  ],
+},
+{
+  id: 'spotahome', brand: 'Spotahome', capturedAt: '2026-08-07',
+  url: 'spotahome.com/zaragoza/for-rent:apartments/1611151',
+  pageHeight: 7822,
+  note: 'Trust theatre: five trust surfaces and a taught booking process — but the price hides until you enter dates.',
+  columns: [
+    { id: 'full', x: 0, w: 1280 },
+    { id: 'main', x: 144, w: 602 },
+    { id: 'rail', x: 796, w: 364, sticky: true, label: 'sticky rail' },
+  ],
+  blocks: [
+    { id: 'header',    col: 'full', y: 0,    h: 64,  type: 'nav',      label: 'Header', note: 'landlord CTA · how it works · favourites · login' },
+    { id: 'back',      col: 'main', y: 90,   h: 30,  type: 'nav',      label: '← See all properties', exit: 'results' },
+    { id: 'gallery',   col: 'main', y: 130,  h: 420, type: 'media',    label: 'Photo mosaic', note: 'CHECKED badge · show all photos · Photos/Map tabs' },
+    { id: 'title',     col: 'main', y: 610,  h: 115, type: 'identity', label: 'H1 · type/bed/bath/m²' },
+    { id: 'social',    col: 'main', y: 730,  h: 45,  type: 'identity', label: 'Social proof', note: '335 views · 17 favourites · 6 interested · 3 shared' },
+    { id: 'trustmain', col: 'main', y: 785,  h: 680, type: 'trust',    label: 'Trust features (repeat of rail)', note: 'deposit protected · checked-on date · bills · PLUS · verified landlord · contact team' },
+    { id: 'anchorbar', col: 'main', y: 1480, h: 50,  type: 'nav',      label: 'Sticky anchor bar', note: 'Overview · Cancellation · House rules · Landlord · How to book · Pricing · Availabilities' },
+    { id: 'offers',    col: 'main', y: 1543, h: 340, type: 'prose',    label: 'Landlord description', note: 'raw Spanish on the EN page' },
+    { id: 'amen',      col: 'main', y: 1893, h: 250, type: 'data',     label: 'Property amenities', note: 'icon grid · “Show all (15)”' },
+    { id: 'room1',     col: 'main', y: 2147, h: 250, type: 'data',     label: 'Room 1', note: '“Show all (11)”' },
+    { id: 'details',   col: 'main', y: 2401, h: 175, type: 'data',     label: 'Details / energy cert' },
+    { id: 'opinion',   col: 'main', y: 2583, h: 290, type: 'prose',    label: 'Spotahome’s opinion', note: 'platform-written second description' },
+    { id: 'cancel',    col: 'main', y: 2879, h: 760, type: 'trust',    label: 'Cancellation policies', note: 'refund ladder · fee non-refundable banner · badge recap' },
+    { id: 'rules',     col: 'main', y: 3647, h: 620, type: 'data',     label: 'House rules', note: 'rules icons · contractual permissions · required documents · daily contract' },
+    { id: 'moving',    col: 'main', y: 4431, h: 175, type: 'data',     label: 'Moving / early departure', note: '30-day notice' },
+    { id: 'landlord',  col: 'main', y: 4620, h: 390, type: 'trust',    label: 'Landlord card', note: 'professional · speaks EN · verified · since 2026' },
+    { id: 'how',       col: 'main', y: 5021, h: 870, type: 'trust',    label: 'How to book — 4 steps', note: 'find → request → 24h answer → move in · 24h check policy' },
+    { id: 'pricing',   col: 'main', y: 5903, h: 300, type: 'commerce', label: 'Pricing', note: '1050 €/month · daily contract · view all payments' },
+    { id: 'avail',     col: 'main', y: 6215, h: 340, type: 'calendar', label: 'Availabilities', note: '24-month grid · “calendar updated 3 days ago”' },
+    { id: 'crumb',     col: 'main', y: 6595, h: 35,  type: 'nav',      label: 'Breadcrumb' },
+    { id: 'similar',   col: 'full', y: 6669, h: 480, type: 'nav',      label: 'Similar properties carousel', exit: 'other listings' },
+    { id: 'seo',       col: 'full', y: 7180, h: 640, type: 'nav',      label: 'SEO footer' },
+    { id: 'bookcard',  col: 'rail', y: 96,   h: 286, type: 'commerce', label: '“Select dates to see prices”', note: 'NO price shown · move in/out · Check availability', exit: 'checkout' },
+    { id: 'trustrail', col: 'rail', y: 398,  h: 504, type: 'trust',    label: 'WITH THIS PROPERTY ×5 + ALWAYS ×2', note: 'deposit · checked · bills · PLUS · landlord · guarantee · 24h check' },
+    { id: 'contact',   col: 'rail', y: 915,  h: 120, type: 'trust',    label: 'Unsure? Contact our team' },
+  ],
+  overlays: [
+    { id: 'lightbox', label: 'Photo lightbox', type: 'media' },
+    { id: 'mapview',  label: 'Map (gallery tab)', type: 'map', note: 'the only map — inside the gallery' },
+    { id: 'payments', label: 'All payments', type: 'commerce', note: 'full breakdown, only behind a click' },
+  ],
+  arrows: [
+    { from: 'gallery',   to: 'lightbox', kind: 'open' },
+    { from: 'gallery',   to: 'mapview',  kind: 'open', label: 'Map tab' },
+    { from: 'pricing',   to: 'payments', kind: 'open' },
+    { from: 'anchorbar', to: 'offers',   kind: 'jump' },
+    { from: 'anchorbar', to: 'cancel',   kind: 'jump' },
+    { from: 'anchorbar', to: 'rules',    kind: 'jump' },
+    { from: 'anchorbar', to: 'landlord', kind: 'jump' },
+    { from: 'anchorbar', to: 'how',      kind: 'jump' },
+    { from: 'anchorbar', to: 'pricing',  kind: 'jump' },
+    { from: 'anchorbar', to: 'avail',    kind: 'jump' },
+  ],
+},
+{
+  id: 'wunderflats', brand: 'Wunderflats', capturedAt: '2026-08-07',
+  url: 'wunderflats.com/en/furnished-apartment/… (Berlin)',
+  pageHeight: 5870,
+  note: 'The page as contract: price and photo answered instantly, then a linear dossier — fees, services incl. what’s missing, certificates. No map, no jumps.',
+  columns: [
+    { id: 'full', x: 0, w: 1280 },
+    { id: 'main', x: 140, w: 700 },
+    { id: 'rail', x: 870, w: 370, sticky: true, label: 'floating → sticky' },
+  ],
+  blocks: [
+    { id: 'header',  col: 'full', y: 0,    h: 88,  type: 'nav',      label: 'Header' },
+    { id: 'hero',    col: 'full', y: 88,   h: 640, type: 'media',    label: 'Full-bleed hero photo', note: 'View gallery · save · share — booking card floats on top' },
+    { id: 'title',   col: 'main', y: 740,  h: 250, type: 'identity', label: 'H1 · street address + postcode', note: '32 m² · floor 1 · 1 room · 1 bed · 2 people' },
+    { id: 'about',   col: 'main', y: 992,  h: 740, type: 'prose',    label: 'About + additional info', note: '“Entire apartment” · 2× read-more' },
+    { id: 'services',col: 'main', y: 1735, h: 330, type: 'data',     label: 'Services', note: 'Anmeldung confirmation · incl. “Not available” rows' },
+    { id: 'amen',    col: 'main', y: 2062, h: 650, type: 'data',     label: 'Amenities — grouped text', note: 'Essentials / Kitchen / Bedroom / Bathroom / Other, no icons' },
+    { id: 'beds',    col: 'main', y: 2718, h: 280, type: 'data',     label: 'Beds by room' },
+    { id: 'avail',   col: 'main', y: 3003, h: 620, type: 'calendar', label: 'Availability', note: 'min 1 / max 6 months · from 17.09 · 12-month strip' },
+    { id: 'rules',   col: 'main', y: 3624, h: 440, type: 'prose',    label: 'House rules', note: 'prose + pets/smoking pills' },
+    { id: 'costs',   col: 'main', y: 4064, h: 510, type: 'commerce', label: 'Cost overview', note: 'rent 1690 € · included charges · deposit 2500 € · final cleaning 249 € · service fee 299 €' },
+    { id: 'certs',   col: 'main', y: 4575, h: 300, type: 'data',     label: 'Certifications', note: 'energy certificate' },
+    { id: 'similar', col: 'full', y: 4874, h: 500, type: 'nav',      label: 'Similar apartments', exit: 'other listings' },
+    { id: 'footer',  col: 'full', y: 5380, h: 490, type: 'nav',      label: 'SEO footer — city links' },
+    { id: 'bookcard',col: 'rail', y: 430,  h: 420, type: 'commerce', label: 'RENT €1,690 / month', note: 'price up front · duration picker · Request to book · inline validation · <lg viewports get a fixed top callout bar instead', exit: 'booking wizard' },
+    { id: 'agents',  col: 'rail', y: 880,  h: 140, type: 'trust',    label: 'Wunderflats Agents', note: 'personal support blurb' },
+  ],
+  overlays: [
+    { id: 'lightbox', label: 'Photo lightbox', type: 'media' },
+    { id: 'datepick', label: 'Duration picker', type: 'calendar' },
+  ],
+  arrows: [
+    { from: 'hero',     to: 'lightbox', kind: 'open', label: 'view gallery' },
+    { from: 'bookcard', to: 'datepick', kind: 'open' },
+  ],
+},
+{
+  id: 'flatio', brand: 'Flatio', capturedAt: '2026-08-07',
+  url: 'flatio.com/rent/apartment/129864-barcelona (no Zaragoza inventory)',
+  pageHeight: 9148,
+  note: 'The host as a person, the nomad as audience: avg €/30 days up front, internet speed as content, host stats — then platform trust stretches the page to 9k px.',
+  columns: [
+    { id: 'full', x: 0, w: 1280 },
+    { id: 'main', x: 70, w: 750 },
+    { id: 'rail', x: 880, w: 330, sticky: true, label: 'rail — only the price card sticks' },
+  ],
+  blocks: [
+    { id: 'header',   col: 'full', y: 0,    h: 64,  type: 'nav',      label: 'Header — permanently fixed', note: 'back to listing feed · help · blog · login' },
+    { id: 'gallery',  col: 'main', y: 80,   h: 410, type: 'media',    label: 'Photo mosaic', note: '1 + 4 grid · “Top pick” badge · show photos' },
+    { id: 'title',    col: 'main', y: 510,  h: 70,  type: 'identity', label: 'StayProtection pill · H1' },
+    { id: 'facts',    col: 'main', y: 585,  h: 90,  type: 'data',     label: 'Key facts', note: '2 people · 1 bed · 1 bath · 75 m² · 3rd floor · Wi-Fi · furnished' },
+    { id: 'protect',  col: 'main', y: 680,  h: 120, type: 'trust',    label: 'StayProtection banner' },
+    { id: 'desc',     col: 'main', y: 812,  h: 350, type: 'prose',    label: 'Description — with host identity', note: 'avatar · “on Flatio since 2022” · unit-purpose tag · show more' },
+    { id: 'internet', col: 'main', y: 1172, h: 160, type: 'data',     label: 'Internet speed', note: '1024 Mbps down / up — remote-work first-class' },
+    { id: 'rooms',    col: 'main', y: 1340, h: 730, type: 'data',     label: 'Rooms & spaces', note: 'per-room inventory with m²' },
+    { id: 'amen',     col: 'main', y: 2079, h: 390, type: 'data',     label: 'What this place offers', note: 'incl. “not available” flags · show all' },
+    { id: 'parking',  col: 'main', y: 2476, h: 170, type: 'data',     label: 'Parking', note: 'dedicated space · 1 min on foot' },
+    { id: 'where',    col: 'main', y: 2652, h: 555, type: 'map',      label: 'Where you will live', note: 'street view + travel-time list (metro 5 min · bar 1 min · hospital 5 min)' },
+    { id: 'host',     col: 'main', y: 3215, h: 330, type: 'trust',    label: 'About host', note: '4.8 (2) · response 14h · approval 44% · send question' },
+    { id: 'cond',     col: 'main', y: 3549, h: 720, type: 'data',     label: 'Rental conditions', note: 'named cancelation policy · rent & fees (deposit 0 €) · “When will I pay what?” · 32–330 days · rules · move-in/out' },
+    { id: 'protect2', col: 'main', y: 4275, h: 610, type: 'trust',    label: 'StayProtection + Stay Benefits (AXA)', note: 'move-in guarantee · visa-friendly lease · deposit-free · liability cover' },
+    { id: 'avail',    col: 'main', y: 4892, h: 555, type: 'calendar', label: 'Availability', note: 'day-level calendar · “last updated 12 hours ago”' },
+    { id: 'reasons',  col: 'main', y: 5453, h: 300, type: 'trust',    label: '5 reasons to choose Flatio' },
+    { id: 'faq',      col: 'main', y: 5761, h: 930, type: 'trust',    label: 'FAQ', note: 'about this listing + how Flatio works' },
+    { id: 'similar',  col: 'main', y: 6696, h: 400, type: 'nav',      label: 'Other properties', exit: 'other listings' },
+    { id: 'seo',      col: 'full', y: 7150, h: 1998,type: 'nav',      label: 'SEO footer', note: 'every country and city · membership pitch — ~2,000 px' },
+    { id: 'price',    col: 'rail', y: 560,  h: 330, type: 'commerce', label: 'avg 2 500 € / 30 days — goes fixed on scroll', note: '“incl. utilities and internet” · dates · Continue · “you won’t pay anything yet” · urgency + trust bullets below do NOT stick', exit: 'booking flow' },
+    { id: 'urgency',  col: 'rail', y: 890,  h: 100, type: 'trust',    label: 'Urgency', note: '“seen by 126 people — soon be gone!”' },
+    { id: 'bullets',  col: 'rail', y: 1000, h: 260, type: 'trust',    label: 'Trust bullets', note: 'final prices · cancel free · move-in guarantee · readable lease' },
+  ],
+  overlays: [
+    { id: 'lightbox', label: 'Photo lightbox', type: 'media' },
+    { id: 'paywhat',  label: '“When will I pay what?”', type: 'commerce', note: 'payment timeline — needs dates' },
+    { id: 'lease',    label: 'Lease agreement', type: 'trust', note: 'full contract readable before booking' },
+  ],
+  arrows: [
+    { from: 'gallery', to: 'lightbox', kind: 'open' },
+    { from: 'cond',    to: 'paywhat',  kind: 'open' },
+    { from: 'bullets', to: 'lease',    kind: 'open' },
+    { from: 'protect', to: 'protect2', kind: 'jump', label: 'read more' },
+  ],
+},
+{
+  id: 'blueground', brand: 'Blueground', capturedAt: '2026-08-07',
+  url: 'theblueground.com/p/furnished-apartments/mad-1013511p (no Zaragoza inventory)',
+  pageHeight: 5088,
+  note: 'The listing as SKU: street-name title, unit ID, one corporate voice, ID checks — and the price is a quote (“add dates”), not a fact. Best competitor map; on scroll the header swaps for a fixed 6-station anchor bar.',
+  columns: [
+    { id: 'full', x: 0, w: 1280 },
+    { id: 'main', x: 64, w: 700 },
+    { id: 'rail', x: 836, w: 392, label: 'static card (not sticky ≥lg; <lg: fixed bottom booking bar)' },
+  ],
+  blocks: [
+    { id: 'header',  col: 'full', y: 0,    h: 64,  type: 'nav',      label: 'Header', note: 'contact · language · currency — hides on scroll' },
+    { id: 'anchorbar',col:'full', y: 66,   h: 48,  type: 'nav',      label: 'Anchor-index bar — appears FIXED on scroll', note: 'Photos · About this home · What this home offers · About the neighborhood · Similar homes · Booking & stay rules — active section underlined' },
+    { id: 'title',   col: 'main', y: 120,  h: 140, type: 'identity', label: 'Breadcrumb · H1 = street name', note: '1 bed · 1 bath · 49 m² · 1st floor · ID 1013511P · share/save' },
+    { id: 'gallery', col: 'main', y: 270,  h: 330, type: 'media',    label: 'Photo mosaic', note: '1 + 4 grid · “View all photos (14)”' },
+    { id: 'urgency', col: 'main', y: 615,  h: 60,  type: 'trust',    label: 'Urgency banner', note: '“This home is popular! Act fast”' },
+    { id: 'managed', col: 'main', y: 679,  h: 120, type: 'trust',    label: 'Managed by a partner', note: 'vetted third-party disclosure' },
+    { id: 'about',   col: 'main', y: 859,  h: 350, type: 'prose',    label: 'About this home', note: 'copywritten walkthrough · Add-ons · Keep in mind (31 nights–11 months, contract)' },
+    { id: 'amen',    col: 'main', y: 1215, h: 440, type: 'data',     label: 'What this home offers', note: '“View all amenities (18)”' },
+    { id: 'partner', col: 'main', y: 1665, h: 300, type: 'trust',    label: 'Your stay with a trusted partner', note: 'booking via Blueground · partner does move-in' },
+    { id: 'hood',    col: 'main', y: 2036, h: 170, type: 'map',      label: 'About the neighborhood — POI chips', note: '12 categories: supermarkets · gyms · restaurants · hospitals…' },
+    { id: 'map',     col: 'full', y: 2208, h: 500, type: 'map',      label: 'Google Map, full width', note: 'POI category layer + home pin' },
+    { id: 'hoodtxt', col: 'main', y: 2710, h: 180, type: 'prose',    label: 'Neighbourhood prose', note: 'editorial: Plaza Mayor, Royal Palace…' },
+    { id: 'similar', col: 'main', y: 2897, h: 500, type: 'nav',      label: 'Similar homes', note: '15-card paginated carousel with dates', exit: 'other listings' },
+    { id: 'rules',   col: 'main', y: 3430, h: 400, type: 'data',     label: 'Booking & stay rules', note: 'cancellation: “add dates to get details” · ID/background checks · move-in 4pm–12am' },
+    { id: 'faq',     col: 'main', y: 3841, h: 860, type: 'trust',    label: 'FAQ', note: '“Did you find this helpful?” per answer · promises payment timeline at checkout' },
+    { id: 'contact', col: 'main', y: 4720, h: 200, type: 'trust',    label: 'Contact block', note: 'phone · WhatsApp · sales-mad@ · survey + page-feedback widget' },
+    { id: 'footer',  col: 'full', y: 4930, h: 158, type: 'nav',      label: 'Footer' },
+    { id: 'bookcard',col: 'rail', y: 599,  h: 430, type: 'commerce', label: '“Add dates to see prices”', note: 'available from 08 Aug · select dates · “Any questions? Message us” · <lg viewports get a fixed bottom bar instead', exit: 'checkout' },
+  ],
+  overlays: [
+    { id: 'lightbox', label: 'Photo lightbox', type: 'media' },
+    { id: 'datepick', label: 'Calendar', type: 'calendar', note: 'min-stay aware; unlocks price AND cancellation terms' },
+  ],
+  arrows: [
+    { from: 'gallery',  to: 'lightbox', kind: 'open' },
+    { from: 'bookcard', to: 'datepick', kind: 'open' },
+    { from: 'rules',    to: 'datepick', kind: 'open', label: 'add dates' },
+    { from: 'hood',     to: 'map',      kind: 'jump', label: 'filters' },
+    { from: 'anchorbar', to: 'gallery', kind: 'jump' },
+    { from: 'anchorbar', to: 'about',   kind: 'jump' },
+    { from: 'anchorbar', to: 'amen',    kind: 'jump' },
+    { from: 'anchorbar', to: 'hood',    kind: 'jump' },
+    { from: 'anchorbar', to: 'similar', kind: 'jump' },
+    { from: 'anchorbar', to: 'rules',   kind: 'jump' },
+  ],
+},
+];
+
+/* ================================================================
+   VIEWER — pan/zoom pane, no build step.
+   ================================================================ */
+const S = 0.25;                 // 1 canvas px = 4 page px
+const AB_W = 1280 * S;          // artboard sheet width
+const SAT_W = 132, SAT_GAP = 24;
+const SLOT = AB_W + SAT_GAP + SAT_W + 130;  // artboard + satellites + air
+const HEAD_H = 92;
+
+const world = document.getElementById('world');
+const canvas = document.getElementById('canvas');
+const tip = document.getElementById('tip');
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+
+// legend
+document.getElementById('legend').innerHTML = Object.entries(TYPES).map(([k, name]) =>
+  `<span class="chip"><i style="background:var(--c-${k}-bg);border-color:var(--c-${k}-line)"></i>${name}</span>`).join('');
+
+let maxH = 0;
+PAGES.forEach((p, i) => {
+  const abX = 40 + i * SLOT;
+  const H = p.pageHeight * S;
+  maxH = Math.max(maxH, H + HEAD_H);
+  const ab = document.createElement('div');
+  ab.className = 'artboard';
+  ab.style.left = abX + 'px';
+  ab.style.top = '30px';
+
+  const rails = p.columns.filter(c => c.sticky);
+  ab.innerHTML = `
+    <div class="abhead">
+      <div class="name">${esc(p.brand)}</div>
+      <div class="meta mono">${esc(p.url)} · ${p.pageHeight.toLocaleString('en')} px tall</div>
+      <div class="thesis">${esc(p.note)}</div>
+    </div>
+    <div class="sheet" style="height:${H}px">
+      ${rails.map(c => `<div class="lane sticky" data-label="${esc(c.label || 'sticky')}"
+          style="left:${c.x * S - 2}px;top:${(Math.min(...p.blocks.filter(b => b.col === c.id).map(b => b.y)) || 0) * S - 4}px;
+                 width:${c.w * S + 4}px;height:${(Math.max(...p.blocks.filter(b => b.col === c.id).map(b => b.y + b.h)) - Math.min(...p.blocks.filter(b => b.col === c.id).map(b => b.y))) * S + 8}px"></div>`).join('')}
+      ${p.blocks.map(b => {
+        const col = p.columns.find(c => c.id === b.col);
+        return `<div class="blk" data-ab="${p.id}" data-id="${b.id}"
+          style="left:${col.x * S}px;top:${b.y * S}px;width:${col.w * S}px;height:${Math.max(b.h * S, 10)}px;
+                 background:var(--c-${b.type}-bg);border-color:var(--c-${b.type}-line)"
+          data-label="${esc(b.label)}" data-note="${esc(b.note || '')}" data-geom="y ${b.y} · ${b.h} px · ${esc(TYPES[b.type])}">
+          <b>${esc(b.label)}</b>${b.note ? `<span>${esc(b.note)}</span>` : ''}
+          ${b.exit ? `<span class="exit">↗ ${esc(b.exit)}</span>` : ''}</div>`;
+      }).join('')}
+    </div>
+    ${p.overlays.length ? `<div class="satlabel" style="left:${AB_W + SAT_GAP}px;top:-4px">overlays</div>` : ''}
+    ${p.overlays.map((o, j) => `<div class="sat" data-ab="${p.id}" data-id="${o.id}"
+        style="left:${AB_W + SAT_GAP}px;top:${14 + j * 74}px;border-color:var(--c-${o.type}-line)">
+        <b>${esc(o.label)}</b>${o.note ? `<span>${esc(o.note)}</span>` : ''}</div>`).join('')}
+    <svg class="wires" width="${SLOT}" height="${H}" style="left:0;top:0"></svg>`;
+
+  world.appendChild(ab);
+
+  // wires — drawn from data geometry (deterministic, no layout reads)
+  const svg = ab.querySelector('svg.wires');
+  // sheet sits below abhead; wires SVG shares the sheet's coordinate space
+  svg.style.top = ab.querySelector('.sheet').offsetTop + 'px';
+  const mid = b => {
+    const col = p.columns.find(c => c.id === b.col);
+    return { l: col.x * S, r: (col.x + col.w) * S, y: (b.y + b.h / 2) * S, t: b.y * S };
+  };
+  let wires = '', labels = '';
+  p.arrows.forEach(a => {
+    const from = p.blocks.find(b => b.id === a.from);
+    const toBlk = p.blocks.find(b => b.id === a.to);
+    const toOvl = p.overlays.findIndex(o => o.id === a.to);
+    const f = mid(from);
+    if (toBlk) { // in-page jump: route along the left margin
+      const t = mid(toBlk);
+      const bow = Math.min(34, 12 + Math.abs(t.y - f.y) * 0.02);
+      wires += `<path class="wire-jump" d="M ${f.l} ${f.y} C ${f.l - bow} ${f.y}, ${t.l - bow} ${t.t + 8}, ${t.l - 4} ${t.t + 8}"/>
+        <polygon class="wirehead-jump" points="${t.l - 4},${t.t + 4.5} ${t.l + 1},${t.t + 8} ${t.l - 4},${t.t + 11.5}"/>`;
+      if (a.label) labels += `<text class="wirelabel" x="${f.l - bow - 2}" y="${(f.y + t.t) / 2}" text-anchor="end">${esc(a.label)}</text>`;
+    } else if (toOvl > -1) { // opens overlay: route right to the satellite
+      const sx = AB_W + SAT_GAP - 4;
+      const sy = 14 + toOvl * 74 + 26 - parseFloat(svg.style.top);
+      wires += `<path class="wire-open" d="M ${f.r} ${f.y} C ${f.r + 40} ${f.y}, ${sx - 40} ${sy}, ${sx} ${sy}"/>
+        <polygon class="wirehead-open" points="${sx},${sy - 3.5} ${sx + 5},${sy} ${sx},${sy + 3.5}"/>`;
+      if (a.label) labels += `<text class="wirelabel" x="${f.r + 6}" y="${f.y - 4}">${esc(a.label)}</text>`;
+    }
+  });
+  svg.innerHTML = wires + labels;
+});
+
+/* ---------- pan / zoom ---------- */
+let vx = 0, vy = 0, vz = 1;
+const apply = () => { world.style.transform = `translate(${vx}px,${vy}px) scale(${vz})`; };
+const fit = () => {
+  const wW = 40 + PAGES.length * SLOT, wH = maxH + 60;
+  vz = Math.min((innerWidth - 40) / wW, (innerHeight - 120) / wH, 1.6);
+  vx = (innerWidth - wW * vz) / 2; vy = 70;
+  apply();
+};
+fit(); addEventListener('resize', fit);
+
+let drag = null;
+canvas.addEventListener('pointerdown', e => {
+  drag = { x: e.clientX - vx, y: e.clientY - vy };
+  canvas.classList.add('dragging'); canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (drag) { vx = e.clientX - drag.x; vy = e.clientY - drag.y; apply(); }
+});
+canvas.addEventListener('pointerup', () => { drag = null; canvas.classList.remove('dragging'); });
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const k = Math.exp(-e.deltaY * 0.0015);
+  const nz = Math.min(4, Math.max(0.08, vz * k));
+  vx = e.clientX - (e.clientX - vx) * (nz / vz);
+  vy = e.clientY - (e.clientY - vy) * (nz / vz);
+  vz = nz; apply();
+}, { passive: false });
+const zoomBy = k => { const nz = Math.min(4, Math.max(0.08, vz * k));
+  vx = innerWidth / 2 - (innerWidth / 2 - vx) * (nz / vz);
+  vy = innerHeight / 2 - (innerHeight / 2 - vy) * (nz / vz); vz = nz; apply(); };
+document.getElementById('zi').onclick = () => zoomBy(1.25);
+document.getElementById('zo').onclick = () => zoomBy(0.8);
+document.getElementById('fit').onclick = fit;
+
+/* ---------- theme toggle: auto → light → dark ---------- */
+const root = document.documentElement;
+document.getElementById('theme').onclick = () => {
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'light' ? 'dark' : cur === 'dark' ? '' : 'light');
+  if (!root.getAttribute('data-theme')) root.removeAttribute('data-theme');
+};
+
+/* ---------- tooltip ---------- */
+addEventListener('pointermove', e => {
+  const blk = e.target.closest?.('.blk');
+  if (!blk) { tip.style.display = 'none'; return; }
+  tip.innerHTML = `<b>${blk.dataset.label}</b>${blk.dataset.note ? blk.dataset.note : ''}<div class="t2">${blk.dataset.geom}</div>`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - 300) + 'px';
+  tip.style.top = (e.clientY + 14) + 'px';
+});
+</script>

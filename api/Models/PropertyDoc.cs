@@ -59,6 +59,20 @@ public record DeclinedSuggestion(
     string For,
     string At);
 
+public record BandPoint(double Lat, double Lng);
+
+/// The ADR-041 disclosure unit, derived — never typed. Everything here is
+/// derived from OSM + the stored pin; SampleA/SampleB are the inset routing
+/// origins and MUST NOT appear in any public projection (server-side use).
+public record StreetBand(
+    BandPoint[] Line,
+    double MidLat,
+    double MidLng,
+    BandPoint SampleA,
+    BandPoint SampleB,
+    string? StreetName,
+    string DerivedAt);
+
 public record AvailabilityRange(
     string Start,
     string End, // exclusive
@@ -177,6 +191,11 @@ public class PropertyDoc
     public PropertyPhoto[] Photos { get; set; } = [];
     public NearbyEntry[] Nearby { get; set; } = [];
     public AvailabilityRange[] Availability { get; set; } = [];
+
+    // The ADR-041 street band, derived from the stored pin — null until
+    // derivation succeeds (or after it fails, degrading to a rounded summary
+    // point and no public map until the next save or read retries).
+    public StreetBand? Band { get; set; }
 
     public string? CreatedAt { get; set; }
     public string? UpdatedAt { get; set; }

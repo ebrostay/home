@@ -15,6 +15,11 @@
     <Compile Remove="Ebrostay.Api.Tests/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Lets the test project call internal members (StreetBandService.MergeChains,
+         BandGeometry.ProjectDistanceProxy) directly, the way its own unit tests do. -->
+    <InternalsVisibleTo Include="Ebrostay.Api.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.*" />
     <PackageReference Include="MetadataExtractor" Version="2.9.3" />

@@ -50,6 +50,14 @@ public static class BandGeometry
     }
 
     public static double ProjectArc(IReadOnlyList<GeoPoint> line, GeoPoint p)
+        => Project(line, p).Arc;
+
+    /// The closest distance `ProjectArc`'s loop finds, exposed for picking the
+    /// nearest of several candidate ways — same walk, no duplicated loop.
+    internal static double ProjectDistanceProxy(IReadOnlyList<GeoPoint> line, GeoPoint p)
+        => Project(line, p).Best;
+
+    private static (double Best, double Arc) Project(IReadOnlyList<GeoPoint> line, GeoPoint p)
     {
         double best = double.MaxValue, bestArc = 0, walked = 0;
         for (var i = 1; i < line.Count; i++)
@@ -74,7 +82,7 @@ public static class BandGeometry
             }
             walked += segLen;
         }
-        return bestArc;
+        return (best, bestArc);
     }
 
     /// Stable per listing, never in the middle band — an averaged segment

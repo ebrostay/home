@@ -121,6 +121,7 @@ builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.OverpassClient(
     sp.GetRequiredService<Database>().GetContainer("nearbyCandidates"),
     sp.GetRequiredService<ILogger<Ebrostay.Api.Services.OverpassClient>>()));
 builder.Services.AddSingleton<Ebrostay.Api.Services.NearbyLookup>();
+builder.Services.AddSingleton<Ebrostay.Api.Services.StreetBandService>();
 
 builder.Services.AddSingleton(sp => new Ebrostay.Api.Services.RouteCache(
     sp.GetRequiredService<Database>().GetContainer("nearbyRoutes"),

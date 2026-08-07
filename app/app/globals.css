@@ -589,17 +589,47 @@
    `.nearby-route-line` above. */
 .street-band-glow {
   stroke: var(--river-deep);
+  transition: stroke-opacity 0.2s ease;
 }
 .street-band-line {
   stroke: var(--river-deep);
+  transition: stroke-opacity 0.2s ease;
 }
-/* The label riding the middle of the band. A pill like `.map-pin`'s, but
-   centred on its point rather than planted above it (`.map-marker`'s
-   convention) — a street segment has no single spot to point down at. */
-.street-band-label {
-  display: inline-block;
-  transform: translate(-50%, -50%);
+/* Lit — a pointer on the band or the legend, or the street plate hovered or
+   clicked (5 s flash). CSS `stroke-opacity` wins over the attribute Leaflet
+   stamped on the path, so the base opacity set at the call site comes back
+   untouched the moment the class goes. */
+.street-band-line.street-band-hot {
+  stroke-opacity: 0.95;
+}
+.street-band-glow.street-band-hot {
+  stroke-opacity: 0.34;
+}
+/* The pill that used to ride mid-band, split into its two successors: the
+   corner legend (always there, out of the way) and the pointer-following
+   tooltip on the band itself. Same face on both. */
+.street-band-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+  background: var(--surface);
+  color: var(--river-deep);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+.street-band-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--river-deep);
+}
+.street-band-tip {
   background: var(--surface);
   color: var(--river-deep);
   border: 1px solid var(--river-deep);
@@ -608,6 +638,11 @@
   font-size: 12px;
   font-weight: 600;
   box-shadow: var(--shadow-card);
+}
+/* Leaflet's default tooltip arrow, pointless on a pill that follows the
+   pointer along a line. */
+.street-band-tip::before {
+  display: none;
 }
 
 /* The fan-and-trunk route (ADR-041 point 5): two stubs from the sampled band

@@ -3,7 +3,7 @@
 // Property detail. URL: /{locale}/property?id={slug} (v1's URL model — plays
 // nicely with static export; pretty paths can come later via SWA rewrites).
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, Copy, MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -251,9 +251,29 @@ function DetailBody({
   // including the second one in a row, and a flag that is already `true`
   // says nothing.
   const [recentre, setRecentre] = useState(0);
+
+  // The plate lights the band: while hovered, and for five seconds after a
+  // click — long enough to find the blue line on the map the click just
+  // recentred, short enough that the map is back to normal by the time the
+  // reader is studying it. Two flags OR-ed into one prop: leaving the plate
+  // after a click must not cut the flash short, and a flash ending must not
+  // darken a band still hovered.
+  const [plateHover, setPlateHover] = useState(false);
+  const [plateFlash, setPlateFlash] = useState(false);
+  const flashTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (flashTimer.current !== null) window.clearTimeout(flashTimer.current);
+    },
+    [],
+  );
+
   const showOnMap = () => {
     setRecentre((n) => n + 1);
     revealMap();
+    setPlateFlash(true);
+    if (flashTimer.current !== null) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setPlateFlash(false), 5000);
   };
 
   // The plate's copy control, back by owner amendment to ADR-041 point 1
@@ -580,6 +600,8 @@ function DetailBody({
                   <button
                     type="button"
                     onClick={showOnMap}
+                    onMouseEnter={() => setPlateHover(true)}
+                    onMouseLeave={() => setPlateHover(false)}
                     aria-label={td("addressShowOnMap")}
                     className="group flex min-w-0 items-center gap-4 text-left"
                   >
@@ -656,6 +678,7 @@ function DetailBody({
                   <NeighbourhoodMap
                     band={p.band}
                     bandLabel={td("streetBand")}
+                    bandHot={plateHover || plateFlash}
                     mapLabel={td("location")}
                     destination={mapDestination}
                     route={mapRoute}

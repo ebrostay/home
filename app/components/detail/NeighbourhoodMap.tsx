@@ -35,8 +35,15 @@ export type NeighbourhoodMapProps = {
    *  whole neighbourhood section on `p.band` being non-null before this
    *  component ever mounts. */
   band: [number, number][];
-  /** The pill drawn at the band's midpoint. */
+  /** Names the band — in the corner legend always, and in the tooltip that
+   *  follows the pointer over the band itself. Not a permanent pill on the
+   *  map anymore: the pill sat mid-band and covered exactly the streets a
+   *  reader was trying to read (owner call, 2026-08-07). */
   bandLabel: string;
+  /** The caller's reasons to light the band up — hovering or clicking the
+   *  street plate. Hovering the band or the legend lights it too, handled
+   *  internally; either source alone is enough. */
+  bandHot?: boolean;
   mapLabel: string;
   destination: NeighbourhoodMapDestination | null;
   route: RouteBand | null;
@@ -55,6 +62,7 @@ export type NeighbourhoodMapProps = {
 export function NeighbourhoodMap({
   band,
   bandLabel,
+  bandHot = false,
   mapLabel,
   destination,
   route,
@@ -72,7 +80,24 @@ export function NeighbourhoodMap({
   const destinationMarkerRef = useRef<any>(null);
   const lineRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
+  /** The band's two polylines (glow + line), for the highlight toggles. */
+  const bandPathsRef = useRef<any[]>([]);
   /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // Two independent reasons to light the band — the caller's prop (plate
+  // hover/click) and a pointer over the band or legend here. Refs, not state:
+  // the highlight is a CSS class on SVG nodes Leaflet owns, and a re-render
+  // has nothing to redraw for it.
+  const hotRef = useRef({ prop: false, hover: false });
+  const applyHot = () => {
+    const hot = hotRef.current.prop || hotRef.current.hover;
+    for (const p of bandPathsRef.current)
+      p.getElement()?.classList.toggle("street-band-hot", hot);
+  };
+  const setHoverHot = (v: boolean) => {
+    hotRef.current.hover = v;
+    applyHot();
+  };
 
   // Leaflet loads asynchronously, so on the very first render(s) mapRef and
   // the layer refs are still null even though `destination`/`route` may
@@ -112,20 +137,34 @@ export function NeighbourhoodMap({
       // moves and must survive layer.clearLayers() on every
       // destination/route redraw below.
       const bandLine: [number, number][] = band;
-      L.polyline(bandLine, { className: "street-band-glow", weight: 22, opacity: 0.16 }).addTo(
-        mapRef.current,
-      );
-      L.polyline(bandLine, { className: "street-band-line", weight: 5, opacity: 0.6 }).addTo(
-        mapRef.current,
-      );
-      const mid = bandLine[Math.floor(bandLine.length / 2)];
-      L.marker(mid, {
-        interactive: false,
-        icon: L.divIcon({
-          className: "",
-          html: `<div class="street-band-label">${escapeHtml(bandLabel)}</div>`,
-        }),
+      const glow = L.polyline(bandLine, {
+        className: "street-band-glow",
+        weight: 22,
+        opacity: 0.16,
       }).addTo(mapRef.current);
+      const line = L.polyline(bandLine, {
+        className: "street-band-line",
+        weight: 5,
+        opacity: 0.6,
+      }).addTo(mapRef.current);
+      bandPathsRef.current = [glow, line];
+
+      // No permanent label: a pill riding mid-band covered exactly the
+      // streets a reader zooms in to read. The name lives in the corner
+      // legend (JSX below) and in this tooltip, which follows the pointer
+      // over the band — the 22px glow doubles as the hover target. Hovering
+      // also lights the band, the same effect the street plate drives
+      // through `bandHot`.
+      for (const path of bandPathsRef.current) {
+        path.bindTooltip(escapeHtml(bandLabel), {
+          sticky: true,
+          direction: "top",
+          offset: [0, -10],
+          className: "street-band-tip",
+        });
+        path.on("mouseover", () => setHoverHot(true));
+        path.on("mouseout", () => setHoverHot(false));
+      }
       mapRef.current.fitBounds(L.latLngBounds(bandLine).pad(0.3));
 
       destinationRef.current = L.layerGroup().addTo(mapRef.current);
@@ -227,6 +266,16 @@ export function NeighbourhoodMap({
       }).addTo(layer);
   }, [route, mapReady]);
 
+  // The plate's hover and its 5-second click-flash arrive as one boolean; the
+  // band's own hover state is OR-ed in by `applyHot`. `mapReady` re-runs this
+  // once the polylines actually exist, for a plate hovered mid-load.
+  useEffect(() => {
+    hotRef.current.prop = bandHot;
+    applyHot();
+    // `applyHot` is a stable module-pattern helper over refs, not a dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bandHot, mapReady]);
+
   useEffect(
     () => () => {
       mapRef.current?.remove();
@@ -243,15 +292,31 @@ export function NeighbourhoodMap({
   // string it started with and React never touches it again after the first
   // paint.
   return (
-    <div className={`z-0 overflow-hidden rounded-(--radius-card) border border-line ${className}`}>
+    <div
+      className={`relative z-0 overflow-hidden rounded-(--radius-card) border border-line ${className}`}
+    >
       <div ref={containerRef} role="application" aria-label={mapLabel} className="h-full w-full" />
+      {/* The legend that replaced the mid-band pill: same words, out of the
+          map's way. Top-right — Leaflet's zoom holds top-left, the travel
+          toggle (page overlay) holds bottom-left, attribution bottom-right.
+          Hovering it lights the band, the same as hovering the band itself:
+          the legend explains the blue line, so pointing at either should
+          point at both. z-[1000] matches Leaflet's own controls. */}
+      <div
+        className="street-band-legend absolute right-2 top-2 z-[1000]"
+        onMouseEnter={() => setHoverHot(true)}
+        onMouseLeave={() => setHoverHot(false)}
+      >
+        <span className="street-band-legend-swatch" aria-hidden />
+        {bandLabel}
+      </div>
     </div>
   );
 }
 
-// The label is interpolated into a divIcon's raw HTML string, so it has to be
-// escaped — same pattern ResultsMap.tsx uses for its price pins. `bandLabel`
-// is our own message string, never guest input, but escaped regardless: an
-// unescaped `&` alone would break the markup.
+// The label is interpolated into a Leaflet tooltip's raw HTML string, so it
+// has to be escaped — same pattern ResultsMap.tsx uses for its price pins.
+// `bandLabel` is our own message string, never guest input, but escaped
+// regardless: an unescaped `&` alone would break the markup.
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

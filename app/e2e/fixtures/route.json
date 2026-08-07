@@ -1,5 +1,7 @@
 {
-  "polyline": "cse}Fbq_DcBwB{@kCkCcBoAkC",
-  "metres": 340,
-  "seconds": 260
+  "minutes": [4, 6],
+  "metres": [340, 400],
+  "trunk": "cse}Fbq_DcBwB{@kCkCcBoAkC",
+  "stubA": "cse}Fbq_DcBwB",
+  "stubB": "ese}Fdq_DaBuB"
 }

@@ -490,12 +490,14 @@ test("/en/property — saved places are measured, and the toggle re-measures", a
   const rows = section.getByRole("listitem");
   await expect(rows).toHaveCount(2);
 
-  // route.json: 340 m in 260 s. Both figures are the SERVER's — a row showing
-  // anything else means the section went back to computing its own.
+  // route.json: minutes [4, 6], metres [340, 400]. Both figures are the
+  // SERVER's — a row showing anything else means the section went back to
+  // computing its own. The row renders the range for minutes and the upper
+  // bound for metres (YourPlaces.tsx).
   for (const label of ["Plaza del Pilar", "Estación Delicias"]) {
     const row = rows.filter({ hasText: label });
-    await expect(row).toContainText("4 min");
-    await expect(row).toContainText("340 m");
+    await expect(row).toContainText("4–6 min");
+    await expect(row).toContainText("400 m");
   }
 
   // ONE map on the page (ADR-040), and it belongs to the neighbourhood

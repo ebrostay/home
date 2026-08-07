@@ -17,6 +17,7 @@ adhere where convention carries meaning, challenge where it is only habit.
 | `viewer.html` | The open pane. Self-contained; open in a browser, drag to pan, scroll/buttons to zoom. All page data is embedded in the `PAGES` array. |
 | `pages/<site>--listing-detail.md` | Per-page text documentation: structure inventory + observed design principles. |
 | `comparison.md` | The growing synthesis: baseline / divergence matrix and differentiation notes. |
+| `info-inventory.md` | One level deeper: which information group exists on which page (✓/~/⌂/—), with a per-row verdict for Ebrostay — keep / gap / consider / skip. |
 
 Mapped so far (2026-08-07, desktop 1280px): **Ebrostay v2**, **Spotahome**
 (Zaragoza), **Wunderflats** (Berlin), **Flatio** (Barcelona), **Blueground**

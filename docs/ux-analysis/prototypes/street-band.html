@@ -69,8 +69,8 @@
   footer a { color: var(--muted); }
   #map { height: 100vh; }
   .street-label {
-    background: var(--panel); border: 1px solid var(--brand); border-radius: 8px;
-    padding: 3px 8px; font-size: 12px; font-weight: 600; color: var(--brand); white-space: nowrap;
+    background: var(--panel); border: 1px solid #4a7fb5; border-radius: 8px;
+    padding: 3px 8px; font-size: 12px; font-weight: 600; color: #4a7fb5; white-space: nowrap;
     box-shadow: 0 1px 4px rgba(0,0,0,.15);
   }
 </style>
@@ -123,8 +123,10 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // The street band: a wide soft glow under a solid line — the disclosure unit.
-L.polyline(DATA.street, { color: '#1f8a57', weight: 22, opacity: .14, lineCap: 'round' }).addTo(map);
-const streetLine = L.polyline(DATA.street, { color: '#1f8a57', weight: 5, opacity: .55, lineCap: 'round' }).addTo(map);
+// River blue, the app's "open / informational" color (globals.css --river-deep)
+// — the band matches the area-circle idiom of the competitor maps.
+L.polyline(DATA.street, { color: '#4a7fb5', weight: 22, opacity: .16, lineCap: 'round' }).addTo(map);
+const streetLine = L.polyline(DATA.street, { color: '#4a7fb5', weight: 5, opacity: .6, lineCap: 'round' }).addTo(map);
 const mid = DATA.street[Math.floor(DATA.street.length / 2)];
 L.marker(mid, {
   icon: L.divIcon({ className: '', html: '<div class="street-label">The home is on this street</div>', iconSize: null, iconAnchor: [-14, 10] }),

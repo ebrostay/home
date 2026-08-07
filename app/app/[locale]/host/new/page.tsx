@@ -512,10 +512,16 @@ function NewPropertyContent() {
     // OD-10: the formula name, suggested once the address is behind us — a
     // proposal like the import's own, never overwriting something typed.
     // Raw setter, deliberately: this is the page filling the field, not the
-    // owner editing it (same reasoning as `onImportResult` above).
+    // owner editing it (same reasoning as `onImportResult` above). Checked
+    // against `l`, the state the updater is actually about to write, not the
+    // `listing` closed over before the `await persist()` above — the owner
+    // could type a name during that round trip, and re-reading the stale
+    // closure here would silently discard it.
     if (STEPS[step] === "address") {
-      const suggestion = suggestedName(listing);
-      if (suggestion) setListing((l) => ({ ...l, name: suggestion }));
+      setListing((l) => {
+        const suggestion = suggestedName(l);
+        return suggestion ? { ...l, name: suggestion } : l;
+      });
     }
     setStep(target);
     setReached((r) => Math.max(r, target));

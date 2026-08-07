@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Plus, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { fetchPlaceRoute } from "@/lib/api";
+import { fetchPlaceRoute, type RouteBand } from "@/lib/api";
 import { formatDistance, geocode, type GeoCandidate } from "@/lib/geocode";
 import { type NearbyProfile } from "@/lib/nearby";
 import {
@@ -78,7 +78,7 @@ export function YourPlaces({
    *  selection belongs to the nearby list instead. */
   activeId: string | null;
   onSelect: (placeId: string) => void;
-  onRoute: (destination: NeighbourhoodMapDestination, polyline: string | null) => void;
+  onRoute: (destination: NeighbourhoodMapDestination, route: RouteBand | null) => void;
   /** Raised while the SELECTED place's route is on its way, so the map can say
    *  so on its pin — the same contract the nearby list has. Rarely true in
    *  practice: every place measures on mount, so by the time one is clicked
@@ -280,7 +280,7 @@ export function YourPlaces({
     const state = routes[routeKey(propertyId, place, profile)];
     onRouteRef.current(
       { lat: place.lat, lng: place.lng, label: place.label },
-      state?.kind === "ready" ? state.route.polyline : null,
+      state?.kind === "ready" ? state.route : null,
     );
   }, [activeId, places, routes, profile, propertyId]);
 
@@ -363,10 +363,15 @@ export function YourPlaces({
                     {state?.kind === "ready" ? (
                       <>
                         <span className="data block text-sm font-semibold text-ink">
-                          {t("minutes", { count: Math.max(1, Math.round(state.route.seconds / 60)) })}
+                          {state.route.minutes[0] === state.route.minutes[1]
+                            ? t("minutes", { count: state.route.minutes[1] })
+                            : t("minutesRange", {
+                                lo: state.route.minutes[0],
+                                hi: state.route.minutes[1],
+                              })}
                         </span>
                         <span className="data block text-xs text-muted">
-                          {formatDistance(state.route.metres, locale)}
+                          {formatDistance(state.route.metres[1], locale)}
                         </span>
                       </>
                     ) : state?.kind === "error" ? (

@@ -34,7 +34,7 @@ import { PlacePicker } from "@/components/host/fields/PlacePicker";
 import { RichText } from "@/components/ui/RichText";
 import { FancyboxMosaic } from "@/components/detail/FancyboxMosaic";
 import { paragraphDoc, type RichNode } from "@/lib/rich-text";
-import type { HostPhoto, HostNearbyEntry, PropertyPhoto } from "@/lib/api";
+import type { HostPhoto, HostNearbyEntry, PropertyPhoto, PublicNearbyEntry } from "@/lib/api";
 
 // A plausible Zaragoza mid-term market (26 homes): the four real listings are
 // too few to show what these controls do at a normal catalogue size.
@@ -172,6 +172,28 @@ const RICH_TEXT_PLACES: HostNearbyEntry[] = [
   },
 ];
 
+// `RichText` (the guest-facing renderer) reads the PUBLIC shape — a range per
+// profile (ADR-041), not the owner's single eager measurement `PlacePicker`
+// above still edits. Same two fixture entries, translated to the shape a
+// guest would actually receive; a flat min=max range stands in for a real
+// band, same degrade `ToPublicReach` (api/Models/PublicModels.cs) falls back
+// to for an entry saved before bands existed.
+const RICH_TEXT_PLACES_PUBLIC: PublicNearbyEntry[] = RICH_TEXT_PLACES.map((e) => ({
+  id: e.id,
+  group: e.group,
+  type: e.type,
+  customType: e.customType,
+  name: e.name,
+  lat: e.lat,
+  lng: e.lng,
+  reach: Object.fromEntries(
+    Object.entries(e.reach).map(([profile, r]) => [
+      profile,
+      { minMinutes: r.minutes, maxMinutes: r.minutes, metres: r.metres },
+    ]),
+  ),
+}));
+
 function RichTextDemo() {
   const [doc, setDoc] = useState<RichNode | null>(
     paragraphDoc("A quiet third-floor flat in El Arrabal, five minutes from the river."),
@@ -210,7 +232,7 @@ function RichTextDemo() {
         <RichText
           doc={doc}
           photos={RICH_TEXT_PHOTOS}
-          nearby={RICH_TEXT_PLACES}
+          nearby={RICH_TEXT_PLACES_PUBLIC}
           profile="foot"
           onPhoto={(url) => console.log("open gallery at", url)}
           onPlace={(id) => console.log("select place", id)}

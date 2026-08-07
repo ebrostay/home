@@ -5,7 +5,7 @@ import { Image as ImageIcon, MapPin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { PropertyPhoto, PublicNearbyEntry } from "@/lib/api";
 import { formatDistance } from "@/lib/geocode";
-import { reachFor, type NearbyProfile } from "@/lib/nearby";
+import { publicReachFor, type NearbyProfile } from "@/lib/nearby";
 import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { RichNode } from "@/lib/rich-text";
 
@@ -112,7 +112,7 @@ function Block({ node, ctx }: { node: RichNode; ctx: Ctx }) {
     case "placeCard": {
       const place = node.attrs?.entryId ? ctx.byId.get(node.attrs.entryId) : undefined;
       if (!place) return null;
-      const reach = reachFor(place, ctx.profile);
+      const reach = publicReachFor(place, ctx.profile);
       const ProfileIcon = PROFILE_ICONS[ctx.profile];
       return (
         <button
@@ -130,8 +130,10 @@ function Block({ node, ctx }: { node: RichNode; ctx: Ctx }) {
             <span className="flex items-center gap-1.5 text-muted">
               <ProfileIcon size={12} strokeWidth={2} aria-hidden />
               <span className="data text-xs">
-                {ctx.t("minutes", { count: reach.minutes })} ·{" "}
-                {formatDistance(reach.metres, ctx.locale)}
+                {reach.minMinutes === reach.maxMinutes
+                  ? ctx.t("minutes", { count: reach.maxMinutes })
+                  : ctx.t("minutesRange", { lo: reach.minMinutes, hi: reach.maxMinutes })}{" "}
+                · {formatDistance(reach.metres, ctx.locale)}
               </span>
             </span>
           )}

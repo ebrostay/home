@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { decodePolyline } from "@/lib/nearby";
+import type { RouteBand } from "@/lib/api";
 import { LEAFLET_PREFIX, ORS_ATTRIBUTION, OSM_ATTRIBUTION } from "@/lib/mapAttribution";
 
 // The public "what's nearby" map (merges what used to be sections 7 and 9):
-// the home pin (map-marker — the same class ListingsMap uses for "the one
-// listing"), the destination for whichever entry Nearby.tsx has active
-// (map-marker-chosen — a plain committed dot, the same meaning NearbyMap
-// gives an already-saved entry), and the walking/driving route line ORS
-// returns once the guest clicks one.
+// the street BAND this home sits on (ADR-041 — never the door), the
+// destination for whichever entry Nearby.tsx has active (map-marker-chosen —
+// a plain committed dot, the same meaning NearbyMap gives an already-saved
+// entry), and the fan-and-trunk route ORS returns once the guest clicks one.
 //
 // Unlike NearbyMap, this map takes no clicks of its own — selection happens
 // in the list beside it, never on a pin — so there is no onPick/onDrop and
@@ -21,40 +21,47 @@ import { LEAFLET_PREFIX, ORS_ATTRIBUTION, OSM_ATTRIBUTION } from "@/lib/mapAttri
 // where `window` does not exist. The map/layer instances live in refs, not
 // state, for the same reason.
 //
-// `homeLabel` names the home pin (title/alt); `mapLabel` is the region's own
+// `bandLabel` names the band pill; `mapLabel` is the region's own
 // `aria-label`, passed in rather than pulled from a `useTranslations` call
 // here — this is a guest-facing detail component, and the string belongs to
-// `detail.location` in the caller, not to any i18n namespace of this map's
-// own.
+// `detail.streetBand`/`detail.location` in the caller, not to any i18n
+// namespace of this map's own.
 
 export type NeighbourhoodMapDestination = { lat: number; lng: number; label: string };
 
-export function NeighbourhoodMap({
-  home,
-  homeLabel,
-  mapLabel,
-  destination,
-  routePolyline,
-  routePending = false,
-  recentre = 0,
-  className = "",
-}: {
-  home: { lat: number; lng: number };
-  homeLabel: string;
+export type NeighbourhoodMapProps = {
+  /** The public segment of the street this home sits on, [lat, lng] pairs —
+   *  never the door (ADR-041). Always at least two points: the page gates the
+   *  whole neighbourhood section on `p.band` being non-null before this
+   *  component ever mounts. */
+  band: [number, number][];
+  /** The pill drawn at the band's midpoint. */
+  bandLabel: string;
   mapLabel: string;
   destination: NeighbourhoodMapDestination | null;
-  routePolyline: string | null;
+  route: RouteBand | null;
   /** The destination is drawn already and its line is still coming, so the pin
    *  says so on the map — where the line is about to appear — rather than in
    *  the list, which would have to grow a row to do it. */
   routePending?: boolean;
-  /** Bumped by the caller to put the home back in the middle — the address
-   *  plate above the map asking "where is this, exactly". A counter, not a
-   *  flag: two clicks in a row are two requests, and a `true` that is already
-   *  `true` would answer only the first. */
+  /** Bumped by the caller to bring the street back into view — the "show on
+   *  map" control beside the section title. A counter, not a flag: two clicks
+   *  in a row are two requests, and a `true` that is already `true` would
+   *  answer only the first. */
   recentre?: number;
   className?: string;
-}) {
+};
+
+export function NeighbourhoodMap({
+  band,
+  bandLabel,
+  mapLabel,
+  destination,
+  route,
+  routePending = false,
+  recentre = 0,
+  className = "",
+}: NeighbourhoodMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   /* eslint-disable @typescript-eslint/no-explicit-any -- Leaflet is loaded at
      runtime and has no types available at this import site. */
@@ -68,8 +75,8 @@ export function NeighbourhoodMap({
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // Leaflet loads asynchronously, so on the very first render(s) mapRef and
-  // the layer refs are still null even though `destination`/`routePolyline`
-  // may already be non-null (a fast click right after mount). The two redraw
+  // the layer refs are still null even though `destination`/`route` may
+  // already be non-null (a fast click right after mount). The two redraw
   // effects below depend on this to run once the map actually exists.
   const [mapReady, setMapReady] = useState(false);
 
@@ -80,10 +87,10 @@ export function NeighbourhoodMap({
       if (cancelled || !containerRef.current || mapRef.current) return;
       leafletRef.current = L;
 
-      mapRef.current = L.map(containerRef.current, { scrollWheelZoom: false }).setView(
-        [home.lat, home.lng],
-        15,
-      );
+      // No initial setView: the band has no single point to centre on, so the
+      // view is established by fitBounds below, once the band itself is on
+      // the map.
+      mapRef.current = L.map(containerRef.current, { scrollWheelZoom: false });
       mapRef.current.attributionControl.setPrefix(LEAFLET_PREFIX);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: OSM_ATTRIBUTION,
@@ -96,18 +103,30 @@ export function NeighbourhoodMap({
       // that blinks into existence on the first click is one nobody reads.
       mapRef.current.attributionControl.addAttribution(ORS_ATTRIBUTION);
 
-      // The home pin is added directly to the map, not into a layer group:
-      // it never moves and must survive layer.clearLayers() on every
+      // The band, not a pin (ADR-041): glow under line, river blue via CSS
+      // classes (globals.css, next to `.nearby-route-line` — same reasoning:
+      // `stroke` goes through a real CSS rule rather than Leaflet's `color`
+      // option, which writes straight into the SVG presentation attribute and
+      // does not reliably resolve var() there or repaint on a `data-theme`
+      // flip). Added directly to the map, not into a layer group: it never
+      // moves and must survive layer.clearLayers() on every
       // destination/route redraw below.
-      L.marker([home.lat, home.lng], {
-        title: homeLabel,
-        alt: homeLabel,
+      const bandLine: [number, number][] = band;
+      L.polyline(bandLine, { className: "street-band-glow", weight: 22, opacity: 0.16 }).addTo(
+        mapRef.current,
+      );
+      L.polyline(bandLine, { className: "street-band-line", weight: 5, opacity: 0.6 }).addTo(
+        mapRef.current,
+      );
+      const mid = bandLine[Math.floor(bandLine.length / 2)];
+      L.marker(mid, {
+        interactive: false,
         icon: L.divIcon({
           className: "",
-          html: `<div class="map-marker"></div>`,
-          iconSize: [0, 0],
+          html: `<div class="street-band-label">${escapeHtml(bandLabel)}</div>`,
         }),
       }).addTo(mapRef.current);
+      mapRef.current.fitBounds(L.latLngBounds(bandLine).pad(0.3));
 
       destinationRef.current = L.layerGroup().addTo(mapRef.current);
       lineRef.current = L.layerGroup().addTo(mapRef.current);
@@ -117,15 +136,17 @@ export function NeighbourhoodMap({
     return () => {
       cancelled = true;
     };
-    // Mount once, on the STARTING position — re-running on every change would
-    // rebuild the map out from under whatever the guest is doing. `homeLabel`
+    // Mount once, on the STARTING band — re-running on every change would
+    // rebuild the map out from under whatever the guest is doing. `bandLabel`
     // and `mapLabel` are omitted the same way: translated strings do not
-    // change within one page life.
+    // change within one page life. `band` itself is stable across this page's
+    // life too — it comes straight off the fetched property and that state is
+    // set once — so keying off its reference is safe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [home.lat, home.lng]);
+  }, [band]);
 
   // Redraw the destination pin whenever the active entry changes, and fit the
-  // view to home+destination so a newly clicked entry is never off-screen —
+  // view to band+destination so a newly clicked entry is never off-screen —
   // the whole reason "Where you'll be" and "What's nearby" were merged into
   // one viewport in the first place.
   useEffect(() => {
@@ -145,14 +166,11 @@ export function NeighbourhoodMap({
       }),
     }).addTo(layer);
 
-    mapRef.current?.fitBounds(
-      [
-        [home.lat, home.lng],
-        [destination.lat, destination.lng],
-      ],
-      { padding: [40, 40], maxZoom: 16 },
-    );
-    // `home` intentionally absent beyond the initial read above: it anchors
+    mapRef.current?.fitBounds(L.latLngBounds([...band, [destination.lat, destination.lng]]), {
+      padding: [40, 40],
+      maxZoom: 16,
+    });
+    // `band` intentionally absent beyond the initial read above: it anchors
     // every fit, not a reason to re-fit on its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination, mapReady]);
@@ -166,42 +184,48 @@ export function NeighbourhoodMap({
     el.classList.toggle("map-marker-measuring", routePending);
   }, [routePending, destination, mapReady]);
 
-  // Centre on the home, keeping whatever zoom the reader is on — unless they
-  // have zoomed out past the point where a centred pin says anything, hence
-  // the floor. `0` is "never asked", so this does not fight the initial view.
+  // Bring the street back into view, keeping whatever zoom the reader is on —
+  // the "show on map" control beside the section title. `0` is "never
+  // asked", so this does not fight the initial view.
   useEffect(() => {
     if (!recentre) return;
+    const L = leafletRef.current;
     const map = mapRef.current;
-    if (!map) return;
+    if (!L || !map) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    map.setView([home.lat, home.lng], Math.max(map.getZoom(), 15), { animate: !reduced });
-    // `home` is read, never watched: the home moving is not a reason to
+    map.fitBounds(L.latLngBounds(band).pad(0.3), { animate: !reduced });
+    // `band` is read, never watched: the band moving is not a reason to
     // recentre — the reader asking is.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recentre, mapReady]);
 
-  // Redraw the route line whenever it changes, into a layer cleared on each
+  // Redraw the route whenever it changes, into a layer cleared on each
   // change — same as NearbyMap — so a stale line from a previously active
   // entry never lingers once another is picked, and so a failed lookup
-  // (routePolyline back to null) clears whatever was there without waiting
-  // for a new destination.
+  // (route back to null) clears whatever was there without waiting for a new
+  // destination. Fan-and-trunk (ADR-041 point 5): the two boundary-sample
+  // stubs draw lighter, the shared trunk once they converge draws the same as
+  // the classic single line.
   useEffect(() => {
     const L = leafletRef.current;
     const layer = lineRef.current;
     if (!L || !layer) return;
     layer.clearLayers();
-    if (!routePolyline) return;
-    L.polyline(decodePolyline(routePolyline), {
-      // `stroke` comes from CSS (globals.css `.nearby-route-line`), not a
-      // `color` option: Leaflet writes `color` straight into the SVG path's
-      // `stroke` presentation attribute, and var() substitution there is not
-      // reliable across engines or on a `data-theme` flip — see the CSS
-      // comment.
-      className: "nearby-route-line",
-      weight: 4,
-      opacity: 0.85,
-    }).addTo(layer);
-  }, [routePolyline, mapReady]);
+    if (!route) return;
+    for (const stub of [route.stubA, route.stubB])
+      if (stub)
+        L.polyline(decodePolyline(stub), {
+          className: "nearby-route-stub",
+          weight: 3.5,
+          opacity: 0.55,
+        }).addTo(layer);
+    if (route.trunk)
+      L.polyline(decodePolyline(route.trunk), {
+        className: "nearby-route-line",
+        weight: 4,
+        opacity: 0.85,
+      }).addTo(layer);
+  }, [route, mapReady]);
 
   useEffect(
     () => () => {
@@ -224,3 +248,10 @@ export function NeighbourhoodMap({
     </div>
   );
 }
+
+// The label is interpolated into a divIcon's raw HTML string, so it has to be
+// escaped — same pattern ResultsMap.tsx uses for its price pins. `bandLabel`
+// is our own message string, never guest input, but escaped regardless: an
+// unescaped `&` alone would break the markup.
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

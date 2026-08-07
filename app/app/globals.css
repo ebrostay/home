@@ -579,6 +579,46 @@
   stroke: var(--brand-strong);
 }
 
+/* The street band (NeighbourhoodMap, ADR-041): the public segment of street a
+   home sits on, drawn instead of a door pin. River blue, not brand green —
+   brand is reserved for the route line and its own destination pin; the band
+   is where the home IS, not a place travelled to. Two strokes on the same
+   points: a wide, faint glow underneath reads as a highlighted stretch of
+   street at a glance, and a slim, more opaque line on top keeps the road
+   itself legible under it. Both go through `stroke`, same reasoning as
+   `.nearby-route-line` above. */
+.street-band-glow {
+  stroke: var(--river-deep);
+}
+.street-band-line {
+  stroke: var(--river-deep);
+}
+/* The label riding the middle of the band. A pill like `.map-pin`'s, but
+   centred on its point rather than planted above it (`.map-marker`'s
+   convention) — a street segment has no single spot to point down at. */
+.street-band-label {
+  display: inline-block;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  background: var(--surface);
+  color: var(--river-deep);
+  border: 1px solid var(--river-deep);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+
+/* The fan-and-trunk route (ADR-041 point 5): two stubs from the sampled band
+   ends fanning into one shared trunk once they converge. Same hue as
+   `.nearby-route-line` — it is the same route, just the part that is not yet
+   certain — carried entirely by a lighter `opacity` at the call site rather
+   than a second colour, so the two halves of one line read as one line. */
+.nearby-route-stub {
+  stroke: var(--brand);
+}
+
 /* Budget controls. The drawing IS the track: a native range input is laid over
    the bars/curve, transparent apart from its thumb, so arrow keys, Home/End
    and touch come from the platform rather than a hand-rolled pointer handler.

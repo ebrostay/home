@@ -11,8 +11,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteLine } from "@/lib/api";
-import { NEARBY_GROUPS, reachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
+import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteBand } from "@/lib/api";
+import { NEARBY_GROUPS, publicReachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
 import { useDelayed } from "./measuring";
 import { PROFILE_ICONS } from "@/lib/profile-icons";
@@ -74,8 +74,8 @@ export function Nearby({
   onSelect: (entryId: string) => void;
   /** Fired when the active entry resolves: the destination point appears as
    *  soon as an entry is clicked (it comes from the document, so it never
-   *  waits on ORS), and the polyline follows once the route arrives. */
-  onRoute: (destination: NeighbourhoodMapDestination, polyline: string | null) => void;
+   *  waits on ORS), and the route band follows once it arrives. */
+  onRoute: (destination: NeighbourhoodMapDestination, route: RouteBand | null) => void;
 }) {
   const t = useTranslations("detail.nearby");
   const tType = useTranslations("nearby");
@@ -84,7 +84,7 @@ export function Nearby({
   // is "still measuring". That is what keeps every `setState` below inside a
   // promise callback instead of synchronously in an effect, and it means
   // switching profile and back redraws from memory rather than re-fetching.
-  const [routes, setRoutes] = useState<Record<string, RouteLine>>({});
+  const [routes, setRoutes] = useState<Record<string, RouteBand>>({});
   const [errors, setErrors] = useState<Record<string, number>>({});
 
   // Read inside the fetch effect rather than named as a dependency: a new
@@ -113,7 +113,7 @@ export function Nearby({
   const activeKey = activeId ? routeKey(activeId, profile) : "";
   const measuring =
     !!activeEntry &&
-    !!reachFor(activeEntry, profile) &&
+    !!publicReachFor(activeEntry, profile) &&
     !routes[activeKey] &&
     errors[activeKey] === undefined;
   const showMeasuring = useDelayed(measuring);
@@ -129,9 +129,10 @@ export function Nearby({
   }, [showMeasuring]);
 
   // One card per group, entries with no figure for the active profile
-  // dropped (reachFor returns null — a place ORS genuinely could not route
-  // to, not zero minutes), the rest ranked ascending, and any group left
-  // empty by that filter dropped from the grid entirely.
+  // dropped (publicReachFor returns null — a place ORS genuinely could not
+  // route to, not zero minutes), the rest ranked ascending by the fastest end
+  // of the range, and any group left empty by that filter dropped from the
+  // grid entirely.
   const groups = useMemo(
     () =>
       NEARBY_GROUPS.map((group) => ({
@@ -139,10 +140,10 @@ export function Nearby({
         list: entries
           .filter((e) => e.group === group)
           .flatMap((entry) => {
-            const reach = reachFor(entry, profile);
+            const reach = publicReachFor(entry, profile);
             return reach ? [{ entry, reach }] : [];
           })
-          .sort((a, b) => a.reach.minutes - b.reach.minutes),
+          .sort((a, b) => a.reach.minMinutes - b.reach.minMinutes),
       })).filter((g) => g.list.length > 0),
     [entries, profile],
   );
@@ -156,7 +157,7 @@ export function Nearby({
   useEffect(() => {
     if (!activeId) return;
     const entry = entryLookup.get(activeId);
-    if (!entry || !reachFor(entry, profile)) return;
+    if (!entry || !publicReachFor(entry, profile)) return;
 
     const key = routeKey(activeId, profile);
     const destination: NeighbourhoodMapDestination = {
@@ -166,10 +167,10 @@ export function Nearby({
     };
 
     // The pin lands immediately — it is already known, and the same figure is
-    // already on screen — carrying whatever line we have for it, which is the
+    // already on screen — carrying whatever band we have for it, which is the
     // real one on a revisit and none at all the first time.
     const known = routesRef.current[key];
-    onRouteRef.current(destination, known?.polyline ?? null);
+    onRouteRef.current(destination, known ?? null);
     if (known || errorsRef.current[key] !== undefined) return;
 
     const controller = new AbortController();
@@ -177,7 +178,7 @@ export function Nearby({
       .then((route) => {
         if (controller.signal.aborted) return;
         setRoutes((prev) => ({ ...prev, [key]: route }));
-        onRouteRef.current(destination, route.polyline);
+        onRouteRef.current(destination, route);
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted || (err as Error).name === "AbortError") return;
@@ -301,7 +302,9 @@ export function Nearby({
                           </span>
                           <span className="shrink-0 text-right">
                             <span className="data block text-sm font-semibold text-ink">
-                              {t("minutes", { count: reach.minutes })}
+                              {reach.minMinutes === reach.maxMinutes
+                                ? t("minutes", { count: reach.maxMinutes })
+                                : t("minutesRange", { lo: reach.minMinutes, hi: reach.maxMinutes })}
                             </span>
                             <span className="data block text-xs text-muted">
                               {formatDistance(reach.metres, locale)}

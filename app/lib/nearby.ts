@@ -10,6 +10,8 @@
 // drift. The cost is that a type can arrive with no translation, so the editor
 // hides any type it has no label for rather than throwing MISSING_MESSAGE.
 
+import type { PublicReach } from "@/lib/api";
+
 export const NEARBY_GROUPS = [
   "transport",
   "groceries",
@@ -34,6 +36,20 @@ export function reachFor(
   entry: { reach: Partial<Record<NearbyProfile, Reach>> },
   profile: NearbyProfile,
 ): Reach | null {
+  return entry.reach[profile] ?? null;
+}
+
+/** How far a place is, per profile, as a visitor may see it — a range
+ *  (ADR-041 point 3), never the owner's single eager `Reach`. Kept as its own
+ *  function rather than a generic `reachFor<R>`: a type parameter inferred
+ *  from an index-signature-shaped `reach` (`PublicNearbyEntry`'s) does not
+ *  reliably resolve against `Partial<Record<NearbyProfile, R>>`, and two
+ *  small, concretely-typed lookups are less trouble than one that silently
+ *  infers `{}`. */
+export function publicReachFor(
+  entry: { reach: Record<string, PublicReach> },
+  profile: NearbyProfile,
+): PublicReach | null {
   return entry.reach[profile] ?? null;
 }
 

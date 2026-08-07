@@ -112,7 +112,14 @@ describe("routeKey", () => {
 });
 
 describe("parseRoutes", () => {
-  const route: CachedRoute = { polyline: "cse}Fbq_D", metres: 340, seconds: 260, at: 100 };
+  const route: CachedRoute = {
+    minutes: [4, 6],
+    metres: [340, 400],
+    trunk: "cse}Fbq_D",
+    stubA: "abc",
+    stubB: "def",
+    at: 100,
+  };
 
   it("reads a well-formed cache", () => {
     expect(parseRoutes(json({ "home-1|41.65330,-0.88150|foot": route }))).toEqual({
@@ -129,24 +136,43 @@ describe("parseRoutes", () => {
   it("drops entries with no geometry or no figures", () => {
     const cache = {
       good: route,
-      empty: { ...route, polyline: "" },
-      noMetres: { ...route, metres: null },
-      noSeconds: { ...route, seconds: "260" },
+      noMinutes: { ...route, minutes: null },
+      noMetres: { ...route, metres: [340] },
+      noStubA: { ...route, stubA: null },
+      noStubB: { ...route, stubB: 5 },
     };
     expect(Object.keys(parseRoutes(json(cache)))).toEqual(["good"]);
   });
 
+  it("accepts an empty trunk — the ends never converged", () => {
+    const cache = { straight: { ...route, trunk: "" } };
+    expect(parseRoutes(json(cache)).straight.trunk).toBe("");
+  });
+
+  // The pre-ADR-041 shape: one route, one measurement, no band. There is no
+  // repair path from a single number to a range, so an entry from an older
+  // build is dropped on sight rather than shown half-migrated — that drop IS
+  // the migration.
+  it("drops an entry in the pre-band shape", () => {
+    const legacy = {
+      old: { polyline: "cse}Fbq_D", metres: 340, seconds: 260, at: 100 },
+    };
+    expect(parseRoutes(json(legacy))).toEqual({});
+  });
+
   it("dates an entry with no timestamp to the epoch, so it is evicted first", () => {
-    const cache = { old: { polyline: "abc", metres: 1, seconds: 1 } };
+    const cache = { old: { ...route, at: undefined } };
     expect(parseRoutes(json(cache)).old.at).toBe(0);
   });
 });
 
 describe("putRoute", () => {
   const at = (n: number): CachedRoute => ({
-    polyline: "abc",
-    metres: 100,
-    seconds: 60,
+    minutes: [4, 6],
+    metres: [340, 400],
+    trunk: "cse}Fbq_D",
+    stubA: "abc",
+    stubB: "def",
     at: n,
   });
 

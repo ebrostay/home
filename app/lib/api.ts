@@ -30,10 +30,19 @@ export type PropertyPhoto = {
  *  absent profile cannot be read as a distance of zero. */
 export type NearbyReachMap = Partial<Record<NearbyProfile, Reach>>;
 
+/** How far a place is, per profile, as a visitor may see it (`api/Models/
+ *  PublicModels.cs` `PublicReach`) — a range, not a single eager number
+ *  (ADR-041 point 3), plus the coarse distance the UI shows beside it. */
+export type PublicReach = { minMinutes: number; maxMinutes: number; metres: number };
+
 /** A nearby entry as a visitor may see it (`api/Models/PublicModels.cs`
  *  `PublicNearby`). Narrower than the owner's shape on purpose: `osmId`,
  *  `measuredAt` and `needsCheck` are provenance and internal state — see
- *  `HostNearbyEntry`, which is this shape plus those three fields. */
+ *  `HostNearbyEntry`, which is this shape plus those three fields. `reach`
+ *  is keyed by profile, same as `NearbyReachMap`, but each value is a range
+ *  (ADR-041) rather than the owner's single measured `Reach` — the two never
+ *  share a wire shape, which is why `HostNearbyEntry` below overrides it
+ *  instead of inheriting it. */
 export type PublicNearbyEntry = {
   id: string;
   group: NearbyGroup;
@@ -42,14 +51,18 @@ export type PublicNearbyEntry = {
   name: string;
   lat: number;
   lng: number;
-  reach: NearbyReachMap;
+  reach: Record<string, PublicReach>;
 };
 
 /** A nearby entry as the OWNER sees it (`api/Models/HostModels.cs`
  *  `HostListing.Nearby`, the raw `NearbyEntry`) — wider than the public
  *  projection: `osmId`/`measuredAt` are provenance, and `needsCheck` flags an
- *  entry farther than its group's radius allows and wanting a second look. */
-export type HostNearbyEntry = PublicNearbyEntry & {
+ *  entry farther than its group's radius allows and wanting a second look.
+ *  `reach` is overridden rather than inherited: the owner's copy is still the
+ *  server's plain, single-measurement `NearbyReach` (`Dictionary<string,
+ *  NearbyReach>`), never the visitor's range. */
+export type HostNearbyEntry = Omit<PublicNearbyEntry, "reach"> & {
+  reach: NearbyReachMap;
   osmId: string | null;
   measuredAt: string | null;
   needsCheck: boolean;
@@ -95,9 +108,14 @@ export type PropertySummary = {
 
 export type PropertyDetail = Omit<
   PropertySummary,
-  "coverUrl" | "coverCardUrl" | "coverDetailUrl"
+  "coverUrl" | "coverCardUrl" | "coverDetailUrl" | "lat" | "lng"
 > & {
-  address: string | null;
+  /** The public segment of the street this property sits on, as [lat, lng]
+   *  pairs — never the door, never the sampled routing endpoints (ADR-041).
+   *  Null means degraded: the band could not be derived, so the map shows
+   *  nothing more precise than the summary's rounded point (`lat`/`lng`
+   *  there is the band's own midpoint, not the door either). */
+  band: [number, number][] | null;
   description: BilingualDoc | null;
   details: Bilingual | null;
   beds: Bilingual | null;
@@ -517,7 +535,24 @@ export const saveHostAvailability = (id: string, blocks: AvailabilityWrite[]) =>
 // `get`/`put` do not thread an `AbortSignal`.
 // ---------------------------------------------------------------------------
 
-export type RouteLine = { polyline: string; metres: number; seconds: number };
+/** The owner's route preview for a candidate not yet saved
+ *  (`HostNearbyPreviewRoute`) — the one route endpoint ADR-041 left alone: a
+ *  single exact route, never a band (see `RouteCache.cs`'s own comment on
+ *  why it does not go through the band cache). */
+export type PreviewRoute = { polyline: string; metres: number; seconds: number };
+
+/** A merged route band (ADR-041 point 5): the fan of two boundary-sample
+ *  routes and the trunk they share once they converge, plus a range rather
+ *  than a single eager number for both duration and distance. Mirrors
+ *  `api/Models/NearbyModels.cs` `BandRouteDoc`'s wire shape exactly —
+ *  what `PropertyNearbyRoute` and `PropertyPlaceRoute` answer with. */
+export type RouteBand = {
+  minutes: [number, number];
+  metres: [number, number];
+  trunk: string; // encoded polyline5, "" when the ends never converge
+  stubA: string;
+  stubB: string;
+};
 
 /** The type vocabulary, served from the API so `NearbyGroups.cs` stays its
  *  one definition (`app/lib/nearby.ts` keeps only the compile-time groups and
@@ -556,7 +591,7 @@ export async function fetchPreviewRoute(
   to: { lat: number; lng: number },
   profile: NearbyProfile,
   signal?: AbortSignal,
-): Promise<RouteLine> {
+): Promise<PreviewRoute> {
   const params = new URLSearchParams({
     lat: String(from.lat),
     lng: String(from.lng),
@@ -566,7 +601,7 @@ export async function fetchPreviewRoute(
   });
   const res = await fetch(`${BASE}/api/host/nearby/preview-route?${params}`, { signal });
   if (!res.ok) throw new ApiError(res.status, await errorCode(res));
-  return (await res.json()) as RouteLine;
+  return (await res.json()) as PreviewRoute;
 }
 
 /** Loading the route for one SAVED entry. Anonymous, and takes ids rather than
@@ -583,13 +618,13 @@ export async function fetchNearbyRoute(
   entryId: string,
   profile: NearbyProfile,
   signal?: AbortSignal,
-): Promise<RouteLine> {
+): Promise<RouteBand> {
   const res = await fetch(
     `${BASE}/api/properties/${encodeURIComponent(propertyId)}/nearby/${encodeURIComponent(entryId)}/route?profile=${profile}`,
     { signal },
   );
   if (!res.ok) throw new ApiError(res.status, await errorCode(res));
-  return (await res.json()) as RouteLine;
+  return (await res.json()) as RouteBand;
 }
 
 /** Measuring one of the guest's own saved places from this listing ("your
@@ -606,7 +641,7 @@ export async function fetchPlaceRoute(
   to: { lat: number; lng: number },
   profile: NearbyProfile,
   signal?: AbortSignal,
-): Promise<RouteLine> {
+): Promise<RouteBand> {
   const params = new URLSearchParams({
     lat: String(to.lat),
     lng: String(to.lng),
@@ -617,7 +652,7 @@ export async function fetchPlaceRoute(
     { signal },
   );
   if (!res.ok) throw new ApiError(res.status, await errorCode(res));
-  return (await res.json()) as RouteLine;
+  return (await res.json()) as RouteBand;
 }
 
 export const biText = (b: Bilingual | null | undefined, locale: string) =>

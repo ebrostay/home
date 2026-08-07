@@ -54,11 +54,14 @@ export type SavedPlace = {
   lng: number;
 };
 
-/** A measured route, as the server returned it plus when we stored it. */
+/** A measured route band, as the server returned it (ADR-041 — `RouteBand`
+ *  in `lib/api.ts`) plus when we stored it. */
 export type CachedRoute = {
-  polyline: string;
-  metres: number;
-  seconds: number;
+  minutes: [number, number];
+  metres: [number, number];
+  trunk: string;
+  stubA: string;
+  stubB: string;
   /** Epoch ms. Only ever read to decide what to drop first. */
   at: number;
 };
@@ -153,15 +156,33 @@ export function parseRoutes(raw: string | null): Record<string, CachedRoute> {
   return out;
 }
 
+/** A [lo, hi] pair of finite numbers — the shape both `minutes` and `metres`
+ *  take on a `CachedRoute`. */
+function isRange(v: unknown): v is [number, number] {
+  return (
+    Array.isArray(v) &&
+    v.length === 2 &&
+    Number.isFinite(v[0]) &&
+    Number.isFinite(v[1])
+  );
+}
+
 function asRoute(item: unknown): CachedRoute | null {
   if (typeof item !== "object" || item === null) return null;
   const v = item as Record<string, unknown>;
-  if (typeof v.polyline !== "string" || v.polyline === "") return null;
-  if (!Number.isFinite(v.metres) || !Number.isFinite(v.seconds)) return null;
+  // An entry from before ADR-041 (`{ polyline, metres: number, seconds }`)
+  // fails here — `minutes`/`metres` are not the `[lo, hi]` pairs this shape
+  // requires — and is silently dropped. That IS the migration: there is no
+  // repair path from a single measurement to a range.
+  if (!isRange(v.minutes) || !isRange(v.metres)) return null;
+  if (typeof v.trunk !== "string" || typeof v.stubA !== "string" || typeof v.stubB !== "string")
+    return null;
   return {
-    polyline: v.polyline,
-    metres: v.metres as number,
-    seconds: v.seconds as number,
+    minutes: v.minutes,
+    metres: v.metres,
+    trunk: v.trunk,
+    stubA: v.stubA,
+    stubB: v.stubB,
     // A missing timestamp sorts oldest, so an entry from a build that did not
     // write one is the first to go rather than the last.
     at: Number.isFinite(v.at) ? (v.at as number) : 0,

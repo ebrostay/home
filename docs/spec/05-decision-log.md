@@ -3296,6 +3296,13 @@ correct lines.
    true door**, takes the minimum and maximum, rounds them outward to
    whole minutes, and returns **one merged response**: "4–6 min". The
    exact point never reaches the browser.
+   The end samples sit **~10 m inside the street, never on the junction
+   node**. On the node, the router snaps to the crossing street and can
+   exit a one-way street against its direction (found by the product
+   owner on the prototype map). Measured on this one-way street: car to
+   the tram from the downstream end was 1.9 min sampled on the junction
+   (illegal exit) and 3.6 min sampled inside (legal). The inset applies
+   to bike routes too — the router respects one-way for both.
 4. **The true door must be in the sample set.** This is not optional. The
    prototype measured that the true door can fall *outside* the two-end
    range (Plaza del Pilar on foot: ends 35.0 and 35.6 min, door 36.1 min

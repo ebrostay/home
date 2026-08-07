@@ -3286,9 +3286,16 @@ correct lines.
 > (real OSM street geometry, real ORS routes).
 
 1. **Text.** The public page shows the neighbourhood and the street name,
-   without the house number. No address plate, no copy button. Listings
-   get neutral public titles — today the title *is* the address plus the
-   unit.
+   without the house number. Listings get neutral public titles — today
+   the title *is* the address plus the unit.
+   *Amended 2026-08-07 (product owner), after first build:* the original
+   text also removed the address plate and its copy button. That went
+   further than the decision required — the plate was never the leak, the
+   house number on it was. The plate stays, showing the street name and
+   the neighbourhood only; its copy control puts "street, Zaragoza" on
+   the clipboard, which resolves mid-street in a maps app — the same
+   disclosure as the band. The street name ships in the public detail as
+   `streetName`, derived from OSM with the band.
 2. **Map.** The map highlights the street. No pin, no circle. The label
    says: "the home is on this street". The band renders in river blue
    (`--river-deep`) — information, not selection; routes stay brand

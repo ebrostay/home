@@ -1061,6 +1061,10 @@
     "minStay": "Minimum stay",
     "maxStay": "Maximum stay",
     "whereYouWillBe": "Where you'll be",
+    "addressLabel": "Street",
+    "addressShowOnMap": "Show this street on the map",
+    "addressCopy": "Copy the street",
+    "addressCopied": "Copied",
     "streetBand": "This home is on this street",
     "terms": {
       "billing": {

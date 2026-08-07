@@ -5,7 +5,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Share2 } from "lucide-react";
+import { Check, Copy, MapPin, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useShortMonths } from "@/i18n/dates";
@@ -246,15 +246,30 @@ function DetailBody({
   // leaves an already-visible map exactly where it is, which is the desktop
   // case — no jump on the viewport that does not need one.
 
-  // The "show on map" text button beside the section title puts the street
-  // back in the middle of the map (ADR-041 — there is no address plate to
-  // click anymore). A counter rather than a boolean: every click has to reach
-  // the map, including the second one in a row, and a flag that is already
-  // `true` says nothing.
+  // Clicking the street plate puts the street back in the middle of the map.
+  // A counter rather than a boolean: every click has to reach the map,
+  // including the second one in a row, and a flag that is already `true`
+  // says nothing.
   const [recentre, setRecentre] = useState(0);
   const showOnMap = () => {
     setRecentre((n) => n + 1);
     revealMap();
+  };
+
+  // The plate's copy control, back by owner amendment to ADR-041 point 1
+  // (2026-08-07): only the house number was ever the leak. What lands on the
+  // clipboard is the street and the city — pasted into a maps app it resolves
+  // mid-street, the same disclosure as the band already drawn on the map.
+  const [copied, setCopied] = useState(false);
+  const copyStreet = async () => {
+    if (!p?.streetName) return;
+    try {
+      await navigator.clipboard.writeText(`${p.streetName}, Zaragoza`);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard permission denied — the text is on screen either way.
+    }
   };
 
   // Bring the map back when a place is picked from a list that has scrolled
@@ -401,11 +416,9 @@ function DetailBody({
           {p.name}
         </h1>
         <p className="mt-1.5 flex items-center gap-1.5 text-muted">
+          {/* Neighbourhood only up here — the street's home is the plate in
+              the location section (ADR-041 point 1 as amended 2026-08-07). */}
           <MapPin size={15} strokeWidth={2} aria-hidden />
-          {/* ADR-041 point 1: neighbourhood AND street name, never a number.
-              The title alone cannot carry the street — an owner-overridden
-              name (OD-10) may say nothing about where the home is. */}
-          {p.streetName ? `${p.streetName} · ` : ""}
           {biText(p.area, locale)}, Zaragoza
         </p>
       </div>
@@ -553,26 +566,79 @@ function DetailBody({
               against. The area badge in the header still names the
               neighbourhood on its own. */}
           {p.band && (
-            <Section
-              id="neighbourhood"
-              title={td("whereYouWillBe")}
-              action={
-                // The plate that used to sit above the map copied the
-                // address; there is no address to show anymore (ADR-041), so
-                // what is left of it is the one job the map itself can't do
-                // for a reader who has scrolled past it — bring it back.
-                // Reuses `listing.showOnMap`: the same act, "where is this on
-                // the map", that a result card's own button already names.
-                <button
-                  type="button"
-                  onClick={showOnMap}
-                  className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline"
-                >
-                  <MapPin size={15} strokeWidth={2} aria-hidden />
-                  {t("listing.showOnMap")}
-                </button>
-              }
-            >
+            <Section id="neighbourhood" title={td("whereYouWillBe")}>
+              {/* The street plate, back by owner amendment to ADR-041 point 1
+                  (2026-08-07): the card was never the leak — the house number
+                  on it was. It shows exactly what the band on the map shows,
+                  street and neighbourhood, and keeps its two jobs: the text
+                  takes you to the street on the map, the icon puts the
+                  street-and-city line on your clipboard. Deliberately OUTSIDE
+                  the sticky block: the map is what you keep, the street is
+                  what you read once (and take with you). */}
+              {p.streetName && (
+                <div className="mb-4 flex w-fit max-w-full items-center gap-2 rounded-(--radius-card) border border-line bg-surface py-3 pl-4 pr-2 shadow-(--shadow-card) transition-colors duration-(--dur-standard) focus-within:border-brand-strong hover:border-brand-strong lg:mb-0">
+                  <button
+                    type="button"
+                    onClick={showOnMap}
+                    aria-label={td("addressShowOnMap")}
+                    className="group flex min-w-0 items-center gap-4 text-left"
+                  >
+                    <MapPin
+                      size={18}
+                      strokeWidth={2}
+                      aria-hidden
+                      className="shrink-0 text-brand-strong transition-transform duration-(--dur-standard) group-hover:-translate-y-0.5"
+                    />
+                    <span className="min-w-0">
+                      <span className="data block text-[0.6875rem] uppercase tracking-[0.16em] text-muted">
+                        {td("addressLabel")}
+                      </span>
+                      <span className="data mt-0.5 block truncate text-[0.9375rem] font-semibold text-ink group-hover:text-brand-strong">
+                        {p.streetName}
+                      </span>
+                      {biText(p.area, locale) && (
+                        <span className="mt-0.5 block truncate text-xs text-muted">
+                          {biText(p.area, locale)}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyStreet}
+                    aria-label={td("addressCopy")}
+                    className="ml-auto shrink-0 rounded-(--radius-control) p-2 text-muted transition-colors duration-(--dur-standard) hover:bg-surface-2 hover:text-brand-strong"
+                  >
+                    {/* The confirmation happens where the eye already is — on
+                        the control just pressed. Both icons stack in one 16px
+                        cell and cross-fade, so the button never changes size
+                        and the row never reflows. */}
+                    <span className="grid h-4 w-4 place-items-center">
+                      <Copy
+                        size={15}
+                        strokeWidth={2}
+                        aria-hidden
+                        className={`col-start-1 row-start-1 transition-opacity duration-(--dur-standard) ${
+                          copied ? "opacity-0" : "opacity-100"
+                        }`}
+                      />
+                      <Check
+                        size={16}
+                        strokeWidth={2.5}
+                        aria-hidden
+                        className={`col-start-1 row-start-1 text-brand-strong transition-opacity duration-(--dur-standard) ${
+                          copied ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    </span>
+                    {copied && (
+                      <span role="status" className="sr-only">
+                        {td("addressCopied")}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
               <div
                 id="neighbourhood-map"
                 // `bg-page` is what the list disappears behind on its way past,

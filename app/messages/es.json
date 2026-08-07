@@ -1061,6 +1061,10 @@
     "minStay": "Estancia mínima",
     "maxStay": "Estancia máxima",
     "whereYouWillBe": "Dónde vas a estar",
+    "addressLabel": "Calle",
+    "addressShowOnMap": "Ver esta calle en el mapa",
+    "addressCopy": "Copiar la calle",
+    "addressCopied": "Copiada",
     "streetBand": "El piso está en esta calle",
     "terms": {
       "billing": {

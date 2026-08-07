@@ -402,6 +402,10 @@ function DetailBody({
         </h1>
         <p className="mt-1.5 flex items-center gap-1.5 text-muted">
           <MapPin size={15} strokeWidth={2} aria-hidden />
+          {/* ADR-041 point 1: neighbourhood AND street name, never a number.
+              The title alone cannot carry the street — an owner-overridden
+              name (OD-10) may say nothing about where the home is. */}
+          {p.streetName ? `${p.streetName} · ` : ""}
           {biText(p.area, locale)}, Zaragoza
         </p>
       </div>

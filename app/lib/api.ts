@@ -116,6 +116,9 @@ export type PropertyDetail = Omit<
    *  nothing more precise than the summary's rounded point (`lat`/`lng`
    *  there is the band's own midpoint, not the door either). */
   band: [number, number][] | null;
+  /** The street's OSM name, no house number (ADR-041 point 1) — null when the
+   *  band could not be derived. */
+  streetName: string | null;
   description: BilingualDoc | null;
   details: Bilingual | null;
   beds: Bilingual | null;

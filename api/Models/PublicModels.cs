@@ -45,6 +45,11 @@ public record PropertyDetail(
     /// degraded: the band could not be derived, so the map shows nothing more
     /// precise than the summary's rounded point.
     double[][]? Band,
+    /// The street's OSM name, no house number — ADR-041 point 1 promises the
+    /// page "the neighbourhood and the street name", and a formula title the
+    /// owner overrode (OD-10) carries neither. Exactly as public as the band
+    /// itself: it names the segment already drawn on the map.
+    string? StreetName,
     Bilingual? Area,
     BilingualDoc? Description,
     Bilingual? Details,
@@ -212,6 +217,7 @@ public static class PublicProjection
         => new(
             p.Id, p.City, p.Type, p.Name,
             p.Band?.Line.Select(b => new[] { b.Lat, b.Lng }).ToArray(),
+            p.Band?.StreetName,
             p.Area, p.Description, p.Details, p.Beds, p.PriceNote,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2, p.FloorNumber,
             p.Amenities, p.EnergyRating, p.PetsAllowed, p.SmokingAllowed,

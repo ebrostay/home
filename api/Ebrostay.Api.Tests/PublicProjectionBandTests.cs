@@ -44,8 +44,19 @@ public class PublicProjectionBandTests
         Assert.NotNull(d.Band);
         Assert.Equal(2, d.Band!.Length);
         Assert.Equal([41.65476, -0.90779], d.Band[0]); // [lat, lng] pairs on the wire
+        // ADR-041 point 1: the street NAME is public (it names the drawn band);
+        // the number never is.
+        Assert.Equal("Calle de Pedro II El Católico", d.StreetName);
         // Address/Lat/Lng do not exist on the type anymore — this test is the
         // compile-time proof; nothing to assert at runtime.
+    }
+
+    [Fact]
+    public void No_band_means_no_street_name_either()
+    {
+        var d = PublicProjection.ToDetail(Doc(null), DateTimeOffset.UtcNow, 249);
+        Assert.Null(d.Band);
+        Assert.Null(d.StreetName);
     }
 
     [Fact]

@@ -3380,8 +3380,10 @@ on the prototype with real routing data before the lock.
   only.
 - Release moment for the exact address (confirmed booking or signed
   contract): deliberately open → **OD-9**.
-- Public naming scheme for listings: deliberately open → **OD-10**.
-  Blocks implementation of point 1 (the title *is* the address today).
+- Public naming scheme for listings: **OD-10, decided 2026-08-07** —
+  generated formula (street without number + neighbourhood) prefilled in
+  the editor, owner override through the existing review queue.
+  Implementation is unblocked.
 
 ---
 
@@ -3402,4 +3404,4 @@ spec-level decisions) in [`docs/BACKLOG.md`](../BACKLOG.md).
 | OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
 | OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |
 | OD-9 | **Exact-address release moment** | 🔜 | ADR-041 hides the exact address pre-booking. When does the guest receive it: on confirmed booking, or only on signed contract? | Decide with the first real booking under the street-band design; the delivery channel (WhatsApp/email) exists either way. The safer default until decided: signed contract. Raised with ADR-041. |
-| OD-10 | **Public naming scheme for listings** | 🔜 | Today a listing's title *is* its address plus unit ("Pedro II el Católico 3 - 1 IZQ"). ADR-041 needs neutral public names. What is the scheme? | Decide before implementing ADR-041 point 1 — it blocks the title change. Candidates: descriptive names ("Piso luminoso junto al campus"), street-without-number + neighbourhood, or owner-chosen with admin review (the review queue already exists). Raised with ADR-041. |
+| OD-10 | **Public naming scheme for listings** | ✅ decided 2026-08-07 | Today a listing's title *is* its address plus unit ("Pedro II el Católico 3 - 1 IZQ"). ADR-041 needs neutral public names. What is the scheme? | **Decided: formula by default, owner override on top.** The public name is generated: street without number + neighbourhood ("Pedro II el Católico — Universidad"). Language-neutral, calm, zero work per listing. The editor **prefills** this formula; the owner may replace it with a custom name, which passes the existing content-review queue like any content edit. Two listings on one street get a quiet disambiguator — its exact form is an implementation detail. URLs use ids, so names never break links. Raised with and unblocks ADR-041. |

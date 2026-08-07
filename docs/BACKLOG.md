@@ -124,9 +124,11 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   `RouteCache` (3-sample merge, ~3× ORS calls per cached entry),
   `NeighbourhoodMap`, address plate, e2e fixtures, seed data untouched
   (true coords stay server-side). Working prototype:
-  `docs/ux-analysis/prototypes/street-band.html`. **Blocked on OD-10**
-  (public naming scheme — the title is the address today); OD-9 (exact-
-  address release moment) can be decided during implementation.
+  `docs/ux-analysis/prototypes/street-band.html`. **Unblocked** — OD-10
+  decided 2026-08-07: formula name (street w/o number + neighbourhood)
+  prefilled in the editor, owner override via the review queue. OD-9
+  (exact-address release moment) can be decided during implementation;
+  safer default until then: signed contract.
 - **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
   [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
   Verified badge, move-in/out clock times, bed sizes, an operator identity

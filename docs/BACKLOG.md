@@ -111,6 +111,25 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   Conditions; only Flatio has it and it's a filter criterion for exactly
   our corporate/remote audience. Needs a listing field + editor input;
   owner enters their speed-test result.
+- **[L][M]** **Address precision policy — we are the only site showing the
+  door** (Raphael, 2026-08-07, from the per-group comparison). All four
+  competitors stop short of the house number pre-booking: street + postcode
+  (Wunderflats), street only (Blueground), street in the breadcrumb
+  (Spotahome), neighbourhood only (Flatio). We show the full postal line
+  with number, floor and unit side, a copy button, an exact map pin, and
+  precise lat/lng in the anonymous detail API — while the availability band
+  publicly shows *when the flat is empty* and the floor plan shows the
+  layout. Together that is a complete dossier for okupación/burglary of a
+  visibly vacant furnished flat; competitor motives also include
+  listing-clone fraud and occupant privacy (their fourth motive,
+  marketplace disintermediation, does not apply to us). Decide between:
+  keep door-precision (commute-transparency value, ledger identity),
+  street-only pre-booking, or area + offset pin with the exact address
+  revealed after a confirmed booking. Touches the address plate + copy,
+  `NeighbourhoodMap`'s exact pin, the route lines (a route drawn from the
+  true coordinates points at the building even if the text is hidden), and
+  the detail payload's `lat`/`lng` precision. **Needs an ADR** before any
+  implementation.
 - **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
   [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
   Verified badge, move-in/out clock times, bed sizes, an operator identity

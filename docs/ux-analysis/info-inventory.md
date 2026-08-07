@@ -25,7 +25,7 @@ is the choice).
 | Floor number | ✓ | — | ✓ | ✓ | ✓ | keep |
 | Sleeps / max occupancy | ✓ | — | ✓ | ✓ | — | keep |
 | Neighbourhood named up top | ✓ badge | ~ breadcrumb | ~ in title | ✓ | ✓ breadcrumb | keep |
-| Full street address w/ number | ✓ + copy button | — | ✓ + postcode | — | ~ street only | keep — copyable address is already best-in-class |
+| Full street address w/ number | ✓ + copy button, exact pin, precise lat/lng in the anonymous API | — street in breadcrumb | ~ street + postcode, **no №** | — | ~ street only, no № | **decide (ADR)** — we are the only site of five precise to the door, while also publishing vacancy windows, floor, unit side and a floor plan; squatter/burglary/clone-fraud risk vs commute-transparency value. See backlog. |
 | Listing ID | — | ~ in page title | — | ~ URL only | ✓ | skip — IDs are operator vocabulary, not guest vocabulary |
 | Verified/checked marker | ✓ | ✓ + date | ~ prose | ~ via protection | ✓ vetted | **consider** — Spotahome's "checked on <date>" beats a bare badge; our badge could carry the date |
 

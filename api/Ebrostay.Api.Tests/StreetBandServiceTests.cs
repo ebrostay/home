@@ -32,4 +32,23 @@ public class StreetBandServiceTests
             new GeoPoint(0, 0));
         Assert.Equal([1L, 2L], chain.Select(x => x.Item1).ToList());
     }
+
+    // Regression: a street split at a junction is two ways each drawn OUTWARD
+    // from the shared node — both start with that node's id, neither's tail
+    // matches it. The old head-node filter dropped way B outright because its
+    // first id equalled the selected chain's head id, silently truncating the
+    // merge to a single way.
+    [Fact]
+    public void Merges_two_ways_that_both_start_at_the_shared_junction_node()
+    {
+        var chain = StreetBandService.MergeChains(
+            [[N(1, 0, 0), N(2, 0, 1)], [N(1, 0, 0), N(5, 0, -1)]],
+            new GeoPoint(0, 0));
+
+        var ids = chain.Select(x => x.Item1).ToList();
+        Assert.Equal(new HashSet<long> { 1, 2, 5 }, ids.ToHashSet());
+        Assert.True(
+            ids.SequenceEqual([2L, 1L, 5L]) || ids.SequenceEqual([5L, 1L, 2L]),
+            $"expected the shared node (1) between its two neighbours, got [{string.Join(",", ids)}]");
+    }
 }

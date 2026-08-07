@@ -52,7 +52,8 @@ public sealed class StreetBandService(
             return Build(listingId, chain, others, new GeoPoint(lat, lng), street.Name);
         }
         catch (Exception e) when (e is HttpRequestException
-            or TaskCanceledException or JsonException or OrsUnavailableException)
+            or TaskCanceledException or JsonException or OrsUnavailableException
+            or KeyNotFoundException or InvalidOperationException)
         {
             log.LogWarning(e, "street band derivation failed for {Id}", listingId);
             return null;
@@ -112,9 +113,12 @@ public sealed class StreetBandService(
             .OrderBy(w => w.Min(x => OverpassClient.Haversine(
                 near.Lat, near.Lng, x.Item2.Lat, x.Item2.Lng)))
             .First());
-        var rest = ways.Where(w => !ReferenceEquals(w, null))
-            .Where(w => w.Count > 0 && w[0].Item1 != chain.First!.Value.Item1)
-            .ToList();
+        // Drop only the selected way itself (by content — it is the exact list
+        // `chain` was seeded from). A way merely SHARING the chain's head node
+        // id — a street split at a junction, each way drawn outward from that
+        // shared node — is a legitimate merge candidate and must stay in
+        // `rest` for the loop below to pick up.
+        var rest = ways.Where(w => w is { Count: > 0 }).ToList();
         rest.RemoveAll(w => w.SequenceEqual(chain));
 
         // Repeatedly append/prepend any way sharing an endpoint node id,
@@ -165,7 +169,13 @@ public sealed class StreetBandService(
         {
             if (!el.TryGetProperty("geometry", out var geom)) continue;
             if (!el.TryGetProperty("nodes", out var nodeIds)) continue;
-            var name = el.GetProperty("tags").GetProperty("name").GetString() ?? "";
+            // A tagless (or nameless) way is not a usable street candidate —
+            // dropped here, matching OverpassClient's own defensive style
+            // (OverpassClient.cs:176-177), rather than throwing past DeriveAsync's
+            // "never throws" boundary.
+            if (!el.TryGetProperty("tags", out var tags)) continue;
+            if (!tags.TryGetProperty("name", out var nameEl)) continue;
+            var name = nameEl.GetString() ?? "";
             var nodes = new List<(long, GeoPoint)>();
             var ids = nodeIds.EnumerateArray().ToArray();
             var pts = geom.EnumerateArray().ToArray();

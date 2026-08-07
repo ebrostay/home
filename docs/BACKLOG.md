@@ -120,10 +120,13 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   address only after booking. Street geometry derives from OSM at
   save/approval (reverse-geocode → merge ways → cut ≤~250 m segment at
   junctions, home off-center). Touches: detail API payload (street
-  geometry replaces `lat`/`lng`, drops `address`), `NearbyFunctions` +
-  `RouteCache` (3-sample merge, ~3× ORS calls per cached entry),
-  `NeighbourhoodMap`, address plate, e2e fixtures, seed data untouched
-  (true coords stay server-side). Working prototype:
+  geometry replaces `lat`/`lng`, drops `address`), **list API
+  (`PropertySummary.lat/lng` becomes the segment midpoint — the search
+  map pin marks the door today)**, `NearbyFunctions` + `RouteCache`
+  (3-sample merge on every anonymous route endpoint incl. your-places,
+  ~3× ORS calls per cached entry), `NeighbourhoodMap`, address plate,
+  editor (band preview + name prefill), e2e fixtures, seed data
+  untouched (true coords stay server-side). Working prototype:
   `docs/ux-analysis/prototypes/street-band.html`. **Unblocked** — OD-10
   decided 2026-08-07: formula name (street w/o number + neighbourhood)
   prefilled in the editor, owner override via the review queue. OD-9

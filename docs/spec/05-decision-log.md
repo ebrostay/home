@@ -3357,6 +3357,17 @@ on the prototype with real routing data before the lock.
 ### Consequences
 
 - Public listing titles must change to neutral names.
+- **The search map is in scope, not only the detail page.** The anonymous
+  list payload (`PropertySummary`) carries exact `lat`/`lng` today, so
+  the search pin marks the door even if the detail page hides it. Fix:
+  the list payload's point becomes the **midpoint of the published
+  segment**, derived server-side from the band — never the door (the
+  home is off-center in the segment by design). `ResultsMap` and its
+  pin-grouping need no change; at city zoom the shift is smaller than a
+  pin. The same rule applies to every anonymous route endpoint,
+  including "your places" (ADR-039): a route line drawn from the true
+  coordinates marks the building, so all of them return the merged
+  fan-and-trunk shape.
 - The detail API, the map component, the routes, the address plate, and
   the e2e fixtures change. The seed data keeps true coordinates; the API
   computes the street band and the merged ranges server-side.

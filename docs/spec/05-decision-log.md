@@ -1,4 +1,4 @@
-# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-040)
+# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-041)
 
 > Target: branch `redesign/v2`, locked 2026-07-19 (product owner: Raphael).
 > Continues the v1 log (v1 spec §11, ADR-001–010 — on `main`; the v1→v2 disposition map is in [§8.5](08-carried-v1-rules.md)) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
@@ -44,6 +44,11 @@ and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
 | ADR-034 | The listing description field is `description`, not `copy` | ✅ locked · consequence recorded 2026-08-03 (a re-seed does not cover owner drafts) |
 | ADR-035 | Entra External ID: an Ebrostay account, Microsoft sign-in, our own branding | ✅ locked & built |
 | ADR-036 | The provider choice stays on Entra's hosted page; one-hop Microsoft via a direct provider | ✅ locked & built |
+| ADR-037 | `/host` is public, and the sign-in bounce moved into the app | ✅ locked & built |
+| ADR-038 | The bare domain picks a language; every other URL still states one | ✅ locked & built |
+| ADR-039 | "Your places" is measured, not estimated, and the browser keeps it | ✅ locked & built |
+| ADR-040 | One map, one travel toggle, one selection | ✅ locked & built |
+| ADR-041 | Address precision on the public listing | 🔜 **proposed — not decided** |
 
 ---
 
@@ -3230,6 +3235,98 @@ is no ordering to get wrong.
 - `detail.places.profileLabel`, `.profile.*` and `.mapLabel` are gone from
   both message files. They named a control and a map this list no longer
   owns.
+
+---
+
+## ADR-041 — Address precision on the public listing
+
+**Date:** 2026-08-07 · **Status:** 🔜 proposed — not decided ·
+**Relates to:** ADR-039, ADR-040 (map and routes) ·
+**Source:** the five-site comparison in `docs/ux-analysis/` and the
+backlog item "Address precision policy". Written in plain language at the
+product owner's request.
+
+### Context
+
+The public listing page shows the exact home location before any booking:
+
+- The title contains the street, the house number, and the unit
+  ("Pedro II el Católico 3 - 1 IZQ").
+- The address plate shows the full postal line. It has a copy button.
+- The map pin is on the building. Route lines start at the building.
+- The anonymous API sends exact `lat`/`lng` and the `address` field.
+
+The same page also shows when the home is empty (the availability band),
+the floor number, and a floor plan.
+
+No competitor shows the house number before booking. Wunderflats shows
+street and postcode. Blueground and Spotahome show the street name.
+Flatio shows only the neighbourhood. Evidence:
+`docs/ux-analysis/compare.html`, identity group.
+
+**Risk.** A vacant furnished home is a known target for squatting
+("okupación") and burglary in Spain. Our page tells a stranger which
+door, which floor, what is inside, and when nobody is there. The exact
+address also enables listing-clone fraud: scammers copy a real address
+into a fake listing.
+
+**Value of the current behaviour.** An exact address lets a booker check
+the commute before booking. It fits the transparency principle of the
+design (spec §6.1). The route feature needs true coordinates to draw
+correct lines.
+
+### Options
+
+**Option A — keep the exact address.**
+No change. We accept the risk. The transparency value stays.
+
+**Option B — hide the house number, keep the map.**
+The text shows only street and city. The pin and the routes stay exact.
+This is weak protection: the pin still marks the building. Low cost, low
+value. Listed for completeness.
+
+**Option C — approximate location before booking, exact after.**
+1. The public page shows the neighbourhood and the street, without the
+   house number. No address plate, no copy button.
+2. The map shows a circle (radius about 200 m) with an offset pin. The
+   offset is fixed per listing, so repeated requests cannot average it
+   away.
+3. Route lines start at the offset pin. Travel times stay exact — the
+   server computes them from the true coordinates, and a number does not
+   reveal a building.
+4. The guest receives the exact address after the booking is confirmed,
+   through the existing channels (WhatsApp / email).
+5. The anonymous API sends offset `lat`/`lng` and no `address`. This is
+   required — a client-side fix alone protects nothing.
+
+### Recommendation (draft — the decision is the product owner's)
+
+Option C. It removes the whole risk chain: text, pin, routes, and API.
+Option B removes only the text. Option A accepts the full risk. Option C
+keeps exact travel times, which is the main pre-booking value of the
+location data.
+
+### Consequences of Option C (if chosen)
+
+- Public listing titles must change. Today the title *is* the address
+  plus the unit. Listings need neutral public names.
+- The detail API, the map, the routes, the address plate, and the e2e
+  fixtures change. The seed data keeps true coordinates; the API applies
+  the offset.
+- The floor plan and the availability band can stay. Without an address
+  they identify nothing.
+- The booking confirmation flow gains one duty: deliver the exact
+  address.
+
+### Open points to settle with the decision
+
+1. Release moment for the exact address: on confirmed booking, or on
+   signed contract?
+2. Offset rule: radius, and whether the neighbourhood badge stays.
+3. New public naming scheme for listings.
+4. Does the owner's own view (and the admin view) keep the exact data?
+   (Proposed: yes — the restriction is for anonymous and guest views
+   only.)
 
 ---
 

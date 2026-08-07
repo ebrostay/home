@@ -185,7 +185,13 @@ party is on the critical path for the list itself.
                  into the cache, return it.
              Response: `{ minutes: [lo, hi], metres: [lo, hi], trunk, stubA,
              stubB }` — encoded polylines, never a bare coordinate — with
-             `Cache-Control: public, max-age=86400`.
+             `Cache-Control: public, max-age=86400`. `metres` is coarsened
+             to the nearest 50 m (floor/ceil), same granularity as
+             `PublicReach` and for the same reason: this endpoint's sibling
+             (§4.2.2) accepts any destination in the Zaragoza box, so a
+             finer band would let a caller sweep probe destinations along
+             the street and read the door's network distance off the range
+             at that finer precision — a house-number oracle.
 4. GUEST     `trunk`/`stubA`/`stubB` decode (`decodePolyline`,
              `app/lib/nearby.ts`) and draw on the map: the stubs light and
              dashed from the street ends, the trunk solid once they converge

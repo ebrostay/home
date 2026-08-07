@@ -155,7 +155,7 @@ public sealed class RouteCache(
             var stub = Polyline5.Encode([.. trunkPoints.Take(2)]);
             return new BandRouteDoc("", property.Id, profile,
                 OrsClient.FixtureRoutePolyline, stub, stub,
-                4, 6, 340, 400, DateTimeOffset.UtcNow.ToString("o"));
+                4, 6, 300, 400, DateTimeOffset.UtcNow.ToString("o"));
         }
 
         // Three routes. The DOOR route is called with simplify: true (the
@@ -178,10 +178,19 @@ public sealed class RouteCache(
         int[] secs = [a.Seconds, b.Seconds, door.Seconds];
         int[] metres = [a.Metres, b.Metres, door.Metres];
 
+        // Coarsened to 50 m — the same granularity `PublicReach` uses
+        // (api/Models/PublicModels.cs, "never precise enough to mark
+        // anything"), and for the identical reason. `PropertyPlaceRoute`
+        // accepts any destination in the Zaragoza box, so a finer band here
+        // would let an attacker sweep probe destinations along the street
+        // and read the door's network distance off `metres[0]` at whatever
+        // precision this floor/ceil uses — a house-number oracle. 50 m
+        // keeps that sweep from resolving better than the rest of the
+        // system already refuses to.
         return new BandRouteDoc("", property.Id, profile,
             Polyline5.Encode(trunk), Polyline5.Encode(stubA), Polyline5.Encode(stubB),
             (int)Math.Floor(secs.Min() / 60.0), (int)Math.Ceiling(secs.Max() / 60.0),
-            metres.Min() / 10 * 10, (metres.Max() + 9) / 10 * 10,
+            metres.Min() / 50 * 50, (metres.Max() + 49) / 50 * 50,
             DateTimeOffset.UtcNow.ToString("o"));
     }
 

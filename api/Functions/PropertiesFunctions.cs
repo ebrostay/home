@@ -80,7 +80,23 @@ public class PropertiesFunctions(
                 doc.Band = await bands.DeriveAsync(doc.Id, doc.Lat, doc.Lng,
                     req.HttpContext.RequestAborted);
                 if (doc.Band is not null)
-                    try { await Properties.UpsertItemAsync(doc, new PartitionKey(doc.Id)); }
+                    try
+                    {
+                        // IfMatchEtag guards against this anonymous, unauthenticated
+                        // backfill racing an owner's authenticated save: without it,
+                        // a write here could land after the owner's save and clobber
+                        // it with this stale pre-save doc. A 412 means someone else
+                        // (the owner) wrote first — drop the backfill silently, the
+                        // next read retries it against the fresher document. Same
+                        // pattern as SaveAsync in HostFunctions.cs.
+                        await Properties.UpsertItemAsync(doc, new PartitionKey(doc.Id),
+                            new ItemRequestOptions { IfMatchEtag = response.ETag });
+                    }
+                    catch (CosmosException e) when (e.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
+                    {
+                        // A fresher doc exists (an owner save won the race). Drop
+                        // the backfill; the next read retries it.
+                    }
                     catch (CosmosException e) { logger.LogWarning(e, "band backfill write failed for {Id}", id); }
             }
 

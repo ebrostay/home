@@ -578,7 +578,13 @@ route endpoint now serves, instead of `NearbyRouteDoc`'s single line.
 minMetres, maxMetres }`: the two boundary-sample routes (`band.sampleA`/
 `sampleB` to the entry) split at their fork into one shared trunk plus two
 short stubs, and minutes/metres are merged (outward-rounded) over both
-boundary samples **and** the true door. It lives beside `NearbyRouteDoc` in
+boundary samples **and** the true door. `minMetres`/`maxMetres` are
+coarsened to the nearest 50 m (floor/ceil), the same granularity
+`PublicReach` uses and for the same reason: `PropertyPlaceRoute` accepts
+any destination in the Zaragoza box, so a finer band would let a caller
+sweep probe destinations along the street and read the door's network
+distance off the range at that finer precision — a house-number oracle.
+It lives beside `NearbyRouteDoc` in
 the same container/partition — so `RouteCache.DropAsync`'s pin-move sweep
 (a query by `propertyId` alone) keeps deleting both shapes without knowing
 either exists — under a distinct id prefix, so an old-shape document can

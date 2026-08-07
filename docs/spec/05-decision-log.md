@@ -3401,7 +3401,13 @@ and one part of the design that is not built yet.
   never mentions.** `PublicReach` pairs the point-3 minute range with a
   `metres` figure, rounded to the nearest 50 m, so the existing "· 400 m"
   UI label keeps working without exposing the precise measured distance.
-  The ADR's worked example ("4–6 min") only ever discusses minutes.
+  The ADR's worked example ("4–6 min") only ever discusses minutes. The
+  route endpoints (§4.2.1, §4.2.2) carry the same coarsening on their
+  `metres: [lo, hi]` range, floor/ceil to 50 m rather than round —
+  `PropertyPlaceRoute` accepts any destination in the Zaragoza box, so a
+  finer band on that response would let a caller sweep probe destinations
+  along the street and read the door's network distance off the range at
+  whatever finer precision was used, defeating the point of the band.
 - **Point 2's "the owner confirms the band in the editor's map preview, and
   the admin sees it in review" is not built.** The host editor's
   `LocationPicker` (`app/components/host/fields/LocationPicker.tsx`) is

@@ -490,7 +490,7 @@ test("/en/property — saved places are measured, and the toggle re-measures", a
   const rows = section.getByRole("listitem");
   await expect(rows).toHaveCount(2);
 
-  // route.json: minutes [4, 6], metres [340, 400]. Both figures are the
+  // route.json: minutes [4, 6], metres [300, 400]. Both figures are the
   // SERVER's — a row showing anything else means the section went back to
   // computing its own. The row renders the range for minutes and the upper
   // bound for metres (YourPlaces.tsx).

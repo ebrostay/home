@@ -54,6 +54,8 @@ const REGIONS = {
       living:   { x: 120, y: 1530, w: 680, h: 640 },
       calendar: { x: 120, y: 6200, w: 680, h: 360 },
       trust:    { x: 790, y: 390,  w: 376, h: 520 },
+      cancel:   { x: 120, y: 2870, w: 680, h: 620 },
+      opinion:  { x: 120, y: 2575, w: 680, h: 300 },
     },
   },
   wunderflats: {
@@ -66,20 +68,27 @@ const REGIONS = {
       commerce: { x: 950, y: 290,  w: 330,  h: 560 },
       living:   { x: 0,   y: 985,  w: 1280, h: 760 },
       calendar: { x: 0,   y: 2990, w: 1280, h: 640 },
+      services: { x: 0,   y: 1730, w: 1280, h: 340 },
     },
   },
   flatio: {
+    // Flatio's section heights vary between sessions (description fold state),
+    // so everything below the gallery is anchored to a heading, not a fixed y.
     url: 'https://www.flatio.com/rent/apartment/129864-barcelona',
     cookies: ['button:has-text("Customise Cookies")', 'button:has-text("Reject All")'],
     shots: {
-      nav:      { x: 0,   y: 0,    w: 1280, h: 70 },
-      identity: { x: 70,  y: 500,  w: 750,  h: 185 },
-      gallery:  { x: 70,  y: 78,   w: 750,  h: 415 },
-      commerce: { x: 845, y: 550,  w: 380,  h: 460 },
-      living:   { x: 70,  y: 795,  w: 750,  h: 550 },
-      calendar: { x: 70,  y: 4880, w: 750,  h: 580 },
-      trust:    { x: 70,  y: 4260, w: 750,  h: 625 },
-      location: { x: 70,  y: 2640, w: 750,  h: 580 },
+      nav:      { x: 0,   y: 0,   w: 1280, h: 70 },
+      gallery:  { x: 70,  y: 78,  w: 750,  h: 415 },
+      commerce: { x: 845, y: 550, w: 380,  h: 460 },
+      identity: { x: 70,  sel: 'h1',                               dy: -50, w: 750, h: 220 },
+      living:   { x: 70,  sel: 'h2', text: 'Flat for rent',        dy: -20, w: 750, h: 550 },
+      internet: { x: 70,  sel: 'h2', text: 'Internet speed',       dy: -15, w: 750, h: 180 },
+      rooms:    { x: 70,  sel: 'h2', text: 'Rooms & spaces',       dy: -15, w: 750, h: 480 },
+      location: { x: 70,  sel: 'h2', text: 'Where you will live',  dy: -15, w: 750, h: 580 },
+      host:     { x: 70,  sel: 'h2', text: 'About host',           dy: -15, w: 750, h: 350 },
+      times:    { x: 70,  sel: 'h3', text: 'Move-in and move-out', dy: -15, w: 750, h: 170 },
+      trust:    { x: 70,  sel: 'h2', text: 'StayProtection for Guests', dy: -15, w: 750, h: 625 },
+      calendar: { x: 70,  sel: 'h2', text: 'Availability of the listing', dy: -15, w: 750, h: 580 },
     },
   },
   blueground: {
@@ -93,6 +102,9 @@ const REGIONS = {
       living:   { x: 64, y: 845,  w: 770,  h: 380 },
       trust:    { x: 64, y: 1655, w: 770,  h: 320 },
       location: { x: 64, y: 2020, w: 1160, h: 700 },
+      similar:  { x: 64, y: 2890, w: 1152, h: 500 },
+      faq:      { x: 64, y: 3835, w: 770,  h: 480 },
+      urgency:  { x: 64, y: 603,  w: 770,  h: 90 },
     },
   },
 };
@@ -115,7 +127,7 @@ for (const [site, cfg] of Object.entries(REGIONS)) {
     await page.goto(cfg.url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(2500);
     // the tallest defined region must exist, or the page hasn't really rendered
-    const need = Math.max(...Object.values(cfg.shots).filter(r => r.fixed === undefined).map(r => r.y + r.h));
+    const need = Math.max(900, ...Object.values(cfg.shots).filter(r => r.fixed === undefined && r.y !== undefined).map(r => r.y + r.h));
     for (let tries = 0; tries < 10; tries++) {
       const h = await page.evaluate(() => document.documentElement.scrollHeight);
       if (h >= need) break;
@@ -137,6 +149,16 @@ for (const [site, cfg] of Object.entries(REGIONS)) {
 
     manifest[site] = {};
     for (const [group, r] of Object.entries(cfg.shots)) {
+      if (r.sel) { // anchored region: resolve y from a heading at capture time
+        const y = await page.evaluate(({ sel, text }) => {
+          const els = Array.from(document.querySelectorAll(sel));
+          const el = text ? els.find(e => (e.innerText || '').trim().startsWith(text)) : els[0];
+          if (!el) return null;
+          return Math.round(el.getBoundingClientRect().top + window.scrollY);
+        }, { sel: r.sel, text: r.text });
+        if (y === null) { console.log(`   ${group} SKIPPED (anchor "${r.text ?? r.sel}" not found)`); continue; }
+        r.y = y + (r.dy ?? 0);
+      }
       let buf;
       if (r.fixed !== undefined) {
         await page.evaluate(y => window.scrollTo(0, y), r.fixed);

@@ -589,21 +589,19 @@
    `.nearby-route-line` above. */
 .street-band-glow {
   stroke: var(--river-deep);
-  transition: stroke-opacity 0.2s ease;
 }
 .street-band-line {
   stroke: var(--river-deep);
-  transition: stroke-opacity 0.2s ease;
+  transition: stroke-opacity 0.25s ease;
 }
 /* Lit — a pointer on the band or the legend, or the street plate hovered or
-   clicked (5 s flash). CSS `stroke-opacity` wins over the attribute Leaflet
-   stamped on the path, so the base opacity set at the call site comes back
-   untouched the moment the class goes. */
+   clicked (5 s flash). The line alone fades up to solid blue; the glow holds
+   its resting weight, so the effect reads as the street itself filling in
+   rather than a halo swelling around it. CSS `stroke-opacity` wins over the
+   attribute Leaflet stamped on the path, so the base opacity set at the call
+   site comes back — with the same fade — the moment the class goes. */
 .street-band-line.street-band-hot {
-  stroke-opacity: 0.95;
-}
-.street-band-glow.street-band-hot {
-  stroke-opacity: 0.34;
+  stroke-opacity: 1;
 }
 /* The pill that used to ride mid-band, split into its two successors: the
    corner legend (always there, out of the way) and the pointer-following

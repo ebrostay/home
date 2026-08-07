@@ -12,6 +12,7 @@ namespace Ebrostay.Api.Functions;
 public class PropertiesFunctions(
     Database database,
     PlatformSettings platform,
+    StreetBandService bands,
     ILogger<PropertiesFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -69,6 +70,19 @@ public class PropertiesFunctions(
             var response = await Properties.ReadItemAsync<PropertyDoc>(
                 id, new PartitionKey(id));
             var doc = response.Resource;
+
+            // ADR-041 backfill: a published listing saved before the band existed
+            // heals on first read. Best-effort — a failure leaves the degraded
+            // projection (rounded point, no public map) rather than failing the
+            // request.
+            if (doc.Status == "published" && doc.Band is null)
+            {
+                doc.Band = await bands.DeriveAsync(doc.Id, doc.Lat, doc.Lng,
+                    req.HttpContext.RequestAborted);
+                if (doc.Band is not null)
+                    try { await Properties.UpsertItemAsync(doc, new PartitionKey(doc.Id)); }
+                    catch (CosmosException e) { logger.LogWarning(e, "band backfill write failed for {Id}", id); }
+            }
 
             var detail = PublicProjection.ToDetail(
                 doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur);

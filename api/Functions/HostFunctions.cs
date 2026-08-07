@@ -22,6 +22,7 @@ public class HostFunctions(
     PhotoPipeline pipeline,
     OrsClient ors,
     RouteCache cache,
+    StreetBandService bands,
     ILogger<HostFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -265,6 +266,13 @@ public class HostFunctions(
         // (HostValidation.KnownImported).
         doc.Imported = HostValidation.KnownImported(update.Imported);
         doc.ImportSource = update.ImportSource;
+
+        // The band derives from the pin, so it re-derives exactly when the
+        // pin moves — or when a legacy document has none yet.
+        if (pinMoved || doc.Band is null)
+            doc.Band = await bands.DeriveAsync(
+                doc.Id, update.Lat, update.Lng, req.HttpContext.RequestAborted);
+
         // Position comes from the array's order, not from a number the client
         // sends: an index the client owns can arrive with gaps or repeats, and
         // the gallery would silently reorder itself.
@@ -360,7 +368,11 @@ public class HostFunctions(
                 // measurement being reused (not re-run) justifies keeping it.
                 // Defaulting this to false would silently clear a real flag
                 // on any save that happens not to touch this entry.
-                NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck);
+                NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck,
+                // Same reuse test again: a carried-over Reach without its
+                // matching ReachBands would show an owner-exact figure next
+                // to a stale (or missing) public range.
+                ReachBands: known is not null && !moved && !pinMoved ? known.ReachBands : null);
 
             // `known is null` means this write did not match a stored entry —
             // it is new to this save — and `entry.Id` was just generated
@@ -378,18 +390,28 @@ public class HostFunctions(
 
         if (needsMeasuring.Count > 0)
         {
-            var origin = new GeoPoint(update.Lat, update.Lng);
+            // The door alone when there is no band yet (derivation failed, or
+            // is still running for this very save); door + the two inset
+            // street-band samples once one exists, so the same matrix call
+            // that measures the owner-exact Reach also carries what a public
+            // door-safe range needs — at no extra ORS cost (ADR-041).
+            var door = new GeoPoint(update.Lat, update.Lng);
+            var origins = doc.Band is null
+                ? new[] { door }
+                : new[] { door,
+                    new GeoPoint(doc.Band.SampleA.Lat, doc.Band.SampleA.Lng),
+                    new GeoPoint(doc.Band.SampleB.Lat, doc.Band.SampleB.Lng) };
             var points = needsMeasuring
                 .Select(i => new GeoPoint(merged[i].Lat, merged[i].Lng))
                 .ToArray();
 
-            Dictionary<string, NearbyReach?[]> measured;
+            Dictionary<string, NearbyReach?[][]> measured;
             try
             {
-                measured = new Dictionary<string, NearbyReach?[]>();
+                measured = new Dictionary<string, NearbyReach?[][]>();
                 foreach (var prof in NearbyGroups.Profiles)
                     measured[prof] = await ors.MatrixAsync(
-                        origin, points, prof, req.HttpContext.RequestAborted);
+                        origins, points, prof, req.HttpContext.RequestAborted);
             }
             catch (OrsUnavailableException)
             {
@@ -403,10 +425,11 @@ public class HostFunctions(
                 var i = needsMeasuring[k];
                 // A profile ORS could not route keeps no entry, so the public
                 // page hides that entry under that toggle instead of showing a
-                // blank figure.
+                // blank figure. Origin 0 is always the door — this is the
+                // SAME owner-exact meaning Reach had before origins existed.
                 var reach = NearbyGroups.Profiles
-                    .Where(x => measured[x][k] is not null)
-                    .ToDictionary(x => x, x => measured[x][k]!);
+                    .Where(x => measured[x][0][k] is not null)
+                    .ToDictionary(x => x, x => measured[x][0][k]!);
                 // Unroutable by EVERY profile means the owner picked somewhere
                 // we cannot describe honestly. Refuse it rather than store an
                 // entry with no figures.
@@ -421,11 +444,22 @@ public class HostFunctions(
                     // ever saved as "farther since the pin moved".
                     && onFoot.Metres > NearbyGroups.RadiusMetres(
                         merged[i].Group, merged[i].Type) * 1.5;
+                // Only when the matrix actually carried the two band samples
+                // (origins.Length == 3) — otherwise there is nothing to range
+                // over and the entry keeps no ReachBands, same as a listing
+                // with no band yet. Restricted to the profiles that made it
+                // into `reach`: a profile the door itself cannot reach is not
+                // shown at all, so it has no business claiming a public range.
+                var reachBands = origins.Length == 3
+                    ? reach.Keys.ToDictionary(x => x, x => ReachBands.Merge(
+                        measured[x][0][k], measured[x][1][k], measured[x][2][k])!)
+                    : null;
                 merged[i] = merged[i] with
                 {
                     Reach = reach,
                     MeasuredAt = DateTimeOffset.UtcNow.ToString("o"),
                     NeedsCheck = far,
+                    ReachBands = reachBands,
                 };
             }
         }

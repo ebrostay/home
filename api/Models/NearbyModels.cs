@@ -4,6 +4,11 @@ namespace Ebrostay.Api.Models;
 /// measured — never supplied by a client (ADR-028 Decision 8).
 public record NearbyReach(int Metres, int Minutes);
 
+/// Door-safe public range for one profile (ADR-041 point 3 applied to the
+/// eager reach figures, not only the on-click routes). Min/max over the two
+/// inset segment ends AND the door — the door can fall outside the end pair.
+public record ReachBand(int MinMinutes, int MaxMinutes);
+
 /// One place a listing chooses to mention. Embedded on the property because it
 /// is read with the property ~100% of the time and changes only on owner save.
 /// Bounded by validation at 6 per group and 24 in total.
@@ -18,7 +23,20 @@ public record NearbyEntry(
     Dictionary<string, NearbyReach> Reach,
     string? OsmId,
     string? MeasuredAt,
-    bool NeedsCheck);
+    bool NeedsCheck,
+    Dictionary<string, ReachBand>? ReachBands = null);
+
+/// Pure merge over the door + two inset sample measurements for one profile
+/// (ADR-041 point 3). Null/unroutable samples are skipped; all-null yields no
+/// band rather than a claim about a place nothing could be measured to.
+public static class ReachBands
+{
+    public static ReachBand? Merge(params NearbyReach?[] samples)
+    {
+        var mins = samples.Where(s => s is not null).Select(s => s!.Minutes).ToArray();
+        return mins.Length == 0 ? null : new ReachBand(mins.Min(), mins.Max());
+    }
+}
 
 /// Route geometry, in its OWN container rather than embedded: it is written by
 /// an anonymous lazy path while the property document is written by the owner's

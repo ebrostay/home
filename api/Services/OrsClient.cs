@@ -59,7 +59,19 @@ public sealed class OrsClient(
         GeoPoint origin, IReadOnlyList<GeoPoint> destinations, string profile,
         CancellationToken ct)
     {
-        if (destinations.Count == 0) return [];
+        var matrix = await MatrixAsync([origin], destinations, profile, ct);
+        return matrix.Length == 0 ? [] : matrix[0];
+    }
+
+    /// Multi-origin matrix: one ORS call carries several sources at no extra
+    /// cost (ADR-041) — used to measure the door AND the two inset street-band
+    /// samples together, so the public reach figure can become a door-safe
+    /// range instead of exposing the exact pin. Result indexed [origin][destination].
+    public async Task<NearbyReach?[][]> MatrixAsync(
+        IReadOnlyList<GeoPoint> origins, IReadOnlyList<GeoPoint> destinations, string profile,
+        CancellationToken ct)
+    {
+        if (destinations.Count == 0 || origins.Count == 0) return [];
         if (Fixtures)
         {
             log.LogWarning(
@@ -74,27 +86,45 @@ public sealed class OrsClient(
             // locally), does the LAST destination in the batch come back null
             // — "unroutable", the same shape ORS uses for one POI it cannot
             // reach — so the foot-less-candidate filter and the save path's
-            // `nearby_unroutable` refusal can be exercised on purpose.
-            if (destinations.Count == 1 || !FixturesUnroutable)
-                return [.. destinations.Select((_, i) => new NearbyReach(200 + i * 90, 3 + i))];
-            var fixtureReach = new NearbyReach?[destinations.Count];
-            for (var i = 0; i < destinations.Count; i++)
-                fixtureReach[i] = i == destinations.Count - 1
-                    ? null
-                    : new NearbyReach(200 + i * 90, 3 + i);
-            return fixtureReach;
+            // `nearby_unroutable` refusal can be exercised on purpose. That
+            // rule is per origin: only origin 0 (the door) ever nulls its last
+            // destination — the band samples (origins 1/2) stay fully
+            // routable so the range logic always has real figures to bound.
+            // Per-origin variation (Minutes + originIndex) is what lets the
+            // range logic — MinMinutes vs MaxMinutes — be exercised at all;
+            // identical figures for every origin would always collapse to a
+            // single-width band.
+            var result = new NearbyReach?[origins.Count][];
+            for (var o = 0; o < origins.Count; o++)
+            {
+                if (destinations.Count == 1 || !FixturesUnroutable || o != 0)
+                {
+                    result[o] = [.. destinations.Select((_, i) =>
+                        new NearbyReach(200 + i * 90, 3 + i + o))];
+                }
+                else
+                {
+                    var fixtureReach = new NearbyReach?[destinations.Count];
+                    for (var i = 0; i < destinations.Count; i++)
+                        fixtureReach[i] = i == destinations.Count - 1
+                            ? null
+                            : new NearbyReach(200 + i * 90, 3 + i + o);
+                    result[o] = fixtureReach;
+                }
+            }
+            return result;
         }
 
         if (!await budget.TryConsumeAsync(1, ct))
             throw new OrsUnavailableException("budget");
 
-        var coords = new List<double[]> { new[] { origin.Lng, origin.Lat } };
+        var coords = new List<double[]>(origins.Select(o => new[] { o.Lng, o.Lat }));
         coords.AddRange(destinations.Select(d => new[] { d.Lng, d.Lat }));
 
         var body = JsonSerializer.Serialize(new
         {
             locations = coords,
-            sources = new[] { 0 },
+            sources = Enumerable.Range(0, origins.Count).ToArray(),
             metrics = new[] { "distance", "duration" },
         });
 
@@ -102,29 +132,37 @@ public sealed class OrsClient(
             $"{Base}/v2/matrix/{NearbyGroups.OrsProfile(profile)}", body, ct);
 
         using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
-        var distances = doc.RootElement.GetProperty("distances")[0];
-        var durations = doc.RootElement.GetProperty("durations")[0];
+        var distances = doc.RootElement.GetProperty("distances");
+        var durations = doc.RootElement.GetProperty("durations");
 
-        var reach = new NearbyReach?[destinations.Count];
-        for (var i = 0; i < destinations.Count; i++)
+        var matrix = new NearbyReach?[origins.Count][];
+        for (var o = 0; o < origins.Count; o++)
         {
-            // Index 0 is the origin to itself.
-            var m = distances[i + 1];
-            var s = durations[i + 1];
-            // ORS returns null per-destination for anything it cannot route to
-            // (no mapped footpath, an uncrossable road) — not an outage, just
-            // that one destination. Leave it null and let the caller drop it
-            // rather than aborting the whole category over one bad POI.
-            if (m.ValueKind == JsonValueKind.Null || s.ValueKind == JsonValueKind.Null)
+            var distRow = distances[o];
+            var durRow = durations[o];
+            var reach = new NearbyReach?[destinations.Count];
+            for (var i = 0; i < destinations.Count; i++)
             {
-                reach[i] = null;
-                continue;
+                // Destinations start right after the origins in the shared
+                // `locations` list, so index `origins.Count + i`.
+                var m = distRow[origins.Count + i];
+                var s = durRow[origins.Count + i];
+                // ORS returns null per-destination for anything it cannot route to
+                // (no mapped footpath, an uncrossable road) — not an outage, just
+                // that one destination. Leave it null and let the caller drop it
+                // rather than aborting the whole category over one bad POI.
+                if (m.ValueKind == JsonValueKind.Null || s.ValueKind == JsonValueKind.Null)
+                {
+                    reach[i] = null;
+                    continue;
+                }
+                reach[i] = new NearbyReach(
+                    (int)Math.Round(m.GetDouble()),
+                    Math.Max(1, (int)Math.Round(s.GetDouble() / 60.0)));
             }
-            reach[i] = new NearbyReach(
-                (int)Math.Round(m.GetDouble()),
-                Math.Max(1, (int)Math.Round(s.GetDouble() / 60.0)));
+            matrix[o] = reach;
         }
-        return reach;
+        return matrix;
     }
 
     public async Task<OrsRoute> RouteAsync(

@@ -243,8 +243,9 @@ export function NeighbourhoodMap({
   // entry never lingers once another is picked, and so a failed lookup
   // (route back to null) clears whatever was there without waiting for a new
   // destination. Fan-and-trunk (ADR-041 point 5): the two boundary-sample
-  // stubs draw lighter, the shared trunk once they converge draws the same as
-  // the classic single line.
+  // stubs draw a touch thinner, the shared trunk once they converge draws the
+  // same as the classic single line. Both are fully opaque — a faded green
+  // over map tiles had too little contrast to follow.
   useEffect(() => {
     const L = leafletRef.current;
     const layer = lineRef.current;
@@ -256,13 +257,11 @@ export function NeighbourhoodMap({
         L.polyline(decodePolyline(stub), {
           className: "nearby-route-stub",
           weight: 3.5,
-          opacity: 0.55,
         }).addTo(layer);
     if (route.trunk)
       L.polyline(decodePolyline(route.trunk), {
         className: "nearby-route-line",
         weight: 4,
-        opacity: 0.85,
       }).addTo(layer);
   }, [route, mapReady]);
 

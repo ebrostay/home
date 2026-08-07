@@ -646,10 +646,11 @@
 }
 
 /* The fan-and-trunk route (ADR-041 point 5): two stubs from the sampled band
-   ends fanning into one shared trunk once they converge. Same hue as
-   `.nearby-route-line` — it is the same route, just the part that is not yet
-   certain — carried entirely by a lighter `opacity` at the call site rather
-   than a second colour, so the two halves of one line read as one line. */
+   ends fanning into one shared trunk once they converge. The same green as
+   `.nearby-route-line`, one step lighter — it is the same route, just the part
+   that is not yet certain — so the two halves of one line still read as one
+   line. Both draw fully opaque: the stubs used to fade to 0.55 and the trunk
+   to 0.85, and over map tiles neither held enough contrast to follow. */
 .nearby-route-stub {
   stroke: var(--brand);
 }

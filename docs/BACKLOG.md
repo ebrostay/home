@@ -25,15 +25,23 @@ re-specifications.
 - **[B][S]** **Inquiries endpoint** — `POST /api/inquiries` (spec §2.5) and
   the contact-form wiring.
 - **[B][L]** **Admin surface** — spec §4.5, nothing built. The review queue
-  (approve/reject with note) carries queued obligations from four ADRs: the
+  (approve/reject with note) carries queued obligations from five ADRs: the
   **live Catastro comparison** (ADR-027 — `luso`/surface/postcode/centroid,
   never from a stored copy), the **photo EXIF location column** (ADR-019
   amendment), the **declined-suggestions context row** (ADR-027 amendment,
-  Decision 6 rules), and the **per-stay `turnoverDaysOverride` control**
-  (ADR-026 — the field and enforcement exist, the control does not). Also:
-  all-properties management, users deactivate/reactivate, booking-request
-  triage, inquiries viewer. Decide reviewer preview of unpublished listings
-  (ADR-029 Decision 5) when the queue lands.
+  Decision 6 rules), the **per-stay `turnoverDaysOverride` control**
+  (ADR-026 — the field and enforcement exist, the control does not), and the
+  **street-band map** the admin is meant to see when reviewing a listing
+  (ADR-041 point 2 — the band itself already derives and takes effect
+  without this). Also: all-properties management, users deactivate/
+  reactivate, booking-request triage, inquiries viewer. Decide reviewer
+  preview of unpublished listings (ADR-029 Decision 5) when the queue lands.
+- **[P][S]** **Owner-side band preview in the editor (ADR-041 residue).**
+  `LocationPicker` (`app/components/host/fields/LocationPicker.tsx`) still
+  shows only the exact pin — the ADR's "the owner confirms the band in the
+  editor's map preview" step is not built. Today the only place an owner can
+  see their own band is the public preview of their own listing (§2.2,
+  ADR-029). Independent of the admin surface above.
 - **[B][M]** **AI assistant port** — `POST /api/ai-assistant` (ADR-020,
   spec §4.6): extract/translate/describe on DeepSeek with the existing key;
   the translate button drops into ADR-027's English-approval panel. Keep it
@@ -111,27 +119,47 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   Conditions; only Flatio has it and it's a filter criterion for exactly
   our corporate/remote audience. Needs a listing field + editor input;
   owner enters their speed-test result.
-- **[L][L]** **Implement the street-band design — ADR-041, locked
-  2026-08-07.** The public listing stops disclosing the door: street name
-  without number, a river-blue street band on the map (no pin), travel
-  times as server-merged best–worst ranges routed from both segment ends
-  plus the true door (ends sampled ~10 m inside the street — one-way
-  rule), route rendering split at the fork (stubs + one trunk), exact
-  address only after booking. Street geometry derives from OSM at
-  save/approval (reverse-geocode → merge ways → cut ≤~250 m segment at
-  junctions, home off-center). Touches: detail API payload (street
-  geometry replaces `lat`/`lng`, drops `address`), **list API
-  (`PropertySummary.lat/lng` becomes the segment midpoint — the search
-  map pin marks the door today)**, `NearbyFunctions` + `RouteCache`
-  (3-sample merge on every anonymous route endpoint incl. your-places,
-  ~3× ORS calls per cached entry), `NeighbourhoodMap`, address plate,
-  editor (band preview + name prefill), e2e fixtures, seed data
-  untouched (true coords stay server-side). Working prototype:
-  `docs/ux-analysis/prototypes/street-band.html`. **Unblocked** — OD-10
-  decided 2026-08-07: formula name (street w/o number + neighbourhood)
-  prefilled in the editor, owner override via the review queue. OD-9
-  (exact-address release moment) can be decided during implementation;
-  safer default until then: signed contract.
+- ~~**[L][L]** **Implement the street-band design — ADR-041, locked
+  2026-08-07.**~~ ✅ **Built 2026-08-07.** The public listing no longer
+  discloses the door: street name without number, a river-blue street band
+  on the map (no pin), travel times as server-merged best–worst ranges
+  routed from both segment ends plus the true door (ends sampled ~10 m
+  inside the street), route rendering split at the fork (stubs + one
+  trunk), exact address only after booking. Street geometry derives from
+  OSM at save/approval (`StreetBandService`: reverse-geocode → merge ways →
+  cut ≤~250 m segment at junctions, home off-center) and lazily backfills
+  on first read of a published pre-ADR-041 listing. Detail API drops
+  `address`/`lat`/`lng` for `band`; list API's `lat`/`lng` is now the
+  segment midpoint; `NearbyFunctions` + `RouteCache` merge a 3-sample route
+  (both band samples + the door) on every anonymous route endpoint incl.
+  your-places; `NeighbourhoodMap` (guest-facing map + fan-and-trunk), the
+  editor's OD-10 name prefill, and e2e fixtures all updated; seed data
+  untouched (true coords stay server-side). Full detail: spec
+  §2.2/§4.2.1/§4.2.2. Four residues carried forward as their own backlog
+  items: rename existing listings, OD-9, and confirm backfilled bands
+  (below); an editor/admin band preview the ADR also calls for but is not
+  built (the "Admin surface" and "Owner-side band preview in the editor"
+  items above).
+- **[O][S]** **Rename the existing listings post-deploy (ADR-041
+  residue).** Every current listing's `name` is its address
+  ("Pedro II el Católico 3 - 1 IZQ") — the wizard's OD-10 name prefill only
+  applies to a listing saved from now on, so each existing one needs a
+  manual rename through the editor. Small inventory, minutes of work, but
+  until it's done the public page's own title still leaks the door. Do this
+  **immediately after deploy**.
+- **[O][S]** **OD-9 remains open (ADR-041 residue).** The exact address is
+  still released manually, over WhatsApp or email, once a booking is agreed
+  — the safer default until OD-9 (`docs/spec/05-decision-log.md`) is decided
+  is **signed contract**, not confirmed booking. Decide with the first real
+  booking under the street-band design; the delivery channel exists either
+  way, so nothing here is blocked on the decision.
+- **[O][S]** **Confirm backfilled bands in the owner preview (ADR-041
+  residue).** A published listing saved before ADR-041 gets its `band`
+  lazily, on its first `GET /api/properties/{id}` after deploy (§2.2) —
+  that is the ADR's owner-confirmation step for pre-existing listings.
+  Open each one's owner preview after deploy and check the band looks
+  right (right street, sane segment) before trusting it in front of a
+  guest.
 - **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
   [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
   Verified badge, move-in/out clock times, bed sizes, an operator identity

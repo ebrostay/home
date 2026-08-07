@@ -96,6 +96,27 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
                                       //   ruled on, so they are not re-offered
                                       //   until they change (§2.2.4, ADR-027)
 
+  // — street band, derived from the pin, never typed (ADR-041) —
+  "band": {
+    "line": [ { "lat": 41.65476, "lng": -0.9077912 },
+              { "lat": 41.65393, "lng": -0.9078300 },
+              { "lat": 41.65310, "lng": -0.9078604 } ],  // ✅ the disclosure
+                                      //   segment: the whole street or a
+                                      //   ≤~250 m stretch cut at junction
+                                      //   nodes, the home off-center by a
+                                      //   fixed, stable per-listing offset
+    "midLat": 41.65393, "midLng": -0.90783,   // the search/list projection's
+                                      //   public point (see below)
+    "sampleA": { "lat": 41.65467, "lng": -0.907807 },   // SERVER-ONLY — the
+    "sampleB": { "lat": 41.65319, "lng": -0.907857 },   //   two routing
+                                      //   origins, ~10 m inside the segment
+                                      //   ends, never the junction node
+                                      //   (ADR-041 point 3). MUST NEVER
+                                      //   reach a public projection
+    "streetName": "Calle de Pedro II El Católico",
+    "derivedAt": "2026-08-05T11:02:00Z"
+  },
+
   // — bilingual description —
   "area":    { "es": "…", "en": "…" },
   "description":    { "es": { "type": "doc", "content": [ … ] },   // ✅ a rich-text
@@ -216,6 +237,16 @@ world-readability leak **by design** (v1 spec §11, open decision #1).
 they are provenance for the owner and the (planned) admin review, not a guest
 fact (§2.2.5).
 
+**`address`, `lat` and `lng` never reach an anonymous response (ADR-041).**
+The list projection (`PropertySummary`) reuses its existing `lat`/`lng`
+fields for a different meaning — the band's `midLat`/`midLng` when one
+exists, else the door rounded to 3 decimal places (~110 m) for a listing
+still `band: null` — never the exact pin. The detail projection
+(`PropertyDetail`) drops `address`/`lat`/`lng` entirely and gains `band`:
+`double[][]` `[lat, lng]` pairs mirroring `band.line`, or `null` when
+degraded. `band.sampleA`/`sampleB` never leave the server in either
+projection — they exist only to be handed to ORS.
+
 **One exception, `GET /api/properties/{id}` only (ADR-029):** the owner of a
 listing receives that same projection for their own listing in **any** status,
 carrying one added field — `previewStatus`, the stored lifecycle value, `null`
@@ -224,6 +255,30 @@ resolved in the Function; anonymous callers and signed-in non-owners still get
 a flat **404**, never a 401 or 403, so the id space stays opaque. The response
 carries `Cache-Control: no-store`. **`GET /api/properties` (the list) has no
 such exception** — an unpublished listing never appears in search.
+
+**The street band is derived, never typed (ADR-041).** `band` holds a
+`StreetBand` (`api/Models/PropertyDoc.cs`): `line` (the disclosure segment,
+as points along it), `midLat`/`midLng` (the segment's midpoint), `sampleA`/
+`sampleB` (the two routing origins, server-only), `streetName`, and
+`derivedAt`. `StreetBandService` (`api/Services/StreetBandService.cs`)
+derives it from OSM with three Overpass queries — the nearest named way
+within 40 m of the pin, that street's same-named ways within 600 m merged
+into one chain, and other-named ways within 600 m for their node ids, which
+mark the junctions the chain is cut at — then slices a segment around the
+pin, off-center by a fixed per-listing offset, and picks `sampleA`/`sampleB`
+10 m inside each cut end (never on the junction node itself — ADR-041 point
+3). It runs on a host save when the pin moves or the property has no band
+yet, and lazily on `GET /api/properties/{id}` for an already-published
+listing saved before the band existed. The host enters nothing to produce
+it — the editor's `LocationPicker` still shows only the exact pin (owner
+views stay exact, per §5's ADR-041 "Settled with the lock" section); no
+editor or admin band preview is built yet (ADR-041's 2026-08-07 amendment,
+`docs/spec/05-decision-log.md`; tracked in `docs/BACKLOG.md`). **Derivation
+failure (or a listing not yet re-saved/re-read) leaves `band: null` —
+degraded:** the
+summary point falls back to the door rounded to 3 decimal places, and the
+detail page's whole "Where you'll be" section (map, ranges, your-places)
+disappears rather than showing something less precise than a real band.
 
 ### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025)
 
@@ -440,15 +495,30 @@ and the old "central Zaragoza" figures. Capped by validation at **6 per group,
   },
   "osmId": "node/612233981",  // provenance; null for a manually-added place
   "measuredAt": "2026-07-28T09:15:00Z",
-  "needsCheck": false         // true when a re-measurement (pin moved) landed
+  "needsCheck": false,        // true when a re-measurement (pin moved) landed
                               // outside the group's radius — the SELECTION is
                               // now suspect, not just the number
+  "reachBands": {             // ✅ ADR-041 point 3 — null until a band exists.
+                              //   Min/max over the door + both inset segment
+                              //   samples, ONLY for a profile that already has
+                              //   a `reach` entry (an unroutable profile has
+                              //   nothing to range over either)
+    "foot": { "minMinutes": 5, "maxMinutes": 7 },
+    "car":  { "minMinutes": 3, "maxMinutes": 4 }
+  }
 }
 ```
 
 **§2.2 Public projection strips `osmId`, `measuredAt` and `needsCheck`** — see
 above. Everything else is what the guest-facing "What's nearby" section reads
-(§4.2, merged with §7 "Where you'll be" per ADR-028 Decision 9).
+(§4.2, merged with §7 "Where you'll be" per ADR-028 Decision 9). **`reach`
+itself is transformed, not passed through (ADR-041 point 3):** the public
+`PublicNearby.reach` carries a `PublicReach` per profile —
+`{ minMinutes, maxMinutes, metres }`, metres always coarsened to the nearest
+50 m — built from `reachBands` when present, or degrading to a flat
+min = max range from the plain `reach.minutes` for an entry saved before
+bands existed. The owner's own view keeps the exact `reach`/`reachBands`
+figures untouched; only the anonymous/guest projection ranges them.
 
 **Reach figures are never accepted from a client, under any endpoint.** The
 owner's `PUT /api/host/properties/{id}` payload (`NearbyWrite`,
@@ -500,6 +570,19 @@ indexing policy (`infra/main.bicep`) indexes only `/propertyId` and excludes
 everything else — nothing ever queries the polyline, metres or seconds
 fields. The 180-day TTL is the design, not housekeeping: it is a cache, so
 road-network changes propagate with no admin work.
+
+**Same container, a second shape: `BandRouteDoc`** (id `"band-{entryId}-
+{profile}"`, ADR-041 point 5) — the merged fan-and-trunk route the public
+route endpoint now serves, instead of `NearbyRouteDoc`'s single line.
+`{ trunkPolyline, stubAPolyline, stubBPolyline, minMinutes, maxMinutes,
+minMetres, maxMetres }`: the two boundary-sample routes (`band.sampleA`/
+`sampleB` to the entry) split at their fork into one shared trunk plus two
+short stubs, and minutes/metres are merged (outward-rounded) over both
+boundary samples **and** the true door. It lives beside `NearbyRouteDoc` in
+the same container/partition — so `RouteCache.DropAsync`'s pin-move sweep
+(a query by `propertyId` alone) keeps deleting both shapes without knowing
+either exists — under a distinct id prefix, so an old-shape document can
+never be misread as one of these.
 
 **`serviceBudget`** (partition key `/id`, one document per calendar day, id
 `"ors-yyyy-MM-dd"` — formatted with `CultureInfo.InvariantCulture`, the same

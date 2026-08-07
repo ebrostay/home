@@ -3381,6 +3381,37 @@ on the prototype with real routing data before the lock.
 - The booking confirmation flow gains one duty: deliver the exact
   address.
 
+### Amendment 2026-08-07 — three build-time notes
+
+✅ **Built 2026-08-07**, to this design overall, with three points worth
+recording so the built behaviour and the written design do not silently
+drift apart: two clarifications the ADR's text above does not spell out,
+and one part of the design that is not built yet.
+
+- **Point 3's per-profile range is computed only for a profile already
+  routable to that place.** `NearbyEntry.ReachBands` is built from the same
+  ORS matrix call as the owner-exact `Reach`, restricted to the profiles
+  that made it into `Reach` in the first place (`HostFunctions.cs`) — a
+  profile the true door cannot reach has no `Reach` entry at all (existing
+  ADR-028 rule) and so has nothing to show a public range for either. The
+  ADR's text reads "for each saved place and each travel profile" without
+  this qualifier; the qualifier is the pre-existing per-profile-routability
+  rule applied consistently, not a new restriction.
+- **The public reach figure carries a coarsened distance the ADR's text
+  never mentions.** `PublicReach` pairs the point-3 minute range with a
+  `metres` figure, rounded to the nearest 50 m, so the existing "· 400 m"
+  UI label keeps working without exposing the precise measured distance.
+  The ADR's worked example ("4–6 min") only ever discusses minutes.
+- **Point 2's "the owner confirms the band in the editor's map preview, and
+  the admin sees it in review" is not built.** The host editor's
+  `LocationPicker` (`app/components/host/fields/LocationPicker.tsx`) is
+  unchanged by this design — it still shows only the exact pin, never the
+  band — and there is no admin review surface for it to appear on either
+  (the admin queue itself is still 🔜, `docs/BACKLOG.md`). The band derives
+  and takes effect regardless: an owner who wants to see it today has only
+  the public preview of their own listing (§2.2, ADR-029) to look at. Left
+  as a backlog item rather than reopening the ADR.
+
 ### Settled with the lock, and what stays open
 
 - Long streets: **settled** — the segment rule above is part of the

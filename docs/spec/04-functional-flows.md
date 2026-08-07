@@ -75,9 +75,10 @@ bilingual error/retry state (ADR-017).
 Per the v1 detail-page inventory (v1 §6a, on `main`) with the v2 data source: gallery + lightbox (photos where
 `isFloorplan: false`, by `sortOrder`), floor-plan section, amenities,
 conditions table (incl. `billsPolicy` copy and `utilitiesCapEur`), move-in
-cost box (`upfrontRentEur`, `depositAmount`), Leaflet location map, optional
-video CTA, and the availability calendar (blocked = blocking entries per
-§2.2.3, rendered from the public ranges).
+cost box (`upfrontRentEur`, `depositAmount`), a Leaflet map highlighting the
+street band rather than a door pin (ADR-041 — §4.2.1), optional video CTA,
+and the availability calendar (blocked = blocking entries per §2.2.3,
+rendered from the public ranges).
 
 The **estimate widget is visible to everyone** — anonymous visitors see dates,
 tenant-names input, and the full itemized estimate. The numbers follow
@@ -113,7 +114,7 @@ For anonymous visitors the Email/WhatsApp CTAs are replaced by a **"Sign in to
 book"** CTA that routes to `/sign-in` (the branded front door, §3.1) with a
 `post_login_redirect_uri` back to the property page.
 
-### 4.2.1 Neighbourhood: the merged section and the lazy route ✅ (ADR-028, ADR-040)
+### 4.2.1 Neighbourhood: the merged section and the lazy route ✅ (ADR-028, ADR-040, ADR-041)
 
 v1's sections 7 ("Where you'll be") and 9 ("What's nearby") are **one section**
 in v2 — and since ADR-040 so is "Your places" (§4.2.2), which used to sit
@@ -136,10 +137,20 @@ the grounds that it would route to arbitrary guest-typed addresses; ADR-039
 overturns that, and the paragraph below on what the public route endpoint
 refuses is scoped to `PropertyNearbyRoute` accordingly.
 
+**A listing with no band shows no location section at all (ADR-041).**
+`NeighbourhoodMap`, `Nearby` and `YourPlaces` all live inside one
+`p.band && (…)` gate on the detail page — a degraded listing (band
+derivation failed, or a pre-ADR-041 listing not yet re-saved/re-read, §2.2)
+has no precise point left to put a map, a route or a places list against.
+The area badge in the page header still names the neighbourhood on its own,
+gate or no gate.
+
 **Everything a guest sees on page load is already on the document.** The
 detail response's `nearby[]` (public projection, §2.2.5) carries a group, a
-type, a name, a point and `reach` for every profile ORS could route — no
-third party is on the critical path for the list itself.
+type, a name, a point and `reach` for every profile ORS could route — a
+**range**, not a single eager number, per ADR-041 point 3 (`{ minMinutes,
+maxMinutes, metres }`; `metres` coarsened to the nearest 50 m) — so no third
+party is on the critical path for the list itself.
 
 ```
 1. GUEST     opens the property page. Nearby renders a card per group from
@@ -154,24 +165,37 @@ third party is on the critical path for the list itself.
              CLIENT  GET /api/properties/{id}/nearby/{entryId}/route?profile=
                      — ids only, never coordinates (Decision 4 below).
 3. SERVER    PropertyNearbyRoute (anonymous) loads the PUBLISHED (or PAUSED)
-             property, then RouteCache.GetAsync:
-               - point-read `nearbyRoutes` by id "{entryId}-{profile}" in the
-                 property's partition. Hit → return it. The unknown-entry
-                 check runs BEFORE this read, so a bogus entryId 404s without
-                 ever touching ORS or the route container.
-               - Miss → call OrsClient.RouteAsync with the ORIGIN AND
-                 DESTINATION READ FROM THE STORED DOCUMENT (the property's
-                 own pin; the entry's own point) — never from the request —
-                 write-through into `nearbyRoutes`, return it.
-             Response carries `Cache-Control: public, max-age=86400`.
-4. GUEST     the polyline decodes (`decodePolyline`, `app/lib/nearby.ts`) and
-             draws on the map. A SECOND click on the same entry re-fires the
-             fetch, but it is served from the browser's HTTP cache
-             (transferSize 0) and never reaches the Function.
+             property. `doc.Band is null` → 404, before the cache or ORS are
+             ever touched — a hand-crafted request against a degraded
+             listing gets the same 404 an unknown entry id gets, never a
+             hint that the listing exists but lacks a band. Otherwise
+             RouteCache.GetBandAsync:
+               - point-read the `"band-{entryId}-{profile}"` shape
+                 (`BandRouteDoc`, §2.2.5) in the property's partition. Hit →
+                 return it. The unknown-entry check runs BEFORE this read, so
+                 a bogus entryId 404s without ever touching ORS or the route
+                 container.
+               - Miss → RouteCache.ComputeBandAsync: THREE OrsClient.RouteAsync
+                 calls — `band.sampleA` and `band.sampleB` to the entry's own
+                 point (never the door), plus the true door to the same
+                 point, all read from the stored document, never the request
+                 — split the two boundary polylines into one shared trunk
+                 and two stubs (`RouteSplitter`, ADR-041 point 5), merge
+                 minutes/metres outward over all three samples, write-through
+                 into the cache, return it.
+             Response: `{ minutes: [lo, hi], metres: [lo, hi], trunk, stubA,
+             stubB }` — encoded polylines, never a bare coordinate — with
+             `Cache-Control: public, max-age=86400`.
+4. GUEST     `trunk`/`stubA`/`stubB` decode (`decodePolyline`,
+             `app/lib/nearby.ts`) and draw on the map: the stubs light and
+             dashed from the street ends, the trunk solid once they converge
+             — no line ever ends at a door. A SECOND click on the same entry
+             re-fires the fetch, but it is served from the browser's HTTP
+             cache (transferSize 0) and never reaches the Function.
 5. GUEST     switches the foot/car profile toggle → step 2 re-runs for
              whichever entry is still active (a different profile is a
-             different cached document, `"{entryId}-foot"` vs
-             `"{entryId}-car"`), so the line redraws for the new mode.
+             different cached document, `"band-{entryId}-foot"` vs
+             `"band-{entryId}-car"`), so the fan redraws for the new mode.
 ```
 
 - **Nothing on page load depends on ORS.** Only a first-ever click on one
@@ -182,14 +206,18 @@ third party is on the critical path for the list itself.
 - **This endpoint takes `(propertyId, entryId, profile)`, never a
   coordinate.** `RouteCache` is the only place a `from`/`to` pair is ever
   constructed for it. §4.2.2's endpoint does take a destination, under its own
-  bounds (ADR-039); what both keep is that the **origin** is read from the
-  stored document and never from the request, which is what stops an anonymous
-  caller routing points of their own choosing at Ebrostay's expense.
-- **A missing entry never touches ORS.** `RouteCache.GetAsync` looks the
+  bounds (ADR-039); what both keep is that the **origins** — the door and both
+  band samples — are read from the stored document and never from the
+  request, which is what stops an anonymous caller routing points of their
+  own choosing at Ebrostay's expense.
+- **A missing entry never touches ORS.** `RouteCache.GetBandAsync` looks the
   `entryId` up on the loaded property document first; only a match proceeds
-  to the cache read and, on a miss, the outbound call.
+  to the cache read and, on a miss, the outbound calls.
+- **A degraded listing never touches ORS either.** The `doc.Band is null`
+  404 in step 3 runs before any cache or ORS call — `PropertyPlaceRoute`
+  (§4.2.2) applies the same guard.
 
-### 4.2.2 Your places: the guest's own destinations ✅ (ADR-039, ADR-040)
+### 4.2.2 Your places: the guest's own destinations ✅ (ADR-039, ADR-040, ADR-041)
 
 The commute question, asked from the guest's side: not what is around this
 home, but how far it is from the one address they cannot change.
@@ -218,25 +246,34 @@ for them. No account is needed, and none of it appears in a Cosmos document.
                  and write the answer into that cache.
 4. SERVER    PropertyPlaceRoute (ANONYMOUS) validates the profile, bounds-
              checks the DESTINATION to the Zaragoza box, loads the PUBLISHED
-             (or PAUSED) listing, and calls OrsClient.RouteAsync with the
-             listing's own pin as ORIGIN — read from the document, never from
-             the request. Stores nothing. `private, max-age=86400`.
-5. GUEST     the row shows the measured minutes and distance. Clicking it
-             draws the polyline on the SECTION's map — the same one the
-             nearby list draws on — and takes the selection away from that
-             list; clicking again clears the line. Below `lg`, where the map
-             is not sticky, selecting also scrolls it back into view.
+             (or PAUSED) listing. `doc.Band is null` → 404, before ORS is
+             ever touched — same guard as §4.2.1's endpoint. Otherwise calls
+             RouteCache.ComputeBandAsync — the SAME fan-and-trunk merge
+             §4.2.1 uses, uncached: `band.sampleA`/`sampleB` and the true
+             door, all read from the document, route to the caller's
+             destination; the two boundary polylines split into one trunk
+             and two stubs, minutes/metres merge outward over all three.
+             Response: `{ minutes: [lo, hi], metres: [lo, hi], trunk, stubA,
+             stubB }`, same shape as §4.2.1's endpoint. Stores nothing —
+             `Cache-Control: private, max-age=86400` (not `public`: the URL
+             carries the guest's own destination).
+5. GUEST     the row shows the measured range and distance. Clicking it
+             draws the fan on the SECTION's map — the same one the nearby
+             list draws on — and takes the selection away from that list;
+             clicking again clears the line. Below `lg`, where the map is
+             not sticky, selecting also scrolls it back into view.
 6. GUEST     switches the section's foot/car toggle → step 3 re-runs per
              place for the other profile, which is a different cache key
              (and the nearby list re-ranks at the same time, from figures it
              already has). Switching back is free in both.
 ```
 
-- **A first view of a listing with five places costs five ORS calls; a
-  revisit costs none.** Both profiles fully explored is ten, then nothing.
-  That, plus `OrsBudget`'s 1,500/day fail-closed ceiling, is the whole bound
-  on a guest-triggered workload — see ADR-039 for why the destination may be
-  caller-supplied here when §4.2.1's endpoint refuses one.
+- **A first view of a listing with five places costs FIFTEEN ORS calls, not
+  five — three per place (both band samples + the door, ADR-041 point 3) —
+  and a revisit costs none.** Both profiles fully explored is thirty, then
+  nothing. That, plus `OrsBudget`'s 1,500/day fail-closed ceiling, is the
+  whole bound on a guest-triggered workload — see ADR-039 for why the
+  destination may be caller-supplied here when §4.2.1's endpoint refuses one.
 - **Nothing is cached server-side, on purpose.** A guest's destination keyed
   by the home they were looking at is a record we would rather not hold, and
   the hit rate across guests would be near zero anyway.
@@ -244,6 +281,11 @@ for them. No account is needed, and none of it appears in a Cosmos document.
   their figures, and the failed key is retried on the next profile switch.
 - **Places saved under the pre-ADR-039 shape** carried a typed distance and no
   coordinates. They cannot be routed and are dropped on first read.
+- **A cached route in the pre-ADR-041 shape** (`{ polyline, metres: number,
+  seconds }`) fails `parseRoutes`'s range check (`minutes`/`metres` must
+  each be a `[lo, hi]` pair) and is dropped on first read, same principle as
+  the pre-ADR-039 shape above — no repair path, since a single eager route
+  cannot be turned into a range after the fact.
 
 ## 4.3 Booking flow — login-gated, log-then-draft ✅ decided (ADR-015) · 🔜 endpoint not yet built
 
@@ -530,9 +572,14 @@ everything.
              what is new, moved, or every entry at once if the PIN moved.
              An entry no profile can route to blocks the WHOLE save
              (`nearby_unroutable`) — no entry is ever written with an empty
-             `reach`. Only after the write succeeds are that property's
-             cached `nearbyRoutes` dropped (pin-move case only) so the next
-             guest click re-routes from the new pin.
+             `reach`. The SAME matrix call carries the two band samples as
+             extra origins (when the listing already has a band) so it also
+             fills `reachBands` (§2.2.5, ADR-041 point 3) at no extra ORS
+             cost — restricted to the profiles that made it into `reach`,
+             since a profile the door itself cannot reach has no business
+             claiming a public range either. Only after the write succeeds
+             are that property's cached `nearbyRoutes` dropped (pin-move
+             case only) so the next guest click re-routes from the new pin.
 ```
 
 A **custom place** (no OSM match — the type dropdown's escape hatch) skips

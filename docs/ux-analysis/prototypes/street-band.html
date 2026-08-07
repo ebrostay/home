@@ -154,13 +154,28 @@ function render() {
   }).join('');
   drawRoutes();
 }
+// The boundary routes share the road once they converge. Drawing both in
+// full stacks two dashed lines on the same stretch. Instead: walk both
+// point lists backward from the destination while they coincide, and split
+// at the fork — the shared trunk draws once (solid), only the short stubs
+// from the street ends draw as dashed branches.
+function splitRoutes(a, b) {
+  const eq = (p, q) => Math.abs(p[0] - q[0]) < 1e-6 && Math.abs(p[1] - q[1]) < 1e-6;
+  let i = a.length - 1, j = b.length - 1;
+  while (i > 0 && j > 0 && eq(a[i], b[j])) { i--; j--; }
+  if (i === a.length - 1) return { trunk: [], stubs: [a, b] }; // never converge
+  return { trunk: a.slice(i + 1), stubs: [a.slice(0, i + 2), b.slice(0, j + 2)] };
+}
 function drawRoutes() {
   routeLayers.forEach(l => map.removeLayer(l)); routeLayers.length = 0;
   const poi = DATA.pois.find(p => p.key === selected);
   const r = poi.routes[profile];
-  // Two boundary routes: together they read as a corridor, not a line to a door.
-  for (const leg of [r.endA, r.endB]) {
-    routeLayers.push(L.polyline(leg.line, { color: '#1f8a57', weight: 3.5, opacity: .55, dashArray: '1 7', lineCap: 'round' }).addTo(map));
+  const { trunk, stubs } = splitRoutes(r.endA.line, r.endB.line);
+  for (const stub of stubs) {
+    routeLayers.push(L.polyline(stub, { color: '#1f8a57', weight: 3.5, opacity: .55, dashArray: '1 7', lineCap: 'round' }).addTo(map));
+  }
+  if (trunk.length > 1) {
+    routeLayers.push(L.polyline(trunk, { color: '#1f8a57', weight: 4, opacity: .8, lineCap: 'round' }).addTo(map));
   }
   Object.values(poiMarkers).forEach(m => m.setOpacity(.45));
   poiMarkers[selected].setOpacity(1);

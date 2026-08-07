@@ -3301,8 +3301,13 @@ correct lines.
    range (Plaza del Pilar on foot: ends 35.0 and 35.6 min, door 36.1 min
    — routing snaps to one side of the street and to one-way loops). With
    the door in the sample set, the shown range always contains the truth.
-5. **Route lines.** The map draws the two boundary routes as a light
-   corridor. No line ends at a door.
+5. **Route lines.** The boundary routes share the road once they
+   converge. The map must not draw that shared part twice: split at the
+   fork, draw the shared trunk once as one solid line, and draw only the
+   short stubs from the street ends as light dashed branches. The result
+   reads as a small fan at the street (the uncertainty) and one line for
+   the rest (the shared truth). No line ends at a door. The prototype
+   implements this split.
 6. **API.** The anonymous detail response carries street geometry instead
    of `lat`/`lng`, and no `address`. The route endpoints return only the
    merged range and the two boundary lines. The outward rounding also

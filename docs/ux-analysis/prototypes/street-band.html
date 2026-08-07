@@ -172,7 +172,7 @@ function drawRoutes() {
   const r = poi.routes[profile];
   const { trunk, stubs } = splitRoutes(r.endA.line, r.endB.line);
   for (const stub of stubs) {
-    routeLayers.push(L.polyline(stub, { color: '#1f8a57', weight: 3.5, opacity: .55, dashArray: '1 7', lineCap: 'round' }).addTo(map));
+    routeLayers.push(L.polyline(stub, { color: '#1f8a57', weight: 3.5, opacity: .55, lineCap: 'round' }).addTo(map));
   }
   if (trunk.length > 1) {
     routeLayers.push(L.polyline(trunk, { color: '#1f8a57', weight: 4, opacity: .8, lineCap: 'round' }).addTo(map));

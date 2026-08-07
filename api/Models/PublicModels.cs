@@ -40,9 +40,11 @@ public record PropertyDetail(
     string City,
     string Type,
     string Name,
-    string? Address,
-    double Lat,
-    double Lng,
+    /// The public segment of the street this property sits on, as [lat, lng]
+    /// pairs — never the door, never `SampleA`/`SampleB` (ADR-041). Null means
+    /// degraded: the band could not be derived, so the map shows nothing more
+    /// precise than the summary's rounded point.
+    double[][]? Band,
     Bilingual? Area,
     BilingualDoc? Description,
     Bilingual? Details,
@@ -114,7 +116,12 @@ public record PublicNearby(
     string Name,
     double Lat,
     double Lng,
-    Dictionary<string, NearbyReach> Reach);
+    Dictionary<string, PublicReach> Reach);
+
+/// A nearby entry's reach as a visitor may see it: a range, not a single
+/// eager number (ADR-041 point 3), plus a coarse distance kept only because
+/// the UI shows "· 400 m" beside the minutes.
+public record PublicReach(int MinMinutes, int MaxMinutes, int Metres);
 
 public static class PublicProjection
 {
@@ -174,8 +181,15 @@ public static class PublicProjection
             .OrderBy(ph => ph.SortOrder)
             .FirstOrDefault();
 
+        // The public point: the band's midpoint when one exists, never the
+        // door — and the door itself only ever surfaces rounded to ~110 m
+        // when a band could not be derived (ADR-041).
+        var (lat, lng) = p.Band is not null
+            ? (p.Band.MidLat, p.Band.MidLng)
+            : (Math.Round(p.Lat, 3), Math.Round(p.Lng, 3));
+
         return new(
-            p.Id, p.City, p.Type, p.Name, p.Area, p.Lat, p.Lng,
+            p.Id, p.City, p.Type, p.Name, p.Area, lat, lng,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2,
             p.PriceNumber, p.BillsPolicy, p.Amenities, p.IsNew,
             p.Checked, p.DepositProtected, p.AvailableFrom,
@@ -183,9 +197,21 @@ public static class PublicProjection
             BlockingRanges(p.Availability, now, p.TurnoverDays));
     }
 
+    /// Per-profile reach as a visitor may see it: a range over the door and
+    /// the two inset samples (`ReachBands`, ADR-041 point 3) when present,
+    /// degrading to a flat min=max range from the single eager measurement
+    /// for entries saved before bands existed. Metres are always coarsened
+    /// to the nearest 50 m — never precise enough to mark anything.
+    static Dictionary<string, PublicReach> ToPublicReach(NearbyEntry n) =>
+        n.Reach.ToDictionary(kv => kv.Key, kv => new PublicReach(
+            n.ReachBands?.GetValueOrDefault(kv.Key)?.MinMinutes ?? kv.Value.Minutes,
+            n.ReachBands?.GetValueOrDefault(kv.Key)?.MaxMinutes ?? kv.Value.Minutes,
+            (int)(Math.Round(kv.Value.Metres / 50.0) * 50)));
+
     public static PropertyDetail ToDetail(PropertyDoc p, DateTimeOffset now, int platformFee)
         => new(
-            p.Id, p.City, p.Type, p.Name, p.Address, p.Lat, p.Lng,
+            p.Id, p.City, p.Type, p.Name,
+            p.Band?.Line.Select(b => new[] { b.Lat, b.Lng }).ToArray(),
             p.Area, p.Description, p.Details, p.Beds, p.PriceNote,
             p.Guests, p.Bedrooms, p.Bathrooms, p.SizeM2, p.FloorNumber,
             p.Amenities, p.EnergyRating, p.PetsAllowed, p.SmokingAllowed,
@@ -198,5 +224,5 @@ public static class PublicProjection
                 ph.Url, ph.CardUrl, ph.DetailUrl, ph.IsFloorplan, ph.SortOrder, ph.HiddenFromGallery))],
             BlockingRanges(p.Availability, now, p.TurnoverDays),
             [.. p.Nearby.Select(n => new PublicNearby(
-                n.Id, n.Group, n.Type, n.CustomType, n.Name, n.Lat, n.Lng, n.Reach))]);
+                n.Id, n.Group, n.Type, n.CustomType, n.Name, n.Lat, n.Lng, ToPublicReach(n)))]);
 }

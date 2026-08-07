@@ -26,6 +26,12 @@
       "port": 4280
     },
     {
+      "name": "docs-proto",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8123", "-d", "docs/ux-analysis/prototypes"],
+      "port": 8123
+    },
+    {
       "name": "swa-export",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["swa", "start", "app/out", "--port", "4281"],

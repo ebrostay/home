@@ -129,8 +129,12 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   `NeighbourhoodMap`'s exact pin, the route lines (a route drawn from the
   true coordinates points at the building even if the text is hidden), and
   the detail payload's `lat`/`lng` precision. **ADR-041 is drafted**
-  (proposed, not decided) in the decision log with three options and a
-  recommendation; the decision is Raphael's.
+  (proposed, not decided) in the decision log. The proposal is the
+  **street-band** design (Raphael's idea, 2026-08-07): show the street,
+  no pin; travel times become server-merged best–worst ranges routed from
+  both street ends plus the true door. A working prototype with real ORS
+  routes is at `docs/ux-analysis/prototypes/street-band.html` — measured
+  ranges are only 1–2 min wide. The decision is Raphael's.
 - **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
   [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
   Verified badge, move-in/out clock times, bed sizes, an operator identity

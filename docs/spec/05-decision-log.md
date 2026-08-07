@@ -3275,44 +3275,65 @@ the commute before booking. It fits the transparency principle of the
 design (spec §6.1). The route feature needs true coordinates to draw
 correct lines.
 
-### Options
+### Proposed design — the street is the disclosure unit
 
-**Option A — keep the exact address.**
-No change. We accept the risk. The transparency value stays.
+> Earlier drafts listed two more options (keep everything exact; hide only
+> the house number) and an offset pin inside a ~200 m circle. The product
+> owner rejected them on 2026-08-07: a circle is pointless when the street
+> name is public, and the street name should stay — it carries real
+> commute value. The design below replaces all of them. A working
+> prototype exists: `docs/ux-analysis/prototypes/street-band.html` (real
+> OSM street geometry, real ORS routes).
 
-**Option B — hide the house number, keep the map.**
-The text shows only street and city. The pin and the routes stay exact.
-This is weak protection: the pin still marks the building. Low cost, low
-value. Listed for completeness.
+1. **Text.** The public page shows the neighbourhood and the street name,
+   without the house number. No address plate, no copy button. Listings
+   get neutral public titles — today the title *is* the address plus the
+   unit.
+2. **Map.** The map highlights the whole street. No pin, no circle. The
+   label says: "the home is on this street".
+3. **Travel times become honest ranges.** For each saved place and each
+   travel profile, the server routes from **both street ends and from the
+   true door**, takes the minimum and maximum, rounds them outward to
+   whole minutes, and returns **one merged response**: "4–6 min". The
+   exact point never reaches the browser.
+4. **The true door must be in the sample set.** This is not optional. The
+   prototype measured that the true door can fall *outside* the two-end
+   range (Plaza del Pilar on foot: ends 35.0 and 35.6 min, door 36.1 min
+   — routing snaps to one side of the street and to one-way loops). With
+   the door in the sample set, the shown range always contains the truth.
+5. **Route lines.** The map draws the two boundary routes as a light
+   corridor. No line ends at a door.
+6. **API.** The anonymous detail response carries street geometry instead
+   of `lat`/`lng`, and no `address`. The route endpoints return only the
+   merged range and the two boundary lines. The outward rounding also
+   blunts triangulation: an attacker who computes the public end-routes
+   himself cannot read the door's exact time off the band edge.
+7. **After booking.** The guest receives the exact address once the
+   booking is confirmed, through the existing channels (WhatsApp /
+   email).
 
-**Option C — approximate location before booking, exact after.**
-1. The public page shows the neighbourhood and the street, without the
-   house number. No address plate, no copy button.
-2. The map shows a circle (radius about 200 m) with an offset pin. The
-   offset is fixed per listing, so repeated requests cannot average it
-   away.
-3. Route lines start at the offset pin. Travel times stay exact — the
-   server computes them from the true coordinates, and a number does not
-   reveal a building.
-4. The guest receives the exact address after the booking is confirmed,
-   through the existing channels (WhatsApp / email).
-5. The anonymous API sends offset `lat`/`lng` and no `address`. This is
-   required — a client-side fix alone protects nothing.
+**Measured cost of the blur (prototype, Pedro II el Católico, ~190 m
+street, 4 places × 3 profiles):** ranges are 1–2 minutes wide on foot and
+about 1 minute by bike and car. Example: walk to the tram 4–6 min, walk
+to Plaza del Pilar 35–37 min. The commute answer a booker needs survives
+almost untouched.
 
-### Recommendation (draft — the decision is the product owner's)
+### Status of the proposal (the decision is the product owner's)
 
-Option C. It removes the whole risk chain: text, pin, routes, and API.
-Option B removes only the text. Option A accepts the full risk. Option C
-keeps exact travel times, which is the main pre-booking value of the
-location data.
+The mechanism is validated by the prototype. What remains is the go /
+no-go and the open points below.
 
-### Consequences of Option C (if chosen)
+### Consequences (if adopted)
 
-- Public listing titles must change. Today the title *is* the address
-  plus the unit. Listings need neutral public names.
-- The detail API, the map, the routes, the address plate, and the e2e
-  fixtures change. The seed data keeps true coordinates; the API applies
-  the offset.
+- Public listing titles must change to neutral names.
+- The detail API, the map component, the routes, the address plate, and
+  the e2e fixtures change. The seed data keeps true coordinates; the API
+  computes the street band and the merged ranges server-side.
+  `RouteCache` stays the only id→coordinates authority (ADR-028/039/040)
+  — the merge lives behind it.
+- Each route lookup costs three ORS calls instead of one (two ends + the
+  door). `OrsBudget` and the route cache absorb this; cached entries are
+  per listing, not per visitor.
 - The floor plan and the availability band can stay. Without an address
   they identify nothing.
 - The booking confirmation flow gains one duty: deliver the exact
@@ -3322,8 +3343,10 @@ location data.
 
 1. Release moment for the exact address: on confirmed booking, or on
    signed contract?
-2. Offset rule: radius, and whether the neighbourhood badge stays.
-3. New public naming scheme for listings.
+2. New public naming scheme for listings.
+3. Long streets: for a street much longer than ~200 m, does the band
+   become a street *segment* (say, the 200 m around the home), so ranges
+   stay tight? Pedro II is short; the next listing may not be.
 4. Does the owner's own view (and the admin view) keep the exact data?
    (Proposed: yes — the restriction is for anonymous and guest views
    only.)

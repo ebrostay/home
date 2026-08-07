@@ -19,6 +19,7 @@ adhere where convention carries meaning, challenge where it is only habit.
 | `comparison.md` | The growing synthesis: baseline / divergence matrix and differentiation notes. |
 | `info-inventory.md` | One level deeper: which information group exists on which page (✓/~/⌂/—), with a per-row verdict for Ebrostay — keep / gap / consider / skip. |
 | `compare.html` | Deepest level: per info group, live-page screenshots side by side + feature tables (business/UI/usability) + heuristic scores, with site filters. Self-contained (screenshots embedded). |
+| `prototypes/street-band.html` | Working prototype for ADR-041: the map marks the street, not the door; travel times are best–worst ranges merged server-side from both street ends + the true door. Real OSM geometry + real ORS routes, data embedded. Needs internet for map tiles; serve with the `docs-proto` launch config (port 8123) or open the file directly. |
 | `tools/capture-shots.mjs` | Re-captures the section screenshots (Playwright, borrowed from `app/`) and injects them into `compare.html`. `node docs/ux-analysis/tools/capture-shots.mjs --outdir /tmp/shots --inject` (add `--only <site>` to redo one site, `--headed` if a site blocks headless). |
 
 Mapped so far (2026-08-07, desktop 1280px): **Ebrostay v2**, **Spotahome**

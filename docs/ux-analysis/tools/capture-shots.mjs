@@ -56,6 +56,10 @@ const REGIONS = {
       trust:    { x: 790, y: 390,  w: 376, h: 520 },
       cancel:   { x: 120, y: 2870, w: 680, h: 620 },
       opinion:  { x: 120, y: 2575, w: 680, h: 300 },
+      landlord: { x: 120, y: 4610, w: 680, h: 400 },
+      rooms:    { x: 120, y: 2140, w: 680, h: 260 },
+      howto:    { x: 120, y: 5010, w: 680, h: 620 },
+      similar:  { x: 100, y: 6655, w: 1180, h: 500 },
     },
   },
   wunderflats: {
@@ -68,7 +72,9 @@ const REGIONS = {
       commerce: { x: 950, y: 290,  w: 330,  h: 560 },
       living:   { x: 0,   y: 985,  w: 1280, h: 760 },
       calendar: { x: 0,   y: 2990, w: 1280, h: 640 },
-      services: { x: 0,   y: 1730, w: 1280, h: 340 },
+      services: { x: 0,   sel: 'h3', text: 'Services', dy: -20, w: 1280, h: 340 },
+      beds:     { x: 0,   sel: 'h3', text: 'Beds', dy: -20, w: 1280, h: 300 },
+      similar:  { x: 0,   sel: 'h3', text: 'Similar Apartments', dy: -20, w: 1280, h: 500 },
     },
   },
   flatio: {
@@ -89,6 +95,11 @@ const REGIONS = {
       times:    { x: 70,  sel: 'h3', text: 'Move-in and move-out', dy: -15, w: 750, h: 170 },
       trust:    { x: 70,  sel: 'h2', text: 'StayProtection for Guests', dy: -15, w: 750, h: 625 },
       calendar: { x: 70,  sel: 'h2', text: 'Availability of the listing', dy: -15, w: 750, h: 580 },
+      cancel:   { x: 70,  sel: 'h2', text: 'Rental conditions', dy: -15, w: 750, h: 420 },
+      amenities:{ x: 70,  sel: 'h2', text: 'What this place offers', dy: -15, w: 750, h: 400 },
+      faq:      { x: 70,  sel: 'h2', text: 'FAQ', dy: -15, w: 750, h: 500 },
+      urgency:  { x: 845, sel: 'div', text: 'This listing is popular', dy: -12, w: 380, h: 140 },
+      similar:  { x: 0,   sel: 'h2', text: 'Other properties you may like', dy: -15, w: 1280, h: 430 },
     },
   },
   blueground: {
@@ -105,6 +116,7 @@ const REGIONS = {
       similar:  { x: 64, y: 2890, w: 1152, h: 500 },
       faq:      { x: 64, y: 3835, w: 770,  h: 480 },
       urgency:  { x: 64, y: 603,  w: 770,  h: 90 },
+      rules:    { x: 64, y: 3425, w: 770,  h: 420 },
     },
   },
 };
@@ -112,8 +124,10 @@ const REGIONS = {
 const HIDE_CHROME = `
   [class*="cookie" i], [id*="cookie" i], [class*="consent" i],
   [id*="onetrust" i], [id*="usercentrics" i], .cky-consent-container,
+  [role="dialog"], [class*="modal" i], [class*="backdrop" i],
   [class*="survey" i], [class*="Feedback" i], [class*="chat" i][class*="widget" i]
-  { display: none !important; }`;
+  { display: none !important; }
+  html, body { overflow: auto !important; }`;
 
 mkdirSync(outdir, { recursive: true });
 const browser = await chromium.launch({ headless: !args.includes('--headed') });
@@ -135,9 +149,15 @@ for (const [site, cfg] of Object.entries(REGIONS)) {
       await page.waitForTimeout(2000);
     }
     for (const sel of cfg.cookies ?? []) {
-      try { await page.locator(sel).first().click({ timeout: 4000 }); await page.waitForTimeout(600); }
+      try { await page.locator(sel).first().click({ timeout: 8000 }); await page.waitForTimeout(1000); }
       catch { console.log(`   (cookie step skipped: ${sel})`); }
     }
+    await page.keyboard.press('Escape').catch(() => {});
+    // native <dialog> chrome (Flatio) lives in the top layer where CSS hiding
+    // and text-matched clicks can miss — close and drop it outright
+    await page.evaluate(() => document.querySelectorAll('dialog').forEach(d => {
+      try { d.close(); } catch { /* not open */ } d.remove();
+    }));
     await page.addStyleTag({ content: HIDE_CHROME });
     // walk the page so lazy sections and maps actually render
     await page.evaluate(async () => {
@@ -149,17 +169,24 @@ for (const [site, cfg] of Object.entries(REGIONS)) {
 
     manifest[site] = {};
     for (const [group, r] of Object.entries(cfg.shots)) {
-      if (r.sel) { // anchored region: resolve y from a heading at capture time
+      if (r.sel) { // anchored region: resolve y from the TIGHTEST matching element
         const y = await page.evaluate(({ sel, text }) => {
-          const els = Array.from(document.querySelectorAll(sel));
-          const el = text ? els.find(e => (e.innerText || '').trim().startsWith(text)) : els[0];
-          if (!el) return null;
-          return Math.round(el.getBoundingClientRect().top + window.scrollY);
+          let els = Array.from(document.querySelectorAll(sel))
+            .filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0; });
+          if (text) els = els.filter(e => (e.innerText || '').trim().startsWith(text));
+          if (!els.length) return null;
+          els.sort((a, b) => a.getBoundingClientRect().height - b.getBoundingClientRect().height);
+          return Math.round(els[0].getBoundingClientRect().top + window.scrollY);
         }, { sel: r.sel, text: r.text });
         if (y === null) { console.log(`   ${group} SKIPPED (anchor "${r.text ?? r.sel}" not found)`); continue; }
         r.y = y + (r.dy ?? 0);
       }
       let buf;
+      if (r.fixed === undefined) {
+        // park the region in view first, so lazy images inside it actually load
+        await page.evaluate(y => window.scrollTo(0, Math.max(0, y - 250)), r.y);
+        await page.waitForTimeout(1000);
+      }
       if (r.fixed !== undefined) {
         await page.evaluate(y => window.scrollTo(0, y), r.fixed);
         await page.waitForTimeout(900);

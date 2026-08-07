@@ -25,7 +25,7 @@ is the choice).
 | Floor number | ✓ | — | ✓ | ✓ | ✓ | keep |
 | Sleeps / max occupancy | ✓ | — | ✓ | ✓ | — | keep |
 | Neighbourhood named up top | ✓ badge | ~ breadcrumb | ~ in title | ✓ | ✓ breadcrumb | keep |
-| Full street address w/ number | ✓ + copy button, exact pin, precise lat/lng in the anonymous API | — street in breadcrumb | ~ street + postcode, **no №** | — | ~ street only, no № | **decide (ADR)** — we are the only site of five precise to the door, while also publishing vacancy windows, floor, unit side and a floor plan; squatter/burglary/clone-fraud risk vs commute-transparency value. See backlog. |
+| Full street address w/ number | ✓ today; **ADR-041 (locked) removes it** | — street in breadcrumb | ~ street + postcode, **no №** | — | ~ street only, no № | **decided (ADR-041, locked 2026-08-07)** — the street-band design: street name only, no pin, travel times as best–worst ranges; exact address after booking. We were the only site of five precise to the door while also publishing vacancy windows, floor and a floor plan. Implementation on the backlog. |
 | Listing ID | — | ~ in page title | — | ~ URL only | ✓ | skip — IDs are operator vocabulary, not guest vocabulary |
 | Verified/checked marker | ✓ | ✓ + date | ~ prose | ~ via protection | ✓ vetted | **consider** — Spotahome's "checked on <date>" beats a bare badge; our badge could carry the date |
 

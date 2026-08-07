@@ -13,7 +13,7 @@ is superseded by **ADR-035** (Entra External ID); **ADR-021** (fresh SWA in
 eastus2) is amended by **ADR-035** (SWA Standard, recreated in West Europe);
 point 4 of **ADR-022** (monthly billing) is replaced by **ADR-023** (daily
 proration). Open items every locked decision deliberately left behind are
-collected in the **Open decisions** table at the end of this file (OD-1…OD-8)
+collected in the **Open decisions** table at the end of this file (OD-1…OD-10)
 and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
 
 | ADR | Title | Status |
@@ -48,7 +48,7 @@ and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
 | ADR-038 | The bare domain picks a language; every other URL still states one | ✅ locked & built |
 | ADR-039 | "Your places" is measured, not estimated, and the browser keeps it | ✅ locked & built |
 | ADR-040 | One map, one travel toggle, one selection | ✅ locked & built |
-| ADR-041 | Address precision on the public listing | 🔜 **proposed — not decided** |
+| ADR-041 | Address precision: the street-band design | ✅ locked |
 
 ---
 
@@ -3240,7 +3240,7 @@ is no ordering to get wrong.
 
 ## ADR-041 — Address precision on the public listing
 
-**Date:** 2026-08-07 · **Status:** 🔜 proposed — not decided ·
+**Date:** 2026-08-07 · **Status:** ✅ locked 2026-08-07 ·
 **Relates to:** ADR-039, ADR-040 (map and routes) ·
 **Source:** the five-site comparison in `docs/ux-analysis/` and the
 backlog item "Address precision policy". Written in plain language at the
@@ -3275,22 +3275,36 @@ the commute before booking. It fits the transparency principle of the
 design (spec §6.1). The route feature needs true coordinates to draw
 correct lines.
 
-### Proposed design — the street is the disclosure unit
+### Decision — the street is the disclosure unit
 
 > Earlier drafts listed two more options (keep everything exact; hide only
 > the house number) and an offset pin inside a ~200 m circle. The product
 > owner rejected them on 2026-08-07: a circle is pointless when the street
 > name is public, and the street name should stay — it carries real
-> commute value. The design below replaces all of them. A working
-> prototype exists: `docs/ux-analysis/prototypes/street-band.html` (real
-> OSM street geometry, real ORS routes).
+> commute value. The design below replaces all of them and is validated by
+> a working prototype: `docs/ux-analysis/prototypes/street-band.html`
+> (real OSM street geometry, real ORS routes).
 
 1. **Text.** The public page shows the neighbourhood and the street name,
    without the house number. No address plate, no copy button. Listings
    get neutral public titles — today the title *is* the address plus the
    unit.
-2. **Map.** The map highlights the whole street. No pin, no circle. The
-   label says: "the home is on this street".
+2. **Map.** The map highlights the street. No pin, no circle. The label
+   says: "the home is on this street". The band renders in river blue
+   (`--river-deep`) — information, not selection; routes stay brand
+   green.
+   **Long streets get a segment, not the whole street.** The band is the
+   whole street or a ~250 m segment, whichever is shorter. The segment is
+   cut at junction nodes so it covers whole blocks ("from Calle A to
+   Calle B"), and the home sits **off-center** by a fixed per-listing
+   offset — never in the middle, and stable across requests so it cannot
+   be averaged out.
+   **The geometry is derived, not typed.** At listing save/approval, the
+   server reverse-geocodes the stored coordinate to its OSM way, merges
+   same-named neighbour ways, and cuts the segment. The host enters
+   nothing; the owner confirms the band in the editor's map preview, and
+   the admin sees it in review. OSM data is ODbL — the map's existing
+   attribution covers it.
 3. **Travel times become honest ranges.** For each saved place and each
    travel profile, the server routes from **both street ends and from the
    true door**, takes the minimum and maximum, rounds them outward to
@@ -3330,12 +3344,17 @@ about 1 minute by bike and car. Example: walk to the tram 4–6 min, walk
 to Plaza del Pilar 35–37 min. The commute answer a booker needs survives
 almost untouched.
 
-### Status of the proposal (the decision is the product owner's)
+### Rationale
 
-The mechanism is validated by the prototype. What remains is the go /
-no-go and the open points below.
+The design closes every leak at once — title, address plate, pin, route
+lines, and API — while the one thing the location data is *for*
+pre-booking, the commute answer, survives almost untouched (ranges 1–2
+minutes wide). The alternatives protected less (hiding only the number)
+or destroyed more (an offset pin draws routes from a false point; the
+band's ranges are honest by construction). Every mechanism was validated
+on the prototype with real routing data before the lock.
 
-### Consequences (if adopted)
+### Consequences
 
 - Public listing titles must change to neutral names.
 - The detail API, the map component, the routes, the address plate, and
@@ -3351,17 +3370,18 @@ no-go and the open points below.
 - The booking confirmation flow gains one duty: deliver the exact
   address.
 
-### Open points to settle with the decision
+### Settled with the lock, and what stays open
 
-1. Release moment for the exact address: on confirmed booking, or on
-   signed contract?
-2. New public naming scheme for listings.
-3. Long streets: for a street much longer than ~200 m, does the band
-   become a street *segment* (say, the 200 m around the home), so ranges
-   stay tight? Pedro II is short; the next listing may not be.
-4. Does the owner's own view (and the admin view) keep the exact data?
-   (Proposed: yes — the restriction is for anonymous and guest views
-   only.)
+- Long streets: **settled** — the segment rule above is part of the
+  design from day one; avenue listings are the normal case, not an edge
+  case.
+- Owner and admin views: **settled, yes** — they keep the exact address
+  and coordinates. The restriction applies to anonymous and guest views
+  only.
+- Release moment for the exact address (confirmed booking or signed
+  contract): deliberately open → **OD-9**.
+- Public naming scheme for listings: deliberately open → **OD-10**.
+  Blocks implementation of point 1 (the title *is* the address today).
 
 ---
 
@@ -3381,3 +3401,5 @@ spec-level decisions) in [`docs/BACKLOG.md`](../BACKLOG.md).
 | OD-6 | **Turnaround vs weekends and holidays** | 🔜 | The ADR-026 buffer is calendar days; a 2-day turnaround ending on a Saturday is staffed by nobody. Should it count working days, or extend over weekends and Aragón public holidays? | Leaning (2026-07-29): count **working days**. Blocked on one operational fact — does the turnaround crew work Saturdays? If yes, the problem collapses to holidays only. Decide once real stays flow; needs a hand-maintained Zaragoza holiday list (national + Aragón + local: Pilar, San Valero, Cincomarzada) served from ONE place, because the C# projection and the client calendar must agree day-for-day. Raised with ADR-031. |
 | OD-7 | **Personal data in an uploaded import document** | 🔜 | ADR-020's privacy rule is *property text only, never personal data*. A pasted portal URL is a public advert, but the document flow's agency dossier or listing sheet can carry the owner's NIE, bank details or a signed mandate — and the extractor is third-party. What may leave, and does the owner have to be told what we send? | Blocks Card B of the start screen; the URL flow ships without it (ADR-033 Decision 9). Options, cheapest first: (a) strip nothing but state it plainly at the drop zone and log what was sent; (b) run a pre-pass in our own function that redacts ID numbers and IBANs before the blob is handed over; (c) keep documents in-house on the ADR-020 assistant and never send them out. Needs a data-processing answer before build, not during. |
 | OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |
+| OD-9 | **Exact-address release moment** | 🔜 | ADR-041 hides the exact address pre-booking. When does the guest receive it: on confirmed booking, or only on signed contract? | Decide with the first real booking under the street-band design; the delivery channel (WhatsApp/email) exists either way. The safer default until decided: signed contract. Raised with ADR-041. |
+| OD-10 | **Public naming scheme for listings** | 🔜 | Today a listing's title *is* its address plus unit ("Pedro II el Católico 3 - 1 IZQ"). ADR-041 needs neutral public names. What is the scheme? | Decide before implementing ADR-041 point 1 — it blocks the title change. Candidates: descriptive names ("Piso luminoso junto al campus"), street-without-number + neighbourhood, or owner-chosen with admin review (the review queue already exists). Raised with ADR-041. |

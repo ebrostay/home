@@ -111,30 +111,22 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   Conditions; only Flatio has it and it's a filter criterion for exactly
   our corporate/remote audience. Needs a listing field + editor input;
   owner enters their speed-test result.
-- **[L][M]** **Address precision policy — we are the only site showing the
-  door** (Raphael, 2026-08-07, from the per-group comparison). All four
-  competitors stop short of the house number pre-booking: street + postcode
-  (Wunderflats), street only (Blueground), street in the breadcrumb
-  (Spotahome), neighbourhood only (Flatio). We show the full postal line
-  with number, floor and unit side, a copy button, an exact map pin, and
-  precise lat/lng in the anonymous detail API — while the availability band
-  publicly shows *when the flat is empty* and the floor plan shows the
-  layout. Together that is a complete dossier for okupación/burglary of a
-  visibly vacant furnished flat; competitor motives also include
-  listing-clone fraud and occupant privacy (their fourth motive,
-  marketplace disintermediation, does not apply to us). Decide between:
-  keep door-precision (commute-transparency value, ledger identity),
-  street-only pre-booking, or area + offset pin with the exact address
-  revealed after a confirmed booking. Touches the address plate + copy,
-  `NeighbourhoodMap`'s exact pin, the route lines (a route drawn from the
-  true coordinates points at the building even if the text is hidden), and
-  the detail payload's `lat`/`lng` precision. **ADR-041 is drafted**
-  (proposed, not decided) in the decision log. The proposal is the
-  **street-band** design (Raphael's idea, 2026-08-07): show the street,
-  no pin; travel times become server-merged best–worst ranges routed from
-  both street ends plus the true door. A working prototype with real ORS
-  routes is at `docs/ux-analysis/prototypes/street-band.html` — measured
-  ranges are only 1–2 min wide. The decision is Raphael's.
+- **[L][L]** **Implement the street-band design — ADR-041, locked
+  2026-08-07.** The public listing stops disclosing the door: street name
+  without number, a river-blue street band on the map (no pin), travel
+  times as server-merged best–worst ranges routed from both segment ends
+  plus the true door (ends sampled ~10 m inside the street — one-way
+  rule), route rendering split at the fork (stubs + one trunk), exact
+  address only after booking. Street geometry derives from OSM at
+  save/approval (reverse-geocode → merge ways → cut ≤~250 m segment at
+  junctions, home off-center). Touches: detail API payload (street
+  geometry replaces `lat`/`lng`, drops `address`), `NearbyFunctions` +
+  `RouteCache` (3-sample merge, ~3× ORS calls per cached entry),
+  `NeighbourhoodMap`, address plate, e2e fixtures, seed data untouched
+  (true coords stay server-side). Working prototype:
+  `docs/ux-analysis/prototypes/street-band.html`. **Blocked on OD-10**
+  (public naming scheme — the title is the address today); OD-9 (exact-
+  address release moment) can be decided during implementation.
 - **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
   [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
   Verified badge, move-in/out clock times, bed sizes, an operator identity

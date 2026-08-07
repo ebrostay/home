@@ -83,6 +83,43 @@ re-specifications.
   Only affects Add-to-Home-Screen / desktop install, never normal browsing or
   SEO, so the honest default is drop unless mobile-install polish is wanted.
 
+## Listing page — competitor-analysis follow-ups (2026-08-07)
+
+From the five-site comparison in
+[`docs/ux-analysis/`](ux-analysis/README.md) (structure maps, comparison,
+[info inventory](ux-analysis/info-inventory.md)). Net finding: nothing on
+the page is dead weight; every real gap is contractual or a one-line fact.
+
+- **[L][M]** **Cancellation policy + required paperwork on the listing** —
+  the one info group where 3 of 4 competitors answer (Spotahome's refund
+  ladder, Flatio's named policy, Blueground's ID checks) and we are silent
+  everywhere. **Needs an ADR first** — it's company policy, not per-listing
+  copy, and it collides with the existing item below about `stayTerms`
+  `cancellation` being a per-listing field one home could silently opt out
+  of (Host & listing editor section). Decide policy → then a compact
+  "before you book" block near the booking-panel CTA.
+- **[P][S]** **Honest negatives in Conditions** — state what a home lacks
+  ("no lift", "no parking", bills capped at X) instead of omitting it.
+  Wunderflats and Flatio both prove stated absence reads as confidence.
+  Mostly derivable from existing fields (amenities, `billsPolicy`); parking
+  may want a real field rather than an amenity.
+- **[P][S]** **Calendar-freshness stamp on the month-band** ("updated N
+  hours ago") — Spotahome and Flatio both do it; cheap trust for a page
+  whose identity is the calendar. Needs the availability-blocks
+  last-modified timestamp surfaced in the property projection.
+- **[P][S]** **Internet speed as a fact** — one mono numeral (Mbps) in
+  Conditions; only Flatio has it and it's a filter criterion for exactly
+  our corporate/remote audience. Needs a listing field + editor input;
+  owner enters their speed-test result.
+- **[P][—]** **Decide-deliberately tier, no rush** (full verdicts in the
+  [info inventory](ux-analysis/info-inventory.md)): checked-on date on the
+  Verified badge, move-in/out clock times, bed sizes, an operator identity
+  plate for guests, a per-area neighbourhood paragraph, photo count in the
+  mosaic, per-room inventory, lease readable pre-booking; at scale only:
+  reviews, similar listings. The keep-out list (urgency counters, platform
+  voice, guarantee theater, SEO tails) is equally binding — it's what keeps
+  the page shorter than every competitor's.
+
 ## Search & stay model
 - **[P][M]** **Overlapping availability search when the month selector is used**
   (Raphael, 2026-07-22). Today search requires an exact date-range fit

@@ -104,7 +104,12 @@ export function portfolioStats(
 
   return {
     total: properties.length,
-    live: properties.filter((p) => p.status === "published").length,
+    // `bucketOf`, not `status === "published"`: the ledger strip and the tab
+    // beside it have to be counting the same thing. They were not — a `closed`
+    // listing (design 2026-08-08) bucketed into the Live tab while this line
+    // skipped it, so the strip read "0 live" next to a tab reading "Live 1"
+    // about the same home. One definition, in BUCKET, and this reads it.
+    live: properties.filter((p) => bucketOf(p) === "live").length,
     review: properties.filter((p) => p.status === "pending_review").length,
     occupancy: sellableMonths
       ? Math.round((booked / sellableMonths) * 100)

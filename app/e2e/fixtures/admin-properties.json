@@ -108,5 +108,27 @@
     "availableFrom": null,
     "createdAt": "2026-06-02T09:15:00Z",
     "updatedAt": "2026-07-29T21:00:44.2752870+00:00"
+  },
+  {
+    "id": "closed1",
+    "reference": "EBR-P-0199",
+    "status": "closed",
+    "name": "Piso Delicias",
+    "address": "C. de Unceta, 4",
+    "area": {
+      "es": "Centro",
+      "en": "Centro"
+    },
+    "hostId": "e2e00000000000000000000000000001",
+    "hostName": "E2E Owner",
+    "priceNumber": 980,
+    "bedrooms": 2,
+    "sizeM2": 74,
+    "coverUrl": "http://127.0.0.1:10000/devstoreaccount1/property-photos/01d061dcb79c400cb83dbcfc9e9390ed/f1719775fde645969d804bfc377ef0c0-full.webp",
+    "photoCount": 4,
+    "reviewNote": null,
+    "availableFrom": null,
+    "createdAt": "2026-06-11T09:15:00Z",
+    "updatedAt": "2026-08-08T12:00:00Z"
   }
 ]

@@ -44,6 +44,11 @@ export default function AccountPage() {
 
 function AccountBody() {
   const t = useTranslations("account");
+  // The deactivation notice is the SAME sentence the header menu shows
+  // (`auth.deactivated`), deliberately not a second one written for this page:
+  // one fact about the account, told once, in one form of words, wherever the
+  // person meets it.
+  const tAuth = useTranslations("auth");
   const locale = useLocale();
   const { me, refresh } = useAuth();
   const [confirming, setConfirming] = useState(false);
@@ -141,6 +146,23 @@ function AccountBody() {
             {me.provider ? providerLabel(me.provider) : "—"}
           </p>
         </div>
+
+        {/* §8: the identity block states the deactivation when the flag is
+            set. Without it this page was actively misleading — a deactivated
+            person still reads "Your account is closing" and an undo button
+            below, presses it, and gets a generic failure, because every
+            endpoint including the closure one refuses them first. The notice
+            is what turns that dead end into an explained one. Danger-soft and
+            not river: this one was done TO you, and it is the reason the
+            controls under it will not answer. */}
+        {me.isDeactivated && (
+          <p
+            role="status"
+            className="mt-4 rounded-(--radius-control) bg-danger-soft px-3 py-2.5 text-sm text-danger"
+          >
+            {tAuth("deactivated")}
+          </p>
+        )}
       </section>
 
       {/* 2 — closure. `aria-live` because the write that changes this block

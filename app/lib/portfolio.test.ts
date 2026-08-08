@@ -1,5 +1,65 @@
 import { describe, expect, it } from "vitest";
-import { formatDay } from "./portfolio";
+import type { HostProperty, PropertyStatus } from "@/lib/api";
+import { bucketOf, formatDay, portfolioStats, tabCounts } from "./portfolio";
+
+const home = (status: PropertyStatus, id = status): HostProperty => ({
+  id,
+  status,
+  reviewNote: null,
+  reference: null,
+  name: `Home ${id}`,
+  address: null,
+  area: null,
+  bedrooms: 2,
+  bathrooms: 1,
+  sizeM2: 80,
+  priceNumber: 1200,
+  coverUrl: null,
+  photoCount: 4,
+  sectionsDone: 11,
+  sectionsTotal: 11,
+  requestCount: 0,
+  oldestRequestAt: null,
+  availableFrom: null,
+  updatedAt: "2026-08-01T10:00:00Z",
+  availability: [],
+});
+
+// The ledger strip and the tab strip sit side by side on the portfolio page,
+// and they were answering the same question differently: `BUCKET` put a
+// `closed` listing (design 2026-08-08) in the Live tab while `portfolioStats`
+// counted only `published`, so an owner mid-closure read "0 live" next to a
+// tab reading "Live 1" about the very same home.
+describe("what the portfolio calls live", () => {
+  it("counts a closed listing, which is still public", () => {
+    expect(portfolioStats([home("closed")], "en", new Date("2026-08-08")).live).toBe(1);
+  });
+
+  it("agrees with the Live tab, listing for listing", () => {
+    const homes = [
+      home("published"),
+      home("closed"),
+      home("paused"),
+      home("draft"),
+      home("pending_review"),
+      home("rejected"),
+    ];
+
+    const stats = portfolioStats(homes, "en", new Date("2026-08-08"));
+
+    expect(stats.live).toBe(tabCounts(homes).live);
+    expect(stats.live).toBe(2);
+  });
+
+  // The bucket is the single definition; the strip reads it rather than
+  // repeating it, which is what stops the two drifting apart again.
+  it("is the `live` bucket and nothing else", () => {
+    const homes = [home("published"), home("closed"), home("paused")];
+    const stats = portfolioStats(homes, "en", new Date("2026-08-08"));
+
+    expect(stats.live).toBe(homes.filter((p) => bucketOf(p) === "live").length);
+  });
+});
 
 // `formatDay` exists because `Intl.DateTimeFormat.format` throws a RangeError
 // on an invalid Date instead of degrading, and the portfolio page formats a

@@ -835,6 +835,156 @@ test("/en/account — the first click asks before it closes, and focus follows i
   expect(closurePosts, "the confirm press should write exactly once").toBe(1);
 });
 
+// The half-applied closure, which is a NORMAL outcome rather than a crash: the
+// fan-out writes the listings first and the profile flag last, deliberately,
+// so any error in the middle leaves listings already moved and the flag unset.
+// The page then computes `closing` from the flag, renders the request face
+// again, and the only sentence on screen used to be "Something went wrong" —
+// while the owner's homes sat in a state the page was not telling them about.
+// The copy has to name the state and say that pressing again finishes it, and
+// the press has to actually converge.
+test("/en/account — a half-applied closure says so, and pressing again finishes it", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  const REQUESTED_AT = "2026-08-08T12:00:00Z";
+  let closing = false;
+  let attempts = 0;
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    }),
+  );
+
+  await page.route("**/api/account/closure", (route: Route) => {
+    attempts++;
+    // First press: the fan-out failed somewhere after the listing writes.
+    if (attempts === 1) {
+      return route.fulfill({ status: 502, contentType: "application/json", body: "{}" });
+    }
+    closing = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        deletionRequestedAt: REQUESTED_AT,
+        unreadableListings: 0,
+      }),
+    });
+  });
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  await page.getByRole("button", { name: "Request closure" }).click();
+  const confirm = page.getByRole("button", { name: "Yes, request closure" });
+  await confirm.click();
+
+  // Scoped to <main>: Next mounts its own route announcer with role="alert".
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "Press the button again",
+  );
+
+  // And the retry genuinely converges — the confirm button is still standing,
+  // still enabled, and the second press lands.
+  await confirm.click();
+  await expect(
+    page.getByRole("heading", { name: "Your account is closing" }),
+  ).toBeVisible();
+  expect(attempts, "the second press should reach the API").toBe(2);
+});
+
+// The silent dead end (§8): a deactivated owner mid-closure was shown "Your
+// account is closing" and an undo button, and every endpoint — including the
+// closure one, which is guarded by RequireActiveAsync — answers 403. Pressing
+// undo produced a bare failure line and no reason anywhere on the page. The
+// identity block has to state the deactivation, which is what the spec asked
+// for and what makes the refusal below explicable.
+test("/en/account — a deactivated account is told so, in the identity block", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        isDeactivated: true,
+        deletionRequestedAt: "2026-08-08T12:00:00Z",
+      }),
+    }),
+  );
+
+  await page.route("**/api/account/closure", (route: Route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "account_deactivated" }),
+    }),
+  );
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  const main = page.locator("main");
+  await expect(main).toContainText("Your account is deactivated");
+  await expect(main).toContainText("Your account is closing");
+
+  // The undo still refuses — that half is the API's rule and is not this
+  // page's to change. What matters is that the reason is already on screen.
+  await page.getByRole("button", { name: "Cancel the closure request" }).click();
+  await expect(main.getByRole("alert")).toBeVisible();
+  await expect(main).toContainText("Your account is deactivated");
+});
+
+// The other end of the same dead end. `closed` is public, and until the
+// takedown path was opened nothing in the product could move a listing out of
+// it: the owner is write-blocked while their account closes, and deactivating
+// them — the only action the users tab offers on a person — shuts their own
+// cancel endpoint too. The row has to OFFER the control, and it has to send
+// `paused`, never `published`: republishing a departing owner's home is a
+// second, deliberate act, and the API refuses `closed → published` outright.
+test("/en/admin/properties — a closed listing can be taken off the site", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({ contentType: "application/json", body: fixture("me-admin.json") }),
+  );
+
+  let sent: string | null = null;
+  await page.route("**/api/staff/properties/closed1/status", (route: Route) => {
+    sent =
+      (JSON.parse(route.request().postData() ?? "{}") as { status?: string }).status ??
+      null;
+    const rows = JSON.parse(fixture("admin-properties.json")) as {
+      id: string;
+      status: string;
+    }[];
+    const row = rows.find((r) => r.id === "closed1")!;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ...row, status: "paused" }),
+    });
+  });
+
+  await page.goto("/en/admin/properties", { waitUntil: "networkidle" });
+
+  const row = page.getByRole("row").filter({ hasText: "Piso Delicias" });
+  await row.getByRole("button", { name: "Pause" }).click();
+
+  expect(sent, "a closed listing pauses; it never republishes in one press").toBe(
+    "paused",
+  );
+  // And the row now reads as the paused listing it became.
+  await expect(row.getByRole("button", { name: "Reopen" })).toBeVisible();
+});
+
 // The reported bug: signed out, the owner segment pointed at /about#hosts
 // while its matcher only knew /host, so the pill went blank. It is one href
 // now — asserted in both auth states, because the whole failure was that the

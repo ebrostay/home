@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AdminPropertyRow, AdminUser } from "@/lib/api";
 import {
+  STATUS_TABS,
   filterProperties,
   matchesQuery,
   matchesUserQuery,
@@ -8,6 +9,8 @@ import {
   statusCounts,
   tableDate,
 } from "@/lib/admin";
+import en from "@/messages/en.json";
+import es from "@/messages/es.json";
 
 const row = (over: Partial<AdminPropertyRow> = {}): AdminPropertyRow => ({
   id: "p1",
@@ -106,6 +109,38 @@ describe("filtering by status", () => {
   it("applies the status and the search together", () => {
     expect(filterProperties(rows, "draft", "loft").map((r) => r.id)).toEqual(["c"]);
     expect(filterProperties(rows, "published", "loft")).toEqual([]);
+  });
+});
+
+// `closed` (design 2026-08-08) is a PUBLIC status, and since the takedown
+// path was opened an admin is the only party who can move a listing out of
+// it — so a reviewer answering a takedown request has to be able to find one.
+// Both message files already carried the label while the strip had no tab to
+// hang it on.
+describe("the closed tab", () => {
+  it("is offered next to published", () => {
+    expect(STATUS_TABS).toContain("closed");
+  });
+
+  it("filters to the closed listings alone", () => {
+    const rows = [
+      row({ id: "a", status: "published" }),
+      row({ id: "b", status: "closed" }),
+    ];
+
+    expect(filterProperties(rows, "closed", "").map((r) => r.id)).toEqual(["b"]);
+  });
+
+  it("counts them", () => {
+    expect(statusCounts([row({ status: "closed" })]).closed).toBe(1);
+  });
+
+  // Every tab needs a word in both languages, and no tab may be a key that
+  // nothing renders. This is what makes the label live copy rather than a
+  // dead entry nobody notices is wrong.
+  it.each(STATUS_TABS)("has a label in both languages: %s", (key) => {
+    expect(en.admin.properties.tabs).toHaveProperty(key);
+    expect(es.admin.properties.tabs).toHaveProperty(key);
   });
 });
 

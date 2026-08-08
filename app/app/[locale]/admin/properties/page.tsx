@@ -66,7 +66,14 @@ export default function AdminPropertiesPage() {
   // watch the table they are reading rebuild itself under the cursor.
   const flip = useCallback(
     async (row: AdminPropertyRow) => {
-      const next = row.status === "published" ? "paused" : "published";
+      // Pause is the default direction, and only `paused` goes the other way.
+      // `closed` (design 2026-08-08) pauses like `published` does — it is the
+      // other publicly visible state, and while its owner's account is closing
+      // they are write-blocked, so an admin is the only party who can take it
+      // off the site. It stops at `paused`: putting a departing owner's home
+      // back into search is a second, deliberate press, and the API refuses
+      // `closed → published` outright.
+      const next = row.status === "paused" ? "published" : "paused";
       setBusy(row.id);
       setError(null);
       try {
@@ -225,16 +232,18 @@ export default function AdminPropertiesPage() {
                     >
                       {t("action.manage")}
                     </Link>
-                    {(row.status === "published" || row.status === "paused") && (
+                    {(row.status === "published" ||
+                      row.status === "paused" ||
+                      row.status === "closed") && (
                       <button
                         type="button"
                         onClick={() => flip(row)}
                         disabled={busy === row.id}
                         className="text-body underline-offset-4 hover:text-ink hover:underline disabled:opacity-45"
                       >
-                        {row.status === "published"
-                          ? t("action.pause")
-                          : t("action.publish")}
+                        {row.status === "paused"
+                          ? t("action.publish")
+                          : t("action.pause")}
                       </button>
                     )}
                   </span>

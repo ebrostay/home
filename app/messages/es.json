@@ -209,6 +209,7 @@
       },
       "error": {
         "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",
+        "deletion_requested": "Tu cuenta está en proceso de cierre, así que crear y editar están desactivados. Cancela la solicitud de cierre en la página de tu cuenta para volver a hacer cambios.",
         "too_many_drafts": "Tienes demasiados borradores sin terminar. Acaba o borra alguno antes de empezar otro.",
         "listing_incomplete": "Todavía falta algo por rellenar. Mira los pasos marcados en ámbar.",
         "stale_write": "Alguien ha guardado este anuncio mientras lo editabas. Recarga la página.",
@@ -419,6 +420,7 @@
       },
       "error": {
         "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",
+        "deletion_requested": "Tu cuenta está en proceso de cierre, así que crear y editar están desactivados. Cancela la solicitud de cierre en la página de tu cuenta para volver a hacer cambios.",
         "bad_request": "Algo del formulario no se ha entendido. Recarga la página e inténtalo otra vez.",
         "price_out_of_range": "Escribe un precio mensual entre 1 € y 50.000 €.",
         "deposit_out_of_range": "Escribe una fianza de 100.000 € o menos.",
@@ -876,6 +878,7 @@
       },
       "error": {
         "generic": "No se ha guardado. Inténtalo de nuevo en un momento.",
+        "deletion_requested": "Tu cuenta está en proceso de cierre, así que crear y editar están desactivados. Cancela la solicitud de cierre en la página de tu cuenta para volver a hacer cambios.",
         "bad_request": "Algo del formulario no se ha entendido. Recarga la página e inténtalo otra vez.",
         "name_required": "El anuncio necesita un título.",
         "name_too_long": "El título no puede pasar de 120 caracteres.",
@@ -1353,7 +1356,7 @@
     "closingSince": "Solicitado el",
     "closingHelp": "Crear y editar están desactivados. Tus viviendas publicadas están cerradas a nuevas solicitudes. Puedes deshacerlo cuando quieras.",
     "closureUndo": "Cancelar la solicitud de cierre",
-    "error": "Algo ha fallado. Inténtalo de nuevo."
+    "error": "Algo ha fallado. Puede que parte del cambio no se haya aplicado: algunas de tus viviendas pueden haber cambiado y otras no. Pulsa otra vez el botón para terminarlo; repetirlo no causa ningún problema."
   },
   "signIn": {
     "metaTitle": "Entrar — Ebrostay",
@@ -1607,7 +1610,7 @@
       },
       "deactivate": "Desactivar",
       "reactivate": "Reactivar",
-      "published": "{n} publicadas",
+      "published": "{n} en el buscador",
       "confirmTitle": "Desactivar esta cuenta",
       "confirmLead": "Deja de poder reservar, publicar o leer nada suyo. No se borra nada y puedes reactivarla cuando quieras.",
       "confirm": "Desactivar",

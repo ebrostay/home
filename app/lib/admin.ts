@@ -8,11 +8,19 @@
 import type { AdminPropertyRow, AdminUser, PropertyStatus } from "@/lib/api";
 
 /** The status filter, in the order the strip renders. `all` first because it
- *  is where the tab opens; the rest follow a listing's own life. */
+ *  is where the tab opens; the rest follow a listing's own life.
+ *
+ *  `closed` sits next to `published` because that is what it IS to a visitor —
+ *  a listing still in search whose owner has asked to leave (design
+ *  2026-08-08). It earns a tab rather than hiding inside `all`: it is the one
+ *  public state nobody chose to be in, an admin is now the only party who can
+ *  take one down, and a reviewer answering a takedown request has to be able
+ *  to find them. */
 export const STATUS_TABS = [
   "all",
   "pending_review",
   "published",
+  "closed",
   "paused",
   "draft",
   "rejected",

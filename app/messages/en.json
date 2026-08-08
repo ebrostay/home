@@ -209,6 +209,7 @@
       },
       "error": {
         "generic": "That did not save. Try again in a moment.",
+        "deletion_requested": "Your account is closing, so creating and editing are switched off. Cancel the closure request on your account page to make changes again.",
         "too_many_drafts": "You have too many unfinished drafts. Finish or remove one before starting another.",
         "listing_incomplete": "Something is still missing. Check the steps marked amber.",
         "stale_write": "Someone saved this listing while you were editing. Reload the page.",
@@ -419,6 +420,7 @@
       },
       "error": {
         "generic": "That did not save. Try again in a moment.",
+        "deletion_requested": "Your account is closing, so creating and editing are switched off. Cancel the closure request on your account page to make changes again.",
         "bad_request": "Something in the form was not readable. Reload the page and try again.",
         "price_out_of_range": "Enter a monthly price between 1 € and 50.000 €.",
         "deposit_out_of_range": "Enter a deposit of 100.000 € or less.",
@@ -876,6 +878,7 @@
       },
       "error": {
         "generic": "That did not save. Try again in a moment.",
+        "deletion_requested": "Your account is closing, so creating and editing are switched off. Cancel the closure request on your account page to make changes again.",
         "bad_request": "Something in the form was not readable. Reload the page and try again.",
         "name_required": "The listing needs a title.",
         "name_too_long": "Keep the title under 120 characters.",
@@ -1353,7 +1356,7 @@
     "closingSince": "Requested on",
     "closingHelp": "Creating and editing are disabled. Your published homes are closed to new requests. You can undo this at any time.",
     "closureUndo": "Cancel the closure request",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Part of the change may not have gone through: some of your homes may have moved and some may not. Press the button again to finish it — repeating it is safe."
   },
   "signIn": {
     "metaTitle": "Sign in — Ebrostay",
@@ -1607,7 +1610,7 @@
       },
       "deactivate": "Deactivate",
       "reactivate": "Reactivate",
-      "published": "{n} published",
+      "published": "{n} in search",
       "confirmTitle": "Deactivate this account",
       "confirmLead": "They can no longer book, host, or read anything of their own. Nothing is deleted and you can reactivate them at any time.",
       "confirm": "Deactivate",

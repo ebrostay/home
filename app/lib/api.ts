@@ -863,14 +863,22 @@ export const biDoc = (d: BilingualDoc | null | undefined, locale: string): RichN
 // Account closure (design 2026-08-08). Both hit the same resource; the verb is
 // the whole difference, so neither carries a body — the account being closed
 // is always the caller's own, taken from the principal server-side.
-export async function requestAccountClosure(): Promise<{
+export type AccountClosureState = {
   deletionRequestedAt: string | null;
-}> {
+  /** How many of the owner's listings the fan-out could not read, and so did
+   *  not move. Skipping an undeserializable document is deliberate — one
+   *  legacy ADR-032 document must not cost an owner every other listing they
+   *  hold — but it means a 200 does not by itself prove the closure was
+   *  complete: a skipped `published` home stays in search while its owner,
+   *  now write-blocked, cannot pause it. Optional, because a response from an
+   *  API older than this field omits the key entirely. */
+  unreadableListings?: number;
+};
+
+export async function requestAccountClosure(): Promise<AccountClosureState> {
   return post("/account/closure", {});
 }
 
-export async function cancelAccountClosure(): Promise<{
-  deletionRequestedAt: string | null;
-}> {
+export async function cancelAccountClosure(): Promise<AccountClosureState> {
   return del("/account/closure");
 }

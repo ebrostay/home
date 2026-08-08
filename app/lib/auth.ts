@@ -10,6 +10,7 @@ export type Me = {
   roles: string[];
   isAdmin: boolean;
   isDeactivated: boolean;
+  deletionRequestedAt: string | null;
 };
 
 export const ANON: Me = {
@@ -20,6 +21,7 @@ export const ANON: Me = {
   roles: ["anonymous"],
   isAdmin: false,
   isDeactivated: false,
+  deletionRequestedAt: null,
 };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";

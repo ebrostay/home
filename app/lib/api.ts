@@ -859,3 +859,18 @@ export const biDoc = (d: BilingualDoc | null | undefined, locale: string): RichN
   if (own && !isEmptyDoc(own)) return own;
   return other && !isEmptyDoc(other) ? other : null;
 };
+
+// Account closure (design 2026-08-08). Both hit the same resource; the verb is
+// the whole difference, so neither carries a body — the account being closed
+// is always the caller's own, taken from the principal server-side.
+export async function requestAccountClosure(): Promise<{
+  deletionRequestedAt: string | null;
+}> {
+  return post("/account/closure", {});
+}
+
+export async function cancelAccountClosure(): Promise<{
+  deletionRequestedAt: string | null;
+}> {
+  return del("/account/closure");
+}

@@ -16,7 +16,7 @@ public class PropertiesFunctions(
 {
     private Container Properties => database.GetContainer("properties");
 
-    // Public list: published only, summary projection. The container holds a
+    // Public list: published and closed, summary projection. The container holds a
     // few dozen docs, so a parameterized cross-partition query + in-code
     // projection is the pragmatic call (skill: query-parameterize; the
     // SELECT-projection optimization matters at RU scales we are far from).

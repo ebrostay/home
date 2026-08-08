@@ -23,9 +23,10 @@ public enum ListingView
 /// the same page 404'd every place on it (2026-08-01).
 ///
 /// Note the surfaces still differ in WHICH statuses are public, and that is
-/// intentional, not more drift: `PropertiesFunctions.Get` serves `published`
-/// only, while the route surface serves a `paused` listing too — see
-/// `ForRoutes`. What they share is the owner rule below.
+/// intentional, not more drift: `PropertiesFunctions.Get` (via
+/// `PublicStatus.IsPublic`) serves `published` and `closed`, while the route
+/// surface also serves a `paused` listing — see `ForRoutes`. What they share
+/// is the owner rule below.
 public static class ListingVisibility
 {
     /// The principal owns this listing. `UserRoles` is the only authorization
@@ -68,10 +69,16 @@ public static class ListingVisibility
     ///
     /// A `paused` listing routes for everyone: a guest who already has the
     /// link — or a map tile fetched moments before the owner paused it —
-    /// should not watch its routes break. Anything else has never been public
-    /// and stays invisible, except to the owner previewing it.
+    /// should not watch its routes break. A `closed` listing routes for
+    /// everyone for the same reason `PublicStatus.IsPublic` keeps it public
+    /// (2026-08-08 closure design): the page itself still renders for a
+    /// guest mid-stay, and its routes must not 404 out from under it. This
+    /// set is deliberately BROADER than `PublicStatus.IsPublic` — `paused`
+    /// belongs here but not there — so the two are not, and must not become,
+    /// the same call. Anything else has never been public and stays
+    /// invisible, except to the owner previewing it.
     public static ListingView ForRoutes(PropertyDoc doc, ClientPrincipal? principal) =>
-        doc.Status is "published" or "paused" ? ListingView.Public
+        doc.Status is "published" or "paused" or "closed" ? ListingView.Public
         : IsOwnedBy(doc, principal) ? ListingView.OwnerPreview
         : ListingView.Hidden;
 }

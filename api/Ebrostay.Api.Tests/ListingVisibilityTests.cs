@@ -58,6 +58,7 @@ public class ListingVisibilityTests
     [Theory]
     [InlineData("published")]
     [InlineData("paused")]
+    [InlineData("closed")]
     public void PublicStatusesRouteForAnyone(string status) =>
         Assert.Equal(ListingView.Public, ListingVisibility.ForRoutes(Listing(status), null));
 
@@ -95,6 +96,15 @@ public class ListingVisibilityTests
     public void PausedStaysPublicEvenForItsOwner() =>
         Assert.Equal(ListingView.Public,
             ListingVisibility.ForRoutes(Listing("paused"), User("host-1")));
+
+    // Same reasoning as paused: a closing owner still gets the shared-cache
+    // `Public` view of their own listing's routes, not a `no-store`
+    // `OwnerPreview` — there is nothing to preview, the routes are the same
+    // ones every guest already sees.
+    [Fact]
+    public void ClosedStaysPublicEvenForItsOwner() =>
+        Assert.Equal(ListingView.Public,
+            ListingVisibility.ForRoutes(Listing("closed"), User("host-1")));
 
     // An unknown status is not a public one — the default must be closed.
     [Fact]

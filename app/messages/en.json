@@ -855,8 +855,10 @@
       "danger": {
         "title": "Take this listing off Ebrostay",
         "titlePaused": "This listing is paused",
+        "titleClosed": "This listing is closing",
         "body": "Pausing hides it from search and keeps all your data. Confirmed stays are unaffected.",
         "bodyPaused": "It is out of search and taking no requests. Reopening puts it back exactly as it was — no second review.",
+        "bodyClosed": "Your account is closing, so it stays visible to guests but nothing here can pause or reopen it.",
         "bodyNotLive": "This listing is not published yet, so there is nothing to pause.",
         "pause": "Pause listing",
         "reopen": "Reopen listing"

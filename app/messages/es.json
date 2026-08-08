@@ -855,8 +855,10 @@
       "danger": {
         "title": "Retirar este anuncio de Ebrostay",
         "titlePaused": "Este anuncio está pausado",
+        "titleClosed": "Este anuncio se está cerrando",
         "body": "Al pausarlo desaparece del buscador y conservas todos tus datos. Las estancias confirmadas siguen igual.",
         "bodyPaused": "No aparece en el buscador y no recibe solicitudes. Al reabrirlo vuelve tal cual estaba: no pasa por revisión otra vez.",
+        "bodyClosed": "Tu cuenta se está cerrando, así que sigue visible para los huéspedes, pero aquí no se puede pausar ni reabrir.",
         "bodyNotLive": "Este anuncio todavía no está publicado, así que no hay nada que pausar.",
         "pause": "Pausar el anuncio",
         "reopen": "Reabrir el anuncio"

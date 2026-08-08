@@ -1,0 +1,22 @@
+[
+  {
+    "id": "01d061dcb79c400cb83dbcfc9e9390ed",
+    "reference": null,
+    "name": "Test 1",
+    "address": "C. de Elvira de Hidalgo, 10",
+    "area": {
+      "es": "Centro",
+      "en": "Centro"
+    },
+    "hostId": "e2e00000000000000000000000000001",
+    "hostName": "E2E Owner",
+    "submittedAt": "2026-08-05T08:00:00Z",
+    "coverUrl": "http://127.0.0.1:10000/devstoreaccount1/property-photos/01d061dcb79c400cb83dbcfc9e9390ed/f1719775fde645969d804bfc377ef0c0-full.webp",
+    "photoCount": 5,
+    "priceNumber": 1234,
+    "bedrooms": 7,
+    "sizeM2": 379,
+    "hasCadastralRef": true,
+    "locatedPhotos": 2
+  }
+]

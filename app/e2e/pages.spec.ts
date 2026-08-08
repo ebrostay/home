@@ -86,6 +86,15 @@ async function stubBackend(page: Page): Promise<string[]> {
     }
     if (path === "/api/import/imp_test") return json(fixture("import-job-done.json"));
 
+    // The admin surface (§4.5). Matched BEFORE the host routes below: the
+    // review page reads `/api/admin/properties/{id}`, and the host prefix
+    // check would never see it, but keeping the pair adjacent is what stops
+    // the next endpoint from being added on the wrong side of it.
+    if (path === "/api/admin/review-queue") return json(fixture("admin-review-queue.json"));
+    if (path === "/api/admin/users") return json(fixture("admin-users.json"));
+    if (path === "/api/admin/properties") return json(fixture("admin-properties.json"));
+    if (path.startsWith("/api/admin/properties/")) return json(fixture("admin-property.json"));
+
     if (path === "/api/host/properties") return json(fixture("host-properties.json"));
 
     if (path.startsWith("/api/host/properties/")) {
@@ -146,6 +155,11 @@ type RouteCase = {
    *  would assert against the page it redirected to; /host shows a
    *  different component entirely when signed out. */
   anonMe?: true;
+  /** Simulate one of the three invited admins (§3.3): `/api/me` answers with
+   *  `isAdmin: true`. The shared fixture is an ordinary owner, and under it
+   *  every admin route renders `RequireAdmin`'s "not an admin" panel — which
+   *  is a real state worth covering, but not the one that opens the page. */
+  adminMe?: true;
 };
 
 const ROUTES: RouteCase[] = [
@@ -192,6 +206,34 @@ const ROUTES: RouteCase[] = [
   // crashed the portfolio. Worth its own case, not just a row in the list.
   { path: `/host/manage?id=${REVIEW_ID}`, expect: { es: /./, en: /./ } },
   { path: "/host/edit?id=pedro1", expect: { es: /Pedro II/, en: /Pedro II/ } },
+  // The admin surface (§4.5). Every route in both languages, signed in as an
+  // admin — the state these pages exist in.
+  {
+    path: "/admin",
+    expect: { es: /Cola de revisión/i, en: /Review queue/i },
+    adminMe: true,
+  },
+  {
+    path: `/admin/review?id=${REVIEW_ID}`,
+    // The two signal panels are what this page is FOR, so the case asserts
+    // one of them by name: a review page that rendered the listing and
+    // silently dropped the panels would otherwise still pass.
+    expect: { es: /Catastro/, en: /Catastro/ },
+    adminMe: true,
+  },
+  { path: "/admin/properties", expect: { es: /Publicadas/i, en: /Published/i }, adminMe: true },
+  { path: "/admin/users", expect: { es: /Puerta/i, en: /Door/i }, adminMe: true },
+  // The same queue as an ordinary signed-in owner, which is the state most
+  // likely to be hit for real: an admin who signed in through the OTHER door
+  // (§3.1 — two doors, two identities). It must say so rather than bounce to
+  // a login the person has already completed.
+  {
+    path: "/admin",
+    expect: {
+      es: /Esta cuenta no es de administración/i,
+      en: /This account is not an admin/i,
+    },
+  },
   // app/not-found.tsx, which no other test reaches. It must render its own
   // page, not the browser's — and it must still say 404.
   {
@@ -213,10 +255,18 @@ const ROUTES: RouteCase[] = [
 ];
 
 for (const locale of ["es", "en"] as const) {
-  for (const { path, expect: expected, status, allowConsole = [], anonMe } of ROUTES) {
+  for (const {
+    path,
+    expect: expected,
+    status,
+    allowConsole = [],
+    anonMe,
+    adminMe,
+  } of ROUTES) {
     const url = `/${locale}${path}`;
+    const who = anonMe ? " (signed out)" : adminMe ? " (as admin)" : "";
 
-    test(`${url}${anonMe ? " (signed out)" : ""} renders without errors`, async ({ page }) => {
+    test(`${url}${who} renders without errors`, async ({ page }) => {
       const crashes: string[] = [];
       const consoleErrors: string[] = [];
 
@@ -248,6 +298,17 @@ for (const locale of ["es", "en"] as const) {
         // under test is the portfolio, not the pitch.
         await page.route("**/api/host/properties", (route: Route) =>
           route.fulfill({ status: 401, contentType: "application/json", body: "{}" }),
+        );
+      }
+
+      // Same reason and the same ordering: registered after stubBackend so
+      // Playwright's newest-first match wins over the shared owner fixture.
+      if (adminMe) {
+        await page.route("**/api/me", (route: Route) =>
+          route.fulfill({
+            contentType: "application/json",
+            body: fixture("me-admin.json"),
+          }),
         );
       }
 

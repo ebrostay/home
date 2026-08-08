@@ -1,0 +1,32 @@
+[
+  {
+    "id": "e2e00000000000000000000000000001",
+    "provider": "ebrostay",
+    "name": "E2E Owner",
+    "createdAt": "2026-06-02T09:15:00Z",
+    "lastSeenAt": "2026-08-07T18:40:00Z",
+    "isDeactivated": false,
+    "listingCount": 5,
+    "publishedCount": 2
+  },
+  {
+    "id": "e2e00000000000000000000000000002",
+    "provider": "ebrostay-msa",
+    "name": "E2E Owner",
+    "createdAt": "2026-07-11T11:00:00Z",
+    "lastSeenAt": "2026-08-01T09:00:00Z",
+    "isDeactivated": false,
+    "listingCount": 0,
+    "publishedCount": 0
+  },
+  {
+    "id": "e2e00000000000000000000000000003",
+    "provider": "ebrostay",
+    "name": "Cuenta desactivada",
+    "createdAt": "2026-05-20T11:00:00Z",
+    "lastSeenAt": "2026-05-29T09:00:00Z",
+    "isDeactivated": true,
+    "listingCount": 1,
+    "publishedCount": 0
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "authenticated": true,
+  "userId": "e2e0000000000000000000000000adm1",
+  "name": "E2E Admin",
+  "provider": "ebrostay",
+  "roles": [
+    "anonymous",
+    "authenticated",
+    "admin"
+  ],
+  "isAdmin": true,
+  "isDeactivated": false
+}

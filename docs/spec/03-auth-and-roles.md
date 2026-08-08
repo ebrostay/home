@@ -150,6 +150,15 @@ ADR-006) in the new world:
 > and checking role + ownership against the data (e.g. `hostId == UserId`)
 > before any read or write.
 >
+> `/es/admin*` and `/en/admin*` (both the exact path and the wildcard, since
+> 2026-08-08) keep their rules **and** carry an in-app gate,
+> `components/admin/RequireAdmin.tsx`. The rule is what a stranger meets; the
+> component is what an *admin* meets, because the likeliest failure is a real
+> admin signed in through the other door (§3.1), and bouncing them to a login
+> they have already completed reads as a broken site rather than as the
+> answer. Neither is the boundary: `ProfileService.RequireAdminAsync` is, and
+> it runs the §3.7 deactivation check **before** it reads a role.
+>
 > `/host/*` is not among them: since 2026-08-01 `/host/new`, `/host/edit`, and
 > `/host/manage` bounce a signed-out visitor in-app, via
 > `components/host/RequireOwner.tsx`, instead of an edge route rule — that

@@ -29,8 +29,11 @@ built** (the container/model side may already exist):
 | ✅ `GET /api/properties/{id}/nearby/{entryId}/route` | anon | Lazy, cached route lookup by id — never coordinates (§4.2.1, ADR-028 Decision 4). |
 | 🔜 `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings (Manage reads it from the host projection once requests exist). |
 | 🔜 `POST /api/ai-assistant` | auth (own listing) / admin | DeepSeek actions (§4.6) — the v1 assistant's C# port is not yet built. |
-| 🔜 `GET /api/admin/review-queue` · `POST /api/admin/properties/{id}/approve` · `…/reject` | admin | Review queue (§4.5). **No admin endpoint exists yet.** |
-| 🔜 `GET/PUT /api/admin/properties*` · `GET /api/admin/users*` · `PUT /api/admin/users/{id}/deactivation` | admin | All-properties mgmt, users. |
+| ✅ `GET /api/admin/review-queue` | admin | The queue, `pending_review` only, oldest first (§4.5). |
+| ✅ `POST /api/admin/properties/{id}/approve` · `…/reject` | admin | Publish (from `pending_review` alone — else `409 not_in_review`) / reject with a **required** note, which is also how a live listing is taken down (`400 note_required`, `409 not_reviewable`). |
+| ✅ `GET /api/admin/properties` · `GET /api/admin/properties/{id}` · `PUT …/{id}/status` | admin | All listings in any status; the review projection (adds `hostId`, the owner, photo capture coordinates, declined suggestions); pause ⇄ reopen — that pair only (`409 not_published` / `not_reviewed`). |
+| ✅ `GET /api/admin/users` · `PUT /api/admin/users/{id}/deactivation` | admin | Profiles + a listing count each; the §3.7 flag (`403 cannot_deactivate_self`). |
+| ✅ **admin content editing** — the `host/properties*` writes above | admin (any listing) | Not a separate endpoint: an admin loads and writes anybody's listing through the owner's own editor, and their content save does **not** re-enter review (§4.5 "direct edit"). One rule, in `ListingVisibility.MayWrite`/`ReEntersReview`. |
 | 🔜 `GET /api/admin/booking-requests` · `PATCH …/{id}` (status) · `GET /api/admin/inquiries` | admin | Log viewers, request triage. |
 
 ---
@@ -595,17 +598,28 @@ pattern, ADR-027 Decision 4), and drops a pin by hand; it still goes through
 the same server-side measurement at step 5, because **no entry's figures are
 ever authored** (Decision 1, Decision 8).
 
-## 4.5 Admin flow ✅ decided (3 invited admins — §3.3) · 🔜 not yet built
+## 4.5 Admin flow ✅ decided (3 invited admins — §3.3) · ✅ built 2026-08-08
 
 `/{locale}/admin/` (route rule cosmetic; every endpoint checks the role).
-**No admin page or endpoint exists yet** — this section is the requirement
-set the review queue and the other admin surfaces are built against; several
-ADRs (019 amendment, 027, 028, 029) have queued obligations onto it, marked
-🔜 below:
+**Built on 2026-08-08** — design in
+`docs/superpowers/specs/2026-08-08-admin-page-design.md`. Four routes: the
+queue (`/admin`), one listing under review (`/admin/review?id=`), all
+properties (`/admin/properties`), and people (`/admin/users`). The in-app gate
+is `components/admin/RequireAdmin.tsx`, which answers a signed-in non-admin
+with a panel rather than a redirect — the likeliest person to see it is an
+admin who came through the other door (§3.1).
+
+Two parts of this section are **🔜 still not built**, and both are waiting on
+the flows that would fill them, not on the surface: the **booking-request log
+viewer** (no `POST /api/booking-requests` yet) and the **inquiries viewer**
+(no `POST /api/inquiries` yet). Also deferred: a queryable audit trail —
+admin writes log the acting admin's id through `ILogger` and nothing more.
+
+What was built, against the requirements below:
 
 - **Review queue:** `pending_review` listings, oldest first; full detail view;
   **Approve** → `published`, **Reject** (note required) → `rejected`.
-  - **🔜 Catastro check (ADR-027).** When the listing carries a
+  - **✅ Catastro check (ADR-027).** When the listing carries a
     `cadastralRef`, call the Catastro **at review time** and show what it says
     beside what the owner claims. Nothing is stored — read a live answer, not
     a copy, because the only copy would be one the client reported.
@@ -632,7 +646,7 @@ ADRs (019 amendment, 027, 028, 029) have queued obligations onto it, marked
     | It never suppresses a signal | The comparison above is computed from the live answer and shown in full whether or not the owner declined it. A decline is host-writable, so a queue that hid rows on the strength of one would let a listing silence its own review. |
     | It is context, never a resolution | A reviewer may want to know the owner considered this and disagreed. That is not an answer to the question they are being asked. |
     | It is not evidence of anything | It records that a dismissal happened, not that the owner was right. Weigh it accordingly. |
-  - **🔜 Photo location check (ADR-019 amendment).** Each photo's
+  - **✅ Photo location check (ADR-019 amendment).** Each photo's
     `capturedLat`/`capturedLng` (§2.2.2) shown as a distance from the listing
     pin. The published images have had their EXIF stripped; these are what it
     said before it went.
@@ -652,16 +666,24 @@ ADRs (019 amendment, 027, 028, 029) have queued obligations onto it, marked
     `exiftool` rewrites GPS in seconds, so a determined bad actor defeats it
     completely; it catches honest mistakes and lazy fraud. Same discipline as
     the absent `MATCHED` badge (ADR-027).
-- **All-properties management:** list/filter every listing in any status;
-  direct edit (no re-review, §2.2.1); pause/takedown.
-- **Users:** list `profiles` (id, provider, name, created, flags);
-  **deactivate/reactivate** (§3.7). No hard delete in v2 scope.
-- **Booking-request log viewer:** all `bookingRequests`, newest first, with
+- **✅ All-properties management:** list/filter every listing in any status;
+  direct edit (no re-review, §2.2.1); pause/takedown. **Direct edit is the
+  owner's editor**, not a second form: `/host/edit` and `/host/manage` open
+  any listing for an admin, because two forms over one set of fields is two
+  validations of them, and two validations of one field is how they come to
+  disagree. Takedown is `reject` — the same act as in the queue, from a
+  different starting status, and it leaves the owner the same note.
+- **✅ Users:** list `profiles` (id, provider, name, created, flags);
+  **deactivate/reactivate** (§3.7). No hard delete in v2 scope. **No email
+  column**: the address arrives as a session claim and is never stored, so a
+  person is identified by their id and the door they came through — the tab
+  says so rather than leaving an unexplained gap.
+- **🔜 Booking-request log viewer:** all `bookingRequests`, newest first, with
   `estimateMismatch` highlighted; status triage `new → contacted →
   confirmed | declined` (carried from v1 §4.6). When accepting a stay the
   admin (or host) records it as a **confirmed availability block** on the
   property — creating blocks stays a manual acceptance act, as in v1.
-- **Inquiries viewer:** read `inquiries` (§2.5).
+- **🔜 Inquiries viewer:** read `inquiries` (§2.5).
 
 ## 4.6 AI assistant ✅ decided (ADR-020) · 🔜 port not yet built
 

@@ -84,7 +84,14 @@ export function AdminShell({
 
 /** The ruled table every admin list is built from. Horizontal scroll lives
  *  here rather than on the page, so a narrow window scrolls the rows and not
- *  the whole layout. */
+ *  the whole layout.
+ *
+ *  That scroll is also why the column headings are NOT sticky. `overflow-x:
+ *  auto` makes this element a scroll container in BOTH axes — CSS gives you
+ *  no way to scroll one axis and leave the other visible — so a `sticky`
+ *  heading resolves its offset against this box rather than the viewport and
+ *  lands 4rem down, printed over the first row. Seen, and this comment is
+ *  what stops it being "fixed" back in. */
 export function Ledger({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-4 overflow-x-auto">
@@ -109,7 +116,7 @@ export function Th({
   return (
     <th
       scope="col"
-      className={`data sticky top-(--header-h) z-10 border-b border-line bg-page px-3 py-2 text-[0.625rem] font-normal uppercase tracking-[0.14em] text-muted ${
+      className={`data border-b border-line px-3 py-2 text-[0.625rem] font-normal uppercase tracking-[0.14em] text-muted ${
         align === "right" ? "text-right" : "text-left"
       } ${className}`}
     >

@@ -323,23 +323,62 @@ picked up automatically:
 | `.claude/skills/frontend-design/` | Any visual or UI work. The v2 visual identity was built with it. Keep the Ebrostay logo. |
 | `.claude/skills/cosmosdb-best-practices/` | Anything touching Cosmos: data modelling, partition keys, queries, indexing, C# SDK usage. Vendored (MIT) from the [azure-cosmos-db-assistant plugin](https://github.com/AzureCosmosDB/cosmosdb-claude-code-plugin); re-sync by copying `skills/` from upstream. |
 
-The **superpowers** plugin is enabled in `.claude/settings.json`, but the
-payload lives in `~/.claude/plugins/` — so every new machine needs it
-installed once:
+Three **plugins** are enabled in `.claude/settings.json`, but the payload lives
+in `~/.claude/plugins/` — so every new machine needs them installed once. None
+of this is an npm or NuGet dependency of `app/` or `api/`: it is user-scope
+tooling, and the LSP plugins spawn their server by bare command name off `PATH`,
+which a local `node_modules/.bin` install would not satisfy.
 
 ```bash
-npm install -g @anthropic-ai/claude-code
+npm install -g @anthropic-ai/claude-code                # the CLI, needed for plugin installs
 claude plugin install superpowers@claude-plugins-official
+claude plugin install typescript-lsp@claude-plugins-official
+claude plugin install csharp-lsp@claude-plugins-official
+npm install -g typescript-language-server typescript    # binary behind typescript-lsp (app/)
+~/.dotnet/dotnet tool install -g csharp-ls --version 0.20.0   # binary behind csharp-lsp (api/) — pin, see below
 ```
 
-**Takes effect on the next session**, not the current one. It supplies the
-workflow skills — brainstorming, planning, TDD, systematic debugging.
+**Takes effect on the next session**, not the current one — plugin and LSP
+discovery happens at startup. A new chat in an already-running session is not
+enough; quit and relaunch.
+
+| Plugin | What it gives |
+| --- | --- |
+| `superpowers` | Workflow skills — brainstorming, planning, TDD, systematic debugging. |
+| `typescript-lsp` | Real `tsserver` go-to-definition, find-references and compiler diagnostics over `app/`. |
+| `csharp-lsp` | The same for `.cs` under `api/`, via the community `csharp-ls` (not Microsoft's Roslyn server). |
+
+The two LSP plugins are pure wiring — an `lspServers` block naming a command and
+its file-extension map, no skills and no MCP servers. Without the binary on
+`PATH` they silently do nothing. Two traps are worth knowing before you debug
+one:
+
+- **`csharp-ls` must be pinned to 0.20.0.** 0.21.0+ ships its tools folder as
+  `tools/net10.0/`, and this repo is on the .NET 9 SDK (§1), which cannot see
+  it. The failure is misreported as `Settings file 'DotnetToolSettings.xml' was
+  not found in the package` — the file is present, the target framework just is
+  not. Drop the pin when the repo moves to .NET 10 alongside SWA.
+- **`csharp-ls` needs `DOTNET_ROOT`** because the SDK lives in `~/.dotnet`
+  rather than a default location. Without it the server is spawned as a child
+  process, finds no runtime, and dies with `You must install .NET to run this
+  application`. It belongs in **`~/.zshenv`** — read by every zsh, interactive
+  or not — and not `~/.zshrc`, which non-interactive shells skip:
+
+  ```bash
+  export DOTNET_ROOT="$HOME/.dotnet"
+  ```
+
+  `~/.zshenv` only covers processes descended from a shell, so
+  `.claude/settings.json` sets `env.DOTNET_ROOT` as well, which also covers
+  launching the desktop app from the Dock. **That path is absolute and
+  machine-specific** — update it on a fresh box, or move the `env` block to an
+  untracked `.claude/settings.local.json`.
 
 ### The rest of `.claude/`
 
 | File | Tracked? | What it is |
 | --- | --- | --- |
-| `settings.json` | yes | Enables the superpowers plugin. The whole file. |
+| `settings.json` | yes | Enables the three plugins above and sets `env.DOTNET_ROOT`. The whole file. |
 | `launch.json` | yes | Dev-server definitions for the in-app browser preview: `app-dev` on :3000, `app-dev-verify` on :3020 for checking a change without disturbing a running :3000. |
 | `skills/` | yes | The two vendored skills above. |
 | `settings.local.json` | **no** — gitignored | Personal tool permissions. Yours will not exist until you create it, and nothing here depends on it. |

@@ -1,5 +1,10 @@
 {
+  "env": {
+    "DOTNET_ROOT": "/Users/raphael/.dotnet"
+  },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true
   }
 }

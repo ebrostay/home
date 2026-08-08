@@ -76,7 +76,10 @@ own as-built spec; rules v2 carries from v1 are restated in
   [azure-cosmos-db-assistant](https://github.com/AzureCosmosDB/cosmosdb-claude-code-plugin)
   plugin so it travels with the repo; re-sync by copying `skills/` from upstream.
 - **superpowers** plugin — workflow skills (brainstorming, planning, TDD,
-  debugging); offer it when a task fits. Enabled in `.claude/settings.json`, but
-  the payload lives in `~/.claude/plugins/`, so each new machine needs
-  `claude plugin install superpowers@claude-plugins-official` (requires the CLI:
-  `npm i -g @anthropic-ai/claude-code`). Takes effect next session.
+  debugging); offer it when a task fits.
+- **typescript-lsp / csharp-lsp** plugins — real compiler diagnostics,
+  go-to-definition and find-references over `app/` and `api/`. Prefer them over
+  grepping for a symbol.
+- Per-machine install of the plugins above and the language-server binaries they
+  shell out to is **`docs/DEVELOPMENT.md` §8** — not repeated here, since it is
+  one-time setup rather than a working convention.

@@ -137,3 +137,22 @@ public class AccountClosureApplyTests
         Assert.Empty(AccountClosure.ApplyRequest(listings));
     }
 }
+
+// One predicate, two call sites. A `closed` listing is still public — its
+// owner is leaving, but a guest mid-stay should not watch the page vanish.
+public class PublicStatusTests
+{
+    [Theory]
+    [InlineData("published")]
+    [InlineData("closed")]
+    public void The_public_sees_these(string status)
+        => Assert.True(PublicStatus.IsPublic(status));
+
+    [Theory]
+    [InlineData("draft")]
+    [InlineData("pending_review")]
+    [InlineData("rejected")]
+    [InlineData("paused")]
+    public void And_never_these(string status)
+        => Assert.False(PublicStatus.IsPublic(status));
+}

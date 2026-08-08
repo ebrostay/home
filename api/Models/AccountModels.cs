@@ -70,3 +70,15 @@ public static class AccountClosure
 /// own, read from `x-ms-client-principal` (§3.4). The type exists so the
 /// endpoint's response has a shape.
 public record AccountClosureState(string? DeletionRequestedAt);
+
+/// "Can an anonymous visitor see this listing?" — asked by the public list and
+/// the public detail, which is why it is one function and not two literals.
+/// `closed` joined `published` with the 2026-08-08 closure design: the owner
+/// is leaving, but a guest whose stay is running should not watch the page
+/// disappear underneath them.
+public static class PublicStatus
+{
+    public static readonly string[] Public = ["published", "closed"];
+
+    public static bool IsPublic(string status) => Array.IndexOf(Public, status) >= 0;
+}

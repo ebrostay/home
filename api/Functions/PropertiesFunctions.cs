@@ -25,8 +25,8 @@ public class PropertiesFunctions(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties")] HttpRequest req)
     {
         var query = new QueryDefinition(
-            "SELECT * FROM c WHERE c.status = @status")
-            .WithParameter("@status", "published");
+            "SELECT * FROM c WHERE ARRAY_CONTAINS(@statuses, c.status)")
+            .WithParameter("@statuses", PublicStatus.Public);
 
         var now = DateTimeOffset.UtcNow;
         var results = new List<PropertySummary>();
@@ -86,7 +86,7 @@ public class PropertiesFunctions(
             var detail = PublicProjection.ToDetail(
                 doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur);
 
-            if (doc.Status == "published") return new OkObjectResult(detail);
+            if (PublicStatus.IsPublic(doc.Status)) return new OkObjectResult(detail);
 
             // Owner preview (ADR-029). The one exception to "published docs
             // only": the owner of THIS listing gets the guest's page back,

@@ -38,6 +38,28 @@ public static class ReachBands
     }
 }
 
+/// When an owner save may keep what a past measurement produced, instead of
+/// spending an ORS call to redo it. Pure, so the rule can be pinned by tests
+/// rather than only exercised through `HostFunctions.UpdateDetails`.
+public static class NearbyMeasurement
+{
+    /// True when `known`'s figures still describe this entry.
+    ///
+    /// Everything a measurement earned — Reach, MeasuredAt, NeedsCheck,
+    /// ReachBands — is kept or dropped together. Splitting the test per field
+    /// is how a carried-over Reach ends up beside a missing ReachBands.
+    public static bool CanReuse(NearbyEntry? known, bool entryMoved, bool pinMoved, bool hasBand)
+    {
+        if (known is null || entryMoved || pinMoved) return false;
+        // Measured before this listing had a street band, so it carries no
+        // public range and the projection falls back to the DOOR's own flat
+        // figure — a door-exact scalar outside any range, which ADR-041
+        // point 3 does not allow. Re-measure: the save's matrix call now
+        // carries the band samples, so the range costs no extra ORS call.
+        return !(hasBand && known.ReachBands is null);
+    }
+}
+
 /// Route geometry, in its OWN container rather than embedded: it is written by
 /// an anonymous lazy path while the property document is written by the owner's
 /// save, so embedding would let a guest's click clobber a save.

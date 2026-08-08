@@ -1098,6 +1098,13 @@
         "body": "Cleaning between stays is arranged and paid by us."
       }
     },
+    "reachInfo": {
+      "label": "How are these times measured?",
+      "title": "Measured from the street",
+      "origin": "Every time and distance starts from the home's street, not from its door. We publish the street, never the house number.",
+      "range": "So each time is a range: the quicker end of the street and the slower end. When both ends give the same answer, you see one number.",
+      "rounding": "Distances are rounded to the nearest 50 m."
+    },
     "nearby": {
       "title": "What's nearby",
       "subtitle": {

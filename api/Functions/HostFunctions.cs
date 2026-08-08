@@ -348,6 +348,8 @@ public class HostFunctions(
                 && (Math.Abs(known.Lat - w.Lat) > 0.000001
                     || Math.Abs(known.Lng - w.Lng) > 0.000001);
 
+            var reuse = NearbyMeasurement.CanReuse(known, moved, pinMoved, doc.Band is not null);
+
             var entry = new NearbyEntry(
                 // Server-generated: a client-supplied id would let a caller
                 // point the route cache at an entry it does not own.
@@ -358,21 +360,15 @@ public class HostFunctions(
                 Name: w.Name!.Trim(),
                 Lat: w.Lat,
                 Lng: w.Lng,
-                Reach: known is not null && !moved && !pinMoved
-                    ? known.Reach
-                    : new Dictionary<string, NearbyReach>(),
+                Reach: reuse ? known!.Reach : new Dictionary<string, NearbyReach>(),
                 OsmId: known?.OsmId,
-                MeasuredAt: known is not null && !moved && !pinMoved ? known.MeasuredAt : null,
-                // Carried over under the SAME reuse test as Reach/MeasuredAt:
-                // the flag was earned by a measurement, and only that
+                MeasuredAt: reuse ? known!.MeasuredAt : null,
+                // The flag was earned by a measurement, and only that
                 // measurement being reused (not re-run) justifies keeping it.
                 // Defaulting this to false would silently clear a real flag
                 // on any save that happens not to touch this entry.
-                NeedsCheck: known is not null && !moved && !pinMoved && known.NeedsCheck,
-                // Same reuse test again: a carried-over Reach without its
-                // matching ReachBands would show an owner-exact figure next
-                // to a stale (or missing) public range.
-                ReachBands: known is not null && !moved && !pinMoved ? known.ReachBands : null);
+                NeedsCheck: reuse && known!.NeedsCheck,
+                ReachBands: reuse ? known!.ReachBands : null);
 
             // `known is null` means this write did not match a stored entry —
             // it is new to this save — and `entry.Id` was just generated

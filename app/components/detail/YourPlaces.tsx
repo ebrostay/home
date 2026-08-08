@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { useDelayed } from "./measuring";
+import { ReachInfo } from "./ReachInfo";
 import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
@@ -303,6 +304,10 @@ export function YourPlaces({
         <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
           <Icon size={14} strokeWidth={2} aria-hidden />
           {t(`timesBy.${profile}`)}
+          {/* The same answer the nearby list gives, because these figures are
+              measured the same way. `end`: this sits in the right-hand corner
+              of the section, where a left-anchored panel runs off screen. */}
+          <ReachInfo align="end" />
         </span>
       </div>
       <p className="mt-1.5 max-w-[60ch] text-sm text-body">{t("intro")}</p>

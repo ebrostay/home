@@ -15,6 +15,7 @@ import { ApiError, fetchNearbyRoute, type PublicNearbyEntry, type RouteBand } fr
 import { NEARBY_GROUPS, publicReachFor, type NearbyGroup, type NearbyProfile } from "@/lib/nearby";
 import { formatDistance } from "@/lib/geocode";
 import { useDelayed } from "./measuring";
+import { ReachInfo } from "./ReachInfo";
 import { PROFILE_ICONS } from "@/lib/profile-icons";
 import type { NeighbourhoodMapDestination } from "./NeighbourhoodMap";
 
@@ -237,7 +238,14 @@ export function Nearby({
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="font-display text-[1.375rem] font-semibold text-ink">{t("title")}</h3>
-        <p className="mt-1 text-sm text-muted">{t(`subtitle.${profile}`)}</p>
+        {/* The subtitle says the figures come from the street; the popover
+            says what follows from that — why one of them is a range and the
+            next is a single number. Sat on the subtitle rather than the
+            heading: it explains the figures, not the section. */}
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+          {t(`subtitle.${profile}`)}
+          <ReachInfo />
+        </p>
       </div>
 
       {groups.length > 0 && (

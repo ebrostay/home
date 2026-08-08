@@ -1098,6 +1098,13 @@
         "body": "La limpieza entre estancias la gestionamos y pagamos nosotros."
       }
     },
+    "reachInfo": {
+      "label": "¿Cómo se miden estos tiempos?",
+      "title": "Medidos desde la calle",
+      "origin": "Cada tiempo y cada distancia empieza en la calle de la vivienda, no en su portal. Publicamos la calle, nunca el número.",
+      "range": "Por eso cada tiempo es un intervalo: el extremo más rápido de la calle y el más lento. Si los dos extremos dan el mismo resultado, verás un solo número.",
+      "rounding": "Las distancias se redondean a 50 m."
+    },
     "nearby": {
       "title": "Qué hay cerca",
       "subtitle": {

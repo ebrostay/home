@@ -978,11 +978,15 @@ test("/en/admin/properties — a closed listing can be taken off the site", asyn
   const row = page.getByRole("row").filter({ hasText: "Piso Delicias" });
   await row.getByRole("button", { name: "Pause" }).click();
 
+  // The retrying assertion goes FIRST, and it is what makes the plain one
+  // below safe: `sent` is set by the route handler, out of process, and
+  // reading it straight after `click()` races the request. Waiting for the row
+  // to read as the paused listing it became proves the response has arrived,
+  // so by the time `sent` is read the handler has already run.
+  await expect(row.getByRole("button", { name: "Reopen" })).toBeVisible();
   expect(sent, "a closed listing pauses; it never republishes in one press").toBe(
     "paused",
   );
-  // And the row now reads as the paused listing it became.
-  await expect(row.getByRole("button", { name: "Reopen" })).toBeVisible();
 });
 
 // The reported bug: signed out, the owner segment pointed at /about#hosts

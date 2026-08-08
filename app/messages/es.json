@@ -262,7 +262,7 @@
     },
     "ledger": {
       "rule": "CARTERA · {month}",
-      "liveLabel": "ANUNCIOS PUBLICADOS",
+      "liveLabel": "ANUNCIOS VISIBLES",
       "liveNote": "{total, plural, one {de # vivienda} other {de # viviendas}} · {review, plural, =0 {ninguna en revisión} other {# en revisión}}",
       "occupancyLabel": "OCUPACIÓN, PRÓXIMOS 12 MESES",
       "occupancyNote": "{booked} de {sellable} meses reservados",
@@ -284,7 +284,7 @@
     },
     "tabs": {
       "all": "Todas",
-      "live": "Publicadas",
+      "live": "Visibles",
       "changes": "Con cambios",
       "review": "En revisión",
       "draft": "Borradores",
@@ -1621,7 +1621,7 @@
       "not_in_review": "Esta vivienda ya no está en revisión. Vuelve a cargar la página.",
       "not_reviewable": "Esta vivienda no se puede rechazar en su estado actual.",
       "not_reviewed": "Solo se puede reabrir una vivienda pausada.",
-      "not_published": "Solo se puede pausar una vivienda publicada.",
+      "not_published": "Solo se puede pausar una vivienda publicada o cerrada.",
       "note_required": "Escribe la nota para el propietario.",
       "stale_write": "Alguien ha cambiado esta vivienda mientras la leías. Vuelve a cargar la página.",
       "cannot_deactivate_self": "No puedes desactivar tu propia cuenta.",

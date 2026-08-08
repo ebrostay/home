@@ -1621,7 +1621,7 @@
       "not_in_review": "This home is no longer in review. Reload the page.",
       "not_reviewable": "This home cannot be rejected in its current state.",
       "not_reviewed": "Only a paused home can be reopened.",
-      "not_published": "Only a published home can be paused.",
+      "not_published": "Only a published or closed home can be paused.",
       "note_required": "Write the note for the owner.",
       "stale_write": "Somebody changed this home while you were reading it. Reload the page.",
       "cannot_deactivate_self": "You cannot deactivate your own account.",

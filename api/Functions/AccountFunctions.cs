@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Ebrostay.Api.Functions;
 
@@ -40,14 +41,30 @@ public class AccountFunctions(
         var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
-        List<PropertyDoc> listings;
+        var listings = new List<(PropertyDoc Doc, string? ETag)>();
         try
         {
-            listings = [];
             var query = new QueryDefinition("SELECT * FROM c WHERE c.hostId = @host")
                 .WithParameter("@host", profile!.Id);
-            using var feed = Properties.GetItemQueryIterator<PropertyDoc>(query);
-            while (feed.HasMoreResults) listings.AddRange(await feed.ReadNextAsync());
+            // Fetched as JObject and converted document-by-document
+            // (`PropertyDocParser.TryParse`), same as `HostFunctions.List` —
+            // NOT handed straight to `GetItemQueryIterator<PropertyDoc>`,
+            // which deserializes an entire page in one `ReadNextAsync` call.
+            // An owner with one stale legacy document (ADR-032's plain-string
+            // `copy`) would otherwise never be able to close their account:
+            // the one listing this endpoint cannot parse must not cost them
+            // every other one they own. `_etag` travels on the raw JObject —
+            // system properties are included by `SELECT *` — so the parsed
+            // listing keeps the version it was read at.
+            using var feed = Properties.GetItemQueryIterator<JObject>(query);
+            while (feed.HasMoreResults)
+            {
+                foreach (var raw in await feed.ReadNextAsync())
+                {
+                    var doc = PropertyDocParser.TryParse(raw, logger, "account closure listings");
+                    if (doc is not null) listings.Add((doc, raw["_etag"]?.ToString()));
+                }
+            }
         }
         catch (CosmosException ex)
         {
@@ -55,9 +72,10 @@ public class AccountFunctions(
             return new StatusCodeResult(StatusCodes.Status502BadGateway);
         }
 
+        var etags = listings.ToDictionary(l => l.Doc.Id, l => l.ETag, StringComparer.Ordinal);
         var writes = requesting
-            ? AccountClosure.ApplyRequest(listings)
-            : AccountClosure.ApplyCancel(listings);
+            ? AccountClosure.ApplyRequest(listings.Select(l => l.Doc))
+            : AccountClosure.ApplyCancel(listings.Select(l => l.Doc));
 
         // Listing-first, profile-last. The two are not one transaction, so the
         // order decides what a crash leaves behind: with the flag written last,
@@ -67,9 +85,25 @@ public class AccountFunctions(
         // that is closing with listings still public, which nothing retries.
         foreach (var doc in writes)
         {
+            doc.UpdatedAt = DateTimeOffset.UtcNow.ToString("o");
             try
             {
-                await Properties.ReplaceItemAsync(doc, doc.Id, new PartitionKey(doc.Id));
+                await Properties.ReplaceItemAsync(
+                    doc, doc.Id, new PartitionKey(doc.Id),
+                    new ItemRequestOptions { IfMatchEtag = etags.GetValueOrDefault(doc.Id) });
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
+            {
+                // A concurrent owner edit moved this listing between the read
+                // above and this write — the account is not yet write-blocked
+                // while the fan-out runs, since the profile flag is written
+                // last. Reported as a failure rather than skipped: the whole
+                // operation is idempotent (Task 2's map), so the caller
+                // retrying is safe and picks up exactly what is still left to
+                // move, but silently continuing past a stale write here would
+                // report success on a request that did not fully apply.
+                logger.LogError(ex, "Stale write closing listing {Id}", doc.Id);
+                return new StatusCodeResult(StatusCodes.Status502BadGateway);
             }
             catch (CosmosException ex)
             {

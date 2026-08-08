@@ -58,6 +58,7 @@ function AccountBody() {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [unreadable, setUnreadable] = useState(false);
 
   // Boolean(), not `!== null`: a fixture or an older API response that omits
   // the key entirely gives `undefined`, which `!== null` reads as "closing".
@@ -94,19 +95,23 @@ function AccountBody() {
     document.getElementById(actionId)?.focus();
   });
 
-  // `failed` is "this did not fully happen", which is NOT the same as "the
-  // call threw". The fan-out skips any listing it cannot deserialize (ADR-032's
-  // legacy plain-string `copy`) rather than losing the owner every other one,
-  // and then answers 200 with `unreadableListings`. Treating any non-throw as
-  // success made that count invisible: a `published` home stayed in search, the
-  // owner was write-blocked and could no longer pause it, and the page said
-  // "Your account is closing" and nothing else. So a partial 200 shows the same
-  // sentence a 502 does — it is the one already written for exactly this state
-  // ("part of the change may not have gone through… press the button again"),
-  // and pressing again is safe because both maps are idempotent.
+  // Two ways this can fall short, and they need different sentences because
+  // they need different actions from the person reading them.
+  //
+  // `failed` — the call threw. Some homes may have moved and some may not;
+  // both maps are idempotent, so pressing again finishes the job and is safe.
+  //
+  // `unreadable` — the call succeeded, but the fan-out skipped a listing it
+  // could not deserialize (ADR-032's legacy plain-string `copy`) rather than
+  // losing the owner every other one, and said so in `unreadableListings`.
+  // Pressing again can NEVER fix this: the document is still unparseable, so
+  // the retry skips it again. That home stays `published` and in search while
+  // its owner is write-blocked and cannot pause it, and there is no in-product
+  // repair path — so the only honest instruction is to contact us.
   const run = async (action: () => Promise<AccountClosureState>) => {
     setBusy(true);
     setFailed(false);
+    setUnreadable(false);
     try {
       const state = await action();
       await refresh();
@@ -114,7 +119,7 @@ function AccountBody() {
       // `?? 0`, not a truthiness test: an API older than the field omits the
       // key, and `undefined > 0` is false either way — this only spells out
       // that a missing count means "none", never "unknown, assume trouble".
-      if ((state.unreadableListings ?? 0) > 0) setFailed(true);
+      if ((state.unreadableListings ?? 0) > 0) setUnreadable(true);
     } catch {
       setFailed(true);
     } finally {
@@ -264,6 +269,14 @@ function AccountBody() {
         {failed && (
           <p role="alert" className="mt-3 text-sm text-danger">
             {t("error")}
+          </p>
+        )}
+        {unreadable && (
+          <p role="alert" className="mt-3 text-sm text-danger">
+            {t("unreadable")}{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="underline">
+              {SUPPORT_EMAIL}
+            </a>
           </p>
         )}
       </section>

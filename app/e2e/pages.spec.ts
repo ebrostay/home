@@ -946,9 +946,22 @@ test("/en/account — a closure the API could not finish is not shown as a clean
   await expect(
     page.getByRole("heading", { name: "Your account is closing" }),
   ).toBeVisible();
+  // The sentence must be the one for THIS state, not the one for a thrown
+  // call. Pressing again cannot parse a document that would not parse the
+  // first time, so telling the owner to retry would send them in a circle;
+  // the only thing that resolves it is a person.
   await expect(main.getByRole("alert")).toContainText(
-    "Part of the change may not have gone through",
+    "could not be processed and is still published",
   );
+  await expect(main.getByRole("alert")).not.toContainText(
+    "Press the button again",
+  );
+  // Scoped to the alert, not to <main>: the same address is also a link in
+  // the "Your data" block below, and an unscoped match would pass on that one
+  // while this sentence carried no way to act on it.
+  await expect(
+    main.getByRole("alert").getByRole("link", { name: "info@ebrostay.com" }),
+  ).toBeVisible();
 });
 
 // The control for the case above: a count of zero is a clean closure and must

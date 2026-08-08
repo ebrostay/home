@@ -1356,7 +1356,8 @@
     "closingSince": "Requested on",
     "closingHelp": "Creating and editing are disabled. Your published homes are closed to new requests. You can undo this at any time.",
     "closureUndo": "Cancel the closure request",
-    "error": "Something went wrong. Part of the change may not have gone through: some of your homes may have moved and some may not. Press the button again to finish it — repeating it is safe."
+    "error": "Something went wrong. Part of the change may not have gone through: some of your homes may have moved and some may not. Press the button again to finish it — repeating it is safe.",
+    "unreadable": "One of your homes could not be processed and is still published, so it has not been closed to new requests. Nothing you do on this page will change that — please write to us and we will sort it out:"
   },
   "signIn": {
     "metaTitle": "Sign in — Ebrostay",

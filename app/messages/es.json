@@ -1356,7 +1356,8 @@
     "closingSince": "Solicitado el",
     "closingHelp": "Crear y editar están desactivados. Tus viviendas publicadas están cerradas a nuevas solicitudes. Puedes deshacerlo cuando quieras.",
     "closureUndo": "Cancelar la solicitud de cierre",
-    "error": "Algo ha fallado. Puede que parte del cambio no se haya aplicado: algunas de tus viviendas pueden haber cambiado y otras no. Pulsa otra vez el botón para terminarlo; repetirlo no causa ningún problema."
+    "error": "Algo ha fallado. Puede que parte del cambio no se haya aplicado: algunas de tus viviendas pueden haber cambiado y otras no. Pulsa otra vez el botón para terminarlo; repetirlo no causa ningún problema.",
+    "unreadable": "Una de tus viviendas no se ha podido procesar y sigue publicada, así que no se ha cerrado a nuevas solicitudes. Nada de lo que hagas en esta página lo va a cambiar; escríbenos y lo resolvemos:"
   },
   "signIn": {
     "metaTitle": "Entrar — Ebrostay",

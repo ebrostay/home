@@ -430,3 +430,34 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   `swa-v2.yml`). The Playwright e2e suite (hermetic, fixture-served — no
   services needed, so it *can* run in CI) and `dotnet test
   api/Ebrostay.Api.Tests` are not gates yet.
+
+## Account closure — residues (ADR-042, built 2026-08-08/09)
+
+- **[B][S]** **An unreadable listing has no repair path.** The closure fan-out
+  skips a listing `PropertyDocParser.TryParse` cannot read (ADR-032's legacy
+  plain-string `copy`) rather than costing the owner every other one, counts it
+  in `unreadableListings`, and the account page now says so and points at
+  support. But nothing in the product can *fix* such a document: the owner is
+  write-blocked by `RequireWritableAsync`, and the admin properties table reads
+  through the same parser, so the row it would be repaired from does not render.
+  Today the answer is a direct Cosmos edit. Either the admin surface needs a
+  raw-document editor for the unparseable case, or a one-off migration should
+  retire the legacy shape before it can be hit at cutover.
+- **[O][S]** **`/api/account/closure` is missing from the endpoint tables** in
+  [`spec/04-functional-flows.md`](spec/04-functional-flows.md), and §4.5 does
+  not mention the users tab's `deletionRequestedAt` column. §2 (data model),
+  §3.7 (auth) and ADR-042 were all updated on 2026-08-09; §4 is the one place a
+  reader looks for an endpoint and does not find this one.
+- **[P][M]** **Nothing mechanically enforces the three-gates rule.** A listing
+  status is checked by three predicates with two different sets —
+  `PublicStatus.IsPublic` (`published`, `closed`), `ListingVisibility.ForRoutes`
+  and `ListingVisibility.ReEntersReview` (both also `paused`). Adding `closed`
+  missed two of the three; each was caught by review, not by a test. The rule is
+  now written down in §2.2.1, but editorially. A `PropertyStatus.All` array with
+  a per-gate membership assertion would turn the next omission into a test
+  failure instead of a review catch — worth doing before a fourth status exists.
+- **[P][S]** **`account_deactivated` is in no admin page's `KNOWN` error list**
+  (`admin/properties`, `admin/review`, `admin/users`), so a deactivated admin
+  sees "could not be read. Reload the page" on every panel and reloading never
+  helps. Pre-dates ADR-042 — the closing half is now caught by `RequireAdmin`'s
+  gate, which is what makes the deactivated half the only one left.

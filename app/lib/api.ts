@@ -333,6 +333,125 @@ export type HostListingSaved = {
 export type AvailabilityWrite = { start: string; end: string; note: string | null };
 
 // ---------------------------------------------------------------------------
+// The admin surface (spec §4.5, api/Models/AdminModels.cs). Three invited
+// admins; the role comes from the SWA principal and every one of these
+// endpoints checks it server-side — reaching this code proves nothing.
+// ---------------------------------------------------------------------------
+
+/** One listing waiting in the queue. */
+export type AdminQueueItem = {
+  id: string;
+  reference: string | null;
+  name: string;
+  address: string | null;
+  area: Bilingual | null;
+  hostId: string | null;
+  hostName: string | null;
+  /** The document's last write, which for a listing in `pending_review` is
+   *  the submission that put it there. */
+  submittedAt: string | null;
+  coverUrl: string | null;
+  photoCount: number;
+  priceNumber: number;
+  bedrooms: number;
+  sizeM2: number;
+  /** Whether opening this row will have a Catastro comparison to show. */
+  hasCadastralRef: boolean;
+  /** How many photos carry capture coordinates. Zero is the common case and
+   *  is NOT a warning — see `lib/review.ts`. */
+  locatedPhotos: number;
+};
+
+/** One row of the all-properties table: any listing, any status. */
+export type AdminPropertyRow = {
+  id: string;
+  reference: string | null;
+  status: PropertyStatus;
+  name: string;
+  address: string | null;
+  area: Bilingual | null;
+  hostId: string | null;
+  hostName: string | null;
+  priceNumber: number;
+  bedrooms: number;
+  sizeM2: number;
+  coverUrl: string | null;
+  photoCount: number;
+  reviewNote: string | null;
+  availableFrom: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+/** Who owns the listing under review. No email: the profile document has
+ *  never held one — it arrives as a claim and is not stored (§3.4). */
+export type AdminOwner = {
+  id: string | null;
+  name: string | null;
+  provider: string | null;
+  isDeactivated: boolean;
+};
+
+/** A photo as ONLY an admin may see it — with the coordinates the camera
+ *  wrote, read during the upload re-encode that strips EXIF from the
+ *  published file (ADR-019 amendment). `PropertyPhoto` and `HostPhoto` both
+ *  omit these deliberately: they are location data about a real person. */
+export type AdminPhoto = HostPhoto & {
+  capturedLat: number | null;
+  capturedLng: number | null;
+  capturedAt: string | null;
+};
+
+export type AdminPropertyDetail = {
+  property: HostProperty;
+  pricing: HostPricing;
+  listing: HostListing;
+  declined: Declined[];
+  owner: AdminOwner;
+  photos: AdminPhoto[];
+  createdAt: string | null;
+};
+
+export type AdminUser = {
+  id: string;
+  provider: string;
+  name: string;
+  createdAt: string | null;
+  lastSeenAt: string | null;
+  isDeactivated: boolean;
+  listingCount: number;
+  publishedCount: number;
+};
+
+export const fetchReviewQueue = () => get<AdminQueueItem[]>("/admin/review-queue");
+
+export const fetchAdminProperties = () => get<AdminPropertyRow[]>("/admin/properties");
+
+export const fetchAdminProperty = (id: string) =>
+  get<AdminPropertyDetail>(`/admin/properties/${encodeURIComponent(id)}`);
+
+/** Publish a listing. The one act nothing else in the product performs, and
+ *  the reason this surface exists. Accepted from `pending_review` alone. */
+export const approveProperty = (id: string) =>
+  post<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/approve`, {});
+
+/** Reject — and take down, which is the same act from a different starting
+ *  status. The note is required by the API and is what the owner reads in
+ *  their portfolio; there is no other channel telling them what to change. */
+export const rejectProperty = (id: string, note: string) =>
+  post<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/reject`, { note });
+
+/** Pause a live listing, or put a paused one back (ADR-024). */
+export const setPropertyStatus = (id: string, status: "published" | "paused") =>
+  put<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/status`, { status });
+
+export const fetchAdminUsers = () => get<AdminUser[]>("/admin/users");
+
+/** §3.7. Records are kept — never deleted. */
+export const setUserDeactivation = (id: string, isDeactivated: boolean) =>
+  put<AdminUser>(`/admin/users/${encodeURIComponent(id)}/deactivation`, { isDeactivated });
+
+// ---------------------------------------------------------------------------
 // The AI-assisted import (ADR-033). `api/Models/ImportModels.cs` is the
 // server's copy of this vocabulary.
 // ---------------------------------------------------------------------------

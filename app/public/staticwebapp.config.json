@@ -82,6 +82,18 @@
       ]
     },
     {
+      "route": "/es/admin",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
+      "route": "/en/admin",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
       "route": "/es/admin/*",
       "allowedRoles": [
         "admin"

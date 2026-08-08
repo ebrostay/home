@@ -1405,5 +1405,180 @@
       "tooLong": "Stay must be under a year (fewer than 365 days).",
       "pickMoveInFirst": "Pick a move-in date first."
     }
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Ebrostay · internal",
+    "sectionsNav": "Sections",
+    "sections": {
+      "queue": "Review queue",
+      "properties": "Homes",
+      "users": "People"
+    },
+    "gate": {
+      "title": "This account is not an admin",
+      "body": "The admin role is granted to one specific account. If you have access, it is probably on the other door: an Ebrostay account and a Microsoft account are two separate identities. Sign out and sign back in with the one that got the invitation.",
+      "signedInAs": "Signed in as"
+    },
+    "queue": {
+      "empty": "Nothing is waiting. Submitted homes show up here.",
+      "error": "The queue could not be read. Reload the page.",
+      "untitled": "Untitled",
+      "open": "Review",
+      "col": {
+        "waiting": "Waiting",
+        "listing": "Home",
+        "owner": "Owner",
+        "price": "Price",
+        "size": "Size",
+        "photos": "Photos",
+        "signals": "Signals"
+      },
+      "signal": {
+        "catastro": "Catastro",
+        "located": "{n} located"
+      },
+      "band": {
+        "fresh": "Waiting under a day",
+        "due": "Waiting over a day",
+        "late": "Waiting over two days"
+      }
+    },
+    "review": {
+      "untitled": "Untitled",
+      "missing": "This home no longer exists.",
+      "error": "The home could not be read. Reload the page.",
+      "edit": "Edit this home",
+      "owner": "Owner",
+      "deactivated": "deactivated",
+      "price": "Price",
+      "size": "Size",
+      "rooms": "Beds / baths",
+      "descriptionEs": "Spanish description",
+      "descriptionEn": "English description",
+      "enNotApproved": "not approved by the owner",
+      "photos": "Photos ({n})",
+      "floorplan": "Plan",
+      "status": {
+        "draft": "Draft",
+        "pending_review": "In review",
+        "published": "Published",
+        "rejected": "Rejected",
+        "paused": "Paused"
+      }
+    },
+    "signals": {
+      "photos": {
+        "title": "Where the photos were taken",
+        "note": "A signal, not a check. A photo's coordinates can be rewritten in seconds, so this catches honest mistakes rather than determined fraud. The published images no longer carry this data — these are what the files said before it went.",
+        "none": "None of the {total} photos carries coordinates. That is normal: WhatsApp and most social platforms strip them, and many cameras never write them.",
+        "located": "Located",
+        "farthest": "Farthest",
+        "spread": "Spread"
+      },
+      "catastro": {
+        "title": "Catastro",
+        "note": "Asked live and stored nowhere. The register goes stale and the owner may simply be right, so no line here is a reason to reject on its own.",
+        "noReference": "This home has no cadastral reference.",
+        "asking": "Asking the Catastro…",
+        "unavailable": "The Catastro did not answer. Try again later.",
+        "notFound": "The Catastro has no property with that reference.",
+        "use": "Use",
+        "size": "Built surface",
+        "postcode": "Postcode",
+        "position": "Position",
+        "fromPin": "{distance} from the pin",
+        "versus": "listing:",
+        "agrees": "Agrees",
+        "differs": "Differs",
+        "unknown": "No answer",
+        "declined": "The owner declined the {field} suggestion on {at}.",
+        "field": {
+          "pin": "position",
+          "postcode": "postcode",
+          "area": "area",
+          "size": "size"
+        }
+      }
+    },
+    "decision": {
+      "approve": "Publish",
+      "approving": "Publishing…",
+      "reject": "Reject",
+      "rejectTitle": "Reject this home",
+      "rejectLead": "The owner reads this note in their dashboard. It is the only thing telling them what to change, so be specific.",
+      "notePlaceholder": "The photos are of a different flat.",
+      "rejectConfirm": "Reject and tell the owner",
+      "cancel": "Cancel"
+    },
+    "properties": {
+      "search": "Search by name, street, reference or owner",
+      "empty": "There are no homes.",
+      "noMatch": "No home matches that search. Try fewer words.",
+      "error": "The homes could not be read. Reload the page.",
+      "untitled": "Untitled",
+      "tabs": {
+        "all": "All",
+        "pending_review": "In review",
+        "published": "Published",
+        "paused": "Paused",
+        "draft": "Drafts",
+        "rejected": "Rejected"
+      },
+      "col": {
+        "status": "Status",
+        "listing": "Home",
+        "owner": "Owner",
+        "price": "Price",
+        "photos": "Photos",
+        "updated": "Last change",
+        "actions": "Actions"
+      },
+      "action": {
+        "review": "Review",
+        "edit": "Edit",
+        "manage": "Manage",
+        "pause": "Pause",
+        "publish": "Reopen",
+        "view": "View live"
+      }
+    },
+    "users": {
+      "search": "Search by name or id",
+      "empty": "Nobody has signed in yet.",
+      "noMatch": "Nobody matches that search.",
+      "error": "The people could not be read. Reload the page.",
+      "noEmail": "We do not store email addresses: one arrives with the session and is never written down. To identify someone, use their id and the door they came through.",
+      "col": {
+        "name": "Name",
+        "door": "Door",
+        "listings": "Homes",
+        "created": "Joined",
+        "lastSeen": "Last seen",
+        "state": "State"
+      },
+      "state": {
+        "active": "Active",
+        "deactivated": "Deactivated"
+      },
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "published": "{n} published",
+      "confirmTitle": "Deactivate this account",
+      "confirmLead": "They can no longer book, host, or read anything of their own. Nothing is deleted and you can reactivate them at any time.",
+      "confirm": "Deactivate",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "generic": "That could not be saved. Try again.",
+      "not_in_review": "This home is no longer in review. Reload the page.",
+      "not_reviewable": "This home cannot be rejected in its current state.",
+      "not_reviewed": "Only a paused home can be reopened.",
+      "not_published": "Only a published home can be paused.",
+      "note_required": "Write the note for the owner.",
+      "stale_write": "Somebody changed this home while you were reading it. Reload the page.",
+      "cannot_deactivate_self": "You cannot deactivate your own account.",
+      "admin_required": "This account has no admin permission."
+    }
   }
 }

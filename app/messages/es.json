@@ -1405,5 +1405,180 @@
       "tooLong": "La estancia debe ser inferior a un año (menos de 365 días).",
       "pickMoveInFirst": "Elige primero la fecha de entrada."
     }
+  },
+  "admin": {
+    "title": "Administración",
+    "subtitle": "Ebrostay · panel interno",
+    "sectionsNav": "Secciones",
+    "sections": {
+      "queue": "Cola de revisión",
+      "properties": "Viviendas",
+      "users": "Personas"
+    },
+    "gate": {
+      "title": "Esta cuenta no es de administración",
+      "body": "El rol de administración se concede a una cuenta concreta. Si tienes acceso, es probable que esté en la otra puerta de entrada: la cuenta Ebrostay y la cuenta Microsoft son dos identidades distintas. Sal y vuelve a entrar con la que recibió la invitación.",
+      "signedInAs": "Has entrado como"
+    },
+    "queue": {
+      "empty": "No hay nada esperando. Cuando alguien envíe una vivienda, aparecerá aquí.",
+      "error": "No se ha podido leer la cola. Vuelve a cargar la página.",
+      "untitled": "Sin nombre",
+      "open": "Revisar",
+      "col": {
+        "waiting": "Espera",
+        "listing": "Vivienda",
+        "owner": "Propietario",
+        "price": "Precio",
+        "size": "Tamaño",
+        "photos": "Fotos",
+        "signals": "Señales"
+      },
+      "signal": {
+        "catastro": "Catastro",
+        "located": "{n} con GPS"
+      },
+      "band": {
+        "fresh": "Espera de menos de un día",
+        "due": "Espera de más de un día",
+        "late": "Espera de más de dos días"
+      }
+    },
+    "review": {
+      "untitled": "Sin nombre",
+      "missing": "Esta vivienda ya no existe.",
+      "error": "No se ha podido leer la vivienda. Vuelve a cargar la página.",
+      "edit": "Editar la vivienda",
+      "owner": "Propietario",
+      "deactivated": "desactivado",
+      "price": "Precio",
+      "size": "Tamaño",
+      "rooms": "Dorm. / baños",
+      "descriptionEs": "Descripción en español",
+      "descriptionEn": "Descripción en inglés",
+      "enNotApproved": "sin revisar por el propietario",
+      "photos": "Fotos ({n})",
+      "floorplan": "Plano",
+      "status": {
+        "draft": "Borrador",
+        "pending_review": "En revisión",
+        "published": "Publicada",
+        "rejected": "Rechazada",
+        "paused": "Pausada"
+      }
+    },
+    "signals": {
+      "photos": {
+        "title": "Dónde se hicieron las fotos",
+        "note": "Es una señal, no una comprobación. Las coordenadas de una foto se cambian en segundos, así que esto detecta errores de buena fe, no un fraude decidido. Las fotos publicadas ya no llevan estos datos: esto es lo que decían antes.",
+        "none": "Ninguna de las {total} fotos lleva coordenadas. Es lo normal: WhatsApp y casi todas las redes las borran, y muchas cámaras nunca las escriben.",
+        "located": "Con GPS",
+        "farthest": "La más lejos",
+        "spread": "Dispersión"
+      },
+      "catastro": {
+        "title": "Catastro",
+        "note": "Se pregunta en el momento y no se guarda nada. El registro se queda desfasado y el propietario puede tener razón, así que ninguna de estas líneas es motivo de rechazo por sí sola.",
+        "noReference": "Esta vivienda no ha indicado referencia catastral.",
+        "asking": "Preguntando al Catastro…",
+        "unavailable": "El Catastro no ha contestado. Vuelve a intentarlo más tarde.",
+        "notFound": "El Catastro no tiene ninguna propiedad con esa referencia.",
+        "use": "Uso",
+        "size": "Superficie",
+        "postcode": "Código postal",
+        "position": "Posición",
+        "fromPin": "a {distance} del punto",
+        "versus": "anuncio:",
+        "agrees": "Coincide",
+        "differs": "No coincide",
+        "unknown": "Sin dato",
+        "declined": "El propietario descartó la sugerencia de {field} el {at}.",
+        "field": {
+          "pin": "posición",
+          "postcode": "código postal",
+          "area": "zona",
+          "size": "superficie"
+        }
+      }
+    },
+    "decision": {
+      "approve": "Publicar",
+      "approving": "Publicando…",
+      "reject": "Rechazar",
+      "rejectTitle": "Rechazar esta vivienda",
+      "rejectLead": "El propietario lee esta nota en su panel. Es lo único que le dice qué cambiar, así que sé concreto.",
+      "notePlaceholder": "Las fotos son de otra vivienda.",
+      "rejectConfirm": "Rechazar y avisar",
+      "cancel": "Cancelar"
+    },
+    "properties": {
+      "search": "Buscar por nombre, calle, referencia o propietario",
+      "empty": "No hay viviendas.",
+      "noMatch": "Ninguna vivienda coincide con la búsqueda. Prueba con menos palabras.",
+      "error": "No se han podido leer las viviendas. Vuelve a cargar la página.",
+      "untitled": "Sin nombre",
+      "tabs": {
+        "all": "Todas",
+        "pending_review": "En revisión",
+        "published": "Publicadas",
+        "paused": "Pausadas",
+        "draft": "Borradores",
+        "rejected": "Rechazadas"
+      },
+      "col": {
+        "status": "Estado",
+        "listing": "Vivienda",
+        "owner": "Propietario",
+        "price": "Precio",
+        "photos": "Fotos",
+        "updated": "Último cambio",
+        "actions": "Acciones"
+      },
+      "action": {
+        "review": "Revisar",
+        "edit": "Editar",
+        "manage": "Gestionar",
+        "pause": "Pausar",
+        "publish": "Reabrir",
+        "view": "Ver publicada"
+      }
+    },
+    "users": {
+      "search": "Buscar por nombre o identificador",
+      "empty": "Todavía no ha entrado nadie.",
+      "noMatch": "Nadie coincide con la búsqueda.",
+      "error": "No se han podido leer las personas. Vuelve a cargar la página.",
+      "noEmail": "No guardamos la dirección de correo: llega como dato de la sesión y no se almacena. Para identificar a alguien, usa su identificador y la puerta por la que entró.",
+      "col": {
+        "name": "Nombre",
+        "door": "Puerta",
+        "listings": "Viviendas",
+        "created": "Alta",
+        "lastSeen": "Última visita",
+        "state": "Estado"
+      },
+      "state": {
+        "active": "Activa",
+        "deactivated": "Desactivada"
+      },
+      "deactivate": "Desactivar",
+      "reactivate": "Reactivar",
+      "published": "{n} publicadas",
+      "confirmTitle": "Desactivar esta cuenta",
+      "confirmLead": "Deja de poder reservar, publicar o leer nada suyo. No se borra nada y puedes reactivarla cuando quieras.",
+      "confirm": "Desactivar",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "generic": "No se ha podido guardar. Vuelve a intentarlo.",
+      "not_in_review": "Esta vivienda ya no está en revisión. Vuelve a cargar la página.",
+      "not_reviewable": "Esta vivienda no se puede rechazar en su estado actual.",
+      "not_reviewed": "Solo se puede reabrir una vivienda pausada.",
+      "not_published": "Solo se puede pausar una vivienda publicada.",
+      "note_required": "Escribe la nota para el propietario.",
+      "stale_write": "Alguien ha cambiado esta vivienda mientras la leías. Vuelve a cargar la página.",
+      "cannot_deactivate_self": "No puedes desactivar tu propia cuenta.",
+      "admin_required": "Esta cuenta no tiene permiso de administración."
+    }
   }
 }

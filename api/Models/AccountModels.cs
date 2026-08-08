@@ -43,6 +43,27 @@ public static class AccountClosure
         "closed" => "paused",
         _ => null,
     };
+
+    /// The listings a closure request must write, and their new status. Kept
+    /// separate from the endpoint so the fan-out's decisions are testable
+    /// without a Cosmos account — the endpoint only loops and saves.
+    public static IEnumerable<PropertyDoc> ApplyRequest(IEnumerable<PropertyDoc> listings) =>
+        Plan(listings, OnRequest);
+
+    public static IEnumerable<PropertyDoc> ApplyCancel(IEnumerable<PropertyDoc> listings) =>
+        Plan(listings, OnCancel);
+
+    private static IEnumerable<PropertyDoc> Plan(
+        IEnumerable<PropertyDoc> listings, Func<string, string?> map)
+    {
+        foreach (var doc in listings)
+        {
+            var next = map(doc.Status);
+            if (next is null) continue;
+            doc.Status = next;
+            yield return doc;
+        }
+    }
 }
 
 /// The request body is empty — the account being closed is always the caller's

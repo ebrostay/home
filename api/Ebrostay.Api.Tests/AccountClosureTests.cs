@@ -87,3 +87,53 @@ public class AccountClosureMapTests
         Assert.Null(AccountClosure.OnCancel(once!));
     }
 }
+
+// The fan-out is a loop over the owner's listings applying the Task 2 map.
+// These tests pin the loop's decisions without a Cosmos account: given a set
+// of listings, which ones get written and to what.
+public class AccountClosureApplyTests
+{
+    private static PropertyDoc Listing(string id, string status) =>
+        new() { Id = id, HostId = "u1", Status = status };
+
+    [Fact]
+    public void Request_writes_only_the_listings_that_change()
+    {
+        PropertyDoc[] listings =
+        [
+            Listing("a", "published"),
+            Listing("b", "pending_review"),
+            Listing("c", "paused"),
+            Listing("d", "draft"),
+        ];
+
+        var writes = AccountClosure.ApplyRequest(listings).ToArray();
+
+        Assert.Equal(2, writes.Length);
+        Assert.Equal(("a", "closed"), (writes[0].Id, writes[0].Status));
+        Assert.Equal(("b", "draft"), (writes[1].Id, writes[1].Status));
+    }
+
+    [Fact]
+    public void Cancel_writes_only_the_closed_listings()
+    {
+        PropertyDoc[] listings =
+        [
+            Listing("a", "closed"),
+            Listing("b", "draft"),
+            Listing("c", "paused"),
+        ];
+
+        var writes = AccountClosure.ApplyCancel(listings).ToArray();
+
+        Assert.Single(writes);
+        Assert.Equal(("a", "paused"), (writes[0].Id, writes[0].Status));
+    }
+
+    [Fact]
+    public void Re_running_a_finished_request_writes_nothing()
+    {
+        PropertyDoc[] listings = [Listing("a", "closed"), Listing("b", "draft")];
+        Assert.Empty(AccountClosure.ApplyRequest(listings));
+    }
+}

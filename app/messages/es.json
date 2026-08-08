@@ -1336,6 +1336,25 @@
     "signOut": "Salir",
     "deactivated": "Tu cuenta está desactivada. Escríbenos para reactivarla."
   },
+  "account": {
+    "title": "Mi cuenta",
+    "identity": "Sesión iniciada como",
+    "provider": "Método de acceso",
+    "dataTitle": "Tus datos",
+    "purge": "Revocar la conexión de acceso",
+    "purgeHelp": "Esto desconecta tu proveedor de acceso de Ebrostay. No elimina tu cuenta de Ebrostay — para eso, usa la solicitud de cierre de abajo.",
+    "support": "Escríbenos a",
+    "closureTitle": "Cerrar mi cuenta",
+    "closureHelp": "Tus viviendas saldrán de la búsqueda y no podrás crear ni editar nada. Te contactaremos antes de eliminar nada.",
+    "closureRequest": "Solicitar el cierre",
+    "closureConfirm": "Sí, solicitar el cierre",
+    "closureCancelConfirm": "Ahora no",
+    "closingTitle": "Tu cuenta está en proceso de cierre",
+    "closingSince": "Solicitado el",
+    "closingHelp": "Crear y editar están desactivados. Tus viviendas publicadas están cerradas a nuevas solicitudes. Puedes deshacerlo cuando quieras.",
+    "closureUndo": "Cancelar la solicitud de cierre",
+    "error": "Algo ha fallado. Inténtalo de nuevo."
+  },
   "signIn": {
     "metaTitle": "Entrar — Ebrostay",
     "metaDescription": "Entra en Ebrostay para guardar pisos, seguir tus reservas y gestionar tus viviendas.",

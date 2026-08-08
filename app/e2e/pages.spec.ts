@@ -181,6 +181,16 @@ const ROUTES: RouteCase[] = [
     expect: { es: /Entrar para solicitar/, en: /Sign in to request/ },
     anonMe: true,
   },
+  // The page AuthMenu has pointed every signed-in visitor at since the menu
+  // existed, and which until now answered 404. Asserted on the closure block
+  // rather than the title, which the header menu also carries: this row must
+  // fail if the page renders its heading and drops the reason it exists. The
+  // shared fixture has never asked to close, so this is the resting face; the
+  // other one is its own test further down.
+  {
+    path: "/account",
+    expect: { es: /Cerrar mi cuenta/, en: /Close my account/ },
+  },
   { path: "/design", expect: { es: /dise/i, en: /design/i } },
   { path: "/design/type", expect: { es: /tipograf/i, en: /type/i } },
   { path: "/host", expect: { es: /vivienda/i, en: /home/i } },
@@ -702,6 +712,60 @@ test("a listing with an unreadable timestamp does not take down the portfolio", 
   const rows = JSON.parse(fixture("host-properties.json")) as { name: string }[];
   const named = rows.filter((r) => r.name).slice(1, 4);
   for (const row of named) expect(body).toContain(row.name);
+});
+
+// The closing account, which the route case above cannot reach: the shared
+// fixture has never asked to leave, so under it /account only ever renders the
+// resting face. This is the state the whole feature exists for — and the undo
+// is the half most likely to rot, because it depends on AuthProvider.refresh()
+// re-reading /api/me. Without that the DELETE would succeed and the page would
+// go on claiming a closure the server no longer holds, which is the failure
+// mode a person would report as "the cancel button does nothing".
+//
+// The date is asserted to the month, not the day: `tableDate` formats in the
+// runner's own zone, and a UTC instant near midnight lands on either side of
+// it depending on where the suite happens to run.
+test("/en/account — a closing account is offered the undo, and it takes", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  const REQUESTED_AT = "2026-08-08T12:00:00Z";
+  let closing = true;
+
+  // Registered after stubBackend so Playwright's newest-first match wins over
+  // the shared fixture, and re-read on every call: the page fetches /api/me a
+  // second time after the write, and that answer is the assertion below.
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    }),
+  );
+
+  await page.route("**/api/account/closure", (route: Route) => {
+    closing = route.request().method() !== "DELETE";
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    });
+  });
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  const main = page.locator("main");
+  await expect(main).toContainText("Your account is closing");
+  await expect(main).toContainText(/Aug 2026/);
+
+  await page.getByRole("button", { name: "Cancel the closure request" }).click();
+
+  await expect(main).toContainText("Close my account");
+  await expect(main).not.toContainText("Your account is closing");
 });
 
 // The reported bug: signed out, the owner segment pointed at /about#hosts

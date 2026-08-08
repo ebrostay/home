@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "ink";
 type Size = "md" | "lg" | "sm";
 
 const variants: Record<Variant, string> = {
@@ -10,6 +10,12 @@ const variants: Record<Variant, string> = {
     "border border-line-strong bg-surface text-ink hover:border-ink disabled:hover:border-line-strong",
   ghost: "text-body hover:bg-surface-2 hover:text-ink",
   danger: "bg-danger text-white hover:opacity-90",
+  // Weighty, and deliberately not red. For confirming something serious that
+  // is nonetheless not destructive — closing an account, which an admin
+  // undoes on request and which the person can take back themselves. Ink is
+  // the system's own word for "closed" (globals.css: river = open, green =
+  // yours, ink = occupied), so this says "shut" without saying "danger".
+  ink: "bg-ink text-inverse hover:opacity-90",
 };
 
 const sizes: Record<Size, string> = {

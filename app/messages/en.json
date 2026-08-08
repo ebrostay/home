@@ -1336,6 +1336,25 @@
     "signOut": "Sign out",
     "deactivated": "Your account is deactivated. Contact us to reactivate it."
   },
+  "account": {
+    "title": "My account",
+    "identity": "Signed in as",
+    "provider": "Sign-in method",
+    "dataTitle": "Your data",
+    "purge": "Revoke the sign-in connection",
+    "purgeHelp": "This disconnects your sign-in provider from Ebrostay. It does not delete your Ebrostay account — use the closure request below for that.",
+    "support": "Contact us at",
+    "closureTitle": "Close my account",
+    "closureHelp": "Your homes will be taken out of search and you will not be able to create or edit anything. We will contact you before anything is removed.",
+    "closureRequest": "Request closure",
+    "closureConfirm": "Yes, request closure",
+    "closureCancelConfirm": "Not now",
+    "closingTitle": "Your account is closing",
+    "closingSince": "Requested on",
+    "closingHelp": "Creating and editing are disabled. Your published homes are closed to new requests. You can undo this at any time.",
+    "closureUndo": "Cancel the closure request",
+    "error": "Something went wrong. Please try again."
+  },
   "signIn": {
     "metaTitle": "Sign in — Ebrostay",
     "metaDescription": "Sign in to Ebrostay to save homes, follow your bookings and manage your listings.",

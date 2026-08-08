@@ -48,6 +48,33 @@ public static class ListingVisibility
     public static bool MayWrite(PropertyDoc doc, ClientPrincipal? principal) =>
         IsOwnedBy(doc, principal) || principal is { IsAuthenticated: true, IsAdmin: true };
 
+    /// Who may READ one listing in full through the owner surface —
+    /// `GET /api/host/properties/{id}`, the Manage page, which serves the exact
+    /// address, the cadastral reference, the pin, the pricing, the reviewer's
+    /// note and the booking-request log.
+    ///
+    /// `MayWrite` alone was the bug. That endpoint is a read, so it sits on
+    /// `RequireActiveAsync` rather than `RequireWritableAsync` — and a closing
+    /// ADMIN, refused by all nine /api/staff/* endpoints and by every write
+    /// here, could still open `/host/manage?id=<any id off a public URL>` and
+    /// be handed a stranger's listing in full. "Closed is closed" (ADR-042,
+    /// product owner 2026-08-08); §3.4, the decision log and the panel the
+    /// browser now shows in both languages all state that a closing admin
+    /// loses reads as well. This predicate is what makes that true.
+    ///
+    /// The owner's half is deliberately untouched, and the asymmetry is the
+    /// same one `RequireWritableAsync` draws: a closing owner keeps their own
+    /// portfolio and their own listings, because those are theirs to see on the
+    /// way out. ADR-042's rule, in one line — your own things, yes; other
+    /// people's, no.
+    ///
+    /// The caller answers a refusal with 404, not 403: a listing this caller
+    /// must not learn exists is one that does not exist for them (§3.4), which
+    /// is the same answer `LoadWritableAsync` already gives a stranger.
+    public static bool MayRead(PropertyDoc doc, ClientPrincipal? principal, ProfileDoc profile) =>
+        IsOwnedBy(doc, principal)
+        || (MayWrite(doc, principal) && !AccountClosure.BlocksWrites(profile));
+
     /// Whether saving CONTENT sends this listing back to the review queue.
     ///
     /// The owner's rule is §2.2.1: a published or paused listing re-enters

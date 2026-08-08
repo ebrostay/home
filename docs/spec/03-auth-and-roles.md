@@ -262,6 +262,20 @@ an owner asks to close their own account and takes the request back.
   The way back is untouched: `DELETE /api/account/closure` sits on
   `RequireActiveAsync`, so cancelling restores the whole surface.
 
+  **The one cross-account read that is not on an `/api/staff/*` route is
+  closed by the same rule.** `GET /api/host/properties/{id}` is a read, so it
+  is guarded by `RequireActiveAsync` — correctly, because a closing owner must
+  keep reaching their own listings — but it loads through
+  `ListingVisibility.MayWrite`, which admits an admin to *anybody's* listing.
+  A closing admin could therefore open `/host/manage?id=<any id off a public
+  URL>` and be served a stranger's exact address, cadastral reference, pin,
+  pricing, reviewer note and booking-request log. The endpoint now applies
+  `ListingVisibility.MayRead`, which is `MayWrite` minus the admin's
+  cross-account half once that admin is closing, and answers **404** — a
+  listing this caller may not learn exists (§3.4), the same answer a stranger
+  already got. The owner's own read is untouched: your own things, yes; other
+  people's, no.
+
 **Still deferred: hard deletion.** This section's "records are kept — never
 deleted" is unchanged, and **no endpoint deletes a profile**. A closure request
 is a signal: it appears against the person in the admin users tab (§4.5,

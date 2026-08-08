@@ -196,6 +196,14 @@ public class HostFunctions(
         var (doc, _, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
+        // The one read on this surface that is NOT covered by the guard above.
+        // `RequireActiveAsync` is right for a read — a closing OWNER must keep
+        // reaching their own listings — but `LoadWritableAsync` admits an admin
+        // to anybody's, and a closing admin has lost that (`MayRead`, ADR-042).
+        // 404 and not 403, matching the stranger case in `LoadWritableAsync`:
+        // this caller may not learn the listing exists.
+        if (!ListingVisibility.MayRead(doc!, principal, profile!)) return new NotFoundResult();
+
         var requests = await RequestLogAsync(id);
         return new OkObjectResult(new HostPropertyDetail(
             HostProjection.ToHostProperty(doc!, DateTimeOffset.UtcNow, requests.Count(

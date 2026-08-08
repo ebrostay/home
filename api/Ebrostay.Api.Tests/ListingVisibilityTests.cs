@@ -112,3 +112,84 @@ public class ListingVisibilityTests
         Assert.Equal(ListingView.Hidden,
             ListingVisibility.ForRoutes(Listing("archived"), null));
 }
+
+// `GET /api/host/properties/{id}` — the Manage page, and the last read a
+// closing admin still held.
+//
+// The endpoint is a read, so it is guarded by `RequireActiveAsync`, which lets
+// a closing account through on purpose (a closing OWNER has to reach their own
+// portfolio). It then loaded through `MayWrite`, which admits an admin to
+// ANYBODY's listing — so an admin who had asked to close their own account,
+// refused by all nine /api/staff/* endpoints, could still open
+// `/host/manage?id=<any id taken off a public URL>` and be served a stranger's
+// exact address, cadastral reference, pin, pricing, reviewer note and
+// booking-request log. §3.4, the decision log and the panel now on screen in
+// both languages all say a closing admin loses reads too; these pin it.
+//
+// The asymmetry below is the deliberate one (ADR-042: your own things, yes;
+// other people's, no), so it is tested in both directions rather than left to
+// the prose.
+public class ClosingAdminListingReadTests
+{
+    private static PropertyDoc Listing(string hostId = "host-1") =>
+        new() { Id = "p1", Status = "published", HostId = hostId };
+
+    private static ClientPrincipal User(string userId, bool admin = false) =>
+        new()
+        {
+            UserId = userId,
+            UserRoles = admin
+                ? ["anonymous", "authenticated", "admin"]
+                : ["anonymous", "authenticated"],
+        };
+
+    private const string Closing = "2026-08-08T10:00:00.0000000+00:00";
+
+    private static ProfileDoc Profile(string id, string? requestedAt = null) =>
+        new() { Id = id, DeletionRequestedAt = requestedAt };
+
+    // ---- the admin's cross-account read -------------------------------
+
+    [Fact]
+    public void AnOpenAdminReadsAnybodysListing() =>
+        Assert.True(ListingVisibility.MayRead(
+            Listing(), User("admin-1", admin: true), Profile("admin-1")));
+
+    [Fact]
+    public void AClosingAdminDoesNotReadSomebodyElsesListing() =>
+        Assert.False(ListingVisibility.MayRead(
+            Listing(), User("admin-1", admin: true), Profile("admin-1", Closing)));
+
+    // ---- the owner's own read, which must survive ---------------------
+
+    [Fact]
+    public void AnOwnerReadsTheirOwnListing() =>
+        Assert.True(ListingVisibility.MayRead(
+            Listing(), User("host-1"), Profile("host-1")));
+
+    // The deliberate asymmetry, and the one this fix must not break: the
+    // portfolio a closure is moving is exactly what its owner needs to see.
+    [Fact]
+    public void AClosingOwnerStillReadsTheirOwnListing() =>
+        Assert.True(ListingVisibility.MayRead(
+            Listing(), User("host-1"), Profile("host-1", Closing)));
+
+    // An admin reading their OWN listing is the owner they are, so the closure
+    // does not take it from them either — the ban is on other people's homes.
+    [Fact]
+    public void AClosingAdminStillReadsTheirOwnListing() =>
+        Assert.True(ListingVisibility.MayRead(
+            Listing(hostId: "admin-1"), User("admin-1", admin: true),
+            Profile("admin-1", Closing)));
+
+    // ---- everyone else, unchanged --------------------------------------
+
+    [Fact]
+    public void AStrangerReadsNothing() =>
+        Assert.False(ListingVisibility.MayRead(
+            Listing(), User("host-2"), Profile("host-2")));
+
+    [Fact]
+    public void AnAnonymousCallerReadsNothing() =>
+        Assert.False(ListingVisibility.MayRead(Listing(), null, Profile("host-1")));
+}

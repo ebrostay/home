@@ -60,4 +60,31 @@ public class ProfileService(Database database)
 
         return (profile, null);
     }
+
+    // The same guard, plus the role — what every /api/admin/* function calls
+    // first (spec §3.5: the route rule is cosmetic, THIS is the boundary).
+    //
+    // Deliberately layered on RequireActiveAsync rather than checking the role
+    // first: a deactivated principal is refused before anything reads its
+    // roles, so an admin who has been deactivated is locked out of the API by
+    // the §3.7 rule and never reaches an admin endpoint at all. That ordering
+    // is what §3.7 relies on when it says removing the role afterwards is
+    // tidiness, not the lock.
+    public async Task<(ProfileDoc? profile, IActionResult? error)> RequireAdminAsync(
+        ClientPrincipal? principal)
+    {
+        var (profile, error) = await RequireActiveAsync(principal);
+        if (error is not null) return (null, error);
+
+        // 403, not 404: unlike a listing, the existence of the admin surface
+        // is not a secret — it is linked from the header of every admin's
+        // browser and documented in a public spec.
+        if (principal is not { IsAdmin: true })
+            return (null, new ObjectResult(new { error = "admin_required" })
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+            });
+
+        return (profile, null);
+    }
 }

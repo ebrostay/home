@@ -42,7 +42,8 @@ public class HostFunctions(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/properties")]
         HttpRequest req)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var now = DateTimeOffset.UtcNow;
@@ -110,7 +111,8 @@ public class HostFunctions(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "host/properties")]
         HttpRequest req)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var open = 0;
@@ -188,10 +190,11 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
-        var (doc, _, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, _, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var requests = await RequestLogAsync(id);
@@ -213,13 +216,14 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<DetailsUpdate>(req);
         if (update is null) return BadRequest("bad_request");
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var invalid = HostValidation.CheckDetails(update, doc!);
@@ -477,10 +481,22 @@ public class HostFunctions(
         // search until a reviewer sees it again. A draft stays a draft and a
         // rejected listing stays rejected — resubmitting is its own act, not
         // a side effect of typing.
-        if (doc.Status is "published" or "paused")
+        //
+        // Except when an ADMIN is the one writing somebody else's listing
+        // (§4.5, "direct edit (no re-review)"): a reviewer correcting a typo
+        // must not drop a live home out of search, nor send the listing they
+        // are reviewing to the back of their own queue. `ReEntersReview`
+        // carries the whole rule, admins-editing-their-own-home included.
+        if (ListingVisibility.ReEntersReview(doc, principal))
         {
             doc.Status = "pending_review";
             doc.ReviewNote = null;
+        }
+        else if (principal is { IsAdmin: true } && !ListingVisibility.IsOwnedBy(doc, principal))
+        {
+            logger.LogInformation(
+                "admin {AdminId} edited {PropertyId} owned by {HostId} without re-review",
+                profile!.Id, doc.Id, doc.HostId);
         }
 
         var saved = await SaveAsync(doc, etag, () => new OkObjectResult(
@@ -535,13 +551,14 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<StatusUpdate>(req);
         if (update is null) return BadRequest("bad_request");
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var invalid = HostValidation.CheckStatus(update.Status, doc!);
@@ -575,10 +592,11 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         if (doc!.Photos.Length >= HostValidation.MaxPhotos)
@@ -687,13 +705,14 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<DeclinedUpdate>(req);
         if (update?.Declined is null) return BadRequest("bad_request");
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var invalid = HostValidation.CheckDeclined(update.Declined);
@@ -744,13 +763,14 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<PricingUpdate>(req);
         if (update is null) return BadRequest("bad_request");
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var invalid = HostValidation.CheckPricing(update, doc!.MaxStayMonths);
@@ -785,13 +805,14 @@ public class HostFunctions(
         HttpRequest req,
         string id)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireActiveAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<AvailabilityUpdate>(req);
         if (update?.Blocks is null) return BadRequest("bad_request");
 
-        var (doc, etag, loadError) = await LoadOwnedAsync(id, profile!.Id);
+        var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
         if (loadError is not null) return loadError;
 
         var now = DateTimeOffset.UtcNow;
@@ -859,13 +880,20 @@ public class HostFunctions(
 
     // Ownership is a 404, not a 403: a listing the caller does not own should
     // not confirm its own existence to them.
+    //
+    // "Owned" became "writable" on 2026-08-08: an ADMIN writes any listing
+    // (§4.5 — the all-properties tab links into THIS editor rather than
+    // growing a second one, so that one set of fields keeps one validation).
+    // The rule itself lives in `ListingVisibility.MayWrite`, beside the read
+    // rule, because the last time two surfaces each carried their own copy of
+    // a visibility rule they drifted and the drift was the bug.
     private async Task<(PropertyDoc? Doc, string? ETag, IActionResult? Error)>
-        LoadOwnedAsync(string id, string hostId)
+        LoadWritableAsync(string id, ClientPrincipal? principal)
     {
         try
         {
             var response = await Properties.ReadItemAsync<PropertyDoc>(id, new PartitionKey(id));
-            return response.Resource.HostId == hostId
+            return ListingVisibility.MayWrite(response.Resource, principal)
                 ? (response.Resource, response.ETag, null)
                 : (null, null, new NotFoundResult());
         }

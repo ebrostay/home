@@ -36,6 +36,34 @@ public static class ListingVisibility
         && doc.HostId is not null
         && string.Equals(doc.HostId, principal.UserId, StringComparison.Ordinal);
 
+    /// Who may WRITE this listing (spec §4.5, design 2026-08-08): its owner,
+    /// or an admin on anybody's.
+    ///
+    /// Admin editing exists so that the one editor is the only editor — a
+    /// second admin-only form would be a second validation of the same fields,
+    /// and two validations of one field is how they come to disagree. The
+    /// role, as everywhere, comes from the principal and never from the data
+    /// (§3.4).
+    public static bool MayWrite(PropertyDoc doc, ClientPrincipal? principal) =>
+        IsOwnedBy(doc, principal) || principal is { IsAuthenticated: true, IsAdmin: true };
+
+    /// Whether saving CONTENT sends this listing back to the review queue.
+    ///
+    /// The owner's rule is §2.2.1: a published or paused listing re-enters
+    /// review, because what it claims about the home has changed and nobody
+    /// has read the new claim. An ADMIN's edit is the exception §4.5 grants —
+    /// "direct edit (no re-review)" — and the exception is load-bearing twice
+    /// over: an admin fixing a typo on a live listing must not drop it out of
+    /// search, and a reviewer correcting a listing they are about to approve
+    /// must not send it to the back of their own queue.
+    ///
+    /// An admin editing their OWN listing is treated as the owner they are.
+    /// The privilege belongs to the act of moderating someone else's home, not
+    /// to the person; using it on your own listing would be a way to publish
+    /// changes to your own home that nobody reviewed.
+    public static bool ReEntersReview(PropertyDoc doc, ClientPrincipal? principal) =>
+        (doc.Status is "published" or "paused") && IsOwnedBy(doc, principal);
+
     /// The route surface (`PropertyNearbyRoute`, `PropertyPlaceRoute`).
     ///
     /// A `paused` listing routes for everyone: a guest who already has the

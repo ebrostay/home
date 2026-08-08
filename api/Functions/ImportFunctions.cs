@@ -42,7 +42,7 @@ public class ImportFunctions(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "import")] HttpRequest req,
         CancellationToken ct)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var (profile, error) = await profiles.RequireWritableAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
         var body = await ReadJsonAsync<ImportStart>(req, ct);
@@ -240,7 +240,7 @@ public class ImportFunctions(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "import/{jobId}")]
         HttpRequest req, string jobId, CancellationToken ct)
     {
-        var (profile, error) = await profiles.RequireActiveAsync(ClientPrincipal.Parse(req));
+        var (profile, error) = await profiles.RequireWritableAsync(ClientPrincipal.Parse(req));
         if (error is not null) return error;
 
         var (job, etag, readError) = await ReadAsync(jobId, ct);

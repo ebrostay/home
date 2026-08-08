@@ -111,7 +111,7 @@ public class HostFunctions(
         HttpRequest req)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var open = 0;
@@ -216,7 +216,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<DetailsUpdate>(req);
@@ -568,7 +568,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<StatusUpdate>(req);
@@ -609,7 +609,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var (doc, etag, loadError) = await LoadWritableAsync(id, principal);
@@ -722,7 +722,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<DeclinedUpdate>(req);
@@ -780,7 +780,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<PricingUpdate>(req);
@@ -822,7 +822,7 @@ public class HostFunctions(
         string id)
     {
         var principal = ClientPrincipal.Parse(req);
-        var (profile, error) = await profiles.RequireActiveAsync(principal);
+        var (profile, error) = await profiles.RequireWritableAsync(principal);
         if (error is not null) return error;
 
         var update = await ReadJsonAsync<AvailabilityUpdate>(req);

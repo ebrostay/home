@@ -135,7 +135,8 @@ Rules:
   from Cosmos data (no `isAdmin` flag exists — §3.2).
 - Failure responses: `401` when authentication is required and the principal
   is absent; `403` when authenticated but lacking the role, not the owner of
-  the resource, or deactivated (§3.7). `404` (not `403`) for resources the
+  the resource, deactivated, or — on a write — closing (§3.7). `404` (not
+  `403`) for resources the
   caller must not learn exist (e.g. someone else's draft).
 
 ## 3.5 Route rules are cosmetic — functions enforce ✅
@@ -157,7 +158,8 @@ ADR-006) in the new world:
 > admin signed in through the other door (§3.1), and bouncing them to a login
 > they have already completed reads as a broken site rather than as the
 > answer. Neither is the boundary: `ProfileService.RequireAdminAsync` is, and
-> it runs the §3.7 deactivation check **before** it reads a role.
+> it runs the §3.7 deactivation **and closure** checks — it layers on
+> `RequireWritableAsync` — **before** it reads a role.
 >
 > `/host/*` is not among them: since 2026-08-01 `/host/new`, `/host/edit`, and
 > `/host/manage` bounce a signed-out visitor in-app, via
@@ -184,7 +186,14 @@ returns the profile. Any other authenticated endpoint hit first performs the
 same upsert-on-miss, so ordering is not load-bearing. This replaces v1's
 `handle_new_user` Postgres trigger.
 
-## 3.7 Deactivation ✅
+## 3.7 Deactivation, and owner-initiated closure ✅
+
+Two account-level states, set by two different people, meaning two different
+things. **Deactivation** is done *to* an account by an admin and locks it out.
+**Closure** is asked for *by* its owner, blocks writes, and can be taken back
+by the person who asked (ADR-042).
+
+### Deactivation ✅
 
 v1's self-service deactivation (100-year ban via Supabase — v1 ADR-007) has no
 SWA equivalent, so v2 inverts it into an **admin control**:
@@ -204,7 +213,62 @@ SWA equivalent, so v2 inverts it into an **admin control**:
   also remove it in SWA role management (§3.3) — the 403-on-deactivated check
   runs before any role check, so a deactivated admin is locked out of the API
   either way.
-- Self-service "delete my account" is 🔜 deferred: the account page links
-  `/.auth/purge/{provider}` (SWA-side consent purge) and support contact;
-  a user-initiated deactivation endpoint may be added later without design
-  change (it is the same flag, set by self instead of admin).
+### Owner-initiated closure ✅ (ADR-042, built 2026-08-08)
+
+Self-service closure is **no longer deferred**. `/account` exists, and from it
+an owner asks to close their own account and takes the request back.
+
+- **The flag is `profiles.deletionRequestedAt`** (§2.3): an ISO 8601 timestamp,
+  or `null`. Set by `POST /api/account/closure`, cleared by
+  `DELETE /api/account/closure` (`api/Functions/AccountFunctions.cs`). Both act
+  only on the caller's own account — the id comes from `x-ms-client-principal`,
+  never from a body (§3.4) — and both also fan out over the caller's listings
+  (§2.2.1: `published → closed`, `pending_review → draft`; cancel restores only
+  `closed → paused`).
+- **`ProfileService.RequireWritableAsync` = `RequireActiveAsync` + refuse a
+  closing account**, with `403 {"error":"deletion_requested"}`. Layered on the
+  older guard, so a deactivated account is still refused *as deactivated*
+  whatever else is true of it. **Nine write endpoints** call it in place of
+  `RequireActiveAsync`: create, details, status, photo upload, declined,
+  pricing, availability (`api/Functions/HostFunctions.cs`), plus import start
+  and import cancel (`api/Functions/ImportFunctions.cs`).
+- **Reads keep `RequireActiveAsync`.** This is the difference between "your
+  account is closing" and "you are locked out": the owner can still see the
+  portfolio that is closing and the states its listings have moved to, but
+  cannot create or edit. `GET /api/me` is unaffected either way — `MeFunction`
+  calls `BootstrapAsync` directly and passes through neither guard.
+- **The closure endpoints themselves use `RequireActiveAsync`, deliberately.**
+  Guarding them with `RequireWritableAsync` would make cancelling a write that
+  a closing account cannot perform — the request would be irreversible by the
+  one person who made it, and the only way back would be an admin path that
+  does not exist. The rule is narrow and load-bearing: **the way out is never
+  behind the guard the way in switched on.**
+- **`RequireAdminAsync` now layers on `RequireWritableAsync`**, so the refusals
+  run in one order: `401` anon → `403` deactivated → `403` closing → `403` not
+  an admin. A staff member who has asked to close their own account therefore
+  loses the **entire** admin surface, reads included (`staff/review-queue`,
+  `staff/users`, `staff/properties`, `staff/properties/{id}`) — not approve,
+  not reject, not publish, not deactivating somebody else. Product-owner
+  decision, 2026-08-08: *"Closed is closed, don't want surprises for admin acc
+  closures which are the most critical accounts."*
+
+  **Note the asymmetry with owners, and that it is intentional.** A closing
+  owner keeps their reads because the portfolio and the cancel button are
+  theirs to see. The admin surface shows *other people's* homes and *other
+  people's* accounts, none of which is theirs to read on the way out — and half
+  a moderation console, a queue you can open but not act on, is exactly the
+  surprise the decision names. `components/admin/RequireAdmin.tsx` tells a
+  closing admin so, rather than rendering a console whose every call 403s.
+  The way back is untouched: `DELETE /api/account/closure` sits on
+  `RequireActiveAsync`, so cancelling restores the whole surface.
+
+**Still deferred: hard deletion.** This section's "records are kept — never
+deleted" is unchanged, and **no endpoint deletes a profile**. A closure request
+is a signal: it appears against the person in the admin users tab (§4.5,
+`AdminUser.deletionRequestedAt`) with no action attached, and an admin acts out
+of band. Reversing "never deleted" is a decision, not an endpoint, and belongs
+to its own ADR (ADR-042 consequences).
+
+- The account page also links `/.auth/purge/{provider}` (the SWA-side consent
+  purge) and support contact. It is described there as revoking the sign-in
+  connection, **not** as a delete — it removes nothing from Cosmos.

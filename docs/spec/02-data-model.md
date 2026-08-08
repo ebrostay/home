@@ -26,7 +26,7 @@ across all containers) → eight containers:
 | Container | Partition key | One document per | Writers (via API only) |
 | --- | --- | --- | --- |
 | `properties` | `/id` | listing (photos + availability + nearby **embedded**) | host (own, pre-publish states), admin |
-| `profiles` | `/id` | signed-in user (bootstrapped, §3.6) | the system (bootstrap), admin (deactivation) |
+| `profiles` | `/id` | signed-in user (bootstrapped, §3.6) | the system (bootstrap), admin (deactivation), the owner (their own closure flag — §3.7, ADR-042) |
 | `bookingRequests` | `/propertyId` | logged booking request | booking function (insert), admin (status) |
 | `inquiries` | `/id` | contact-form inquiry | anyone incl. anonymous (insert), admin (read) |
 | `nearbyCandidates` | `/cell` | cached Overpass answer for one rounded cell + group | the candidate lookup (§2.2.5, ADR-028) |
@@ -228,7 +228,9 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
 ```
 
 **Public projection:** anonymous/`GET /api/properties*` responses include only
-`status: "published"` documents and **strip** `reviewNote`, `hostId`, and
+documents `PublicStatus.IsPublic` accepts — `published` **and** `closed`
+(§2.2.1 "the three gates"; `closed` per ADR-042), never `status: "published"`
+alone — and **strip** `reviewNote`, `hostId`, and
 `availability[].note` / `availability[].holdExpiresAt` — the public
 availability shape is date ranges only (`{start, end}` pairs), never user
 identifiers or notes. This resolves v1's `availability_blocks.user_id`/`note`
@@ -280,13 +282,21 @@ summary point falls back to the door rounded to 3 decimal places, and the
 detail page's whole "Where you'll be" section (map, ranges, your-places)
 disappears rather than showing something less precise than a real band.
 
-### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025)
+### 2.2.1 Property status lifecycle ✅ (ADR-014, `paused` per ADR-024, edit split per ADR-025, `closed` per ADR-042)
+
+**Six statuses:** `draft`, `pending_review`, `rejected`, `published`, `paused`,
+`closed`.
 
 ```
 draft ──submit──▶ pending_review ──approve──▶ published ──pause──▶ paused
   ▲                    │                          ▲                  │
   │                 reject(note)                  └───── reopen ─────┘
   └──edit/resubmit── rejected
+
+account closure (ADR-042) — written ONLY by /api/account/closure:
+
+  pending_review ──request──▶ draft
+  published ─────request──▶ closed ──cancel, or admin pause──▶ paused
 ```
 
 | Transition | Who | Notes |
@@ -299,11 +309,55 @@ draft ──submit──▶ pending_review ──approve──▶ published ─�
 | `published` → `pending_review` | host (own), on any **content** edit | Edited listings re-enter the review queue and are **not public** until re-approved (locked decision: "new/edited listings … only go public after approval"). **Operational** edits — price, deposit, bills policy + cap, `minStayMonths`, and the availability calendar — do **not** trigger this and leave `status` untouched (ADR-025). Keeping the prior version live during a content review is an open refinement (OD-5, §5). |
 | `published` → `paused` | host (own) or admin | Closed to new requests and invisible in search; the listing and its history are kept. Admin may also pause as a takedown. **Narrowed from "any → `paused`" (ADR-027):** paired with the reopen row below, pausing a `draft` and then reopening it would publish a listing no reviewer ever saw. Admins keep the any → any row. |
 | `paused` → `published` | host (own) or admin | "Reopen". No re-review: the listing was already approved and paused changes nothing about it. An **edit** while paused follows the normal rule and goes back to `pending_review`. |
+| `published` → `closed` | **`POST /api/account/closure` only** — never a host and never an admin, directly | The owner asked to close their account (ADR-042). `published` is the only status the public list can see, so it is the only one that has to move. `closed` stays **public**: a guest mid-stay must not watch the page disappear. `AccountClosure.OnRequest` (`api/Models/AccountModels.cs`). |
+| `pending_review` → `draft` | **`POST /api/account/closure` only** | Withdrawn from the queue by the same request, so no reviewer can approve a home for a departing owner. The owner resubmits (and re-passes the completeness checks) if they cancel. `paused`, `draft` and `rejected` are left alone — they are already invisible, and moving `paused` to `closed` would make it *more* visible. |
+| `closed` → `paused` | the owner's `DELETE /api/account/closure`, or **admin** via `PUT /api/staff/properties/{id}/status` | Cancelling restores **only what moved**, and lands it in `paused`, not `published` — nothing returns to search without a deliberate reopen (ADR-042). `AccountClosure.OnCancel`; the admin half is `AdminValidation.Pausable = ["published", "closed"]` (`api/Models/AdminModels.cs`), which exists because deactivating a closing owner would otherwise leave a public home no endpoint in the product could move. |
+| `closed` → `rejected` | **admin only** | Takedown (fraud, a legal request) is not less urgent because the owner is leaving. `AdminValidation.Rejectable` carries `closed` alongside `pending_review`/`published`/`paused`. |
+| `closed` → `pending_review` | host (own), on a **content** edit | The `published` rule above, applied to the other public status: `ListingVisibility.ReEntersReview` carries `closed`. Normally unreachable — a closing owner is write-blocked (§3.7) — but the closure fan-out writes listings first and the profile flag last, so *(listings `closed`, flag unset)* is what any failure in between leaves behind, and in that window the owner is fully writable and holds a live listing. |
 | any → any | **admin** | Admins may edit any listing directly without re-review (the reviewer needs no reviewer). |
 
-`draft`/`pending_review`/`rejected`/`paused` documents are visible only to
-their host and to admins. There is no `is_published` boolean (v1 §4.2) —
-`status` is the single source of visibility.
+**An owner can never set `closed`, and can never leave it.**
+`HostValidation.OwnerStatuses` (`api/Models/HostWrites.cs`) is
+`["paused", "published", "pending_review"]` — `closed` is deliberately not in
+it, in either direction: an owner cannot close a listing without closing their
+account, and cannot pause or reopen one that a closure moved. It is the first
+status in v2 an owner cannot set. That exclusion is precisely *why* the admin
+`closed → paused` row above had to exist: without it, an owner deactivated
+mid-closure had a public listing and no way out of it, since their own
+`DELETE /api/account/closure` is refused once `isDeactivated` is set.
+
+`draft`, `pending_review` and `rejected` documents are visible only to their
+host and to admins. **The old enumeration stopped there and it was wrong by
+omission**: `paused` is only *nearly* private — its listing page is not public,
+but its **route** endpoints still answer anyone — and `closed` is public
+outright. See the three gates below before writing a fourth. There is no
+`is_published` boolean (v1 §4.2) — `status` is the single source of
+visibility.
+
+#### Who may see a listing: the three gates ⚠️
+
+**Adding a status? Consider it against all three of these, not one.** They are
+not the same set, the differences are deliberate, and the drift between them
+has been a bug three times (2026-08-01, and twice on 2026-08-08 during the
+ADR-042 build). Each lives in code, is named, and is cited by the guards that
+use it.
+
+| Gate | Statuses | Who asks | Where |
+| --- | --- | --- | --- |
+| `PublicStatus.IsPublic` | `published`, `closed` | the public list (`GET /api/properties`) and the public detail (`GET /api/properties/{id}`) | `api/Models/AccountModels.cs`, called at `api/Functions/PropertiesFunctions.cs:29` and `:89` |
+| `ListingVisibility.ForRoutes` | `published`, `paused`, `closed` | the anonymous route endpoints (`PropertyNearbyRoute`, `PropertyPlaceRoute`) | `api/Models/ListingVisibility.cs` |
+| `ListingVisibility.ReEntersReview` | `published`, `paused`, `closed` | a **write** rule, not a visibility one: does saving content send this listing back to the queue? | `api/Models/ListingVisibility.cs` |
+
+- **`ForRoutes` is deliberately broader than `IsPublic`.** `paused` belongs
+  there and not here: a guest who already holds the link — or a map tile
+  fetched moments before the owner paused it — should not watch the routes
+  break. The two must never collapse into one call.
+- **`ReEntersReview` is not a visibility gate at all**, but it enumerates the
+  same three statuses and was missed once. Anything publicly visible that an
+  owner can still edit has to be in it, or the ADR-025/ADR-030 back door
+  reopens: a live listing edited without re-review.
+- Everything not in a gate 404s for a stranger — never 401 or 403 — except to
+  the owner previewing their own listing (ADR-029, `ListingView.OwnerPreview`).
 
 ### 2.2.2 Embedded photos ✅
 
@@ -727,10 +781,26 @@ Bootstrapped on first sign-in (§3.6). `id` = the stable SWA principal
   "provider": "ebrostay",        // identityProvider: ebrostay | ebrostay-msa
   "name": "Jane Doe",            // userDetails at first sign-in (display only)
   "isDeactivated": false,        // admin-set; §3.7 — functions reject when true
+  "deletionRequestedAt": null,   // ISO 8601, or null. Owner-set through
+                                 //   /api/account/closure (§3.7, ADR-042);
+                                 //   null = no request. Blocks writes.
   "createdAt": "2026-07-19T10:00:00Z",
   "lastSeenAt": "2026-07-19T10:00:00Z"
 }
 ```
+
+**`deletionRequestedAt` is a timestamp, not a boolean, because it is both the
+gate and the audit record.** `AccountClosure.BlocksWrites` only asks whether it
+is null, so a boolean would serve the guard — but the same field is the only
+record that the request was ever made, and *when*. The admin users tab shows
+the date (§4.5), because how long a request has waited is the whole of what an
+admin needs in order to act on it; a `true` would say a thing was asked and
+never say when. Same shape as the review queue's `submittedAt`.
+
+**It is not `isDeactivated`, and must not be folded into it.** The two mean
+opposite things about who is in control: deactivation is done *to* you by an
+admin and locks you out; a closure request is made *by* you and has to leave
+you able to reach the page that cancels it (§3.7).
 
 No `isAdmin`/`isOwner` flags: **roles live in SWA role management** (§3.2),
 never in the database — a profile document cannot grant privileges. "Host" is

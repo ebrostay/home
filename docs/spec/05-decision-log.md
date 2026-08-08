@@ -1,4 +1,4 @@
-# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-041)
+# Ebrostay v2 Target Spec — §5 Decision Log (ADR-011 … ADR-042)
 
 > Target: branch `redesign/v2`, locked 2026-07-19 (product owner: Raphael).
 > Continues the v1 log (v1 spec §11, ADR-001–010 — on `main`; the v1→v2 disposition map is in [§8.5](08-carried-v1-rules.md)) with the same format: **Title · Status · Context · Decision · Rationale · Consequences**. Status tags: ✅ decided/locked · 🔜 planned · 🗑️ not carried.
@@ -49,6 +49,7 @@ and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
 | ADR-039 | "Your places" is measured, not estimated, and the browser keeps it | ✅ locked & built |
 | ADR-040 | One map, one travel toggle, one selection | ✅ locked & built |
 | ADR-041 | Address precision: the street-band design | ✅ locked |
+| ADR-042 | Closing an account is a reversible request, and `closed` is a public state | ✅ locked & built |
 
 ---
 
@@ -3498,6 +3499,146 @@ geometry, and its quota is already spent on routing.
 **Consequence accepted.** A listing can now be published-blocked by a third
 party being down. That is the right way round: the alternative was publishing
 homes with no map and no one owning the problem.
+
+---
+
+## ADR-042 — Closing an account is a reversible request, and `closed` is a public state
+
+**Date:** 2026-08-08 · **Status:** ✅ locked and built 2026-08-08
+(product owner: Raphael) ·
+**Extends ADR-024** (the pause/reopen pairing) with a sixth status neither
+ADR-014 nor ADR-024 anticipated · **Amends §3.7**, which recorded
+self-service deletion as deferred ·
+**Source:** `docs/superpowers/specs/2026-08-08-account-page-design.md`.
+
+### Context
+
+`components/site/AuthMenu.tsx:79` has linked every signed-in user to
+`/account` since the menu existed. **The route never did.**
+`staticwebapp.config.json` gates `/es/account/*` and `/en/account/*` to
+authenticated users, so the visitor passed the auth check and landed on the
+404 page. Opening your own account menu and clicking the first item was a dead
+end, for every user, for the whole of v2. It is the second half of the bug
+ADR-037 fixed on `/about`'s owner CTA, and it was recorded in
+`docs/BACKLOG.md` from 2026-08-01 with the honest interim ("hide the menu
+entry") never taken.
+
+§3.7 already assigned this page its work — it is where
+`/.auth/purge/{provider}` and support contact were meant to live — and §3.7's
+deferred "self-service deletion" was the other thing the product owner asked
+for in the same session.
+
+### Decision — a request, not a deletion
+
+An owner asks to close their account. `profiles.deletionRequestedAt` (§2.3) is
+stamped, their listings move (§2.2.1), and every write endpoint refuses them
+(`RequireWritableAsync`, §3.7). **Nothing is deleted, and the owner can take
+the whole thing back** with `DELETE /api/account/closure`. An admin sees the
+request in the users tab and acts out of band.
+
+1. **A timestamp, not a boolean.** The guard only asks whether it is null, but
+   the field is also the only record that a request was made and *when* — the
+   thing an admin needs in order to act on it. Same shape as the queue's
+   `submittedAt`.
+2. **Not `isDeactivated` reused.** The two mean opposite things about who
+   holds the controls: deactivation is done to you and locks you out; a
+   closure is made by you and must leave you able to reach the page that
+   cancels it.
+3. **`closed` is publicly visible, not hidden.** This is the decision inside
+   the decision. A home whose guest is mid-stay must not vanish from the site
+   the moment its owner asks to leave — the guest would read a live stay's
+   listing 404ing as the operator disappearing, which is precisely the fear a
+   mid-term rental is trying not to trigger. So `closed` reads as public to
+   `PublicStatus.IsPublic` and to `ListingVisibility.ForRoutes`, and only
+   `published` had to move on a request; `paused`, `draft` and `rejected` are
+   already invisible, and moving `paused` to `closed` would make it *more*
+   visible, not less.
+4. **`pending_review → draft` on the same request.** No reviewer should be
+   able to approve a home for an owner who is leaving. The owner resubmits if
+   they cancel — and resubmitting re-runs the completeness checks
+   (`HostValidation.CheckStatus`), which this endpoint has no business
+   bypassing.
+5. **Cancelling lands listings in `paused`, and restores only what moved.**
+   Two reasons, and the second is a guard, not a preference. Nothing returns
+   to search without a deliberate act by its owner — the ADR-024 reopen is
+   still the only door into `published`. And a blanket "restore everything to
+   `paused`" would push a `draft` into `paused`, from which `paused →
+   published` is an owner action needing no review: a listing published that
+   no reviewer ever read. That is exactly the trap ADR-027 narrowed the
+   `→ paused` transition to prevent (§2.2.1). Restoring only the listings the
+   closure actually moved keeps that guard intact.
+6. **An owner cannot set `closed`, and cannot leave it.**
+   `HostValidation.OwnerStatuses` excludes it in both directions. It is the
+   first status in v2 an owner cannot set. That is why an **admin** path had
+   to exist: `AdminValidation.Pausable` carries `closed`, so
+   `PUT /api/staff/properties/{id}/status` can pause one. Without it,
+   deactivating a closing owner left a public home that no endpoint in the
+   product could move — their own `DELETE /api/account/closure` is refused
+   once `isDeactivated` is set. `closed` is in `AdminValidation.Rejectable`
+   for the same shape of reason: a takedown is not less urgent because the
+   owner is leaving. It is **not** in `Settable` for `published` — putting a
+   departing owner's home back into search is a second deliberate act from
+   `paused`, never a side effect of a takedown being reversed.
+7. **A closing admin loses the whole admin surface, reads included.**
+   `RequireAdminAsync` now layers on `RequireWritableAsync`, so the refusals
+   are one ordered chain: 401 anon → 403 deactivated → 403 closing → 403 not
+   an admin. Product owner, 2026-08-08: *"Closed is closed, don't want
+   surprises for admin acc closures which are the most critical accounts."*
+   Note the deliberate asymmetry with owners, whose **reads deliberately still
+   work**: an owner's portfolio and cancel button are theirs to see, whereas
+   the admin surface is other people's homes and other people's accounts, none
+   of it theirs to read on the way out — and half a moderation console, a
+   queue you can open but not act on, is the surprise the decision names. The
+   way back stays open: the closure endpoints sit on `RequireActiveAsync`, not
+   on either stricter guard, because guarding the cancel with the guard the
+   request switched on would make the request irreversible by the person who
+   made it.
+
+### What is deliberately not built
+
+- **Hard deletion.** §3.7's "records are kept — never deleted" (v1 ADR-007
+  intent) is unchanged, and no endpoint deletes a profile. Reversing that is a
+  decision, not an endpoint, and gets its own ADR. The admin's "decide how to
+  proceed" step is left unbuilt on purpose; the product owner will refine the
+  flow later.
+- **Invoices or payments blocking a closure.** v2 has no invoice or payment
+  concept at all — the Stripe path was not carried (ADR-016). There is nothing
+  to query, so the rule is recorded here and dropped from the build.
+- **A guest bookings or stays list on `/account`.** `bookingRequests` is empty
+  until `POST /api/booking-requests` exists (§4.3), and tenant-assigned stays
+  are explicitly not carried into v2 (§2.2.3).
+
+### Consequences
+
+- **A closure request has no terminal action.** It will sit visible in the
+  users tab, unresolved, until the deferred hard-delete ADR lands. That is
+  intended and it is also the honest cost: the product currently offers a
+  person a way to ask to leave and no way to finish leaving.
+- **The fan-out is not atomic across documents.** Listings are written first
+  and the profile flag last, deliberately: an interrupted run leaves an
+  account still open with some listings already moved, which the owner can fix
+  by pressing the button again, because both maps are pure functions of the
+  current status and therefore idempotent. The other order would leave an
+  account closing with listings still public, which nothing retries. The cost
+  is a real intermediate state — *listings `closed`, flag unset* — in which
+  the owner is fully writable and holds a live listing, which is why `closed`
+  had to join `ListingVisibility.ReEntersReview` (§2.2.1). A listing the
+  fan-out could not deserialize (ADR-032's legacy plain-string `copy`) is
+  skipped rather than failing the whole request, and the count comes back as
+  `unreadableListings` — a 200 does not by itself prove every listing moved.
+- **`closed` is public, so anything reasoning about "is this listing live"
+  must consider it.** Three gates answer that question and they are not the
+  same set; §2.2.1 lists them, and adding a seventh status means checking all
+  three. Three separate gates had to be found and corrected during this build
+  alone.
+- **When a booking endpoint ships it must refuse a `closed` listing.** Nothing
+  can over-book one today only because no such endpoint exists (§2.4).
+- **The account menu is no longer a dead end.** With `/admin` shipped the same
+  day, both of its links resolve; the backlog item recorded on 2026-08-01 is
+  closed.
+- `staticwebapp.config.json` gained the exact `/es/account` and `/en/account`
+  paths alongside the wildcards, matching what `/admin` got the same day.
+  Cosmetic either way per §3.5 — the functions are the boundary.
 
 ---
 

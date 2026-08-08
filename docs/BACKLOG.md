@@ -372,27 +372,37 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   is "on borrowed time" per Microsoft's deprecation notice, and `signin.css`
   is written to lose gracefully — keep it that way. The now-redundant
   Microsoft tile on the hosted page is a cosmetic call (ADR-036).
-- **[P][S]** **Self-service deactivation** — deferred by spec §3.7: the
-  account page links `/.auth/purge/{provider}` and support; a user-initiated
-  deactivation endpoint is the same flag set by self, addable without design
-  change.
+- ~~**[P][S]** **Self-service deactivation**~~ ✅ **Answered 2026-08-08 by
+  ADR-042 — with a different mechanism than this line assumed.** The plan here
+  was "a user-initiated deactivation endpoint is the same flag set by self".
+  ADR-042 rejected that: `isDeactivated` is done *to* an account by an admin
+  and locks it out, while a closure is asked for *by* its owner and must leave
+  them able to reach the page that cancels it. So closure is its own field,
+  `profiles.deletionRequestedAt`, its own guard (`RequireWritableAsync`), and
+  its own pair of endpoints. **What is still open is hard deletion** — §3.7's
+  "records are kept, never deleted" is unchanged, no endpoint deletes a
+  profile, and a closure request therefore has no terminal action until that
+  gets its own ADR.
 - ~~**[P][S]** **`/about`'s "List my home" CTA is a 404**~~ ✅ **Fixed
   2026-08-01:** it linked to `/account`, a route that has never existed, so
   the one CTA aimed at owners on that page was dead for the whole of v2. Now
   `/host`, which answers it in either state — the owner pitch signed out, the
   portfolio signed in (ADR-037).
-- **[B][S]** **The account menu points at two pages that do not exist**
-  (found 2026-08-01 while fixing the CTA above). `components/site/AuthMenu.tsx`
-  links `/account` (line 79) and, for admins, `/admin` (line 83). Neither
-  route is built, and both are gated in `staticwebapp.config.json`, so a
-  signed-in user who opens their own menu and clicks "Account" passes the auth
-  check and lands on the 404 page. Unlike the `/about` CTA these cannot be
-  repointed — they want the pages that were always intended. `/admin` is the
-  **Admin surface** item at the top of this file; `/account` is spec §3.7,
-  which already assumes it exists (it is where `/.auth/purge/{provider}` and
-  support are meant to live — see **Self-service deactivation** below).
-  Until one of them ships, the honest interim is to hide the menu entry
-  rather than offer a link to a 404.
+- ~~**[B][S]** **The account menu points at two pages that do not exist**~~
+  ✅ **Fixed 2026-08-08: both pages shipped.** (Found 2026-08-01 while fixing
+  the CTA above.) `components/site/AuthMenu.tsx` links `/account` and, for
+  admins, `/admin`; neither route was built, and both are gated in
+  `staticwebapp.config.json`, so a signed-in user who opened their own menu and
+  clicked "Account" passed the auth check and landed on the 404 page — for the
+  whole of v2. Unlike the `/about` CTA these could not be repointed; they
+  wanted the pages that were always intended, and both now exist.
+  **`/admin`** is the admin console (review queue, properties, users — spec
+  §4.5, built 2026-08-08); the **Admin surface** item at the top of this file
+  keeps only its queued per-ADR obligations. **`/account`** is spec §3.7's
+  page: identity, the `/.auth/purge/{provider}` link, support contact, and
+  owner-initiated account closure (**ADR-042** — see **Self-service
+  deactivation** below, which that ADR answers with a different mechanism).
+  The interim never had to be taken.
 
 ## Legal & content
 - **[L][S]** Privacy: lawyer to confirm the data-location wording — the policy

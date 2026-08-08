@@ -27,7 +27,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/components/site/AuthProvider";
 import { RequireSignedIn } from "@/components/account/RequireSignedIn";
-import { requestAccountClosure, cancelAccountClosure } from "@/lib/api";
+import {
+  requestAccountClosure,
+  cancelAccountClosure,
+  type AccountClosureState,
+} from "@/lib/api";
 import { providerLabel, tableDate } from "@/lib/admin";
 import { PROVIDER } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
@@ -90,13 +94,27 @@ function AccountBody() {
     document.getElementById(actionId)?.focus();
   });
 
-  const run = async (action: () => Promise<unknown>) => {
+  // `failed` is "this did not fully happen", which is NOT the same as "the
+  // call threw". The fan-out skips any listing it cannot deserialize (ADR-032's
+  // legacy plain-string `copy`) rather than losing the owner every other one,
+  // and then answers 200 with `unreadableListings`. Treating any non-throw as
+  // success made that count invisible: a `published` home stayed in search, the
+  // owner was write-blocked and could no longer pause it, and the page said
+  // "Your account is closing" and nothing else. So a partial 200 shows the same
+  // sentence a 502 does — it is the one already written for exactly this state
+  // ("part of the change may not have gone through… press the button again"),
+  // and pressing again is safe because both maps are idempotent.
+  const run = async (action: () => Promise<AccountClosureState>) => {
     setBusy(true);
     setFailed(false);
     try {
-      await action();
+      const state = await action();
       await refresh();
       setConfirming(false);
+      // `?? 0`, not a truthiness test: an API older than the field omits the
+      // key, and `undefined > 0` is false either way — this only spells out
+      // that a missing count means "none", never "unknown, assume trouble".
+      if ((state.unreadableListings ?? 0) > 0) setFailed(true);
     } catch {
       setFailed(true);
     } finally {

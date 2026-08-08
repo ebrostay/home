@@ -30,22 +30,33 @@ import { currentPath, signInPath } from "@/lib/auth";
 //                     closure can be cancelled, and says so: cancelling is
 //                     what puts the console back (pinned by
 //                     `CancellingGivesTheAdminSurfaceBack` on the API side).
+//   admin, but      → a plain panel carrying `auth.deactivated` — the site's
+//   deactivated       ONE sentence for this fact, the same one the header menu
+//                     and the account page show, deliberately not a second
+//                     wording invented here. `RequireActiveAsync` refuses a
+//                     deactivated principal before anything else (§3.7), so
+//                     this session fails every admin call exactly like the
+//                     closing one, and rendering the console left the person
+//                     reading "could not be read. Reload the page." on all
+//                     nine panels, with reloading unable to help.
 //
-// Deliberately NOT a fourth answer for `me.isDeactivated`: that flag gates
-// nothing here today (AuthMenu renders the same "Admin panel" link either
-// way, only adding a passive banner), and deactivation is the STRONGER,
-// admin-imposed state — `RequireActiveAsync` refuses it before the closure
-// check ever runs. Showing the closing panel to an admin who is also
-// deactivated would promise that cancelling the closure "brings the console
-// back", which would be false for them: deactivation would still refuse
-// every call. So the closing panel only fires when deactivation is not also
-// in play, leaving the deactivated case exactly as unchanged as this
-// component already leaves it — a pre-existing gap, not one this change
-// should paper over with an incorrect promise.
+//                     It promises nothing about getting the console back:
+//                     nothing this person can press does that. Deactivation is
+//                     admin-imposed and only an admin lifts it, which is why
+//                     the sentence ends in "contact us" rather than in a link.
+//
+// Deactivation is checked FIRST, and the order is the decision. It is the
+// stronger, admin-imposed state, and it is the one the API refuses on first —
+// so an admin who is both deactivated and closing must get this panel and not
+// the closing one, whose promise that cancelling "brings the console back"
+// would be false for them: deactivation would still refuse every call.
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { me, loading } = useAuth();
   const router = useRouter();
   const t = useTranslations("admin.gate");
+  // The deactivation sentence is shared with the header menu and `/account`
+  // (§8): one fact about the account, told once, in one form of words.
+  const tAuth = useTranslations("auth");
 
   useEffect(() => {
     if (!loading && !me.authenticated) router.replace(signInPath(currentPath()));
@@ -72,8 +83,23 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Deactivation first — see the block comment above. It is the state the API
+  // refuses on before it looks at anything else, so it is also the state this
+  // gate must name first, whatever else is true of the account.
+  if (me.isDeactivated) {
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-16">
+        <h1 className="text-2xl font-semibold text-ink">{t("deactivatedTitle")}</h1>
+        <p className="mt-3 text-sm leading-relaxed text-body">{tAuth("deactivated")}</p>
+      </main>
+    );
+  }
+
   // Order matters (see the block comment above): deactivation wins, so this
-  // only fires for an admin who is closing and NOT also deactivated.
+  // only fires for an admin who is closing and NOT also deactivated. The
+  // second clause is redundant with the branch above and kept anyway — it is
+  // what the promise in `closingBody` depends on, and it should not be
+  // possible to break by moving a block.
   if (me.deletionRequestedAt && !me.isDeactivated) {
     return (
       <main className="mx-auto max-w-2xl px-6 py-16">

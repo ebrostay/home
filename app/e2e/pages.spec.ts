@@ -898,6 +898,116 @@ test("/en/account — a half-applied closure says so, and pressing again finishe
   expect(attempts, "the second press should reach the API").toBe(2);
 });
 
+// The OTHER half-applied closure, and the one that answers 200. The fan-out
+// skips a listing it cannot deserialize (ADR-032's legacy plain-string `copy`)
+// rather than costing the owner every other listing they hold, and reports the
+// skip as `unreadableListings`. The page treated any non-throw as success, so
+// that count arrived and died: the owner read "Your account is closing", their
+// legacy home stayed `published` and in search, and — now write-blocked — they
+// could not pause it themselves or learn that they needed to.
+test("/en/account — a closure the API could not finish is not shown as a clean success", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  const REQUESTED_AT = "2026-08-08T12:00:00Z";
+  let closing = false;
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    }),
+  );
+
+  // 200, not an error — the flag IS set and one listing was left behind.
+  await page.route("**/api/account/closure", (route: Route) => {
+    closing = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        deletionRequestedAt: REQUESTED_AT,
+        unreadableListings: 1,
+      }),
+    });
+  });
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  await page.getByRole("button", { name: "Request closure" }).click();
+  await page.getByRole("button", { name: "Yes, request closure" }).click();
+
+  const main = page.locator("main");
+  // The closing face is correct — the flag really was written — but it must
+  // not stand alone. Scoped to <main>: Next mounts its own role="alert".
+  await expect(
+    page.getByRole("heading", { name: "Your account is closing" }),
+  ).toBeVisible();
+  await expect(main.getByRole("alert")).toContainText(
+    "Part of the change may not have gone through",
+  );
+});
+
+// The control for the case above: a count of zero is a clean closure and must
+// NOT raise the alert, or the sentence stops meaning anything.
+test("/en/account — a complete closure says nothing went wrong", async ({ page }) => {
+  await stubBackend(page);
+
+  const REQUESTED_AT = "2026-08-08T12:00:00Z";
+  let closing = false;
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    }),
+  );
+
+  await page.route("**/api/account/closure", (route: Route) => {
+    closing = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        deletionRequestedAt: REQUESTED_AT,
+        unreadableListings: 0,
+      }),
+    });
+  });
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  await page.getByRole("button", { name: "Request closure" }).click();
+  await page.getByRole("button", { name: "Yes, request closure" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Your account is closing" }),
+  ).toBeVisible();
+  await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
+});
+
+// The pre-decision copy has to match what closure actually does, because it is
+// the half a person reads while deciding whether to leave. `published` moves to
+// `closed`, and `closed` is in `PublicStatus.Public` (ADR-042 decision 3 — a
+// guest mid-stay must not watch the page disappear), so "taken out of search"
+// was the opposite of the truth and contradicted the page's own post-decision
+// sentence one button press later.
+test("/en/account — the closure offer describes what closure does", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  const main = page.locator("main");
+  await expect(main).toContainText(
+    "Your published homes stay visible but close to new requests",
+  );
+  await expect(main).not.toContainText("taken out of search");
+});
+
 // The silent dead end (§8): a deactivated owner mid-closure was shown "Your
 // account is closing" and an undo button, and every endpoint — including the
 // closure one, which is guarded by RequireActiveAsync — answers 403. Pressing
@@ -1027,33 +1137,48 @@ test("/en/admin — a closing admin is told so, and pointed at the undo", async 
 // The ordering decision itself, pinned rather than left as a code comment: an
 // admin who is BOTH closing and deactivated must NOT see the closing panel.
 // Deactivation is the stronger state and the one `RequireActiveAsync` checks
-// first, ahead of the closure check — so the closing panel's promise
-// ("cancel the closure and the console comes back") would be false for this
-// person, deactivation would still refuse every call. RequireAdmin leaves the
-// combination exactly as unhandled as it already leaves a deactivated,
-// non-closing admin: the console renders, same as it does today.
-test("/en/admin — a closing AND deactivated admin does not get the closing panel", async ({
-  page,
-}) => {
-  await stubBackend(page);
+// first, ahead of the closure check — so the closing panel's promise ("cancel
+// the closure and the console comes back") would be false for this person:
+// deactivation would still refuse every call. What they get instead is the
+// deactivation panel, carrying the site's one sentence for that fact.
+//
+// The console was the old answer here, and it was the wrong one: it rendered
+// in full and then every panel reported "could not be read. Reload the page.",
+// which is advice that can never work — the refusal is not transient.
+for (const closing of [true, false]) {
+  test(`/en/admin — a deactivated admin is told so, not handed a console that fails${
+    closing ? " (also closing)" : ""
+  }`, async ({ page }) => {
+    await stubBackend(page);
 
-  await page.route("**/api/me", (route: Route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...JSON.parse(fixture("me-admin.json")),
-        isDeactivated: true,
-        deletionRequestedAt: "2026-08-08T12:00:00Z",
+    await page.route("**/api/me", (route: Route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...JSON.parse(fixture("me-admin.json")),
+          isDeactivated: true,
+          deletionRequestedAt: closing ? "2026-08-08T12:00:00Z" : null,
+        }),
       }),
-    }),
-  );
+    );
 
-  await page.goto("/en/admin", { waitUntil: "networkidle" });
+    await page.goto("/en/admin", { waitUntil: "networkidle" });
 
-  const main = page.locator("main");
-  await expect(main).toContainText("Review queue");
-  await expect(main).not.toContainText("The admin console is unavailable");
-});
+    const main = page.locator("main");
+    await expect(main).toContainText(
+      "The admin console is unavailable while your account is deactivated",
+    );
+    await expect(main).toContainText("Your account is deactivated");
+    await expect(main).not.toContainText("Review queue");
+
+    // Never the closing panel, and never its promise — cancelling the closure
+    // would restore nothing while the deactivation stands.
+    await expect(main).not.toContainText("while your account is closing");
+    await expect(
+      main.getByRole("link", { name: "Go to your account to cancel the closure" }),
+    ).toHaveCount(0);
+  });
+}
 
 // The reported bug: signed out, the owner segment pointed at /about#hosts
 // while its matcher only knew /host, so the pill went blank. It is one href

@@ -3568,8 +3568,12 @@ request in the users tab and acts out of band.
    `→ paused` transition to prevent (§2.2.1). Restoring only the listings the
    closure actually moved keeps that guard intact.
 6. **An owner cannot set `closed`, and cannot leave it.**
-   `HostValidation.OwnerStatuses` excludes it in both directions. It is the
-   first status in v2 an owner cannot set. That is why an **admin** path had
+   Two different mechanisms, one per direction: `HostValidation.OwnerStatuses`
+   excludes it as a **target**, and the **current-status** clauses in
+   `HostValidation.CheckStatus` are what refuse every move out of it (see
+   §2.2.1 — adding `"closed"` to the array while trusting it to cover the
+   "from" side would accept it from any status). It is the first status in v2
+   an owner cannot set. That is why an **admin** path had
    to exist: `AdminValidation.Pausable` carries `closed`, so
    `PUT /api/staff/properties/{id}/status` can pause one. Without it,
    deactivating a closing owner left a public home that no endpoint in the
@@ -3592,7 +3596,12 @@ request in the users tab and acts out of band.
    way back stays open: the closure endpoints sit on `RequireActiveAsync`, not
    on either stricter guard, because guarding the cancel with the guard the
    request switched on would make the request irreversible by the person who
-   made it.
+   made it. The rule reaches past `/api/staff/*`: `GET /api/host/properties/{id}`
+   loads through `ListingVisibility.MayWrite`, which admits an admin to
+   anybody's listing, so it now applies `ListingVisibility.MayRead` — the same
+   predicate minus the admin's cross-account half once that admin is closing —
+   and answers 404. Reads a closing admin keeps: their **own** listings and
+   their own portfolio, exactly as any closing owner does.
 
 ### What is deliberately not built
 
@@ -3626,6 +3635,11 @@ request in the users tab and acts out of band.
   fan-out could not deserialize (ADR-032's legacy plain-string `copy`) is
   skipped rather than failing the whole request, and the count comes back as
   `unreadableListings` — a 200 does not by itself prove every listing moved.
+  The count is not decoration: `/account` reads it and, when it is above zero,
+  shows the same `account.error` sentence a 502 gets instead of the clean
+  "Your account is closing" face. Without that branch the API's honesty stopped
+  at the wire — the owner saw a success, a `published` home stayed in search,
+  and being write-blocked they could no longer pause it themselves.
 - **`closed` is public, so anything reasoning about "is this listing live"
   must consider it.** Three gates answer that question and they are not the
   same set; §2.2.1 lists them, and adding a seventh status means checking all

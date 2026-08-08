@@ -193,9 +193,31 @@ public class PropertyDoc
     public AvailabilityRange[] Availability { get; set; } = [];
 
     // The ADR-041 street band, derived from the stored pin — null until
-    // derivation succeeds (or after it fails, degrading to a rounded summary
-    // point and no public map until the next save or read retries).
+    // derivation succeeds, degrading to a rounded summary point and no public
+    // map. Cleared whenever the pin moves: a band from the old pin names the
+    // old street, and a wrong street is worse than no street.
+    //
+    // Nothing on a request path derives this any more. Overpass was measured
+    // at 8-9 s per query, three queries per derivation, `504` on two probes in
+    // three (2026-08-08) — on the owner's PUT that risked the 45 s SWA cap
+    // taking the whole save with it, and on the guest's GET it held the page
+    // (and so the map) for 32 s. Derivation now happens only where somebody is
+    // waiting for exactly it, and can retry: the reviewer's button.
     public StreetBand? Band { get; set; }
+
+    /// When derivation last ran for this document, successful or not. The
+    /// durable half of the repeat guard (SingleFlight is the in-process half):
+    /// it is what lets the review panel say "tried 3 minutes ago, Overpass was
+    /// down" instead of silently offering a button that does nothing new.
+    public string? BandAttemptedAt { get; set; }
+
+    /// The reviewer's tick (§4.5): a person confirmed this band draws the
+    /// right street, and draws it wide enough not to point at one door.
+    /// Required before publishing — `AdminValidation.CheckApprove`. Cleared
+    /// with the band itself whenever the pin moves, because a fresh band is a
+    /// fresh judgement.
+    public string? BandApprovedAt { get; set; }
+    public string? BandApprovedBy { get; set; }
 
     public string? CreatedAt { get; set; }
     public string? UpdatedAt { get; set; }

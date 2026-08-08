@@ -39,6 +39,7 @@ public class AdminFunctions(
     Database database,
     ProfileService profiles,
     PlatformSettings platform,
+    StreetBandService bands,
     ILogger<AdminFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -116,6 +117,7 @@ public class AdminFunctions(
             HostProjection.ToHostProperty(doc, DateTimeOffset.UtcNow, 0, null),
             HostProjection.ToPricing(doc, platform.CleaningFeeEur),
             HostProjection.ToListing(doc),
+            AdminProjection.ToBandReview(doc),
             doc.DeclinedSuggestions,
             owner,
             AdminProjection.ToPhotos(doc),
@@ -189,6 +191,60 @@ public class AdminFunctions(
     }
 
     // ------------------------------------------------------------------
+    // Deriving the band
+    // ------------------------------------------------------------------
+
+    // The one place in the product that calls Overpass on a request path, and
+    // the only one where that is defensible: a reviewer is sitting in front of
+    // this listing waiting for exactly this answer, and if it fails they can
+    // press the button again.
+    //
+    // It used to run on the owner's PUT and on every guest GET instead —
+    // measured 32.7 s for three queries on 2026-08-08, with `504` on two
+    // probes in three, against a 45 s SWA cap that would have taken the
+    // owner's whole save with it. Bounded now by StreetBandService's own 20 s
+    // deadline, and de-duplicated by its SingleFlight, so a double-click costs
+    // three queries and not six.
+    [Function("AdminPropertyBandDerive")]
+    public async Task<IActionResult> BandDerive(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "staff/properties/{id}/band")]
+        HttpRequest req,
+        string id)
+    {
+        var principal = ClientPrincipal.Parse(req);
+        var (profile, error) = await profiles.RequireAdminAsync(principal);
+        if (error is not null) return error;
+
+        var (doc, etag, loadError) = await LoadAsync(id);
+        if (loadError is not null) return loadError;
+
+        var band = await bands.DeriveAsync(
+            doc!.Id, doc.Lat, doc.Lng, req.HttpContext.RequestAborted);
+
+        // Stamped whether or not it worked. A failed attempt is the fact the
+        // panel needs most: it is the difference between "nobody has tried"
+        // and "Overpass was down a minute ago, give it a moment".
+        doc.BandAttemptedAt = DateTimeOffset.UtcNow.ToString("o");
+
+        if (band is not null)
+        {
+            doc.Band = band;
+            // A new band is a new judgement. Re-deriving after someone ticked
+            // the old one must not carry that tick forward — they confirmed a
+            // different line down a possibly different street.
+            doc.BandApprovedAt = null;
+            doc.BandApprovedBy = null;
+        }
+
+        logger.LogInformation(
+            "admin {AdminId} derived band for {PropertyId}: {Outcome}",
+            profile!.Id, doc.Id, band is null ? "failed" : "ok");
+
+        return await SaveAsync(doc, etag, () => new OkObjectResult(
+            AdminProjection.ToBandReview(doc)));
+    }
+
+    // ------------------------------------------------------------------
     // Deciding
     // ------------------------------------------------------------------
 
@@ -205,15 +261,28 @@ public class AdminFunctions(
         var (profile, error) = await profiles.RequireAdminAsync(principal);
         if (error is not null) return error;
 
+        // The body carries the reviewer's band tick. Absent or malformed is
+        // treated as "not confirmed" rather than as a bad request: an old
+        // client that posts nothing must fail closed on this precondition, not
+        // publish a listing whose band no person has read.
+        var approval = await ReadJsonAsync<AdminApproval>(req);
+
         var (doc, etag, loadError) = await LoadAsync(id);
         if (loadError is not null) return loadError;
 
-        var invalid = AdminValidation.CheckApprove(doc!);
+        var invalid = AdminValidation.CheckApprove(
+            doc!, approval?.BandConfirmed ?? false);
         if (invalid is not null) return Conflict(invalid);
 
         doc!.Status = "published";
         // The note answered "why was this rejected". It has been.
         doc.ReviewNote = null;
+        // Who read the band, and when. Held on the document rather than only
+        // in the log line below because the panel shows it back on the next
+        // visit: a reviewer returning to a listing should see that the band
+        // was confirmed without going to Application Insights to find out.
+        doc.BandApprovedAt = DateTimeOffset.UtcNow.ToString("o");
+        doc.BandApprovedBy = profile!.Id;
         // `Reference` is deliberately NOT minted here. PropertyDoc says it is
         // "assigned when the listing becomes real", and nothing in the
         // codebase assigns it — approval is the obvious place, but the scheme

@@ -22,7 +22,6 @@ public class HostFunctions(
     PhotoPipeline pipeline,
     OrsClient ors,
     RouteCache cache,
-    StreetBandService bands,
     ILogger<HostFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -271,11 +270,28 @@ public class HostFunctions(
         doc.Imported = HostValidation.KnownImported(update.Imported);
         doc.ImportSource = update.ImportSource;
 
-        // The band derives from the pin, so it re-derives exactly when the
-        // pin moves — or when a legacy document has none yet.
-        if (pinMoved || doc.Band is null)
-            doc.Band = await bands.DeriveAsync(
-                doc.Id, update.Lat, update.Lng, req.HttpContext.RequestAborted);
+        // The band derives from the pin, so a moved pin invalidates it — but
+        // the derivation itself does NOT happen here any more.
+        //
+        // It used to. Three Overpass queries, 8-9 s each and `504` on two
+        // probes in three (measured 2026-08-08), sat between the owner
+        // pressing Save and this document being written 200 lines below. SWA
+        // kills any /api request at 45 s (ADR-033 Decision 1), so a slow
+        // Overpass did not cost the owner a map — it cost them the entire
+        // save, photos and price and text with it, with nothing said. And
+        // `pinMoved` is a 0.000001° threshold, about 11 cm, so every nudge of
+        // the pin during a first listing paid it again.
+        //
+        // Clearing is still right, and it is cheap: a band from the old pin
+        // names the old street. The reviewer derives the new one, looks at it
+        // and confirms it, which is the only point anybody ever actually
+        // reads this thing before a guest does.
+        if (pinMoved)
+        {
+            doc.Band = null;
+            doc.BandApprovedAt = null;
+            doc.BandApprovedBy = null;
+        }
 
         // Position comes from the array's order, not from a number the client
         // sends: an index the client owns can arrive with gaps or repeats, and

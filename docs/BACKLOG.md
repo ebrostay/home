@@ -220,6 +220,21 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   yet (research rate-limited mid-run).
 
 ## Infra & ops
+- **[O][L]** **Self-host the OSM query service behind `StreetBandService` (and
+  `OverpassClient`).** Both call `https://overpass-api.de`, the free community
+  endpoint run by volunteers with no availability promise. Measured 2026-08-08
+  against listing `movera0`: three sequential queries, **8–9 s each**, and
+  **two of three probes returned `504`**. That is the whole reason the band
+  derivation had to come off the request path. ADR-041 needs named-way
+  geometry, so this cannot move to openrouteservice — ORS has no equivalent
+  (POIs returns points; `/export` returns the routing graph
+  [without street names](https://giscience.github.io/openrouteservice/api-reference/endpoints/export/)),
+  and routing quota is already capped at 1500/day in `OrsBudget`. Options,
+  cheapest first: (a) a paid hosted Overpass instance; (b) our own Overpass
+  container over a Spain-only OSM extract (Geofabrik `aragon-latest.osm.pbf` is
+  small enough to be cheap); (c) keep the public endpoint and accept that a
+  reviewer sometimes has to press *Retry*. Until this lands, the admin retry
+  button is the mitigation, not the fix.
 - ~~**[O][S]** SWA resource cleanup at cutover — retire `ebrostay-v2` and the
   dead v1 SWA.~~ ✅ **Done.** Verified 2026-08-01 with `az staticwebapp list`
   across both subscriptions: `ebrostay-home` (Standard, westeurope, host

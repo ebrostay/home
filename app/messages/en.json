@@ -1499,6 +1499,25 @@
           "area": "area",
           "size": "size"
         }
+      },
+      "band": {
+        "title": "Street band",
+        "note": "Derived from OpenStreetMap, not typed by the owner. Nobody has read it before you. The guest map shows this line and never the door, so it has to be the right street and long enough that the home could be any on it.",
+        "mapLabel": "The derived street band for this home",
+        "street": "Street",
+        "length": "Length",
+        "metres": "{n} m",
+        "unnamed": "Unnamed street",
+        "tooShort": "This band is only {n} m long — short enough to point at one doorway. Fine over a block of flats, not over a single house. Check the map before you confirm.",
+        "confirm": "I have looked at the map: this is the right street, and the band is long enough that it does not identify the individual home.",
+        "never": "No band yet. The home will publish with no map until one is derived.",
+        "failed": "Derivation did not return a band. OpenStreetMap's public query service is often busy — try again.",
+        "attemptedAt": "Last tried {at}",
+        "retry": "Derive the band",
+        "rederive": "Derive again",
+        "deriving": "Deriving…",
+        "derivingNote": "Three queries to OpenStreetMap. This usually takes 20 to 30 seconds.",
+        "retryFailed": "That attempt failed. The query service is shared and often busy — waiting a minute usually helps."
       }
     },
     "decision": {
@@ -1509,7 +1528,9 @@
       "rejectLead": "The owner reads this note in their dashboard. It is the only thing telling them what to change, so be specific.",
       "notePlaceholder": "The photos are of a different flat.",
       "rejectConfirm": "Reject and tell the owner",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "bandMissing": "Derive the street band before publishing.",
+      "bandUnconfirmed": "Confirm the street band before publishing."
     },
     "properties": {
       "search": "Search by name, street, reference or owner",

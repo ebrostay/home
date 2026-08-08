@@ -12,7 +12,6 @@ namespace Ebrostay.Api.Functions;
 public class PropertiesFunctions(
     Database database,
     PlatformSettings platform,
-    StreetBandService bands,
     ILogger<PropertiesFunctions> logger)
 {
     private Container Properties => database.GetContainer("properties");
@@ -71,35 +70,19 @@ public class PropertiesFunctions(
                 id, new PartitionKey(id));
             var doc = response.Resource;
 
-            // ADR-041 backfill: a published listing saved before the band existed
-            // heals on first read. Best-effort — a failure leaves the degraded
-            // projection (rounded point, no public map) rather than failing the
-            // request.
-            if (doc.Status == "published" && doc.Band is null)
-            {
-                doc.Band = await bands.DeriveAsync(doc.Id, doc.Lat, doc.Lng,
-                    req.HttpContext.RequestAborted);
-                if (doc.Band is not null)
-                    try
-                    {
-                        // IfMatchEtag guards against this anonymous, unauthenticated
-                        // backfill racing an owner's authenticated save: without it,
-                        // a write here could land after the owner's save and clobber
-                        // it with this stale pre-save doc. A 412 means someone else
-                        // (the owner) wrote first — drop the backfill silently, the
-                        // next read retries it against the fresher document. Same
-                        // pattern as SaveAsync in HostFunctions.cs.
-                        await Properties.UpsertItemAsync(doc, new PartitionKey(doc.Id),
-                            new ItemRequestOptions { IfMatchEtag = response.ETag });
-                    }
-                    catch (CosmosException e) when (e.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
-                    {
-                        // A fresher doc exists (an owner save won the race). Drop
-                        // the backfill; the next read retries it.
-                    }
-                    catch (CosmosException e) { logger.LogWarning(e, "band backfill write failed for {Id}", id); }
-            }
-
+            // No band derivation here. This used to hold the guest's page open
+            // while three Overpass queries ran — measured 32.7 s on the first
+            // read of `movera0` (2026-08-08), during which the page showed only
+            // its skeleton and therefore no map at all. Worse, a derivation
+            // that failed stored nothing, so EVERY read of that listing paid
+            // the same 30 s and still showed no map.
+            //
+            // A missing band is now simply the degraded projection ADR-041
+            // already specifies: rounded summary point, no public map. It is
+            // the reviewer's job to get a band before this listing is
+            // published at all (`AdminValidation.CheckApprove`), so a
+            // published listing reaching here without one is a gap to see in
+            // the admin panel, not one to paper over on the guest's time.
             var detail = PublicProjection.ToDetail(
                 doc, DateTimeOffset.UtcNow, platform.CleaningFeeEur);
 

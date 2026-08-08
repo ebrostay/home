@@ -28,6 +28,7 @@ import { formatEuro } from "@/lib/pricing";
 import { Badge } from "@/components/ui/Badge";
 import { RichText } from "@/components/ui/RichText";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { BandSignal } from "@/components/admin/BandSignal";
 import { CatastroSignal } from "@/components/admin/CatastroSignal";
 import { DecisionBar, type Decision } from "@/components/admin/Decision";
 import { PhotoSignal } from "@/components/admin/PhotoSignal";
@@ -57,6 +58,12 @@ function ReviewContent() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [busy, setBusy] = useState<Decision | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The reviewer's band tick (§4.5). Page-level rather than inside BandSignal
+  // because it gates the Approve button in the bar, which is a sibling — and
+  // deliberately NOT seeded from `band.approvedAt`: a listing that was
+  // confirmed once and has come back for re-review is a fresh judgement, and
+  // pre-ticking the box would answer for the reviewer.
+  const [bandConfirmed, setBandConfirmed] = useState(false);
 
   useEffect(() => {
     // No id is not a load that failed — it is a URL with nothing in it, and
@@ -87,7 +94,7 @@ function ReviewContent() {
       setBusy(decision);
       setError(null);
       try {
-        if (decision === "approve") await approveProperty(id);
+        if (decision === "approve") await approveProperty(id, bandConfirmed);
         else await rejectProperty(id, note ?? "");
         router.push("/admin");
       } catch (err: unknown) {
@@ -118,7 +125,8 @@ function ReviewContent() {
     );
   }
 
-  const { property, listing, pricing, photos, owner, declined } = view.detail;
+  const detail = view.detail;
+  const { property, listing, pricing, photos, owner, declined } = detail;
 
   return (
     <AdminShell section="queue">
@@ -207,6 +215,18 @@ function ReviewContent() {
         </div>
 
         <aside className="flex flex-col gap-4">
+          {/* First in the column on purpose: it is the only panel here that
+              can stop an approval, and the only one showing something no
+              person has read yet. */}
+          <BandSignal
+            propertyId={id}
+            band={detail.band}
+            onBand={(band) =>
+              setState({ kind: "ready", detail: { ...detail, band } })
+            }
+            confirmed={bandConfirmed}
+            onConfirmed={setBandConfirmed}
+          />
           <PhotoSignal
             photos={photos}
             pin={{ lat: listing.lat, lng: listing.lng }}
@@ -230,6 +250,17 @@ function ReviewContent() {
       <DecisionBar
         busy={busy}
         error={error}
+        // Approve is blocked until there IS a band and a person has said it is
+        // right. The API enforces both independently (`band_missing`,
+        // `band_not_confirmed`) — this is the courtesy of saying so before the
+        // press, not the control.
+        blocked={
+          !detail.band.hasBand
+            ? "bandMissing"
+            : !bandConfirmed
+              ? "bandUnconfirmed"
+              : null
+        }
         onApprove={() => decide("approve")}
         onReject={(note) => decide("reject", note)}
       />

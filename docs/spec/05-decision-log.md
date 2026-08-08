@@ -3241,6 +3241,8 @@ is no ordering to get wrong.
 ## ADR-041 — Address precision on the public listing
 
 **Date:** 2026-08-07 · **Status:** ✅ locked 2026-08-07 ·
+**Amended 2026-08-08** — *where the band is derived, and who signs it off.*
+See the amendment at the end of this ADR. ·
 **Relates to:** ADR-039, ADR-040 (map and routes) ·
 **Source:** the five-site comparison in `docs/ux-analysis/` and the
 backlog item "Address precision policy". Written in plain language at the
@@ -3439,6 +3441,63 @@ and one part of the design that is not built yet.
   generated formula (street without number + neighbourhood) prefilled in
   the editor, owner override through the existing review queue.
   Implementation is unblocked.
+
+### Amendment 2026-08-08 — the band is derived in review, and a person signs it
+
+**What went wrong.** The band was derived on the owner's save (`PUT
+/api/host/properties/{id}`) and, for anything without one, on the guest's read
+(`GET /api/properties/{id}`). Derivation is three sequential queries to
+`overpass-api.de`, the free community endpoint. Measured against `movera0` on
+2026-08-08: **8–9 s per query, 32.7 s end to end, and `504` on two probes in
+three.**
+
+Three consequences, none of them visible until measured:
+
+1. **The guest waited 32 s for a page**, saw only its skeleton, and therefore
+   saw no map — the very thing the wait was buying.
+2. **A failed derivation stored nothing**, so *every* subsequent read of that
+   listing paid the same 30 s and still showed no map. A listing that failed
+   once was slow and mapless for ever.
+3. **The owner's save could be lost outright.** SWA kills any `/api` request at
+   45 s (ADR-033 Decision 1) and the document was written ~225 lines *after*
+   the derivation. A slow Overpass took the whole save — photos, price, text —
+   with nothing said. `pinMoved` is a 0.000001° threshold, ≈11 cm, so every
+   nudge of the pin during a first listing paid it again.
+
+**Decision.** Derivation happens in exactly one place: **the reviewer's panel**
+(`POST /api/staff/properties/{id}/band`). Nothing on the owner's path or the
+guest's path calls Overpass any more.
+
+- A moved pin **clears** the band (a band from the old pin names the old
+  street) but derives nothing.
+- The reviewer presses *Derive*, sees the line drawn on a map, and either
+  approves it or presses it again. This is the first time in the design that a
+  person ever looks at the band before a guest does — it was derived data going
+  straight to the public map, unread.
+- **Publishing requires a band and an explicit tick.**
+  `AdminValidation.CheckApprove` returns `band_missing` without one and
+  `band_not_confirmed` without the reviewer's confirmation, which asserts two
+  things: it is the right street, and it is long enough not to identify the
+  individual home. A re-derivation clears the tick — a new line is a new
+  judgement.
+- `BandDisclosure` warns when a band is under **60 m** (roughly one urban block
+  face). Advisory only: a 40 m band over a block of forty flats is fine and a
+  40 m band over one villa is not, and only a person can tell those apart.
+
+**Bounds, since Overpass stays third-party and unreliable.**
+`StreetBandService` caps the whole derivation at **20 s** (not per query) and
+de-duplicates concurrent runs per listing through `SingleFlight`, so a
+double-clicked *Retry* costs three queries and not six. `bandAttemptedAt` is
+stamped whether or not it succeeded, so the panel can say when it last tried.
+
+**What this does not fix.** The dependency itself. Self-hosting the OSM query
+service is in `docs/BACKLOG.md` (Infra & ops); the retry button is the
+mitigation until then. ORS cannot take this over — it has no named-way
+geometry, and its quota is already spent on routing.
+
+**Consequence accepted.** A listing can now be published-blocked by a third
+party being down. That is the right way round: the alternative was publishing
+homes with no map and no one owning the problem.
 
 ---
 

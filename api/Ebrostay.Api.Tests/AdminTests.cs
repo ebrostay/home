@@ -93,9 +93,24 @@ public class AdminTests
 
     // ---- approve ------------------------------------------------------
 
+    // The band preconditions this rule also carries live in BandGatingTests —
+    // here it is held at arm's length with a band present and confirmed, so
+    // these cases stay about the SUBMISSION and nothing else.
+    private static PropertyDoc Reviewable(string status)
+    {
+        var doc = Listing(status);
+        doc.Band = new StreetBand(
+            [new BandPoint(41.65, -0.9), new BandPoint(41.651, -0.9)],
+            41.6505, -0.9,
+            new BandPoint(41.65, -0.9), new BandPoint(41.651, -0.9),
+            "Calle de Prueba", "2026-08-08T00:00:00Z");
+        return doc;
+    }
+
     [Fact]
     public void ApproveNeedsASubmission() =>
-        Assert.Null(AdminValidation.CheckApprove(Listing("pending_review")));
+        Assert.Null(AdminValidation.CheckApprove(
+            Reviewable("pending_review"), bandConfirmed: true));
 
     [Theory]
     [InlineData("draft")]
@@ -103,7 +118,8 @@ public class AdminTests
     [InlineData("paused")]
     [InlineData("rejected")]
     public void ApproveRefusesAnythingElse(string status) =>
-        Assert.Equal("not_in_review", AdminValidation.CheckApprove(Listing(status)));
+        Assert.Equal("not_in_review", AdminValidation.CheckApprove(
+            Reviewable(status), bandConfirmed: true));
 
     // ---- reject -------------------------------------------------------
 

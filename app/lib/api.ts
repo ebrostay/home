@@ -402,10 +402,37 @@ export type AdminPhoto = HostPhoto & {
   capturedAt: string | null;
 };
 
+/** The derived street band, as the reviewer must see it before publishing
+ *  (§4.5, ADR-041). Derived from OSM and read by nobody until this panel, so
+ *  the panel shows the line itself — a band down the wrong street is obvious
+ *  on a map and invisible in a table.
+ *
+ *  Note what is NOT here: `sampleA`/`sampleB`, the inset routing origins. They
+ *  sit metres from the real door and never leave the server. */
+export type AdminBandReview = {
+  hasBand: boolean;
+  line: { lat: number; lng: number }[];
+  streetName: string | null;
+  lengthMetres: number;
+  /** Advisory: short enough that it may point at one home rather than at a
+   *  street. A warning for the reviewer, never a block — only a person can
+   *  tell a short terrace of forty flats from a single villa. */
+  identifiesSingleHome: boolean;
+  derivedAt: string | null;
+  /** Last attempt, successful or not, so the panel can say "tried 3 minutes
+   *  ago" instead of offering a button with no history. */
+  attemptedAt: string | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  /** False with no band: approving would publish a listing with no map. */
+  canApprove: boolean;
+};
+
 export type AdminPropertyDetail = {
   property: HostProperty;
   pricing: HostPricing;
   listing: HostListing;
+  band: AdminBandReview;
   declined: Declined[];
   owner: AdminOwner;
   photos: AdminPhoto[];
@@ -430,10 +457,29 @@ export const fetchAdminProperties = () => get<AdminPropertyRow[]>("/staff/proper
 export const fetchAdminProperty = (id: string) =>
   get<AdminPropertyDetail>(`/staff/properties/${encodeURIComponent(id)}`);
 
+/** Derive (or re-derive) the street band. The only call in the product that
+ *  waits on Overpass, and the only place that is defensible: a reviewer is
+ *  sitting in front of the listing waiting for this exact answer and can press
+ *  the button again if it fails.
+ *
+ *  Slow by nature — three OSM queries, measured 8-9 s each — so the caller
+ *  must show a pending state rather than assume this returns promptly. It
+ *  resolves either way: a failed derivation comes back with `hasBand: false`
+ *  and a fresh `attemptedAt`, not as an error. */
+export const deriveBand = (id: string) =>
+  post<AdminBandReview>(`/staff/properties/${encodeURIComponent(id)}/band`, {});
+
 /** Publish a listing. The one act nothing else in the product performs, and
- *  the reason this surface exists. Accepted from `pending_review` alone. */
-export const approveProperty = (id: string) =>
-  post<AdminPropertyRow>(`/staff/properties/${encodeURIComponent(id)}/approve`, {});
+ *  the reason this surface exists. Accepted from `pending_review` alone.
+ *
+ *  `bandConfirmed` is the reviewer's own statement that they looked at the
+ *  derived band, that it draws the right street, and that it does not narrow
+ *  to one door. The API refuses the approval without it (`band_not_confirmed`)
+ *  and refuses it outright when no band exists at all (`band_missing`). */
+export const approveProperty = (id: string, bandConfirmed: boolean) =>
+  post<AdminPropertyRow>(`/staff/properties/${encodeURIComponent(id)}/approve`, {
+    bandConfirmed,
+  });
 
 /** Reject — and take down, which is the same act from a different starting
  *  status. The note is required by the API and is what the owner reads in

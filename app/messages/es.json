@@ -1499,6 +1499,25 @@
           "area": "zona",
           "size": "superficie"
         }
+      },
+      "band": {
+        "title": "Tramo de calle",
+        "note": "Derivado de OpenStreetMap, no escrito por el propietario. Nadie lo ha leído antes que tú. El mapa del huésped muestra esta línea y nunca el portal, así que tiene que ser la calle correcta y bastante larga para que la vivienda pueda ser cualquiera de ellas.",
+        "mapLabel": "El tramo de calle derivado para esta vivienda",
+        "street": "Calle",
+        "length": "Longitud",
+        "metres": "{n} m",
+        "unnamed": "Calle sin nombre",
+        "tooShort": "Este tramo mide solo {n} m: es tan corto que señala un portal concreto. Vale sobre un bloque de pisos, no sobre una casa sola. Mira el mapa antes de confirmar.",
+        "confirm": "He mirado el mapa: es la calle correcta y el tramo es bastante largo para no identificar la vivienda concreta.",
+        "never": "Todavía no hay tramo. La vivienda se publicará sin mapa hasta que se derive uno.",
+        "failed": "La derivación no devolvió ningún tramo. El servicio público de consultas de OpenStreetMap suele estar saturado: inténtalo otra vez.",
+        "attemptedAt": "Último intento: {at}",
+        "retry": "Derivar el tramo",
+        "rederive": "Derivar otra vez",
+        "deriving": "Derivando…",
+        "derivingNote": "Tres consultas a OpenStreetMap. Suele tardar de 20 a 30 segundos.",
+        "retryFailed": "Ese intento falló. El servicio de consultas es compartido y suele estar saturado: esperar un minuto casi siempre ayuda."
       }
     },
     "decision": {
@@ -1509,7 +1528,9 @@
       "rejectLead": "El propietario lee esta nota en su panel. Es lo único que le dice qué cambiar, así que sé concreto.",
       "notePlaceholder": "Las fotos son de otra vivienda.",
       "rejectConfirm": "Rechazar y avisar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "bandMissing": "Deriva el tramo de calle antes de publicar.",
+      "bandUnconfirmed": "Confirma el tramo de calle antes de publicar."
     },
     "properties": {
       "search": "Buscar por nombre, calle, referencia o propietario",

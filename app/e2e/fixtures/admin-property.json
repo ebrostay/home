@@ -595,6 +595,27 @@
       }
     ]
   },
+  "band": {
+    "hasBand": true,
+    "line": [
+      {
+        "lat": 41.6492082,
+        "lng": -0.8225057
+      },
+      {
+        "lat": 41.648949,
+        "lng": -0.8219124
+      }
+    ],
+    "streetName": "Plaza Mayor",
+    "lengthMetres": 62,
+    "identifiesSingleHome": false,
+    "derivedAt": "2026-08-08T10:00:00Z",
+    "attemptedAt": "2026-08-08T10:00:00Z",
+    "approvedAt": null,
+    "approvedBy": null,
+    "canApprove": true
+  },
   "declined": [],
   "owner": {
     "id": "e2e00000000000000000000000000001",

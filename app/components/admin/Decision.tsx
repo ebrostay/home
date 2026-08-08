@@ -20,6 +20,7 @@ export type Decision = "approve" | "reject";
 export function DecisionBar({
   busy,
   error,
+  blocked = null,
   onApprove,
   onReject,
 }: {
@@ -27,6 +28,12 @@ export function DecisionBar({
   /** A message already translated by the caller — it knows which API code
    *  came back. */
   error: string | null;
+  /** Why Approve cannot be pressed, or null when it can. The API refuses
+   *  these cases too (`band_missing`, `band_not_confirmed`); this only saves
+   *  the reviewer a press that would come back a 409. Reject stays live
+   *  throughout — a listing whose band will not derive is exactly one a
+   *  reviewer may want to send back. */
+  blocked?: "bandMissing" | "bandUnconfirmed" | null;
   onApprove: () => void;
   onReject: (note: string) => void;
 }) {
@@ -43,10 +50,14 @@ export function DecisionBar({
     <>
       <div className="sticky bottom-0 z-20 -mx-4 mt-8 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="mx-auto flex max-w-[86rem] flex-wrap items-center justify-end gap-3">
-          {error && (
+          {error ? (
             <p role="alert" className="mr-auto text-xs text-danger">
               {error}
             </p>
+          ) : (
+            blocked && (
+              <p className="mr-auto text-xs text-muted">{t(blocked)}</p>
+            )
           )}
           <Button
             variant="secondary"
@@ -55,7 +66,15 @@ export function DecisionBar({
           >
             {t("reject")}
           </Button>
-          <Button onClick={onApprove} disabled={busy !== null}>
+          <Button
+            onClick={onApprove}
+            disabled={busy !== null || blocked !== null}
+            // The bar explains itself in the line above, but that line is a
+            // sibling of the button rather than its label — a screen reader
+            // landing straight on a disabled control would otherwise be told
+            // nothing about why.
+            title={blocked ? t(blocked) : undefined}
+          >
             {busy === "approve" ? t("approving") : t("approve")}
           </Button>
         </div>

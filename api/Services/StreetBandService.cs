@@ -18,12 +18,44 @@ public sealed class StreetBandService(
     private const string Endpoint = "https://overpass-api.de/api/interpreter";
     private const double InsetMetres = 10;   // ADR-041 point 3: never on a junction node
 
+    /// The whole derivation, all three queries, gets this long — not each one.
+    ///
+    /// SWA caps every /api request at 45 s (ADR-033 Decision 1) and kills it
+    /// there with no response at all. Measured 2026-08-08: 8-9 s per query
+    /// against `overpass-api.de`, so three of them plus a Cosmos round trip
+    /// came to 32.7 s — inside the cap, but only by 12 s, and on a free
+    /// community endpoint that answered `504` to two probes in three. 20 s
+    /// leaves the caller room to write the result, answer, and stay well clear
+    /// of the cap even when Overpass is having a bad day.
+    private const int DeadlineSeconds = 20;
+
+    /// One derivation per listing at a time. A reviewer double-clicking
+    /// *Retry* spends three Overpass queries, not six. See SingleFlight —
+    /// it is a flight, not a cache, so the next press really does retry.
+    private readonly SingleFlight<string, StreetBand?> flight = new();
+
     private static bool Fixtures =>
         Environment.GetEnvironmentVariable("STREETBAND_FIXTURES") == "1";
 
-    public async Task<StreetBand?> DeriveAsync(
-        string listingId, double lat, double lng, CancellationToken ct)
+    /// Never throws and never outlives `DeadlineSeconds`. A caller may treat a
+    /// null as "no band yet, try again later" and nothing worse — losing the
+    /// band must never cost the owner their save or the guest their page.
+    ///
+    /// Callers that join an in-flight run share its cancellation: a second
+    /// reviewer's *Retry* rides on the first one's token. That is the right
+    /// trade for a per-listing admin action, and it is why the deadline is
+    /// enforced inside the run rather than by whoever happened to start it.
+    public Task<StreetBand?> DeriveAsync(
+        string listingId, double lat, double lng, CancellationToken ct) =>
+        flight.RunAsync(listingId, () => DeriveOnceAsync(listingId, lat, lng, ct));
+
+    private async Task<StreetBand?> DeriveOnceAsync(
+        string listingId, double lat, double lng, CancellationToken caller)
     {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(caller);
+        cts.CancelAfter(TimeSpan.FromSeconds(DeadlineSeconds));
+        var ct = cts.Token;
+
         if (Fixtures)
             return Build(listingId,
                 [(1, new GeoPoint(41.65476, -0.9077912)),
@@ -51,11 +83,34 @@ public sealed class StreetBandService(
 
             return Build(listingId, chain, others, new GeoPoint(lat, lng), street.Name);
         }
+        // OperationCanceledException, not TaskCanceledException: the deadline
+        // above fires a token, and a token observed directly (rather than by
+        // HttpClient) throws the base type. Catching only the derived one let
+        // a timeout escape as a 500 — the failure this deadline exists to
+        // turn into a plain "no band yet".
         catch (Exception e) when (e is HttpRequestException
-            or TaskCanceledException or JsonException or OrsUnavailableException
+            or OperationCanceledException or JsonException or OrsUnavailableException
             or KeyNotFoundException or InvalidOperationException)
         {
-            log.LogWarning(e, "street band derivation failed for {Id}", listingId);
+            // Three different cancellations reach here and they mean different
+            // things to whoever reads the log. Distinguished by WHICH token
+            // fired, not by the exception type: an HttpClient timeout also
+            // surfaces as a TaskCanceledException, and reporting that as "the
+            // 20s deadline" sent the first real diagnosis down the wrong path.
+            if (caller.IsCancellationRequested)
+                log.LogWarning(
+                    "street band derivation for {Id} abandoned — caller went away",
+                    listingId);
+            else if (cts.IsCancellationRequested)
+                log.LogWarning(
+                    "street band derivation for {Id} hit the {Seconds}s deadline",
+                    listingId, DeadlineSeconds);
+            else if (e is OperationCanceledException)
+                log.LogWarning(
+                    "street band derivation for {Id} timed out on a single Overpass query",
+                    listingId);
+            else
+                log.LogWarning(e, "street band derivation failed for {Id}", listingId);
             return null;
         }
     }

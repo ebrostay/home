@@ -144,7 +144,10 @@ export function NeighbourhoodMap({
       }).addTo(mapRef.current);
       const line = L.polyline(bandLine, {
         className: "street-band-line",
-        weight: 5,
+        // 7, against the route's 4: the route draws over the band, so the band
+        // has to be wider than it to stay visible underneath — at equal widths
+        // a route along the home's own street erased it.
+        weight: 7,
         opacity: 0.6,
       }).addTo(mapRef.current);
       bandPathsRef.current = [glow, line];

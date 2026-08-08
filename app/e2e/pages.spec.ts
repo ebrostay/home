@@ -989,6 +989,72 @@ test("/en/admin/properties — a closed listing can be taken off the site", asyn
   );
 });
 
+// The gap the admin closure change (§ RequireAdminAsync as amended) left open:
+// a closing admin is a genuine admin session, so without a third RequireAdmin
+// state the console rendered in full and then every one of its nine calls
+// answered 403 with nothing on screen to explain it. This pins the panel that
+// replaces the console instead, and that it points at the account page's own
+// undo — the thing that actually brings the console back
+// (`CancellingGivesTheAdminSurfaceBack` on the API side).
+test("/en/admin — a closing admin is told so, and pointed at the undo", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me-admin.json")),
+        deletionRequestedAt: "2026-08-08T12:00:00Z",
+      }),
+    }),
+  );
+
+  await page.goto("/en/admin", { waitUntil: "networkidle" });
+
+  const main = page.locator("main");
+  await expect(main).toContainText(
+    "The admin console is unavailable while your account is closing",
+  );
+  await expect(main).not.toContainText("Review queue");
+
+  await expect(
+    main.getByRole("link", { name: "Go to your account to cancel the closure" }),
+  ).toHaveAttribute("href", "/en/account/");
+});
+
+// The ordering decision itself, pinned rather than left as a code comment: an
+// admin who is BOTH closing and deactivated must NOT see the closing panel.
+// Deactivation is the stronger state and the one `RequireActiveAsync` checks
+// first, ahead of the closure check — so the closing panel's promise
+// ("cancel the closure and the console comes back") would be false for this
+// person, deactivation would still refuse every call. RequireAdmin leaves the
+// combination exactly as unhandled as it already leaves a deactivated,
+// non-closing admin: the console renders, same as it does today.
+test("/en/admin — a closing AND deactivated admin does not get the closing panel", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me-admin.json")),
+        isDeactivated: true,
+        deletionRequestedAt: "2026-08-08T12:00:00Z",
+      }),
+    }),
+  );
+
+  await page.goto("/en/admin", { waitUntil: "networkidle" });
+
+  const main = page.locator("main");
+  await expect(main).toContainText("Review queue");
+  await expect(main).not.toContainText("The admin console is unavailable");
+});
+
 // The reported bug: signed out, the owner segment pointed at /about#hosts
 // while its matcher only knew /host, so the pill went blank. It is one href
 // now — asserted in both auth states, because the whole failure was that the

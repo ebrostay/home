@@ -1442,7 +1442,10 @@
     "gate": {
       "title": "This account is not an admin",
       "body": "The admin role is granted to one specific account. If you have access, it is probably on the other door: an Ebrostay account and a Microsoft account are two separate identities. Sign out and sign back in with the one that got the invitation.",
-      "signedInAs": "Signed in as"
+      "signedInAs": "Signed in as",
+      "closingTitle": "The admin console is unavailable while your account is closing",
+      "closingBody": "A closing account loses every admin permission, including read access — the console cannot show what the API refuses to send. Cancel the closure request and the console comes back immediately.",
+      "closingLink": "Go to your account to cancel the closure"
     },
     "queue": {
       "empty": "Nothing is waiting. Submitted homes show up here.",

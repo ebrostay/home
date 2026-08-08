@@ -1442,7 +1442,10 @@
     "gate": {
       "title": "Esta cuenta no es de administración",
       "body": "El rol de administración se concede a una cuenta concreta. Si tienes acceso, es probable que esté en la otra puerta de entrada: la cuenta Ebrostay y la cuenta Microsoft son dos identidades distintas. Sal y vuelve a entrar con la que recibió la invitación.",
-      "signedInAs": "Has entrado como"
+      "signedInAs": "Has entrado como",
+      "closingTitle": "La consola de administración no está disponible mientras tu cuenta está en proceso de cierre",
+      "closingBody": "Una cuenta en proceso de cierre pierde todos los permisos de administración, incluida la lectura de datos: la consola no puede mostrar lo que la API rechaza. Cancela la solicitud de cierre y la consola vuelve a estar disponible al momento.",
+      "closingLink": "Ir a tu cuenta para cancelar el cierre"
     },
     "queue": {
       "empty": "No hay nada esperando. Cuando alguien envíe una vivienda, aparecerá aquí.",

@@ -5,5 +5,6 @@
   "provider": "ebrostay",
   "roles": ["anonymous", "authenticated"],
   "isAdmin": false,
-  "isDeactivated": false
+  "isDeactivated": false,
+  "deletionRequestedAt": null
 }

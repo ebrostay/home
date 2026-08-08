@@ -768,6 +768,73 @@ test("/en/account — a closing account is offered the undo, and it takes", asyn
   await expect(main).not.toContainText("Your account is closing");
 });
 
+// The other half of the same flow, and the one the confirm step exists for:
+// the first click must NOT close the account. It only opens the confirm step
+// — the write happens on the second, explicit press. This also stands in as
+// the regression guard for the focus handling Task 8 added (an ad-hoc script,
+// never committed): pressing the trigger moves focus onto the confirm button
+// that replaces it, and "Not now" moves focus back onto the trigger that
+// replaces IT. Neither move throws or changes what is rendered if it silently
+// breaks, so nothing else in this file would notice it going missing.
+test("/en/account — the first click asks before it closes, and focus follows it", async ({
+  page,
+}) => {
+  await stubBackend(page);
+
+  const REQUESTED_AT = "2026-08-08T12:00:00Z";
+  let closing = false;
+  let closurePosts = 0;
+
+  // Same stateful pair the undo test above uses, starting from the resting
+  // (never-asked) state instead of an already-closing one.
+  await page.route("**/api/me", (route: Route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...JSON.parse(fixture("me.json")),
+        deletionRequestedAt: closing ? REQUESTED_AT : null,
+      }),
+    }),
+  );
+
+  await page.route("**/api/account/closure", (route: Route) => {
+    if (route.request().method() === "POST") closurePosts++;
+    closing = route.request().method() !== "DELETE";
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ deletionRequestedAt: closing ? REQUESTED_AT : null }),
+    });
+  });
+
+  await page.goto("/en/account", { waitUntil: "networkidle" });
+
+  const trigger = page.getByRole("button", { name: "Request closure" });
+  await trigger.click();
+
+  // The confirm step opened — and focus is already on it, without a tab press
+  // — but nothing has been written yet.
+  const confirm = page.getByRole("button", { name: "Yes, request closure" });
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeFocused();
+  expect(closurePosts, "the trigger click must not itself close the account").toBe(0);
+
+  // Backing out writes nothing either, and hands focus back to the button
+  // that opened the step.
+  await page.getByRole("button", { name: "Not now" }).click();
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toBeFocused();
+  expect(closurePosts, "backing out must not close the account").toBe(0);
+
+  // Only the second, explicit press writes anything.
+  await trigger.click();
+  await confirm.click();
+
+  await expect(
+    page.getByRole("heading", { name: "Your account is closing" }),
+  ).toBeVisible();
+  expect(closurePosts, "the confirm press should write exactly once").toBe(1);
+});
+
 // The reported bug: signed out, the owner segment pointed at /about#hosts
 // while its matcher only knew /host, so the pill went blank. It is one href
 // now — asserted in both auth states, because the whole failure was that the

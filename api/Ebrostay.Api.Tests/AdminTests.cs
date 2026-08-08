@@ -61,9 +61,15 @@ public class AdminTests
 
     // ---- what a content save does to `status` -------------------------
 
+    // `closed` is here for the same reason `published` is: it is public. An
+    // owner is normally write-blocked while their account closes, but the
+    // fan-out writes listings first and the flag last, so any failure in the
+    // middle leaves a writable owner holding a `closed`, public listing — and
+    // an edit there must go back to the queue like any other.
     [Theory]
     [InlineData("published")]
     [InlineData("paused")]
+    [InlineData("closed")]
     public void OwnerEditOfALiveListingReEntersReview(string status) =>
         Assert.True(ListingVisibility.ReEntersReview(Listing(status), User("host-1")));
 
@@ -80,6 +86,7 @@ public class AdminTests
     [InlineData("published")]
     [InlineData("paused")]
     [InlineData("pending_review")]
+    [InlineData("closed")]
     public void AdminEditOfSomebodyElsesListingNeverReEntersReview(string status) =>
         Assert.False(ListingVisibility.ReEntersReview(Listing(status), Admin()));
 
@@ -117,6 +124,7 @@ public class AdminTests
     [InlineData("published")]
     [InlineData("paused")]
     [InlineData("rejected")]
+    [InlineData("closed")]
     public void ApproveRefusesAnythingElse(string status) =>
         Assert.Equal("not_in_review", AdminValidation.CheckApprove(
             Reviewable(status), bandConfirmed: true));
@@ -145,9 +153,15 @@ public class AdminTests
 
     // Taking a live listing down is the same act from a different status, and
     // it leaves the owner the same note.
+    //
+    // `closed` is in the list because it is PUBLIC (design 2026-08-08). A
+    // takedown — fraud, a legal request — does not become impossible because
+    // the owner has asked to leave, and until this was allowed a `closed`
+    // listing was reachable by no moderation endpoint at all.
     [Theory]
     [InlineData("published")]
     [InlineData("paused")]
+    [InlineData("closed")]
     public void ATakedownIsARejection(string status) =>
         Assert.Null(AdminValidation.CheckReject("Not a home.", Listing(status)));
 
@@ -168,15 +182,34 @@ public class AdminTests
     public void ReopeningAPausedListingIsAllowed() =>
         Assert.Null(AdminValidation.CheckStatus("published", Listing("paused")));
 
+    // The one exit from `closed` that does not belong to the departing owner.
+    //
+    // Without it the state was a trap: `closed` is public, the owner is
+    // write-blocked while their account closes, and their own
+    // `DELETE /api/account/closure` stops answering the moment an admin
+    // deactivates them — which is the only action the users tab offers. A live
+    // listing with an absent owner and no endpoint able to move it needed a
+    // hand edit in Cosmos to fix.
+    [Fact]
+    public void PausingAClosedListingIsAllowed() =>
+        Assert.Null(AdminValidation.CheckStatus("paused", Listing("closed")));
+
     // The back door ADR-030 closed on the owner side stays closed on this one:
     // nothing gets published without a reviewer having read it.
+    //
+    // `closed` is in this list on purpose, and it is the asymmetry that makes
+    // the rule above safe: a `closed` listing may be paused, never republished
+    // in one move. Putting a departing owner's home back into search is a
+    // second, deliberate act from `paused`.
     [Theory]
     [InlineData("draft")]
     [InlineData("pending_review")]
     [InlineData("rejected")]
+    [InlineData("closed")]
     public void PublishingSomethingUnreviewedIsRefused(string status) =>
         Assert.Equal("not_reviewed", AdminValidation.CheckStatus("published", Listing(status)));
 
+    // `closed` is deliberately NOT in this list — see PausingAClosedListing.
     [Theory]
     [InlineData("draft")]
     [InlineData("pending_review")]
@@ -185,11 +218,15 @@ public class AdminTests
     public void PausingWhatIsNotLiveIsRefused(string status) =>
         Assert.Equal("not_published", AdminValidation.CheckStatus("paused", Listing(status)));
 
+    // Including `closed`, which only the closure fan-out writes: an admin may
+    // take a closing owner's listing DOWN, never put one into that state by
+    // hand.
     [Theory]
     [InlineData("rejected")]
     [InlineData("draft")]
     [InlineData("pending_review")]
     [InlineData("deleted")]
+    [InlineData("closed")]
     [InlineData(null)]
     public void OnlyTwoStatusesAreSettable(string? status) =>
         Assert.Equal("status_invalid", AdminValidation.CheckStatus(status, Listing("published")));

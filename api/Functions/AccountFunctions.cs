@@ -42,6 +42,13 @@ public class AccountFunctions(
         if (error is not null) return error;
 
         var listings = new List<(PropertyDoc Doc, string? ETag)>();
+        // Documents this endpoint could not deserialize. Skipping them is
+        // deliberate (see the comment on the query below), but the count has to
+        // travel back: a skipped `published` listing is one that stays in
+        // search while the owner is told their account is closing and is
+        // write-blocked from pausing it themselves. `TryParse` has already
+        // logged each one at ERROR with its id.
+        var unreadable = 0;
         try
         {
             var query = new QueryDefinition("SELECT * FROM c WHERE c.hostId = @host")
@@ -62,7 +69,8 @@ public class AccountFunctions(
                 foreach (var raw in await feed.ReadNextAsync())
                 {
                     var doc = PropertyDocParser.TryParse(raw, logger, "account closure listings");
-                    if (doc is not null) listings.Add((doc, raw["_etag"]?.ToString()));
+                    if (doc is null) unreadable++;
+                    else listings.Add((doc, raw["_etag"]?.ToString()));
                 }
             }
         }
@@ -112,20 +120,64 @@ public class AccountFunctions(
             }
         }
 
-        profile!.DeletionRequestedAt = requesting
+        // The profile is re-read HERE rather than reused from the guard, and
+        // written with its `_etag`. The read at the top of this function
+        // happened before a cross-partition query and one write per listing —
+        // seconds, for an owner with a portfolio — and replacing the document
+        // with that in-memory copy puts EVERY field back to what it was before
+        // the fan-out began. An admin who pressed *Deactivate* one second in
+        // would watch `IsDeactivated` silently revert, with both parties told
+        // they had succeeded.
+        //
+        // A fresh read plus `IfMatchEtag`, rather than carrying the guard's own
+        // etag down, because the window has to be narrow: `BootstrapAsync`
+        // touches `lastSeenAt` on EVERY authenticated request, so an etag held
+        // across the whole fan-out would be broken by the browser merely
+        // polling /api/me, and the owner would be told their closure failed
+        // when nothing was wrong. Narrow, it still closes the real race — a
+        // write landing between this read and this replace — and answers it
+        // with the `stale_write` 409 the rest of the codebase uses.
+        ProfileDoc current;
+        string? profileEtag;
+        try
+        {
+            var read = await Profiles.ReadItemAsync<ProfileDoc>(
+                profile!.Id, new PartitionKey(profile.Id));
+            current = read.Resource;
+            profileEtag = read.ETag;
+        }
+        catch (CosmosException ex)
+        {
+            logger.LogError(ex, "Cosmos error re-reading profile {Id}", profile!.Id);
+            return new StatusCodeResult(StatusCodes.Status502BadGateway);
+        }
+
+        current.DeletionRequestedAt = requesting
             ? DateTimeOffset.UtcNow.ToString("o")
             : null;
 
         try
         {
-            await Profiles.ReplaceItemAsync(profile, profile.Id, new PartitionKey(profile.Id));
+            await Profiles.ReplaceItemAsync(
+                current, current.Id, new PartitionKey(current.Id),
+                new ItemRequestOptions { IfMatchEtag = profileEtag });
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
+        {
+            // Same reasoning as the listing writes above: reported rather than
+            // retried in place, because the whole operation is idempotent and
+            // the caller pressing the button again picks up exactly what is
+            // still left to move.
+            logger.LogError(ex, "Stale write on the closure flag for {Id}", current.Id);
+            return new ConflictObjectResult(new { error = "stale_write" });
         }
         catch (CosmosException ex)
         {
-            logger.LogError(ex, "Cosmos error writing closure flag for {Id}", profile.Id);
+            logger.LogError(ex, "Cosmos error writing closure flag for {Id}", current.Id);
             return new StatusCodeResult(StatusCodes.Status502BadGateway);
         }
 
-        return new OkObjectResult(new AccountClosureState(profile.DeletionRequestedAt));
+        return new OkObjectResult(
+            new AccountClosureState(current.DeletionRequestedAt, unreadable));
     }
 }

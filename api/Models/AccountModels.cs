@@ -69,7 +69,17 @@ public static class AccountClosure
 /// The request body is empty — the account being closed is always the caller's
 /// own, read from `x-ms-client-principal` (§3.4). The type exists so the
 /// endpoint's response has a shape.
-public record AccountClosureState(string? DeletionRequestedAt);
+///
+/// `UnreadableListings` is how a caller tells a complete closure from a
+/// partial one. The fan-out SKIPS any document it cannot deserialize (ADR-032's
+/// legacy plain-string `copy`) rather than failing the whole request over one
+/// of them — the right trade, since one stale document must not cost an owner
+/// every other listing they hold. But a skipped document is a state change
+/// that silently did not happen: a `published` home stays in search while the
+/// endpoint answers 200 and the owner, now write-blocked, cannot pause it.
+/// Defaulted so the field is additive — the frontend's existing shape is
+/// unchanged.
+public record AccountClosureState(string? DeletionRequestedAt, int UnreadableListings = 0);
 
 /// "Can an anonymous visitor see this listing?" — asked by the public list and
 /// the public detail, which is why it is one function and not two literals.

@@ -146,6 +146,11 @@ public record AdminUser(
     string? LastSeenAt,
     bool IsDeactivated,
     int ListingCount,
+    /// How many of their listings the PUBLIC can see — `published` and
+    /// `closed` both (`PublicStatus.IsPublic`, design 2026-08-08), not
+    /// `published` alone. The name predates `closed`; the question the column
+    /// answers has always been "how much of this person is live on the site?",
+    /// and for a closing owner the answer is the whole reason to look.
     int PublishedCount,
     /// Set when the user has asked to close their account (design
     /// 2026-08-08). No action is attached to it yet — the admin's half of the
@@ -182,16 +187,35 @@ public static class AdminValidation
     /// Which statuses may be rejected FROM. A draft is not under review and a
     /// rejected listing is already rejected — in both cases the note would
     /// answer a question the owner has not asked.
-    private static readonly string[] Rejectable = ["pending_review", "published", "paused"];
+    ///
+    /// `closed` is here because it is PUBLIC (design 2026-08-08). A takedown —
+    /// fraud, a legal request — is not less urgent because the owner has asked
+    /// to leave, and this is the same act from a different status.
+    private static readonly string[] Rejectable =
+        ["pending_review", "published", "paused", "closed"];
 
-    /// The pair, and only the pair: a live listing may be paused, and a paused
-    /// one may go live again. `published` from anywhere else would publish
-    /// something no reviewer has read — the back door ADR-030 closed on the
-    /// owner side — and pausing a draft or a rejection means nothing, since
-    /// neither is open to requests to begin with.
+    /// Which statuses may be PAUSED from: the two that are publicly visible.
+    /// `closed` (design 2026-08-08) has to be one of them. It is a public
+    /// state, its owner is write-blocked while the closure runs, and the only
+    /// other way out of it is the owner's own `DELETE /api/account/closure` —
+    /// which `RequireActiveAsync` refuses once an admin deactivates them.
+    /// Without this, deactivating a closing owner left their home live in
+    /// search with no endpoint in the product able to move it.
+    private static readonly string[] Pausable = ["published", "closed"];
+
+    /// A publicly visible listing may be paused, and a paused one may go live
+    /// again. `published` from anywhere else would publish something no
+    /// reviewer has read — the back door ADR-030 closed on the owner side —
+    /// and pausing a draft or a rejection means nothing, since neither is open
+    /// to requests to begin with.
+    ///
+    /// Note the asymmetry: `closed` may be paused but may NOT be published
+    /// straight back. Putting a departing owner's home back into search is a
+    /// second, deliberate act from `paused`, not a side effect of a takedown
+    /// being reversed.
     public static string? CheckStatus(string? status, PropertyDoc doc) =>
         !Settable.Contains(status) ? "status_invalid"
-        : status == "paused" && doc.Status != "published" ? "not_published"
+        : status == "paused" && !Pausable.Contains(doc.Status) ? "not_published"
         : status == "published" && doc.Status != "paused" ? "not_reviewed"
         : null;
 

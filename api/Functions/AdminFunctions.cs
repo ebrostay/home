@@ -163,9 +163,18 @@ public class AdminFunctions(
                 {
                     if (string.IsNullOrEmpty(row.HostId)) continue;
                     counts.TryGetValue(row.HostId, out var acc);
+                    // `PublicStatus.IsPublic`, not `== "published"`: the
+                    // question this column answers is "how many of this
+                    // person's homes can the public see?", and a `closed` one
+                    // can (design 2026-08-08). Counting only `published` blanked
+                    // the annotation for exactly the people it matters most
+                    // for — a closing owner with three homes still in search
+                    // read as having none.
                     counts[row.HostId] = (
                         acc.All + 1,
-                        acc.Published + (row.Status == "published" ? 1 : 0));
+                        acc.Published + (row.Status is not null && PublicStatus.IsPublic(row.Status)
+                            ? 1
+                            : 0));
                 }
             }
         }

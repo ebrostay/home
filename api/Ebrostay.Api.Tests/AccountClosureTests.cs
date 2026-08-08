@@ -138,6 +138,33 @@ public class AccountClosureApplyTests
     }
 }
 
+// The endpoint's answer. The fan-out SKIPS a document it cannot deserialize
+// rather than failing the whole request over one of them, so "200 OK" on its
+// own does not mean every listing moved: a legacy ADR-032 document stays
+// `published` and in search while its owner, now write-blocked, cannot pause
+// it. The count is how a caller tells the two apart.
+public class AccountClosureStateTests
+{
+    [Fact]
+    public void A_clean_closure_reports_nothing_left_behind()
+        => Assert.Equal(0, new AccountClosureState("2026-08-08T10:00:00Z").UnreadableListings);
+
+    [Fact]
+    public void A_partial_closure_says_how_many_listings_it_could_not_read()
+    {
+        var state = new AccountClosureState("2026-08-08T10:00:00Z", 2);
+
+        Assert.Equal("2026-08-08T10:00:00Z", state.DeletionRequestedAt);
+        Assert.Equal(2, state.UnreadableListings);
+    }
+
+    // Cancelling clears the flag; the count still travels, because a cancel
+    // can leave a `closed` listing behind for exactly the same reason.
+    [Fact]
+    public void Cancelling_reports_the_same_way()
+        => Assert.Equal(1, new AccountClosureState(null, 1).UnreadableListings);
+}
+
 // One predicate, two call sites. A `closed` listing is still public — its
 // owner is leaving, but a guest mid-stay should not watch the page vanish.
 public class PublicStatusTests

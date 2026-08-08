@@ -62,8 +62,17 @@ public static class ListingVisibility
     /// The privilege belongs to the act of moderating someone else's home, not
     /// to the person; using it on your own listing would be a way to publish
     /// changes to your own home that nobody reviewed.
+    ///
+    /// `closed` is in the set for the same reason `published` is: it is a
+    /// PUBLIC state (design 2026-08-08). An owner normally cannot reach this
+    /// at all — `RequireWritableAsync` refuses a closing account — but the
+    /// closure fan-out writes listings first and the profile flag last, so
+    /// (listings `closed`, flag unset) is what ANY failure in the middle
+    /// leaves behind, and in that state the owner is fully writable and holds
+    /// a live listing. Leaving `closed` out would let them edit it without
+    /// re-entering review: the ADR-025/ADR-030 back door, reopened.
     public static bool ReEntersReview(PropertyDoc doc, ClientPrincipal? principal) =>
-        (doc.Status is "published" or "paused") && IsOwnedBy(doc, principal);
+        (doc.Status is "published" or "paused" or "closed") && IsOwnedBy(doc, principal);
 
     /// The route surface (`PropertyNearbyRoute`, `PropertyPlaceRoute`).
     ///

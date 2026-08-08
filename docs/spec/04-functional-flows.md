@@ -7,6 +7,14 @@ API surface referenced below (all under `/api`, enforcement per §3.4–3.5).
 **✅ = the endpoint exists in `api/Functions/` today; 🔜 = decided, not yet
 built** (the container/model side may already exist):
 
+**The admin endpoints are `/api/staff/…`, not `/api/admin/…`** — the Functions
+host reserves the `admin/` route prefix for its own management API and checks
+the route *template*, so `routePrefix: "api"` does not save you: a function
+registered as `admin/…` is refused at startup ("conflicts with one or more
+built in routes") and 404s forever, silently. Found by running the host,
+2026-08-08. The **pages** are still `/{locale}/admin/…`, which is SWA static
+routing and has no such reservation.
+
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
 | ✅ `GET /api/health` | anon | Liveness. |
@@ -29,12 +37,12 @@ built** (the container/model side may already exist):
 | ✅ `GET /api/properties/{id}/nearby/{entryId}/route` | anon | Lazy, cached route lookup by id — never coordinates (§4.2.1, ADR-028 Decision 4). |
 | 🔜 `GET /api/host/booking-requests?propertyId=` | auth (own property) | Booking-interest log for own listings (Manage reads it from the host projection once requests exist). |
 | 🔜 `POST /api/ai-assistant` | auth (own listing) / admin | DeepSeek actions (§4.6) — the v1 assistant's C# port is not yet built. |
-| ✅ `GET /api/admin/review-queue` | admin | The queue, `pending_review` only, oldest first (§4.5). |
-| ✅ `POST /api/admin/properties/{id}/approve` · `…/reject` | admin | Publish (from `pending_review` alone — else `409 not_in_review`) / reject with a **required** note, which is also how a live listing is taken down (`400 note_required`, `409 not_reviewable`). |
-| ✅ `GET /api/admin/properties` · `GET /api/admin/properties/{id}` · `PUT …/{id}/status` | admin | All listings in any status; the review projection (adds `hostId`, the owner, photo capture coordinates, declined suggestions); pause ⇄ reopen — that pair only (`409 not_published` / `not_reviewed`). |
-| ✅ `GET /api/admin/users` · `PUT /api/admin/users/{id}/deactivation` | admin | Profiles + a listing count each; the §3.7 flag (`403 cannot_deactivate_self`). |
+| ✅ `GET /api/staff/review-queue` | admin | The queue, `pending_review` only, oldest first (§4.5). |
+| ✅ `POST /api/staff/properties/{id}/approve` · `…/reject` | admin | Publish (from `pending_review` alone — else `409 not_in_review`) / reject with a **required** note, which is also how a live listing is taken down (`400 note_required`, `409 not_reviewable`). |
+| ✅ `GET /api/staff/properties` · `GET /api/staff/properties/{id}` · `PUT …/{id}/status` | admin | All listings in any status; the review projection (adds `hostId`, the owner, photo capture coordinates, declined suggestions); pause ⇄ reopen — that pair only (`409 not_published` / `not_reviewed`). |
+| ✅ `GET /api/staff/users` · `PUT /api/staff/users/{id}/deactivation` | admin | Profiles + a listing count each; the §3.7 flag (`403 cannot_deactivate_self`). |
 | ✅ **admin content editing** — the `host/properties*` writes above | admin (any listing) | Not a separate endpoint: an admin loads and writes anybody's listing through the owner's own editor, and their content save does **not** re-enter review (§4.5 "direct edit"). One rule, in `ListingVisibility.MayWrite`/`ReEntersReview`. |
-| 🔜 `GET /api/admin/booking-requests` · `PATCH …/{id}` (status) · `GET /api/admin/inquiries` | admin | Log viewers, request triage. |
+| 🔜 `GET /api/staff/booking-requests` · `PATCH …/{id}` (status) · `GET /api/staff/inquiries` | admin | Log viewers, request triage. |
 
 ---
 

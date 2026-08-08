@@ -423,33 +423,33 @@ export type AdminUser = {
   publishedCount: number;
 };
 
-export const fetchReviewQueue = () => get<AdminQueueItem[]>("/admin/review-queue");
+export const fetchReviewQueue = () => get<AdminQueueItem[]>("/staff/review-queue");
 
-export const fetchAdminProperties = () => get<AdminPropertyRow[]>("/admin/properties");
+export const fetchAdminProperties = () => get<AdminPropertyRow[]>("/staff/properties");
 
 export const fetchAdminProperty = (id: string) =>
-  get<AdminPropertyDetail>(`/admin/properties/${encodeURIComponent(id)}`);
+  get<AdminPropertyDetail>(`/staff/properties/${encodeURIComponent(id)}`);
 
 /** Publish a listing. The one act nothing else in the product performs, and
  *  the reason this surface exists. Accepted from `pending_review` alone. */
 export const approveProperty = (id: string) =>
-  post<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/approve`, {});
+  post<AdminPropertyRow>(`/staff/properties/${encodeURIComponent(id)}/approve`, {});
 
 /** Reject — and take down, which is the same act from a different starting
  *  status. The note is required by the API and is what the owner reads in
  *  their portfolio; there is no other channel telling them what to change. */
 export const rejectProperty = (id: string, note: string) =>
-  post<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/reject`, { note });
+  post<AdminPropertyRow>(`/staff/properties/${encodeURIComponent(id)}/reject`, { note });
 
 /** Pause a live listing, or put a paused one back (ADR-024). */
 export const setPropertyStatus = (id: string, status: "published" | "paused") =>
-  put<AdminPropertyRow>(`/admin/properties/${encodeURIComponent(id)}/status`, { status });
+  put<AdminPropertyRow>(`/staff/properties/${encodeURIComponent(id)}/status`, { status });
 
-export const fetchAdminUsers = () => get<AdminUser[]>("/admin/users");
+export const fetchAdminUsers = () => get<AdminUser[]>("/staff/users");
 
 /** §3.7. Records are kept — never deleted. */
 export const setUserDeactivation = (id: string, isDeactivated: boolean) =>
-  put<AdminUser>(`/admin/users/${encodeURIComponent(id)}/deactivation`, { isDeactivated });
+  put<AdminUser>(`/staff/users/${encodeURIComponent(id)}/deactivation`, { isDeactivated });
 
 // ---------------------------------------------------------------------------
 // The AI-assisted import (ADR-033). `api/Models/ImportModels.cs` is the

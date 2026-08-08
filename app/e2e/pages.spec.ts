@@ -90,10 +90,10 @@ async function stubBackend(page: Page): Promise<string[]> {
     // review page reads `/api/admin/properties/{id}`, and the host prefix
     // check would never see it, but keeping the pair adjacent is what stops
     // the next endpoint from being added on the wrong side of it.
-    if (path === "/api/admin/review-queue") return json(fixture("admin-review-queue.json"));
-    if (path === "/api/admin/users") return json(fixture("admin-users.json"));
-    if (path === "/api/admin/properties") return json(fixture("admin-properties.json"));
-    if (path.startsWith("/api/admin/properties/")) return json(fixture("admin-property.json"));
+    if (path === "/api/staff/review-queue") return json(fixture("admin-review-queue.json"));
+    if (path === "/api/staff/users") return json(fixture("admin-users.json"));
+    if (path === "/api/staff/properties") return json(fixture("admin-properties.json"));
+    if (path.startsWith("/api/staff/properties/")) return json(fixture("admin-property.json"));
 
     if (path === "/api/host/properties") return json(fixture("host-properties.json"));
 

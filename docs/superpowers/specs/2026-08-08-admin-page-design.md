@@ -67,7 +67,14 @@ function**, and the negative-test matrix in §7 is what proves it.
 
 ## 4. API
 
-New file `api/Functions/AdminFunctions.cs`. Every function begins with the same
+New file `api/Functions/AdminFunctions.cs`. **The routes are `staff/…`**: the
+Functions host reserves the `admin/` prefix for its own management API and
+refuses any function whose route template starts with it, whatever
+`routePrefix` says — found by running the host on 2026-08-08, after which all
+eight endpoints answered 404 with nothing in the log. The pages keep
+`/{locale}/admin/…`.
+
+Every function begins with the same
 two lines — `ClientPrincipal.Parse`, then a new
 `ProfileService.RequireAdminAsync`, which layers the role check on top of
 `RequireActiveAsync` so a **deactivated admin is refused before the role is
@@ -75,14 +82,14 @@ read** (§3.7).
 
 | Endpoint | Body | Answers |
 | --- | --- | --- |
-| `GET /api/admin/review-queue` | — | `AdminQueueItem[]`, `pending_review` only, **oldest first** — the queue is a waiting line, not a feed. |
-| `GET /api/admin/properties` | — | `AdminPropertyRow[]`, every listing in every status, newest activity first. Filtering and search are client-side, like the public search: the whole set is small and one fetch beats five. |
-| `GET /api/admin/properties/{id}` | — | `AdminPropertyDetail` — the review view's payload (§5). |
-| `POST /api/admin/properties/{id}/approve` | — | `pending_review → published`, clears `reviewNote`. Any other source status is `409 not_in_review`. |
-| `POST /api/admin/properties/{id}/reject` | `{ note }` **required** | `→ rejected`, stores `note` in the existing `PropertyDoc.ReviewNote`, which the owner's portfolio already renders. Empty or whitespace note is `400 note_required`. |
-| `PUT /api/admin/properties/{id}/status` | `{ status }` | `published \| paused`. Takedown-with-a-reason is `reject`, which is the same act from a different starting status and already carries the note the owner needs. |
-| `GET /api/admin/users` | — | `AdminUser[]`: profile fields plus a listing count per user, newest first. |
-| `PUT /api/admin/users/{id}/deactivation` | `{ isDeactivated }` | Sets the §3.7 flag. `403 cannot_deactivate_self` — an admin locking themselves out of the API is not a state any endpoint here can undo. |
+| `GET /api/staff/review-queue` | — | `AdminQueueItem[]`, `pending_review` only, **oldest first** — the queue is a waiting line, not a feed. |
+| `GET /api/staff/properties` | — | `AdminPropertyRow[]`, every listing in every status, newest activity first. Filtering and search are client-side, like the public search: the whole set is small and one fetch beats five. |
+| `GET /api/staff/properties/{id}` | — | `AdminPropertyDetail` — the review view's payload (§5). |
+| `POST /api/staff/properties/{id}/approve` | — | `pending_review → published`, clears `reviewNote`. Any other source status is `409 not_in_review`. |
+| `POST /api/staff/properties/{id}/reject` | `{ note }` **required** | `→ rejected`, stores `note` in the existing `PropertyDoc.ReviewNote`, which the owner's portfolio already renders. Empty or whitespace note is `400 note_required`. |
+| `PUT /api/staff/properties/{id}/status` | `{ status }` | `published \| paused`. Takedown-with-a-reason is `reject`, which is the same act from a different starting status and already carries the note the owner needs. |
+| `GET /api/staff/users` | — | `AdminUser[]`: profile fields plus a listing count per user, newest first. |
+| `PUT /api/staff/users/{id}/deactivation` | `{ isDeactivated }` | Sets the §3.7 flag. `403 cannot_deactivate_self` — an admin locking themselves out of the API is not a state any endpoint here can undo. |
 
 **Approve is not a status PUT.** Publishing is the one act with a precondition
 about where the listing came from, and folding it into a general status setter
@@ -124,7 +131,7 @@ Every admin-acting-on-someone-else's-listing write logs
 
 ## 5. The review view
 
-`GET /api/admin/properties/{id}` returns the host detail projection **plus what
+`GET /api/staff/properties/{id}` returns the host detail projection **plus what
 only an admin may see**: `hostId`, the host's display name, `cadastralRef`, the
 declined suggestions (§2.2.4), and each photo's `capturedLat`/`capturedLng`/
 `capturedAt`. `PropertyDoc.PropertyPhoto` carries a comment forbidding those

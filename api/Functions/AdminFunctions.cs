@@ -13,6 +13,18 @@ namespace Ebrostay.Api.Functions;
 
 // The admin surface (spec §4.5, design docs/superpowers/specs/2026-08-08).
 //
+// ROUTES ARE `staff/…`, NOT `admin/…`, and that is not a preference. The
+// Functions host reserves the `admin/` route prefix for its own management
+// API (`/admin/host/status`, `/admin/functions/{name}`), and it checks the
+// route TEMPLATE, not the final path — so `routePrefix: "api"` does not save
+// you. Every function in this file registered as `admin/…` was refused at
+// startup with "The specified route conflicts with one or more built in
+// routes" and answered 404 forever after, with nothing in the request log to
+// say why. Found by running the host on 2026-08-08.
+//
+// The PAGES are still `/{locale}/admin/…` — that is SWA static routing and
+// has no such reservation.
+//
 // Authorization is decided HERE, from the SWA-forwarded principal, in
 // `profiles.RequireAdminAsync` — never from the `/es/admin/*` route rule,
 // which only hides a page (§3.5). Three invited admins hold the role and the
@@ -41,7 +53,7 @@ public class AdminFunctions(
     // wondering whether anybody works here.
     [Function("AdminReviewQueue")]
     public async Task<IActionResult> ReviewQueue(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "admin/review-queue")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "staff/review-queue")]
         HttpRequest req)
     {
         var (_, error) = await profiles.RequireAdminAsync(ClientPrincipal.Parse(req));
@@ -65,7 +77,7 @@ public class AdminFunctions(
     // "rejected" and "everything" should not wait on the network to do it.
     [Function("AdminPropertiesList")]
     public async Task<IActionResult> PropertiesList(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "admin/properties")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "staff/properties")]
         HttpRequest req)
     {
         var (_, error) = await profiles.RequireAdminAsync(ClientPrincipal.Parse(req));
@@ -88,7 +100,7 @@ public class AdminFunctions(
     // the owner has already declined (§2.2.4).
     [Function("AdminPropertyGet")]
     public async Task<IActionResult> PropertyGet(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "admin/properties/{id}")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "staff/properties/{id}")]
         HttpRequest req,
         string id)
     {
@@ -115,7 +127,7 @@ public class AdminFunctions(
     // a list nobody scrolls.
     [Function("AdminUsersList")]
     public async Task<IActionResult> UsersList(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "admin/users")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "staff/users")]
         HttpRequest req)
     {
         var (_, error) = await profiles.RequireAdminAsync(ClientPrincipal.Parse(req));
@@ -185,7 +197,7 @@ public class AdminFunctions(
     // about where the listing came from.
     [Function("AdminPropertyApprove")]
     public async Task<IActionResult> Approve(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "admin/properties/{id}/approve")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "staff/properties/{id}/approve")]
         HttpRequest req,
         string id)
     {
@@ -223,7 +235,7 @@ public class AdminFunctions(
     // thing that says what to change.
     [Function("AdminPropertyReject")]
     public async Task<IActionResult> Reject(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "admin/properties/{id}/reject")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "staff/properties/{id}/reject")]
         HttpRequest req,
         string id)
     {
@@ -258,7 +270,7 @@ public class AdminFunctions(
     // changed nothing about what the listing claims.
     [Function("AdminPropertyStatus")]
     public async Task<IActionResult> Status(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "admin/properties/{id}/status")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "staff/properties/{id}/status")]
         HttpRequest req,
         string id)
     {
@@ -290,7 +302,7 @@ public class AdminFunctions(
     // admin control. The record is kept — never deleted.
     [Function("AdminUserDeactivation")]
     public async Task<IActionResult> Deactivation(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "admin/users/{id}/deactivation")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "staff/users/{id}/deactivation")]
         HttpRequest req,
         string id)
     {

@@ -1,4 +1,6 @@
 using Ebrostay.Api.Models;
+using Ebrostay.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
 namespace Ebrostay.Api.Tests;
@@ -7,12 +9,15 @@ namespace Ebrostay.Api.Tests;
 // live — as pure functions, so the whole matrix runs without a Cosmos account.
 //
 // What this file CANNOT reach, and where that is covered instead:
-//   • `ProfileService.RequireAdminAsync` (401 anon → 403 deactivated → 403
-//     non-admin) reads a profile document, so it is exercised against the
-//     emulator, not here. Its ORDER is the part that matters — deactivated is
-//     refused before any role is read (§3.7) — and it is written as one call
-//     into `RequireActiveAsync` precisely so there is no second path to get
-//     that order wrong.
+//   • `ProfileService.RequireAdminAsync` refuses in four steps — 401 anon →
+//     403 deactivated → 403 closing → 403 non-admin — and the middle two read
+//     a profile document, so they are exercised against the emulator, not
+//     here. `AdminGuardTests` below covers the first step (the only one that
+//     answers before any I/O) and the rules behind the other two are pinned as
+//     the pure predicates the guard consults. The ORDER is what matters, and
+//     it is written as ONE call into `RequireWritableAsync` — which is itself
+//     one call into `RequireActiveAsync` — precisely so there is no second
+//     path to get that order wrong.
 //   • The Cosmos reads and writes around these rules, same as every other
 //     test in this project.
 public class AdminTests
@@ -307,5 +312,98 @@ public class AdminTests
         Assert.Equal(
             ["first.jpg", "second.jpg", "third.jpg"],
             AdminProjection.ToPhotos(doc).Select(p => p.Url));
+    }
+}
+
+// The gate itself, in the one place it can be run here: the step that answers
+// BEFORE any profile is read. `ProfileService` is built with NO database on
+// purpose — a null `Database` throws the moment a guard touches Cosmos, so
+// these tests fail loudly if the anonymous refusal ever moves behind the read.
+//
+// Everything after that step needs a profile document and so needs a Cosmos
+// account; the rules it applies are pinned as pure predicates instead
+// (`AccountClosure.BlocksWrites` here and in AccountClosureTests).
+public class AdminGuardTests
+{
+    private static readonly ProfileService Guard = new(null!);
+
+    // A principal SWA never mints, and the one the gate must not trust: the
+    // admin role is there, "authenticated" is not.
+    private static ClientPrincipal AdminNotSignedIn() =>
+        new() { UserId = "admin-1", UserRoles = ["anonymous", "admin"] };
+
+    [Fact]
+    public async Task NoPrincipalIs401BeforeAnyRead()
+    {
+        var (profile, error) = await Guard.RequireAdminAsync(null);
+
+        Assert.IsType<UnauthorizedResult>(error);
+        Assert.Null(profile);
+    }
+
+    [Fact]
+    public async Task AnAdminRoleWithoutASessionIs401BeforeAnyRead()
+    {
+        var (profile, error) = await Guard.RequireAdminAsync(AdminNotSignedIn());
+
+        Assert.IsType<UnauthorizedResult>(error);
+        Assert.Null(profile);
+    }
+
+    // The other two guards answer the same way at the same point — asserted
+    // here because RequireAdminAsync now reaches the anonymous refusal THROUGH
+    // RequireWritableAsync, so all three share one path and one order.
+    [Fact]
+    public async Task TheWriteAndActiveGuardsRefuseAnonymousTheSameWay()
+    {
+        Assert.IsType<UnauthorizedResult>((await Guard.RequireWritableAsync(null)).error);
+        Assert.IsType<UnauthorizedResult>((await Guard.RequireActiveAsync(null)).error);
+    }
+}
+
+// "Closed is closed" (product decision, 2026-08-08): a staff member who has
+// asked to close their own account keeps no admin power at all.
+//
+// `RequireAdminAsync` layers on `RequireWritableAsync`, and this predicate is
+// the whole of what that layer adds — so a profile with a closure request on
+// it is refused `deletion_requested` by all nine /api/staff/* endpoints,
+// including the four reads (review queue, users, properties, one property),
+// before the role is ever looked at.
+//
+// The asymmetry with the owner case is deliberate: a closing OWNER keeps their
+// reads, because their portfolio and the page that cancels the closure are
+// theirs. The admin console is other people's homes and other people's
+// accounts.
+public class ClosingAdminTests
+{
+    private static ProfileDoc Staff(string? requestedAt = null) =>
+        new() { Id = "admin-1", DeletionRequestedAt = requestedAt };
+
+    [Fact]
+    public void AnAdminWhoIsNotClosingKeepsTheAdminSurface() =>
+        Assert.False(AccountClosure.BlocksWrites(Staff()));
+
+    [Fact]
+    public void AClosingAdminLosesIt() =>
+        Assert.True(AccountClosure.BlocksWrites(Staff("2026-08-08T10:00:00.0000000+00:00")));
+
+    // The way back, and the reason the decision above is safe to take.
+    // `AccountFunctions` guards BOTH /api/account/closure verbs with
+    // `RequireActiveAsync`, which does not consult this predicate — so a
+    // closing admin can still cancel, and cancelling writes exactly the field
+    // asserted here. Guard that endpoint with the writable or the admin check
+    // instead and the closure becomes irreversible: the admin locks themselves
+    // out of the only surface that could undo it. That is the surprise the
+    // decision exists to prevent, so it is pinned rather than assumed.
+    [Fact]
+    public void CancellingGivesTheAdminSurfaceBack()
+    {
+        var staff = Staff("2026-08-08T10:00:00.0000000+00:00");
+        Assert.True(AccountClosure.BlocksWrites(staff));
+
+        // What `DELETE /api/account/closure` writes to the profile.
+        staff.DeletionRequestedAt = null;
+
+        Assert.False(AccountClosure.BlocksWrites(staff));
     }
 }

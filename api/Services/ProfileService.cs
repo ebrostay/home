@@ -89,16 +89,39 @@ public class ProfileService(Database database)
     // The same guard, plus the role — what every /api/admin/* function calls
     // first (spec §3.5: the route rule is cosmetic, THIS is the boundary).
     //
-    // Deliberately layered on RequireActiveAsync rather than checking the role
-    // first: a deactivated principal is refused before anything reads its
-    // roles, so an admin who has been deactivated is locked out of the API by
-    // the §3.7 rule and never reaches an admin endpoint at all. That ordering
-    // is what §3.7 relies on when it says removing the role afterwards is
-    // tidiness, not the lock.
+    // Layered on RequireWritableAsync, so the refusals happen in this order:
+    // 401 anon → 403 deactivated → 403 closing → 403 not an admin.
+    //
+    // The deactivation half is what §3.7 relies on: a deactivated principal is
+    // refused before anything reads its roles, so an admin who has been
+    // deactivated is locked out of the API and never reaches an admin endpoint
+    // at all. Removing the role afterwards is tidiness, not the lock.
+    //
+    // The closure half is a product decision of 2026-08-08 — "closed is
+    // closed", and an admin account is the one where a surprise is least
+    // affordable. A staff member who has asked to close their own account
+    // keeps no moderation power: not approve, not reject, not publish, not
+    // deactivating somebody else.
+    //
+    // NOTE THE ASYMMETRY with the owner case, and that it is deliberate.
+    // RequireWritableAsync lets a closing OWNER keep reading, because their
+    // portfolio and the page that cancels the closure are things they still
+    // need to see. A closing ADMIN loses the whole admin surface, reads
+    // included (staff/review-queue, staff/users, staff/properties,
+    // staff/properties/{id}): the admin surface shows other people's homes and
+    // other people's accounts, none of which is theirs to read on the way out,
+    // and half a moderation console — a queue you can open but not act on — is
+    // exactly the surprise the decision names.
+    //
+    // What a closing admin does NOT lose is the way back: AccountFunctions
+    // guards DELETE /api/account/closure with RequireActiveAsync, not with
+    // this method, so cancelling their own closure still answers and restores
+    // everything above. Moving that endpoint onto either of the two guards
+    // here would make a closure irreversible.
     public async Task<(ProfileDoc? profile, IActionResult? error)> RequireAdminAsync(
         ClientPrincipal? principal)
     {
-        var (profile, error) = await RequireActiveAsync(principal);
+        var (profile, error) = await RequireWritableAsync(principal);
         if (error is not null) return (null, error);
 
         // 403, not 404: unlike a listing, the existence of the admin surface

@@ -1342,7 +1342,7 @@
     "provider": "Método de acceso",
     "dataTitle": "Tus datos",
     "purge": "Revocar la conexión de acceso",
-    "purgeHelp": "Esto desconecta tu proveedor de acceso de Ebrostay. No elimina tu cuenta de Ebrostay — para eso, usa la solicitud de cierre de abajo.",
+    "purgeHelp": "Esto desconecta tu proveedor de acceso de Ebrostay. No elimina tu cuenta de Ebrostay — para eso, usa la solicitud de cierre de arriba.",
     "support": "Escríbenos a",
     "closureTitle": "Cerrar mi cuenta",
     "closureHelp": "Tus viviendas saldrán de la búsqueda y no podrás crear ni editar nada. Te contactaremos antes de eliminar nada.",

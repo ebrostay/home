@@ -23,7 +23,7 @@
 // is a hairline and some prose because it is housekeeping, and the hierarchy
 // should say so before a word is read.
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/components/site/AuthProvider";
 import { RequireSignedIn } from "@/components/account/RequireSignedIn";
@@ -59,6 +59,32 @@ function AccountBody() {
   // beside the sentence that actually matters.
   const requestedOn = tableDate(me.deletionRequestedAt, locale);
 
+  // Whichever button currently carries this block's action — the trigger, the
+  // confirm, or the undo. Exactly one of the three is mounted at a time, so
+  // they share one id and "put focus back where the action is" is a single
+  // move rather than three refs and a decision.
+  const actionId = useId();
+
+  // Every state change here REPLACES that button: the trigger becomes the
+  // confirm, the confirm becomes the undo. Without this, focus falls to
+  // <body> at each swap and a keyboard user has to tab from the top of the
+  // document to reach a control they were never told had appeared — and
+  // `disabled={busy}` blurs the pressed button mid-write on top of that.
+  // The dialog this page deliberately does not use was providing this for
+  // free; nothing else does. `NearbyEditor.focusAfterManualAdd` makes the
+  // same move, the same way, for the same reason.
+  //
+  // A ref, not state: it must not cause a render, and — the part that matters
+  // — it must not fire on mount. A page that took focus on load would drag a
+  // reader past the identity block it opens with, to a button about leaving.
+  const takeFocus = useRef(false);
+
+  useEffect(() => {
+    if (!takeFocus.current) return;
+    takeFocus.current = false;
+    document.getElementById(actionId)?.focus();
+  });
+
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     setFailed(false);
@@ -69,6 +95,11 @@ function AccountBody() {
     } catch {
       setFailed(true);
     } finally {
+      // Both outcomes, and set here rather than in either branch: on success
+      // the action button has been replaced by the next state's, and on
+      // failure the same button comes back enabled with the alert underneath
+      // it. Either way the person who pressed it is standing on it.
+      takeFocus.current = true;
       setBusy(false);
     }
   };
@@ -112,8 +143,15 @@ function AccountBody() {
         </div>
       </section>
 
-      {/* 2 — closure */}
+      {/* 2 — closure. `aria-live` because the write that changes this block
+          changes it wholesale: after a successful request the heading, the
+          date and the offer are all different, and the only other signal that
+          anything happened is a focus move. Polite, not assertive — the person
+          asked for this and is waiting for it; there is nothing to interrupt.
+          The failure line below carries its own `role="alert"` and is
+          therefore announced by that, not twice by this. */}
       <section
+        aria-live="polite"
         className={`mt-6 rounded-(--radius-card) border p-6 sm:p-7 ${
           closing
             ? "border-river-deep/30 bg-river-soft"
@@ -131,6 +169,7 @@ function AccountBody() {
             )}
             <p className="mt-3 text-sm leading-relaxed text-body">{t("closingHelp")}</p>
             <Button
+              id={actionId}
               variant="secondary"
               className="mt-5"
               disabled={busy}
@@ -149,6 +188,7 @@ function AccountBody() {
             {confirming ? (
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <Button
+                  id={actionId}
                   variant="ink"
                   disabled={busy}
                   onClick={() => run(requestAccountClosure)}
@@ -158,16 +198,23 @@ function AccountBody() {
                 <Button
                   variant="ghost"
                   disabled={busy}
-                  onClick={() => setConfirming(false)}
+                  onClick={() => {
+                    takeFocus.current = true;
+                    setConfirming(false);
+                  }}
                 >
                   {t("closureCancelConfirm")}
                 </Button>
               </div>
             ) : (
               <Button
+                id={actionId}
                 variant="secondary"
                 className="mt-5"
-                onClick={() => setConfirming(true)}
+                onClick={() => {
+                  takeFocus.current = true;
+                  setConfirming(true);
+                }}
               >
                 {t("closureRequest")}
               </Button>

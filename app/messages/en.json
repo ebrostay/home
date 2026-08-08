@@ -1342,7 +1342,7 @@
     "provider": "Sign-in method",
     "dataTitle": "Your data",
     "purge": "Revoke the sign-in connection",
-    "purgeHelp": "This disconnects your sign-in provider from Ebrostay. It does not delete your Ebrostay account — use the closure request below for that.",
+    "purgeHelp": "This disconnects your sign-in provider from Ebrostay. It does not delete your Ebrostay account — use the closure request above for that.",
     "support": "Contact us at",
     "closureTitle": "Close my account",
     "closureHelp": "Your homes will be taken out of search and you will not be able to create or edit anything. We will contact you before anything is removed.",

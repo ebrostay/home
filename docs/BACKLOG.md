@@ -24,18 +24,22 @@ re-specifications.
   booking-interest log endpoint Manage is designed around.
 - **[B][S]** **Inquiries endpoint** — `POST /api/inquiries` (spec §2.5) and
   the contact-form wiring.
-- **[B][L]** **Admin surface** — spec §4.5, nothing built. The review queue
-  (approve/reject with note) carries queued obligations from five ADRs: the
-  **live Catastro comparison** (ADR-027 — `luso`/surface/postcode/centroid,
-  never from a stored copy), the **photo EXIF location column** (ADR-019
-  amendment), the **declined-suggestions context row** (ADR-027 amendment,
-  Decision 6 rules), the **per-stay `turnoverDaysOverride` control**
-  (ADR-026 — the field and enforcement exist, the control does not), and the
-  **street-band map** the admin is meant to see when reviewing a listing
-  (ADR-041 point 2 — the band itself already derives and takes effect
-  without this). Also: all-properties management, users deactivate/
-  reactivate, booking-request triage, inquiries viewer. Decide reviewer
-  preview of unpublished listings (ADR-029 Decision 5) when the queue lands.
+- **[B][M]** **Admin surface residue** — the console itself is ✅ **built
+  2026-08-08** (spec §4.5): the review queue with approve/reject-with-note,
+  all-properties management, and people with deactivate/reactivate. What is
+  still open is the queued obligations from five ADRs, which the first build
+  deliberately did not carry: the **live Catastro comparison** (ADR-027 —
+  `luso`/surface/postcode/centroid, never from a stored copy), the **photo
+  EXIF location column** (ADR-019 amendment), the **declined-suggestions
+  context row** (ADR-027 amendment, Decision 6 rules), the **per-stay
+  `turnoverDaysOverride` control** (ADR-026 — the field and enforcement exist,
+  the control does not), and the **street-band map** the admin is meant to see
+  when reviewing a listing (ADR-041 point 2 — the band itself already derives
+  and takes effect without this). Plus the two tabs that wait on endpoints
+  that do not exist yet: **booking-request triage** (§4.3) and the
+  **inquiries viewer** (§2.5) — both are blocked by the two items above this
+  one, not by the console. Decide reviewer preview of unpublished listings
+  (ADR-029 Decision 5): the queue has landed, so this one is now due.
 - **[P][S]** **Owner-side band preview in the editor (ADR-041 residue).**
   `LocationPicker` (`app/components/host/fields/LocationPicker.tsx`) still
   shows only the exact pin — the ADR's "the owner confirms the band in the

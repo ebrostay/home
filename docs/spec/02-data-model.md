@@ -316,12 +316,25 @@ account closure (ADR-042) — written ONLY by /api/account/closure:
 | `closed` → `pending_review` | host (own), on a **content** edit | The `published` rule above, applied to the other public status: `ListingVisibility.ReEntersReview` carries `closed`. Normally unreachable — a closing owner is write-blocked (§3.7) — but the closure fan-out writes listings first and the profile flag last, so *(listings `closed`, flag unset)* is what any failure in between leaves behind, and in that window the owner is fully writable and holds a live listing. |
 | any → any | **admin** | Admins may edit any listing directly without re-review (the reviewer needs no reviewer). |
 
-**An owner can never set `closed`, and can never leave it.**
-`HostValidation.OwnerStatuses` (`api/Models/HostWrites.cs`) is
-`["paused", "published", "pending_review"]` — `closed` is deliberately not in
-it, in either direction: an owner cannot close a listing without closing their
-account, and cannot pause or reopen one that a closure moved. It is the first
-status in v2 an owner cannot set. That exclusion is precisely *why* the admin
+**An owner can never set `closed`, and can never leave it.** The two halves are
+enforced by two different things, and it matters which:
+
+- **Into `closed`** — `HostValidation.OwnerStatuses` (`api/Models/HostWrites.cs`)
+  is `["paused", "published", "pending_review"]`, and it governs the **target**
+  status only. `closed` is not in it, so an owner cannot close a listing without
+  closing their account.
+- **Out of `closed`** — nothing to do with that array. It is the
+  **current-status** clauses in `HostValidation.CheckStatus`: `published`
+  requires `paused`, `paused` requires `published` or `paused`, and
+  `pending_review` requires `draft` or `rejected`. A listing sitting in `closed`
+  matches no "from" side, so every owner transition out of it is refused
+  `status_not_allowed`.
+
+Do not merge the two in your head. Adding `"closed"` to `OwnerStatuses` while
+trusting it to cover the "from" side would be a hole, not a widening:
+`next == "closed"` matches none of the current-status clauses, so it would be
+accepted **from any status**. `closed` is the first status in v2 an owner
+cannot set. That exclusion is precisely *why* the admin
 `closed → paused` row above had to exist: without it, an owner deactivated
 mid-closure had a public listing and no way out of it, since their own
 `DELETE /api/account/closure` is refused once `isDeactivated` is set.

@@ -27,13 +27,14 @@
 
 **Files:**
 - Modify: `api/Models/ProfileDoc.cs`
+- Create: `api/Models/AccountModels.cs`
 - Modify: `api/Services/ProfileService.cs:47-62`
 - Modify: `api/Functions/MeFunction.cs:21-32`
 - Test: `api/Ebrostay.Api.Tests/AccountClosureTests.cs` (create)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `ProfileDoc.DeletionRequestedAt` (`string?`, ISO-8601, null = no request); `MeResponse.DeletionRequestedAt` (`string?`, final constructor parameter); `ProfileService.RequireWritableAsync(ClientPrincipal?)` returning `(ProfileDoc? profile, IActionResult? error)`.
+- Produces: `ProfileDoc.DeletionRequestedAt` (`string?`, ISO-8601, null = no request); `MeResponse.DeletionRequestedAt` (`string?`, final constructor parameter); `AccountClosure.BlocksWrites(ProfileDoc)` → `bool`; `ProfileService.RequireWritableAsync(ClientPrincipal?)` returning `(ProfileDoc? profile, IActionResult? error)`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -62,6 +63,18 @@ public class ProfileClosureTests
         var doc = new ProfileDoc { Id = "u1", DeletionRequestedAt = "2026-08-08T10:00:00.0000000+00:00" };
         Assert.True(DateTimeOffset.TryParse(doc.DeletionRequestedAt, out _));
     }
+
+    // The guard's whole decision, as a pure function. RequireWritableAsync
+    // needs a Cosmos account to exercise; this does not, so the rule that
+    // actually stops the writes is tested rather than the plumbing around it.
+    [Fact]
+    public void An_open_account_may_write()
+        => Assert.False(AccountClosure.BlocksWrites(new ProfileDoc { Id = "u1" }));
+
+    [Fact]
+    public void A_closing_account_may_not_write()
+        => Assert.True(AccountClosure.BlocksWrites(
+            new ProfileDoc { Id = "u1", DeletionRequestedAt = "2026-08-08T10:00:00.0000000+00:00" }));
 }
 ```
 
@@ -121,7 +134,26 @@ and the authenticated branch gains a final argument:
 Run: `dotnet test api/Ebrostay.Api.Tests --filter ProfileClosureTests`
 Expected: PASS (2 tests).
 
-- [ ] **Step 6: Add the writable guard**
+- [ ] **Step 6: Add the predicate**
+
+Create `api/Models/AccountModels.cs`:
+
+```csharp
+namespace Ebrostay.Api.Models;
+
+/// Owner-initiated account closure (design 2026-08-08). Pure and Cosmos-free
+/// like `AdminValidation`, so every rule here is testable without a database.
+public static class AccountClosure
+{
+    /// The whole of what `RequireWritableAsync` decides. A closing account may
+    /// still READ — its owner needs to see the portfolio that is closing, and
+    /// to reach the page that cancels the request — but may not create or edit.
+    public static bool BlocksWrites(ProfileDoc profile) =>
+        profile.DeletionRequestedAt is not null;
+}
+```
+
+- [ ] **Step 7: Add the writable guard**
 
 In `api/Services/ProfileService.cs`, directly after `RequireActiveAsync`:
 
@@ -142,7 +174,7 @@ In `api/Services/ProfileService.cs`, directly after `RequireActiveAsync`:
         var (profile, error) = await RequireActiveAsync(principal);
         if (error is not null) return (null, error);
 
-        if (profile!.DeletionRequestedAt is not null)
+        if (AccountClosure.BlocksWrites(profile!))
             return (null, new ObjectResult(new { error = "deletion_requested" })
             {
                 StatusCode = StatusCodes.Status403Forbidden,
@@ -152,15 +184,18 @@ In `api/Services/ProfileService.cs`, directly after `RequireActiveAsync`:
     }
 ```
 
-- [ ] **Step 7: Build to verify**
+- [ ] **Step 8: Run the tests and build**
+
+Run: `dotnet test api/Ebrostay.Api.Tests --filter ProfileClosureTests`
+Expected: PASS (4 tests).
 
 Run: `dotnet build api/Ebrostay.Api.csproj`
 Expected: build succeeds, no warnings about unmatched `MeResponse` arity.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add api/Models/ProfileDoc.cs api/Services/ProfileService.cs api/Functions/MeFunction.cs api/Ebrostay.Api.Tests/AccountClosureTests.cs
+git add api/Models/ProfileDoc.cs api/Models/AccountModels.cs api/Services/ProfileService.cs api/Functions/MeFunction.cs api/Ebrostay.Api.Tests/AccountClosureTests.cs
 git commit -m "feat(account): the flag a closing account carries"
 ```
 
@@ -169,11 +204,11 @@ git commit -m "feat(account): the flag a closing account carries"
 ### Task 2: The transition map
 
 **Files:**
-- Create: `api/Models/AccountModels.cs`
+- Modify: `api/Models/AccountModels.cs` (created in Task 1 — append to the existing `AccountClosure` class, do not recreate the file)
 - Test: `api/Ebrostay.Api.Tests/AccountClosureTests.cs` (append)
 
 **Interfaces:**
-- Consumes: nothing.
+- Consumes: `AccountClosure` (Task 1).
 - Produces: `AccountClosure.OnRequest(string status)` → `string?` (the new status, or null to leave untouched); `AccountClosure.OnCancel(string status)` → `string?`; `record AccountClosureState(string? DeletionRequestedAt)`.
 
 Kept pure and separate from Cosmos, exactly like `AdminValidation` in `api/Models/AdminModels.cs:164`, so the whole rule can be tested without a database.
@@ -247,25 +282,26 @@ Expected: FAIL — compile error, `AccountClosure` does not exist.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `api/Models/AccountModels.cs`:
+Append to `api/Models/AccountModels.cs` — a new record beside the existing class, and two methods inside `AccountClosure`:
 
 ```csharp
-namespace Ebrostay.Api.Models;
-
 /// The request body is empty — the account being closed is always the caller's
 /// own, read from `x-ms-client-principal` (§3.4). The type exists so the
 /// endpoint's response has a shape.
 public record AccountClosureState(string? DeletionRequestedAt);
+```
 
-/// What an owner's closure request does to each of their listings, and what
-/// cancelling undoes. Pure and Cosmos-free, like `AdminValidation`, so the
-/// whole rule is testable without a database.
-///
-/// Both directions return `null` for "leave this listing untouched", which is
-/// also what makes them idempotent: re-applying the map to an already-moved
-/// listing is a no-op, so a fan-out that failed halfway is safe to repeat.
-public static class AccountClosure
-{
+Inside `AccountClosure`, after `BlocksWrites`:
+
+```csharp
+    // What an owner's closure request does to each of their listings, and what
+    // cancelling undoes.
+    //
+    // Both directions return `null` for "leave this listing untouched", which
+    // is also what makes them idempotent: re-applying the map to an
+    // already-moved listing is a no-op, so a fan-out that failed halfway is
+    // safe to repeat.
+
     /// `published` is the only state the public can see, so it is the only one
     /// that has to change. `pending_review` is withdrawn to `draft` so no
     /// reviewer can approve a home for a departing owner. `paused`, `draft`
@@ -291,8 +327,9 @@ public static class AccountClosure
         "closed" => "paused",
         _ => null,
     };
-}
 ```
+
+(Leave the class open — Task 3 appends two more methods to it.)
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -328,7 +365,7 @@ Append to `api/Ebrostay.Api.Tests/AccountClosureTests.cs`:
 // The fan-out is a loop over the owner's listings applying the Task 2 map.
 // These tests pin the loop's decisions without a Cosmos account: given a set
 // of listings, which ones get written and to what.
-public class AccountClosureFanOutTests
+public class AccountClosureApplyTests
 {
     private static PropertyDoc Listing(string id, string status) =>
         new() { Id = id, HostId = "u1", Status = status };
@@ -344,7 +381,7 @@ public class AccountClosureFanOutTests
             Listing("d", "draft"),
         ];
 
-        var writes = AccountClosure.PlanRequest(listings).ToArray();
+        var writes = AccountClosure.ApplyRequest(listings).ToArray();
 
         Assert.Equal(2, writes.Length);
         Assert.Equal(("a", "closed"), (writes[0].Id, writes[0].Status));
@@ -361,7 +398,7 @@ public class AccountClosureFanOutTests
             Listing("c", "paused"),
         ];
 
-        var writes = AccountClosure.PlanCancel(listings).ToArray();
+        var writes = AccountClosure.ApplyCancel(listings).ToArray();
 
         Assert.Single(writes);
         Assert.Equal(("a", "paused"), (writes[0].Id, writes[0].Status));
@@ -371,15 +408,15 @@ public class AccountClosureFanOutTests
     public void Re_running_a_finished_request_writes_nothing()
     {
         PropertyDoc[] listings = [Listing("a", "closed"), Listing("b", "draft")];
-        Assert.Empty(AccountClosure.PlanRequest(listings));
+        Assert.Empty(AccountClosure.ApplyRequest(listings));
     }
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test api/Ebrostay.Api.Tests --filter AccountClosureFanOutTests`
-Expected: FAIL — `AccountClosure` has no `PlanRequest` / `PlanCancel`.
+Run: `dotnet test api/Ebrostay.Api.Tests --filter AccountClosureApplyTests`
+Expected: FAIL — `AccountClosure` has no `ApplyRequest` / `ApplyCancel`.
 
 - [ ] **Step 3: Add the planners**
 
@@ -389,10 +426,10 @@ Append to `AccountClosure` in `api/Models/AccountModels.cs`:
     /// The listings a closure request must write, and their new status. Kept
     /// separate from the endpoint so the fan-out's decisions are testable
     /// without a Cosmos account — the endpoint only loops and saves.
-    public static IEnumerable<PropertyDoc> PlanRequest(IEnumerable<PropertyDoc> listings) =>
+    public static IEnumerable<PropertyDoc> ApplyRequest(IEnumerable<PropertyDoc> listings) =>
         Plan(listings, OnRequest);
 
-    public static IEnumerable<PropertyDoc> PlanCancel(IEnumerable<PropertyDoc> listings) =>
+    public static IEnumerable<PropertyDoc> ApplyCancel(IEnumerable<PropertyDoc> listings) =>
         Plan(listings, OnCancel);
 
     private static IEnumerable<PropertyDoc> Plan(
@@ -410,7 +447,7 @@ Append to `AccountClosure` in `api/Models/AccountModels.cs`:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test api/Ebrostay.Api.Tests --filter AccountClosureFanOutTests`
+Run: `dotnet test api/Ebrostay.Api.Tests --filter AccountClosureApplyTests`
 Expected: PASS (3 tests).
 
 - [ ] **Step 5: Write the endpoints**
@@ -476,8 +513,8 @@ public class AccountFunctions(
         }
 
         var writes = requesting
-            ? AccountClosure.PlanRequest(listings)
-            : AccountClosure.PlanCancel(listings);
+            ? AccountClosure.ApplyRequest(listings)
+            : AccountClosure.ApplyCancel(listings);
 
         // Listing-first, profile-last. The two are not one transaction, so the
         // order decides what a crash leaves behind: with the flag written last,
@@ -544,45 +581,11 @@ git commit -m "feat(account): request a closure, and take it back"
 
 These are exactly the nine authenticated **write** call sites. Every other `RequireActiveAsync` call is a read and must be left alone — `HostFunctions:45` (GET host/properties), `HostFunctions:193` (GET host/properties/{id}), `ImportFunctions:146` (GET import/{jobId}), `NearbyFunctions:72` and `NearbyFunctions:98` (both GET). Changing a read is the mistake this task can make: it would blind an owner to the portfolio they are trying to close.
 
-- [ ] **Step 1: Write the failing test**
+This task is a mechanical refactor with no new behaviour of its own: the rule it enforces is already tested as `AccountClosure.BlocksWrites` (Task 1), and the guard that consumes it is already written (Task 1). So there is no new test here. The guard against getting it wrong is the existing suite plus the reviewer reading the diff against the call-site list below.
 
-Append to `api/Ebrostay.Api.Tests/AccountClosureTests.cs`:
+Do **not** add a test that reads the `.cs` files as text and counts occurrences of the guard's name. That was in an earlier draft of this plan and was rejected: it asserts on source text rather than behaviour, and any comment mentioning the name breaks it.
 
-```csharp
-// The guard's contract. The endpoints themselves need a Cosmos account to
-// test, but which guard each one calls is a fact about the source, and this
-// is the negative-test matrix's entry for a closing account (spec §3.5).
-public class WritableGuardTests
-{
-    private static string Source(string file) =>
-        File.ReadAllText(Path.Combine("..", "..", "..", "..", "Functions", file));
-
-    [Theory]
-    [InlineData("HostFunctions.cs", 7)]
-    [InlineData("ImportFunctions.cs", 2)]
-    public void Every_write_endpoint_uses_the_writable_guard(string file, int expected)
-    {
-        var writes = Source(file).Split("RequireWritableAsync").Length - 1;
-        Assert.Equal(expected, writes);
-    }
-
-    [Fact]
-    public void Read_endpoints_keep_the_active_guard()
-    {
-        // GET host/properties and GET host/properties/{id} — an owner must
-        // still see the portfolio that is closing.
-        var reads = Source("HostFunctions.cs").Split("RequireActiveAsync").Length - 1;
-        Assert.Equal(2, reads);
-    }
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `dotnet test api/Ebrostay.Api.Tests --filter WritableGuardTests`
-Expected: FAIL — 0 occurrences of `RequireWritableAsync`, expected 7 and 2.
-
-- [ ] **Step 3: Swap the nine write call sites**
+- [ ] **Step 1: Swap the nine write call sites**
 
 In `api/Functions/HostFunctions.cs`, change `RequireActiveAsync` to `RequireWritableAsync` on lines **114, 219, 571, 612, 725, 783, 825** only. Each line reads:
 
@@ -612,20 +615,23 @@ and becomes:
 
 Leave line 146 unchanged. Leave `NearbyFunctions.cs` entirely unchanged — both its guarded endpoints are GETs.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 2: Verify the swap by counting, before running anything**
 
-Run: `dotnet test api/Ebrostay.Api.Tests --filter WritableGuardTests`
-Expected: PASS (3 tests).
+Run: `grep -c RequireWritableAsync api/Functions/HostFunctions.cs api/Functions/ImportFunctions.cs`
+Expected: `7` and `2`.
 
-- [ ] **Step 5: Run the full API suite**
+Run: `grep -n RequireActiveAsync api/Functions/HostFunctions.cs api/Functions/ImportFunctions.cs api/Functions/NearbyFunctions.cs`
+Expected: exactly five remaining — `HostFunctions` 45 and 193, `ImportFunctions` 146, `NearbyFunctions` 72 and 98. Every one is a GET. If a sixth appears, or one of these five is missing, the swap hit the wrong line.
+
+- [ ] **Step 3: Run the full API suite**
 
 Run: `dotnet test api/Ebrostay.Api.Tests`
-Expected: PASS.
+Expected: PASS — no test should change behaviour here; a failure means a read endpoint was swapped by mistake.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add api/Functions/HostFunctions.cs api/Functions/ImportFunctions.cs api/Ebrostay.Api.Tests/AccountClosureTests.cs
+git add api/Functions/HostFunctions.cs api/Functions/ImportFunctions.cs
 git commit -m "feat(account): a closing account stops writing"
 ```
 

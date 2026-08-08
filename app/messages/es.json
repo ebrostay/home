@@ -1544,7 +1544,8 @@
         "published": "Publicadas",
         "paused": "Pausadas",
         "draft": "Borradores",
-        "rejected": "Rechazadas"
+        "rejected": "Rechazadas",
+        "closed": "Cerradas"
       },
       "col": {
         "status": "Estado",
@@ -1580,7 +1581,8 @@
       },
       "state": {
         "active": "Activa",
-        "deactivated": "Desactivada"
+        "deactivated": "Desactivada",
+        "closing": "Cerrando"
       },
       "deactivate": "Desactivar",
       "reactivate": "Reactivar",

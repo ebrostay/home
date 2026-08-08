@@ -24,13 +24,18 @@ export const TABS = [
 
 export type Tab = (typeof TABS)[number];
 
-/** Stored lifecycle value (spec §2.2.1) → the owner-facing bucket. */
+/** Stored lifecycle value (spec §2.2.1) → the owner-facing bucket. `closed`
+ *  (design 2026-08-08, account closure) buckets with `live`: it is still the
+ *  public state a guest sees, and an owner watching their own portfolio
+ *  should not read "closing" as a state distinct from the "live" pill they
+ *  were just looking at. */
 const BUCKET: Record<PropertyStatus, Exclude<Tab, "all">> = {
   published: "live",
   rejected: "changes",
   pending_review: "review",
   draft: "draft",
   paused: "paused",
+  closed: "live",
 };
 
 /** The mapping on its own, for surfaces that hold a status without a listing

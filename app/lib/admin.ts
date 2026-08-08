@@ -29,6 +29,10 @@ export const STATUS_TONE: Record<PropertyStatus, "brand" | "warn" | "danger" | "
     rejected: "danger",
     draft: "neutral",
     paused: "river",
+    // Publicly visible exactly like `published` (ListingVisibility, design
+    // 2026-08-08) — the owner is leaving, but the listing is still live, so
+    // it gets the same "live" tone rather than a distinct one.
+    closed: "brand",
   };
 
 /** Match on everything a person might have in front of them: the name, the

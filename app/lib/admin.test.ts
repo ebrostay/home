@@ -39,6 +39,7 @@ const user = (over: Partial<AdminUser> = {}): AdminUser => ({
   isDeactivated: false,
   listingCount: 3,
   publishedCount: 2,
+  deletionRequestedAt: null,
   ...over,
 });
 

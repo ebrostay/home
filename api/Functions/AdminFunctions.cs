@@ -182,7 +182,7 @@ public class AdminFunctions(
                 counts.TryGetValue(p.Id, out var c);
                 return new AdminUser(
                     p.Id, p.Provider, p.Name, p.CreatedAt, p.LastSeenAt,
-                    p.IsDeactivated, c.All, c.Published);
+                    p.IsDeactivated, c.All, c.Published, p.DeletionRequestedAt);
             })
             // Newest first: the people who have just arrived are the ones
             // anybody is looking for.
@@ -434,7 +434,8 @@ public class AdminFunctions(
 
         return new OkObjectResult(new AdminUser(
             target.Id, target.Provider, target.Name, target.CreatedAt,
-            target.LastSeenAt, target.IsDeactivated, 0, 0));
+            target.LastSeenAt, target.IsDeactivated, 0, 0,
+            target.DeletionRequestedAt));
     }
 
     // ------------------------------------------------------------------

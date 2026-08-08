@@ -150,14 +150,17 @@ export type PropertyDetail = Omit<
   previewStatus: Exclude<PropertyStatus, "published"> | null;
 };
 
-// The five states a listing moves through (spec §2.2.1). Stored values, not
-// labels: the portfolio page maps them to owner-facing words in both locales.
+// The five states a listing moves through (spec §2.2.1), plus `closed` — set
+// when the owner requests account closure (design 2026-08-08) and kept
+// publicly visible like `published`. Stored values, not labels: the
+// portfolio page maps them to owner-facing words in both locales.
 export type PropertyStatus =
   | "draft"
   | "pending_review"
   | "published"
   | "rejected"
-  | "paused";
+  | "paused"
+  | "closed";
 
 export type HostRange = PublicRange & {
   status: string | null;
@@ -448,6 +451,7 @@ export type AdminUser = {
   isDeactivated: boolean;
   listingCount: number;
   publishedCount: number;
+  deletionRequestedAt: string | null;
 };
 
 export const fetchReviewQueue = () => get<AdminQueueItem[]>("/staff/review-queue");

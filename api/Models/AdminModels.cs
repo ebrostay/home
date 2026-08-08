@@ -146,7 +146,12 @@ public record AdminUser(
     string? LastSeenAt,
     bool IsDeactivated,
     int ListingCount,
-    int PublishedCount);
+    int PublishedCount,
+    /// Set when the user has asked to close their account (design
+    /// 2026-08-08). No action is attached to it yet — the admin's half of the
+    /// flow is deferred to its own ADR — so this is a signal to act on out of
+    /// band, not a queue.
+    string? DeletionRequestedAt);
 
 /// The approval payload. One field, and it is a precondition rather than a
 /// preference: the reviewer states that they looked at the derived band, that

@@ -169,8 +169,20 @@ export default function AdminUsersPage() {
                 </Td>
 
                 <Td>
-                  <Badge tone={user.isDeactivated ? "danger" : "neutral"}>
-                    {t(user.isDeactivated ? "state.deactivated" : "state.active")}
+                  <Badge
+                    tone={
+                      user.deletionRequestedAt
+                        ? "warn"
+                        : user.isDeactivated
+                          ? "danger"
+                          : "neutral"
+                    }
+                  >
+                    {user.deletionRequestedAt
+                      ? t("state.closing")
+                      : user.isDeactivated
+                        ? t("state.deactivated")
+                        : t("state.active")}
                   </Badge>
                 </Td>
 

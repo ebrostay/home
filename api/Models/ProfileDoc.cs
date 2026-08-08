@@ -9,6 +9,16 @@ public class ProfileDoc
     public string Provider { get; set; } = "";
     public string Name { get; set; } = "";
     public bool IsDeactivated { get; set; }
+
+    /// Owner-initiated account closure (design 2026-08-08). Null = no request.
+    /// A timestamp rather than a bool: it is both the gate every write endpoint
+    /// checks and the audit record the admin users tab shows, so the admin can
+    /// see how long a request has waited.
+    ///
+    /// Deliberately NOT `IsDeactivated`. Deactivation is done TO you by an
+    /// admin and locks you out; a closure request is made BY you and must
+    /// still let you reach your own account page to cancel it.
+    public string? DeletionRequestedAt { get; set; }
     public string? CreatedAt { get; set; }
     public string? LastSeenAt { get; set; }
 }
@@ -22,4 +32,5 @@ public record MeResponse(
     string? Provider,
     string[] Roles,
     bool IsAdmin,
-    bool IsDeactivated);
+    bool IsDeactivated,
+    string? DeletionRequestedAt);

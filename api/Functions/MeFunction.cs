@@ -19,7 +19,7 @@ public class MeFunction(ProfileService profiles)
         var principal = ClientPrincipal.Parse(req);
         if (principal is null || !principal.IsAuthenticated)
             return new OkObjectResult(
-                new MeResponse(false, null, null, null, ["anonymous"], false, false));
+                new MeResponse(false, null, null, null, ["anonymous"], false, false, null));
 
         var profile = await profiles.BootstrapAsync(principal);
         return new OkObjectResult(new MeResponse(
@@ -29,6 +29,7 @@ public class MeFunction(ProfileService profiles)
             Provider: principal.IdentityProvider,
             Roles: principal.UserRoles,
             IsAdmin: principal.IsAdmin,
-            IsDeactivated: profile.IsDeactivated));
+            IsDeactivated: profile.IsDeactivated,
+            DeletionRequestedAt: profile.DeletionRequestedAt));
     }
 }

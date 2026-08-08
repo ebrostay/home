@@ -61,6 +61,31 @@ public class ProfileService(Database database)
         return (profile, null);
     }
 
+    // The guard every WRITE endpoint calls, in place of RequireActiveAsync.
+    //
+    // The difference between "your account is closing" and "you are locked
+    // out": a closing account can still READ — its owner needs to see the
+    // portfolio that is about to close, and to reach the page that cancels
+    // the request — but cannot create or edit anything.
+    //
+    // Layered on RequireActiveAsync so the §3.7 deactivation refusal still
+    // runs first: a deactivated account is refused as deactivated, whatever
+    // else is true of it.
+    public async Task<(ProfileDoc? profile, IActionResult? error)> RequireWritableAsync(
+        ClientPrincipal? principal)
+    {
+        var (profile, error) = await RequireActiveAsync(principal);
+        if (error is not null) return (null, error);
+
+        if (AccountClosure.BlocksWrites(profile!))
+            return (null, new ObjectResult(new { error = "deletion_requested" })
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+            });
+
+        return (profile, null);
+    }
+
     // The same guard, plus the role — what every /api/admin/* function calls
     // first (spec §3.5: the route rule is cosmetic, THIS is the boundary).
     //

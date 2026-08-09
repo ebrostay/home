@@ -5,7 +5,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Copy, MapPin, Share2 } from "lucide-react";
+import { Check, Copy, MapPin, Share2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useShortMonths } from "@/i18n/dates";
@@ -19,7 +19,11 @@ import {
   type RouteBand,
 } from "@/lib/api";
 import { resultsQueryFor } from "@/components/search/resultsHandoff";
-import { AMENITY_ICONS } from "@/lib/amenity-icons";
+import {
+  AMENITY_ICONS,
+  groupAmenities,
+  statedAbsent,
+} from "@/lib/amenities";
 import { monthStates } from "@/lib/availability";
 import {
   DEFAULT_NEARBY_PROFILE,
@@ -485,35 +489,7 @@ function DetailBody({
           {/* 3 — Amenities */}
           {p.amenities.length > 0 && (
             <Section title={td("offers")}>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {p.amenities.map((a) => {
-                  const Icon = AMENITY_ICONS[a];
-                  return (
-                    <li
-                      key={a}
-                      className="flex items-center gap-2.5 text-sm text-body"
-                    >
-                      {/* An amenity we have no icon for keeps the brand dot, so
-                          the labels stay on one column edge and nothing borrows
-                          a glyph that means something else. */}
-                      {Icon ? (
-                        <Icon
-                          size={17}
-                          strokeWidth={1.75}
-                          className="shrink-0 text-brand"
-                          aria-hidden
-                        />
-                      ) : (
-                        <span
-                          className="mx-[7.5px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
-                          aria-hidden
-                        />
-                      )}
-                      {t.has(`amenity.${a}`) ? t(`amenity.${a}`) : a}
-                    </li>
-                  );
-                })}
-              </ul>
+              <Amenities amenities={p.amenities} />
             </Section>
           )}
 
@@ -827,6 +803,95 @@ function Section({
       {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       <div className="mt-4">{children}</div>
     </section>
+  );
+}
+
+/** What the home comes with, and — the part that is new — what it does not.
+ *
+ *  Our listing research found the same failure on every site we looked at: a
+ *  page that lists only what a home HAS leaves a reader to assume the
+ *  baseline. They read no mention of a lift, picture a lift, and find out on
+ *  arrival. So the nine baseline amenities are stated either way, and the ones
+ *  this listing does not claim are named in their own block rather than left
+ *  to silence.
+ *
+ *  It reads absence off `amenities` alone, never off a stored "absent" list.
+ *  That is what lets it answer for a listing written before the owner was ever
+ *  asked the question — the block says the same thing for a home with no lift
+ *  and a home whose owner never said, because to a reader those are the same
+ *  sentence. The distinction is kept, but it is the owner's to see, not the
+ *  guest's (`lib/amenities.ts`). */
+function Amenities({ amenities }: { amenities: string[] }) {
+  const t = useTranslations();
+  const td = useTranslations("detail");
+  const tg = useTranslations("amenityGroup");
+
+  const groups = groupAmenities(amenities);
+  const missing = statedAbsent(amenities);
+  const label = (a: string) => (t.has(`amenity.${a}`) ? t(`amenity.${a}`) : a);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* A single group would be a heading over the only thing on the page —
+          the grid says the same thing on its own, so the rules only appear
+          once there is more than one thing to tell apart. */}
+      {groups.map(({ group, keys }) => (
+        <div key={group} className="flex flex-col gap-3">
+          {groups.length > 1 && (
+            <div className="ledger-rule">
+              <span>{tg(group)}</span>
+            </div>
+          )}
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {keys.map((a) => {
+              const Icon = AMENITY_ICONS[a];
+              return (
+                <li key={a} className="flex items-center gap-2.5 text-sm text-body">
+                  {/* An amenity we have no icon for keeps the brand dot, so
+                      the labels stay on one column edge and nothing borrows
+                      a glyph that means something else. */}
+                  {Icon ? (
+                    <Icon
+                      size={17}
+                      strokeWidth={1.75}
+                      className="shrink-0 text-brand"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className="mx-[7.5px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
+                      aria-hidden
+                    />
+                  )}
+                  {label(a)}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+
+      {missing.length > 0 && (
+        <div className="flex flex-col gap-3 border-t border-line pt-5">
+          <div className="ledger-rule">
+            <span>{td("notAvailable")}</span>
+          </div>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {missing.map((a) => (
+              // Muted, never in `--danger`: a flat with no lift is a fact
+              // about the flat, not a fault in it, and a column of red would
+              // read as a warning about the listing. The × carries the whole
+              // meaning — struck-through text on top of it was a third way of
+              // saying one thing, and the hardest of the three to read.
+              <li key={a} className="flex items-center gap-2.5 text-sm text-muted">
+                <X size={17} strokeWidth={1.75} className="shrink-0" aria-hidden />
+                {label(a)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 

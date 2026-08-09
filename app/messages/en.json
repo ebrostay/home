@@ -116,8 +116,8 @@
         "amenities": {
           "name": "Amenities",
           "head": "What does it come with?",
-          "lede": "Pick everything the home actually has. Fifteen things, and every one of them is a filter.",
-          "why": "Each chip is a filter on the search page. An amenity you leave off is a search you never appear in."
+          "lede": "Answer the nine basics — yes or no — then add whatever else the home has. Search it: “elevator” finds the lift.",
+          "why": "Guests read silence as a “no”. Answering outright is what stops someone booking a home expecting a lift, and every amenity you add is a search you appear in."
         },
         "pricing": {
           "name": "Price & availability",
@@ -615,7 +615,7 @@
       "crossLink": "This page holds what rarely changes. Price, the calendar, requests and payouts live in Manage.",
       "photoCount": "{count, plural, =0 {NO PHOTOS} one {# PHOTO} other {# PHOTOS}}",
       "bilingualFigure": "{done} OF {total} IN BOTH LANGUAGES",
-      "amenityFigure": "{done} OF {total} SELECTED",
+      "amenityFigure": "{done} OF {total} ANSWERED",
       "pricingPointer": "Price, the shortest stay you accept and the turnaround between stays are set in <link>Manage</link>.",
       "nav": {
         "label": "SECTIONS",
@@ -632,7 +632,7 @@
         "photos": "PHOTOS",
         "floorplans": "FLOOR PLANS",
         "bilingual": "IN BOTH LANGUAGES",
-        "amenities": "WHAT IT OFFERS"
+        "baseline": "THE BASICS"
       },
       "basics": {
         "name": "Listing title",
@@ -826,7 +826,13 @@
         }
       },
       "amenities": {
-        "intro": "Tick what the home has. This is what guests filter search by.",
+        "baselineTitle": "THE BASICS",
+        "baselineIntro": "Nine things guests assume a home has. Answer each one — a clear “no” reads better than saying nothing, and guests see silence as a “no” anyway.",
+        "extrasTitle": "EVERYTHING ELSE",
+        "extrasIntro": "Add whatever else the home comes with. Search, or browse the groups — pick from the list so guests can filter for it.",
+        "yes": "Yes",
+        "no": "No",
+        "unansweredNote": "{count, plural, one {# question has no answer yet: {names}. Guests will see it as a “no”.} other {# questions have no answer yet: {names}. Guests will see them as a “no”.}}",
         "petsNote": "Pets? That is a house rule, just below under Rules & terms."
       },
       "terms": {
@@ -930,6 +936,9 @@
         "nearby_unroutable": "We could not find a route to one of those places. Remove it and try another.",
         "ors_unavailable": "The routing service is not answering right now. Try saving again shortly."
       }
+    },
+    "warning": {
+      "baselineUnanswered": "{count, plural, one {# of the basics has no answer — it will publish as a “no”} other {# of the basics have no answer — they will publish as a “no”}}"
     }
   },
   "footer": {
@@ -1006,20 +1015,65 @@
   },
   "amenity": {
     "wifi": "Wifi",
-    "desk": "Desk",
-    "lift": "Lift",
-    "ac": "Air con",
-    "washer": "Washer",
-    "parking": "Parking",
     "heating": "Heating",
-    "kitchen": "Equipped kitchen",
-    "terrace": "Terrace",
+    "ac": "Air con",
     "furnished": "Furnished",
-    "dryer": "Dryer",
+    "kitchen": "Equipped kitchen",
+    "washer": "Washing machine",
+    "desk": "Work desk",
+    "lift": "Lift",
+    "parking": "Parking",
     "dishwasher": "Dishwasher",
+    "oven": "Oven",
+    "microwave": "Microwave",
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "coffee": "Coffee maker",
+    "kettle": "Kettle",
+    "toaster": "Toaster",
+    "cookware": "Pots, pans and crockery",
+    "dining-table": "Dining table",
+    "dryer": "Tumble dryer",
+    "iron": "Iron and board",
+    "drying-rack": "Drying rack",
+    "vacuum": "Vacuum cleaner",
+    "shared-laundry": "Laundry room in the building",
     "tv": "TV",
+    "streaming": "Smart TV",
+    "bed-linen": "Bed linen",
+    "towels": "Towels",
+    "wardrobe": "Wardrobe",
+    "blackout": "Blackout blinds",
+    "fan": "Fan",
+    "soundproofing": "Double glazing",
+    "office-chair": "Office chair",
+    "monitor": "External monitor",
+    "printer": "Printer",
+    "fibre": "Fibre internet",
+    "concierge": "Concierge",
     "storage": "Storage room",
-    "concierge": "Concierge"
+    "bike-storage": "Bike storage",
+    "intercom": "Video intercom",
+    "garage": "Private garage",
+    "street-parking": "Street parking",
+    "ev-charger": "EV charger",
+    "terrace": "Terrace",
+    "balcony": "Balcony",
+    "garden": "Garden",
+    "patio": "Patio",
+    "roof-terrace": "Roof terrace",
+    "pool": "Pool",
+    "bbq": "Barbecue",
+    "smoke-alarm": "Smoke alarm",
+    "co-alarm": "Carbon monoxide alarm",
+    "extinguisher": "Fire extinguisher",
+    "first-aid": "First aid kit",
+    "security-door": "Security door",
+    "alarm": "Alarm system",
+    "step-free": "Step-free access",
+    "wide-doors": "Wide doorways",
+    "ground-floor": "Ground floor",
+    "accessible-bathroom": "Accessible bathroom"
   },
   "detail": {
     "back": "Back to homes",
@@ -1210,7 +1264,8 @@
         "draft": "Guests cannot see this home. Send it for review when it is ready.",
         "paused": "Guests cannot see this home. Reopen it to put it back in search."
       }
-    }
+    },
+    "notAvailable": "NOT AVAILABLE"
   },
   "nearby": {
     "type": {
@@ -1494,7 +1549,8 @@
         "published": "Published",
         "rejected": "Rejected",
         "paused": "Paused"
-      }
+      },
+      "amenities": "AMENITIES"
     },
     "signals": {
       "photos": {
@@ -1632,5 +1688,23 @@
       "cannot_deactivate_self": "You cannot deactivate your own account.",
       "admin_required": "This account has no admin permission."
     }
+  },
+  "amenityGroup": {
+    "essentials": "THE BASICS",
+    "kitchen": "KITCHEN",
+    "laundry": "LAUNDRY",
+    "comfort": "COMFORT",
+    "workspace": "WORKING",
+    "building": "BUILDING",
+    "outdoor": "OUTDOOR",
+    "safety": "SAFETY",
+    "access": "STEP-FREE"
+  },
+  "amenityBrowser": {
+    "searchLabel": "Search amenities",
+    "placeholder": "Search — try “elevator” or “lavavajillas”",
+    "clear": "Clear the search",
+    "noResults": "Nothing matches “{query}”. Try another word — we also search Spanish.",
+    "resultCount": "{count, plural, one {# match} other {# matches}}"
   }
 }

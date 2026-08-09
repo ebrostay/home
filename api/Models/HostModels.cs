@@ -113,6 +113,11 @@ public record HostListing(
     int? FloorNumber,
     string? EnergyRating,
     string[] Amenities,
+    /// The baseline amenities the owner answered no to — see `PropertyDoc`.
+    /// The owner's own view is the only one that gets it: the public
+    /// projection derives absence from what is NOT claimed, so it can answer
+    /// for listings written before this field existed.
+    string[] AmenitiesAbsent,
     bool PetsAllowed,
     bool SmokingAllowed,
     bool CouplesAllowed,
@@ -281,6 +286,7 @@ public static class HostProjection
         p.FloorNumber,
         p.EnergyRating,
         p.Amenities,
+        p.AmenitiesAbsent,
         p.PetsAllowed,
         p.SmokingAllowed,
         p.CouplesAllowed,

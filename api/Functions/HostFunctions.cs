@@ -268,6 +268,7 @@ public class HostFunctions(
         doc.FloorNumber = update.FloorNumber;
         doc.EnergyRating = Clean(update.EnergyRating)?.ToUpperInvariant();
         doc.Amenities = update.Amenities ?? [];
+        doc.AmenitiesAbsent = update.AmenitiesAbsent ?? [];
         doc.PetsAllowed = update.PetsAllowed;
         doc.SmokingAllowed = update.SmokingAllowed;
         doc.CouplesAllowed = update.CouplesAllowed;

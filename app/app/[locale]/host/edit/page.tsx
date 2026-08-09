@@ -341,10 +341,12 @@ function EditContent() {
       warn: stats.bilingual < stats.bilingualTotal,
     },
     {
+      // The baseline nine, not the sixty: this is the figure an owner can
+      // take to zero, and the one a guest feels the absence of.
       key: "amenities",
-      value: `${stats.amenities} / ${stats.amenitiesTotal}`,
-      label: te("ledger.amenities"),
-      warn: stats.amenities === 0,
+      value: `${stats.baseline} / ${stats.baselineTotal}`,
+      label: te("ledger.baseline"),
+      warn: stats.baseline < stats.baselineTotal,
     },
   ];
 
@@ -520,8 +522,8 @@ function EditContent() {
             id="amenities"
             label={te("nav.amenities")}
             figure={te("amenityFigure", {
-              done: stats.amenities,
-              total: stats.amenitiesTotal,
+              done: stats.baseline,
+              total: stats.baselineTotal,
             })}
           >
             <AmenityPicker value={listing} onChange={setListing} />

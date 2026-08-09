@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Check, MapPin, RotateCcw, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { AMENITY_ICONS } from "@/lib/amenity-icons";
+import { AMENITY_ICONS } from "@/lib/amenities";
 import { SIZES, srcSet } from "@/lib/photos";
 import { AvailabilityBand, type MonthAvailability } from "@/components/MonthBand";
 

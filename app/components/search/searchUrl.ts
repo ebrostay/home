@@ -56,11 +56,13 @@ export function readResultsState(params: URLSearchParams): ResultsState {
       type: TYPES.includes(type) ? type : defaultFilters.type,
       // Whole euros only — the budget control's own step is never fractional.
       budget: /^[1-9]\d{0,6}$/.test(budget) ? budget : defaultFilters.budget,
+      // Still checked against the vocabulary, not merely split: the list now
+      // covers the whole catalogue, but a URL is user input and an unknown key
+      // would ride into the filter state, match no listing, and leave a chip
+      // on the bar that cannot be explained.
       amenities: (params.get("amenities") ?? "")
         .split(",")
-        .filter((a): a is (typeof AMENITY_FILTERS)[number] =>
-          (AMENITY_FILTERS as readonly string[]).includes(a),
-        ),
+        .filter((a) => AMENITY_FILTERS.includes(a)),
       sort: SORTS.includes(sort) ? sort : defaultFilters.sort,
     },
     view: params.get("view") === "list" ? "list" : "grid",

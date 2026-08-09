@@ -116,8 +116,8 @@
         "amenities": {
           "name": "Equipamiento",
           "head": "¿Con qué viene?",
-          "lede": "Marca todo lo que la vivienda tiene de verdad. Quince cosas, y cada una es un filtro.",
-          "why": "Cada etiqueta es un filtro del buscador. Lo que no marques es una búsqueda en la que no apareces."
+          "lede": "Responde a los nueve básicos — sí o no — y añade lo demás que tenga la vivienda. Búscalo: «elevator» encuentra el ascensor.",
+          "why": "El huésped lee el silencio como un «no». Responder de forma clara evita que alguien reserve esperando un ascensor, y cada equipamiento que añades es una búsqueda en la que apareces."
         },
         "pricing": {
           "name": "Precio y calendario",
@@ -615,7 +615,7 @@
       "crossLink": "Esta página guarda lo que casi nunca cambia. El precio, el calendario, las solicitudes y los cobros están en Gestionar.",
       "photoCount": "{count, plural, =0 {SIN FOTOS} one {# FOTO} other {# FOTOS}}",
       "bilingualFigure": "{done} DE {total} EN LOS DOS IDIOMAS",
-      "amenityFigure": "{done} DE {total} SELECCIONADOS",
+      "amenityFigure": "{done} DE {total} RESPONDIDAS",
       "pricingPointer": "El precio, la estancia mínima y la preparación entre estancias se ajustan en <link>Gestionar</link>.",
       "nav": {
         "label": "SECCIONES",
@@ -632,7 +632,7 @@
         "photos": "FOTOS",
         "floorplans": "PLANOS",
         "bilingual": "EN LOS DOS IDIOMAS",
-        "amenities": "EQUIPAMIENTO"
+        "baseline": "LO BÁSICO"
       },
       "basics": {
         "name": "Título del anuncio",
@@ -826,7 +826,13 @@
         }
       },
       "amenities": {
-        "intro": "Marca lo que tiene la vivienda. Es con esto con lo que se filtra en el buscador.",
+        "baselineTitle": "LO BÁSICO",
+        "baselineIntro": "Nueve cosas que un huésped da por hechas. Responde a cada una — un «no» claro se lee mejor que el silencio, y el huésped interpreta el silencio como un «no» de todos modos.",
+        "extrasTitle": "TODO LO DEMÁS",
+        "extrasIntro": "Añade lo demás que incluye la vivienda. Busca, o mira los grupos — elige de la lista para que los huéspedes puedan filtrar.",
+        "yes": "Sí",
+        "no": "No",
+        "unansweredNote": "{count, plural, one {Queda # pregunta sin responder: {names}. El huésped lo verá como un «no».} other {Quedan # preguntas sin responder: {names}. El huésped lo verá como un «no».}}",
         "petsNote": "¿Mascotas? Eso es una norma de la casa, justo debajo, en Normas y condiciones."
       },
       "terms": {
@@ -930,6 +936,9 @@
         "nearby_unroutable": "No hemos encontrado una ruta hasta uno de esos sitios. Quítalo e inténtalo con otro.",
         "ors_unavailable": "El servicio de rutas no responde ahora mismo. Prueba a guardar de nuevo en un momento."
       }
+    },
+    "warning": {
+      "baselineUnanswered": "{count, plural, one {Queda # básico sin responder — se publicará como un «no»} other {Quedan # básicos sin responder — se publicarán como un «no»}}"
     }
   },
   "footer": {
@@ -1006,20 +1015,65 @@
   },
   "amenity": {
     "wifi": "Wifi",
+    "heating": "Calefacción",
+    "ac": "Aire acond.",
+    "furnished": "Amueblado",
+    "kitchen": "Cocina equipada",
+    "washer": "Lavadora",
     "desk": "Escritorio",
     "lift": "Ascensor",
-    "ac": "Aire acond.",
-    "washer": "Lavadora",
     "parking": "Parking",
-    "heating": "Calefacción",
-    "kitchen": "Cocina equipada",
-    "terrace": "Terraza",
-    "furnished": "Amueblado",
-    "dryer": "Secadora",
     "dishwasher": "Lavavajillas",
+    "oven": "Horno",
+    "microwave": "Microondas",
+    "fridge": "Nevera",
+    "freezer": "Congelador",
+    "coffee": "Cafetera",
+    "kettle": "Hervidor",
+    "toaster": "Tostadora",
+    "cookware": "Ollas, sartenes y vajilla",
+    "dining-table": "Mesa de comedor",
+    "dryer": "Secadora",
+    "iron": "Plancha y tabla",
+    "drying-rack": "Tendedero",
+    "vacuum": "Aspiradora",
+    "shared-laundry": "Lavandería en el edificio",
     "tv": "TV",
+    "streaming": "Smart TV",
+    "bed-linen": "Ropa de cama",
+    "towels": "Toallas",
+    "wardrobe": "Armario",
+    "blackout": "Persianas opacas",
+    "fan": "Ventilador",
+    "soundproofing": "Doble acristalamiento",
+    "office-chair": "Silla de oficina",
+    "monitor": "Monitor externo",
+    "printer": "Impresora",
+    "fibre": "Fibra óptica",
+    "concierge": "Portero",
     "storage": "Trastero",
-    "concierge": "Portero"
+    "bike-storage": "Aparcabicis",
+    "intercom": "Videoportero",
+    "garage": "Garaje privado",
+    "street-parking": "Aparcamiento en la calle",
+    "ev-charger": "Punto de recarga",
+    "terrace": "Terraza",
+    "balcony": "Balcón",
+    "garden": "Jardín",
+    "patio": "Patio",
+    "roof-terrace": "Azotea",
+    "pool": "Piscina",
+    "bbq": "Barbacoa",
+    "smoke-alarm": "Detector de humo",
+    "co-alarm": "Detector de monóxido",
+    "extinguisher": "Extintor",
+    "first-aid": "Botiquín",
+    "security-door": "Puerta blindada",
+    "alarm": "Alarma",
+    "step-free": "Acceso sin escalones",
+    "wide-doors": "Puertas anchas",
+    "ground-floor": "Planta baja",
+    "accessible-bathroom": "Baño adaptado"
   },
   "detail": {
     "back": "Volver a las viviendas",
@@ -1210,7 +1264,8 @@
         "draft": "Los huéspedes no ven esta vivienda. Envíala a revisión cuando esté lista.",
         "paused": "Los huéspedes no ven esta vivienda. Reactívala para que vuelva a aparecer en las búsquedas."
       }
-    }
+    },
+    "notAvailable": "NO DISPONIBLE"
   },
   "nearby": {
     "type": {
@@ -1494,7 +1549,8 @@
         "published": "Publicada",
         "rejected": "Rechazada",
         "paused": "Pausada"
-      }
+      },
+      "amenities": "EQUIPAMIENTO"
     },
     "signals": {
       "photos": {
@@ -1632,5 +1688,23 @@
       "cannot_deactivate_self": "No puedes desactivar tu propia cuenta.",
       "admin_required": "Esta cuenta no tiene permiso de administración."
     }
+  },
+  "amenityGroup": {
+    "essentials": "LO BÁSICO",
+    "kitchen": "COCINA",
+    "laundry": "LAVANDERÍA",
+    "comfort": "CONFORT",
+    "workspace": "TRABAJO",
+    "building": "EDIFICIO",
+    "outdoor": "EXTERIOR",
+    "safety": "SEGURIDAD",
+    "access": "ACCESIBILIDAD"
+  },
+  "amenityBrowser": {
+    "searchLabel": "Buscar equipamiento",
+    "placeholder": "Busca — prueba «ascensor» o «dishwasher»",
+    "clear": "Borrar la búsqueda",
+    "noResults": "Nada coincide con «{query}». Prueba otra palabra — también buscamos en inglés.",
+    "resultCount": "{count, plural, one {# resultado} other {# resultados}}"
   }
 }

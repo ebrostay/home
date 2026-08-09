@@ -63,7 +63,13 @@ import {
   marksDiffer,
   mergeImport,
 } from "@/lib/import";
-import { adoptNearbyIds, changedSections, richTextError } from "@/lib/listing";
+import {
+  adoptNearbyIds,
+  changedSections,
+  richTextError,
+  warningsOf,
+  type Warning,
+} from "@/lib/listing";
 import { blocksDirty, isOwnerBlock, priceBandFor, pricingDirty } from "@/lib/manage";
 import {
   CREATES_DRAFT,
@@ -345,6 +351,10 @@ function NewPropertyContent() {
   const progress = progressAt(step);
   const blockers = useMemo(() => submitBlockers(listing, pricing), [listing, pricing]);
   const attention = useMemo(() => attentionSteps(blockers), [blockers]);
+  // Not folded into `attention`: an amber disc means "there is work in
+  // there", and an unanswered baseline question is exactly that. The rail
+  // already earns it via `attentionOf`; this is the copy for the last step.
+  const warnings = useMemo(() => warningsOf(listing), [listing]);
   const stepBlocked = stepBlockers(key, listing, pricing);
   const last = step === STEPS.length - 1;
   // What stops the primary button, whichever button it is. On the last step it
@@ -758,6 +768,7 @@ function NewPropertyContent() {
                 locale={locale}
                 now={now}
                 blockers={blockers}
+                warnings={warnings}
                 onFix={(k) => go(STEPS.indexOf(k))}
               />
             </StepCard>
@@ -857,6 +868,7 @@ function Step({
   locale,
   now,
   blockers,
+  warnings,
   onFix,
   mark,
 }: {
@@ -882,6 +894,7 @@ function Step({
   locale: string;
   now: Date;
   blockers: ReturnType<typeof submitBlockers>;
+  warnings: Warning[];
   onFix: (step: StepKey) => void;
   /** The import's glyph, per field key. Nothing reaches the two steps an
    *  import is never allowed to fill — their banner says why instead. */
@@ -991,7 +1004,7 @@ function Step({
       return (
         <div className="flex flex-col gap-5">
           <PaperworkStep />
-          <Remaining blockers={blockers} onFix={onFix} />
+          <Remaining blockers={blockers} warnings={warnings} onFix={onFix} />
         </div>
       );
   }
@@ -1002,16 +1015,48 @@ function Step({
  *  a list of complaints you cannot act on is a worse version of a modal. */
 function Remaining({
   blockers,
+  warnings,
   onFix,
 }: {
   blockers: ReturnType<typeof submitBlockers>;
+  /** True and worth saying, but never a reason to hold the Send button —
+   *  see `warningsOf`. Rendered whether or not there are blockers, and below
+   *  them, because "this will publish, but not as you may think" is a
+   *  different sentence from "this cannot publish yet". */
+  warnings: Warning[];
   onFix: (step: StepKey) => void;
 }) {
   const tn = useTranslations("host.new");
   const tb = useTranslations("host.blocker");
+  const tw = useTranslations("host.warning");
+
+  const notes = warnings.length > 0 && (
+    <ul className="flex list-none flex-col gap-1.5 p-0">
+      {warnings.map((w) => (
+        <li key={w.key}>
+          <button
+            type="button"
+            onClick={() => onFix("amenities")}
+            className="flex items-start gap-2.5 text-left text-[0.8125rem] text-muted transition-colors duration-(--dur-standard) hover:text-ink"
+          >
+            <span
+              aria-hidden
+              className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full bg-river-deep"
+            />
+            {tw(w.key, { count: w.count })}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 
   if (blockers.length === 0) {
-    return <p className="text-[0.8125rem] text-brand-strong">{tn("readyToSend")}</p>;
+    return (
+      <div className="flex flex-col gap-2.5">
+        <p className="text-[0.8125rem] text-brand-strong">{tn("readyToSend")}</p>
+        {notes}
+      </div>
+    );
   }
 
   return (
@@ -1035,6 +1080,7 @@ function Remaining({
           </li>
         ))}
       </ul>
+      {notes}
     </div>
   );
 }

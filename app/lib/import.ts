@@ -1,5 +1,5 @@
 import type { HostListing, HostPricing, ImportResult, ImportStage } from "@/lib/api";
-import { AMENITY_KEYS } from "@/lib/amenity-icons";
+import { AMENITY_KEYS } from "@/lib/amenities";
 import { canonical, paragraphDoc } from "@/lib/rich-text";
 // Type only, and erased at build: it buys the compiler's check on the two
 // policy-step literals below without this module gaining a runtime dependency
@@ -270,7 +270,19 @@ export function mergeImport(
   // takes `take`'s early return. A glyph on an untouched grid would claim we
   // filled something we did not, which is the one thing the marks may never do.
   const amenities = l.amenities?.filter((a) => KNOWN_AMENITIES.has(a));
-  take("amenities", amenities?.length ? amenities : undefined, (v) => (next.amenities = v));
+  // Anything the advert says the home HAS stops being something it lacks.
+  // Today the two can only collide in theory — an import runs on the start
+  // screen, before the wizard has asked the baseline nine, so `amenitiesAbsent`
+  // is still empty — but "in theory" is doing real work here: the API rejects a
+  // key present in both arrays outright (`amenity_contradiction`), and that
+  // would surface as a whole save bouncing with no field to point at. One
+  // filter is cheaper than the bug report.
+  take("amenities", amenities?.length ? amenities : undefined, (v) => {
+    next.amenities = v;
+    next.amenitiesAbsent = (next.amenitiesAbsent ?? []).filter(
+      (a) => !v.includes(a),
+    );
+  });
   take("petsAllowed", l.petsAllowed, (v) => (next.petsAllowed = v));
   take("smokingAllowed", l.smokingAllowed, (v) => (next.smokingAllowed = v));
   take("couplesAllowed", l.couplesAllowed, (v) => (next.couplesAllowed = v));

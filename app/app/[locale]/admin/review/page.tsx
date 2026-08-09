@@ -13,6 +13,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
@@ -24,6 +25,7 @@ import {
   type AdminPropertyDetail,
   type PublicNearbyEntry,
 } from "@/lib/api";
+import { statedAbsent } from "@/lib/amenities";
 import { formatEuro } from "@/lib/pricing";
 import { Badge } from "@/components/ui/Badge";
 import { RichText } from "@/components/ui/RichText";
@@ -50,6 +52,7 @@ export default function AdminReviewPage() {
 
 function ReviewContent() {
   const t = useTranslations("admin.review");
+  const ta = useTranslations("amenity");
   const te = useTranslations("admin.errors");
   const locale = useLocale();
   const router = useRouter();
@@ -187,6 +190,38 @@ function ReviewContent() {
                 listing.descriptionEnApproved ? undefined : t("enNotApproved")
               }
             />
+          </section>
+
+          {/* What the listing will SAY it lacks, next to what it claims.
+              The absences publish as text on the public page, so approving is
+              approving them — and until this panel existed the one surface
+              with the power to stop that was the only one that never showed
+              them. `statedAbsent` reads what the guest will read, not the
+              owner's stored answers: an unanswered baseline publishes as a
+              "no" too, and a reviewer has to see the page, not the form. */}
+          <section className="mt-6">
+            <h3 className="data text-[0.625rem] uppercase tracking-[0.14em] text-muted">
+              {t("amenities")}
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {listing.amenities.map((a) => (
+                <span
+                  key={a}
+                  className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-body"
+                >
+                  {ta.has(a) ? ta(a) : a}
+                </span>
+              ))}
+              {statedAbsent(listing.amenities).map((a) => (
+                <span
+                  key={a}
+                  className="flex items-center gap-1 rounded-full border border-dashed border-line-strong px-2.5 py-1 text-xs text-muted"
+                >
+                  <X size={11} strokeWidth={2.5} aria-hidden />
+                  {ta(a)}
+                </span>
+              ))}
+            </div>
           </section>
 
           <section className="mt-6">

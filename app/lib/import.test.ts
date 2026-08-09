@@ -285,6 +285,29 @@ describe("mergeImport — the amenity vocabulary", () => {
     const merged = mergeImport(blankListing(), blankPricing(), amenityResult([]), new Set());
     expect(merged.imported).toEqual([]);
   });
+
+  // A key cannot be in both arrays — the API rejects the whole save with
+  // `amenity_contradiction`, and the owner would see a page of work bounce
+  // with nothing on it flagged. Unreachable today (an import runs before the
+  // wizard asks the baseline nine, so the absences are still empty), which is
+  // exactly why it is pinned: the day the import moves, this is the failure.
+  it("an imported amenity clears any recorded absence of the same thing", () => {
+    const saidNo = { ...blankListing(), amenitiesAbsent: ["lift", "parking"] };
+    const merged = mergeImport(
+      saidNo,
+      blankPricing(),
+      amenityResult(["wifi", "lift"]),
+      new Set(),
+    );
+    expect(merged.listing.amenities).toEqual(["wifi", "lift"]);
+    expect(merged.listing.amenitiesAbsent).toEqual(["parking"]);
+  });
+
+  it("leaves the absences alone when the import fills no amenities", () => {
+    const saidNo = { ...blankListing(), amenitiesAbsent: ["lift"] };
+    const merged = mergeImport(saidNo, blankPricing(), amenityResult([]), new Set());
+    expect(merged.listing.amenitiesAbsent).toEqual(["lift"]);
+  });
 });
 
 // A cleared mark moves no field, so the wizard's save gate cannot see it with

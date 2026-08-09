@@ -157,6 +157,11 @@ function toDoc(p) {
     sizeM2: x.sizeM2 ?? 80,
     floorNumber: p.floorNumber ?? null,
     amenities: p.amenities ?? [],
+    // The baseline amenities each seed home answered NO to. Without these a
+    // local stack shows every home with nine unanswered basics, which is the
+    // one state the seed should never demonstrate — it is what a listing looks
+    // like before anyone has filled it in.
+    amenitiesAbsent: p.amenitiesAbsent ?? [],
     energyRating: null,
     petsAllowed: false,
     smokingAllowed: false,

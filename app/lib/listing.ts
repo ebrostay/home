@@ -1,5 +1,5 @@
 import type { Bilingual, HostListing, HostPhoto } from "@/lib/api";
-import { AMENITY_KEYS } from "@/lib/amenity-icons";
+import { BASELINE_KEYS, unansweredBaseline } from "@/lib/amenities";
 import {
   canonical,
   isEmptyDoc,
@@ -89,7 +89,16 @@ const FIELDS: Record<SectionKey, (l: HostListing) => unknown[]> = {
     ...bi(l.details),
     ...bi(l.beds),
   ],
-  amenities: (l) => [...l.amenities],
+  // Both arrays: answering "no lift" is a change to what the listing claims
+  // just as much as ticking the lift is, and without the second one here the
+  // owner's nine answers never mark the section dirty and are dropped on save.
+  //
+  // The separator is load-bearing, not decoration. Concatenated plainly,
+  // has=[lift]/lacks=[] and has=[]/lacks=[lift] both flatten to ["lift"] —
+  // the one edit this section exists to capture would be the one it misses.
+  // "—" is safe as a marker because the API's own key rule ([a-z0-9-]) can
+  // never produce it.
+  amenities: (l) => [...l.amenities, "—", ...(l.amenitiesAbsent ?? [])],
   terms: (l) => [l.petsAllowed, l.smokingAllowed, l.couplesAllowed, l.selfCheckin],
 };
 
@@ -141,8 +150,15 @@ export type Completeness = {
   /** Fields filled in in BOTH languages, of `BILINGUAL.length`. */
   bilingual: number;
   bilingualTotal: number;
+  /** Baseline questions ANSWERED, of `BASELINE_KEYS.length`. Not "amenities
+   *  picked out of sixty": that ratio moves for reasons an owner cannot act
+   *  on — a flat genuinely has twelve of them — and a gauge that can never
+   *  reach its own total is a gauge nobody reads. This one can, and reaching
+   *  it is exactly the work. */
+  baseline: number;
+  baselineTotal: number;
+  /** Everything claimed, baseline and extras. A plain count, no denominator. */
   amenities: number;
-  amenitiesTotal: number;
 };
 
 export function completenessOf(l: HostListing): Completeness {
@@ -154,8 +170,11 @@ export function completenessOf(l: HostListing): Completeness {
     floorplans: l.photos.filter((p) => p.isFloorplan).length,
     bilingual: BILINGUAL.filter((key) => fieldHasBothLanguages(l, key)).length,
     bilingualTotal: BILINGUAL.length,
+    baseline:
+      BASELINE_KEYS.length -
+      unansweredBaseline(l.amenities, l.amenitiesAbsent ?? []).length,
+    baselineTotal: BASELINE_KEYS.length,
     amenities: l.amenities.length,
-    amenitiesTotal: AMENITY_KEYS.length,
   };
 }
 
@@ -231,6 +250,29 @@ export function blockersOf(l: HostListing): Blocker[] {
   return out;
 }
 
+// ------------------------------------------------------------
+// Warnings — true, worth saying, and not worth refusing a save over.
+//
+// Deliberately NOT a `Blocker`. Blockers gate the Send button (`host/new`)
+// and mirror the API's own submit rules; an unanswered baseline question is
+// neither. A listing that never says whether it has a lift still publishes —
+// it publishes as a listing with no lift, which is the decision, and the
+// warning exists so the owner learns that BEFORE a guest does rather than
+// so the form can stop them.
+//
+// Kept out of `blockersOf` for a second reason: that list is claimed to equal
+// `HostProjection.Sections` on the server. A client-only entry in it would
+// make the two disagree, and the disagreement would surface as a Send button
+// that is disabled with nothing the server would have complained about.
+// ------------------------------------------------------------
+
+export type Warning = { key: "baselineUnanswered"; count: number };
+
+export function warningsOf(l: HostListing): Warning[] {
+  const count = unansweredBaseline(l.amenities, l.amenitiesAbsent ?? []).length;
+  return count > 0 ? [{ key: "baselineUnanswered", count }] : [];
+}
+
 /** Sections with something still missing in them. The rail's amber state, and
  *  the same conditions the blockers report — stated once here so the disc and
  *  the save bar can never disagree about whether a section is finished.
@@ -251,7 +293,11 @@ export function attentionOf(l: HostListing): Set<SectionKey> {
     (!isEmptyDoc(l.description?.en) && !l.descriptionEnApproved)
   )
     out.add("description");
-  if (l.amenities.length === 0) out.add("amenities");
+  // An unanswered baseline question earns the amber disc even on a listing
+  // with plenty of amenities ticked: the rail is the only place an owner
+  // finds out there is anything left to do in a section they have already
+  // visited.
+  if (l.amenities.length === 0 || warningsOf(l).length > 0) out.add("amenities");
   // Both nearby flags render only inside the Nearby section body (the
   // "needs check" chip on a single entry row, the missing-English fallback),
   // so an owner who moves their pin, saves, and never re-expands that

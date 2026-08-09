@@ -75,6 +75,7 @@ export function blankListing(): HostListing {
     floorNumber: null,
     energyRating: null,
     amenities: [],
+    amenitiesAbsent: [],
     petsAllowed: false,
     smokingAllowed: false,
     couplesAllowed: false,

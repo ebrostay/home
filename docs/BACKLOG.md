@@ -110,11 +110,32 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   `cancellation` being a per-listing field one home could silently opt out
   of (Host & listing editor section). Decide policy → then a compact
   "before you book" block near the booking-panel CTA.
-- **[P][S]** **Honest negatives in Conditions** — state what a home lacks
-  ("no lift", "no parking", bills capped at X) instead of omitting it.
-  Wunderflats and Flatio both prove stated absence reads as confidence.
-  Mostly derivable from existing fields (amenities, `billsPolicy`); parking
-  may want a real field rather than an amenity.
+- ~~**[P][S]** **Honest negatives in Conditions**~~ — ✅ done 2026-08-09, in
+  the Amenities section rather than Conditions: the nine baseline amenities
+  (`BASELINE_KEYS`, app/lib/amenities.ts) are asked outright in the wizard and
+  the ones a listing does not claim are named under "Not available". Parking
+  did NOT get a field of its own — it is one of the nine, which answers the
+  question this item raised without a second place to spell it.
+  **Still open from this item:** bills. `billsPolicy: "capped"` states its cap
+  in Stay terms but never as an absence, so a capped listing still reads like
+  an included one at a glance.
+- **[P][S]** **A room's shared facilities read as absences** — the known soft
+  spot in the baseline work above, and worth a decision before Ebrostay lists
+  many rooms. `statedAbsent` is type-blind: on a `type: "room"` listing whose
+  owner did not tick "Equipped kitchen" because the kitchen is *shared*, the
+  page prints "Not available · Equipped kitchen", and a guest who does in fact
+  get kitchen access is told the opposite. Only those two are ambiguous: the
+  other seven mean the same thing in a room as in a flat — wifi, heating, air
+  con, a lift and parking are the building's, and furnished and a work desk
+  are facts about the room itself.
+  Today's answer is the wizard's copy: the question is "does the home have
+  one", so a shared kitchen is a yes. That works but is nowhere stated, which
+  is exactly how two owners answer it two ways. Options, cheapest first:
+  (1) type-aware helper text on the kitchen and washer rows for rooms;
+  (2) drop those two from `statedAbsent` when `type === "room"` — honest, but
+  then a room with genuinely no kitchen access says nothing again;
+  (3) a third answer, "shared", which is the correct model and the only one
+  that needs an API change and a public-page vocabulary.
 - **[P][S]** **Calendar-freshness stamp on the month-band** ("updated N
   hours ago") — Spotahome and Flatio both do it; cheap trust for a page
   whose identity is the calendar. Needs the availability-blocks

@@ -3,9 +3,10 @@
 import { useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { AMENITY_ICONS } from "@/lib/amenity-icons";
+import { AMENITY_ICONS, AMENITY_KEYS } from "@/lib/amenities";
 import { formatEuro } from "@/lib/pricing";
 import { useBeforePaint } from "@/components/site/theme";
+import { AmenityBrowser } from "@/components/amenities/AmenityBrowser";
 import { Chip } from "./Chip";
 import type { SearchQuery } from "./SearchHero";
 import { Button } from "@/components/ui/Button";
@@ -14,14 +15,16 @@ import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { BudgetBand } from "./BudgetBand";
 
-export const AMENITY_FILTERS = [
-  "wifi",
-  "desk",
-  "lift",
-  "ac",
-  "washer",
-  "parking",
-] as const;
+// Everything a guest may narrow by. This used to be six hand-picked keys, and
+// the dialog listed them flat; with sixty in the catalogue a hand-picked six is
+// a filter set that cannot find most of what owners now describe, and a flat
+// sixty is a wall nobody reads. So the dialog offers the WHOLE vocabulary,
+// grouped and searchable — the same control the owner filled the listing in
+// with, which is the point: one word for one thing on both sides of the market.
+//
+// It stays a derived list rather than a literal so a key can never be
+// filterable here and unavailable there, or the reverse.
+export const AMENITY_FILTERS: readonly string[] = AMENITY_KEYS;
 
 // The handful of amenities common enough to earn a permanent one-tap toggle on
 // the bar itself. They are NOT repeated as removable chips (their toggle already
@@ -118,6 +121,11 @@ export function FilterBar({
         ? filters.amenities.filter((x) => x !== a)
         : [...filters.amenities, a],
     });
+
+  // The browser wants membership, not a list. Rebuilt per render on purpose:
+  // it is at most a few dozen strings, and a memo keyed on an array identity
+  // that changes with every toggle would cost more than it saves.
+  const amenitySet = new Set(filters.amenities);
 
   return (
     <div
@@ -224,7 +232,25 @@ export function FilterBar({
         </div>
       </div>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title={tf("more")}>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={tf("more")}
+        // Outside the scrolling body: nine groups of amenity chips are longer
+        // than any phone, and an Apply button you have to scroll past sixty
+        // chips to reach is one people give up on.
+        footer={
+          <div className="flex justify-between gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => onFiltersChange({ ...defaultFilters, sort: filters.sort })}
+            >
+              {tf("reset")}
+            </Button>
+            <Button onClick={() => setOpen(false)}>{tf("apply")}</Button>
+          </div>
+        }
+      >
         <div className="flex flex-col gap-5">
           <Field label={t("filters.type")}>
             {(id) => (
@@ -250,49 +276,15 @@ export function FilterBar({
           />
 
           <fieldset>
-            <legend className="text-xs font-semibold tracking-wide text-ink">
+            <legend className="mb-2.5 text-xs font-semibold tracking-wide text-ink">
               {t("filters.amenities")}
             </legend>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {AMENITY_FILTERS.map((a) => {
-                const on = filters.amenities.includes(a);
-                return (
-                  <label
-                    key={a}
-                    className={`data cursor-pointer rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors duration-(--dur-standard) ${
-                      on
-                        ? "border-brand bg-brand-soft text-brand-strong"
-                        : "border-line text-muted hover:border-line-strong"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={on}
-                      onChange={(e) =>
-                        set({
-                          amenities: e.target.checked
-                            ? [...filters.amenities, a]
-                            : filters.amenities.filter((x) => x !== a),
-                        })
-                      }
-                    />
-                    {t(`amenity.${a}`)}
-                  </label>
-                );
-              })}
-            </div>
+            {/* The same browser the owner filled the listing in with. A guest
+                who thinks "elevator" and an owner who typed "ascensor" have to
+                arrive at one key, and they only do if both sides search the
+                same synonyms. */}
+            <AmenityBrowser selected={amenitySet} onToggle={toggleAmenity} />
           </fieldset>
-
-          <div className="flex justify-between gap-3 border-t border-line pt-4">
-            <Button
-              variant="ghost"
-              onClick={() => onFiltersChange({ ...defaultFilters, sort: filters.sort })}
-            >
-              {tf("reset")}
-            </Button>
-            <Button onClick={() => setOpen(false)}>{tf("apply")}</Button>
-          </div>
         </div>
       </Dialog>
     </div>

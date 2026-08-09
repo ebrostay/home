@@ -271,6 +271,11 @@ export type HostListing = {
   floorNumber: number | null;
   energyRating: string | null;
   amenities: string[];
+  /** The baseline amenities the owner answered NO to. Only the owner's own
+   *  view carries it — the public projection derives absence from what a
+   *  listing does not claim, so it can answer for documents written before
+   *  the field existed (`lib/amenities.ts`, `statedAbsent`). */
+  amenitiesAbsent: string[];
   petsAllowed: boolean;
   smokingAllowed: boolean;
   couplesAllowed: boolean;

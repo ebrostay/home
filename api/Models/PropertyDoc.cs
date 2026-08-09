@@ -143,6 +143,17 @@ public class PropertyDoc
     public int SizeM2 { get; set; }
     public int? FloorNumber { get; set; }
     public string[] Amenities { get; set; } = [];
+    /// What the owner answered NO to, and only ever the baseline nine the
+    /// wizard asks outright (`BASELINE_KEYS` in app/lib/amenities.ts). A
+    /// listing that mentions neither its heating nor its lack of one has not
+    /// been asked yet — a third state, and the reason this is a second array
+    /// rather than an inverted read of `Amenities`.
+    ///
+    /// The public page does not draw the distinction: it states every baseline
+    /// the listing does not CLAIM as missing, so a listing saved before this
+    /// field existed reads the same as one saved after. Only the owner's own
+    /// editor tells them which questions are still unanswered.
+    public string[] AmenitiesAbsent { get; set; } = [];
     public string? EnergyRating { get; set; }
     public bool PetsAllowed { get; set; }
     public bool SmokingAllowed { get; set; }

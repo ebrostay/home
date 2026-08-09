@@ -134,6 +134,19 @@ used in URLs). Photos and availability are **embedded** (§2.2.2, §2.2.3).
   "guests": 4, "bedrooms": 3, "bathrooms": 1, "sizeM2": 75,
   "floorNumber": 1,
   "amenities": ["wifi", "desk", "lift", "heating", "kitchen"],
+  "amenitiesAbsent": ["parking", "ac"],   // ✅ baseline amenities answered NO.
+                                      //   A baseline key in NEITHER array has
+                                      //   never been asked — a third state the
+                                      //   owner's editor reports and the public
+                                      //   page deliberately does not: it states
+                                      //   every baseline the listing does not
+                                      //   CLAIM as missing, so a document
+                                      //   written before this field reads the
+                                      //   same as one written after.
+                                      //   Vocabulary: app/lib/amenities.ts.
+                                      //   The API checks key SHAPE only
+                                      //   ([a-z0-9-]{1,32}), plus one pair
+                                      //   rule — a key cannot be in both.
   "energyRating": "C",
   "petsAllowed": false, "smokingAllowed": false, "couplesAllowed": true,
   "selfCheckin": true,

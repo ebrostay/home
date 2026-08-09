@@ -76,6 +76,11 @@ public record DetailsUpdate(
     int? FloorNumber,
     string? EnergyRating,
     string[]? Amenities,
+    /// The baseline amenities answered no — see `PropertyDoc.AmenitiesAbsent`.
+    /// Nullable and treated as empty exactly like `Amenities`: this is a
+    /// whole-document write, so an omitted array clears the field rather than
+    /// leaving it alone.
+    string[]? AmenitiesAbsent,
     bool PetsAllowed,
     bool SmokingAllowed,
     bool CouplesAllowed,
@@ -397,6 +402,23 @@ public static class HostValidation
             return "amenity_invalid";
         if (amenities.Distinct(StringComparer.Ordinal).Count() != amenities.Length)
             return "amenity_duplicate";
+
+        // The absences answer the same vocabulary and so take the same three
+        // checks — the shape rule is what keeps free text out of the public
+        // projection, and it does not stop mattering because the answer was no.
+        var absent = u.AmenitiesAbsent ?? [];
+        if (absent.Length > MaxAmenities) return "too_many_amenities";
+        if (absent.Any(a => !Regex.IsMatch(a ?? "", "^[a-z0-9-]{1,32}$")))
+            return "amenity_invalid";
+        if (absent.Distinct(StringComparer.Ordinal).Count() != absent.Length)
+            return "amenity_duplicate";
+        // A home cannot both have and lack the same thing. Nothing in the UI
+        // can produce this — the picker's three states are exclusive — so it
+        // only ever means a hand-built payload, and letting it through would
+        // leave a document whose two arrays contradict each other and whose
+        // public page disagrees with the owner's editor.
+        if (absent.Intersect(amenities, StringComparer.Ordinal).Any())
+            return "amenity_contradiction";
 
         var photos = u.Photos ?? [];
         if (photos.Length > MaxPhotos) return "too_many_photos";

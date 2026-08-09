@@ -21,7 +21,12 @@ Craft, ops and content items live in Jira — project **KAN** on
 authority; the ticket exists so nothing falls off a board): OD-1 → KAN-51 ·
 OD-2 → KAN-79 · OD-3 → KAN-78 · OD-4 → KAN-80 · OD-5 → KAN-113 ·
 OD-6 → KAN-114 · OD-7 → KAN-115 · OD-8 → KAN-116 · OD-9 → KAN-65.
-OD-10 is decided. JQL: `project = KAN AND labels = "open-decision"`.
+OD-10 is decided.
+
+Five of those mirrors are ordinary build tickets (OD-1…OD-4, OD-9); the four
+that are questions rather than work carry the label **`open-decision`**, and so
+does KAN-123 — an open decision from ADR-029 Decision 5 that never got an OD
+number. `project = KAN AND labels = "open-decision"` finds those five.
 
 | ADR | Title | Status |
 | --- | --- | --- |

@@ -17,6 +17,12 @@ collected in the **Open decisions** table at the end of this file (OD-1…OD-10)
 Craft, ops and content items live in Jira — project **KAN** on
 <https://ebrostay.atlassian.net>, label `v2` (see the appendix at the end).
 
+**Each open decision also has a tracking ticket** (this table stays the
+authority; the ticket exists so nothing falls off a board): OD-1 → KAN-51 ·
+OD-2 → KAN-79 · OD-3 → KAN-78 · OD-4 → KAN-80 · OD-5 → KAN-113 ·
+OD-6 → KAN-114 · OD-7 → KAN-115 · OD-8 → KAN-116 · OD-9 → KAN-65.
+OD-10 is decided. JQL: `project = KAN AND labels = "open-decision"`.
+
 | ADR | Title | Status |
 | --- | --- | --- |
 | ADR-011 | Azure stack replaces Supabase (SWA + Functions + Cosmos + Blob) | ✅ locked |

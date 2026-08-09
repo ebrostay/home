@@ -1441,6 +1441,39 @@ test("the lightbox opens, advances and closes", async ({ page }) => {
   await expect(counter).toHaveCount(0);
 });
 
+// A CLOSED <dialog> must not be laid out (regression, 2026-08-09).
+//
+// The UA stylesheet hides one with `dialog:not([open]) { display: none }`.
+// Any author `display` declaration on the element beats that — specificity
+// does not enter into it, author beats UA — so a bare `flex` in Dialog's
+// className leaves every closed dialog full-size over the page, eating
+// clicks on whatever is behind it. It looks fine, because a dialog with no
+// background painted over a page is invisible; only the dead controls give
+// it away. Hence `[&[open]]:flex`, and hence this test.
+//
+// Asserted on the computed `display`, which IS the rule. Trying to catch it
+// by clicking through the dialog only works where the closed one happens to
+// sit over the control being clicked — true in the editor (a closed "Insert a
+// place" over the toolbar, which is what went red), false on the results page,
+// where it lands inside the filter bar and covers nothing. A click test here
+// passes with the bug present, so it would have been a guard in name only.
+test("a closed dialog is not laid out", async ({ page }) => {
+  await stubBackend(page);
+  await page.goto("/en/", { waitUntil: "networkidle" });
+
+  // The filter dialog is mounted from the first paint, closed.
+  const dialog = page.locator("dialog");
+  await expect(dialog).toHaveCount(1);
+  await expect(dialog).not.toHaveAttribute("open", /.*/);
+  await expect(dialog).toHaveCSS("display", "none");
+
+  // …and still lays out when it IS open, so the assertion above cannot be
+  // satisfied by a rule that hides the dialog outright.
+  await page.getByRole("button", { name: /More filters/i }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(dialog).toHaveCSS("display", "flex");
+});
+
 // The back-swipe flash (fixed 2026-08-03): the router remounts the results
 // page on every return from a home, and it used to blank the list to its
 // skeleton while refetching — on a phone, a white flash and a scroll jump on

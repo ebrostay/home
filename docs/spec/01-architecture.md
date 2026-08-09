@@ -129,7 +129,8 @@ Workflow: [`.github/workflows/swa-v2.yml`](../../.github/workflows/swa-v2.yml).
 - **Trigger:** push to `redesign/v2` (+ manual `workflow_dispatch`).
 - **Test gate (partial):** `npm test` (the vitest unit suite) runs before the
   build and fails the deploy. The Playwright e2e suite and the .NET tests are
-  **not** in CI yet — tracked in [BACKLOG](../BACKLOG.md).
+  **not** in CI yet — tracked in
+  [KAN-99](https://ebrostay.atlassian.net/browse/KAN-99).
 - **Build:** Node 24, `npm ci && npm run build` in `app/` → static export in
   `app/out`. The API is published in the workflow —
   `dotnet publish -c Release -r win-x64 --self-contained false

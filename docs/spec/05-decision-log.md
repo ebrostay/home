@@ -13,8 +13,9 @@ is superseded by **ADR-035** (Entra External ID); **ADR-021** (fresh SWA in
 eastus2) is amended by **ADR-035** (SWA Standard, recreated in West Europe);
 point 4 of **ADR-022** (monthly billing) is replaced by **ADR-023** (daily
 proration). Open items every locked decision deliberately left behind are
-collected in the **Open decisions** table at the end of this file (OD-1…OD-10)
-and mirrored in [`docs/BACKLOG.md`](../BACKLOG.md).
+collected in the **Open decisions** table at the end of this file (OD-1…OD-10).
+Craft, ops and content items live in Jira — project **KAN** on
+<https://ebrostay.atlassian.net>, label `v2` (see the appendix at the end).
 
 | ADR | Title | Status |
 | --- | --- | --- |
@@ -527,8 +528,8 @@ projection, and deleted with the photo.
   4. **Billing stays monthly** (whole-month, round-up, min 1 — ADR-005 rounding
      retained). **Daily proration is deferred** ("monthly until we need daily",
      product-owner call) — it is legal and freely contractible (LAU art. 17,
-     "salvo pacto en contrario"), recorded in [../BACKLOG.md](../BACKLOG.md) for
-     when the sub-month/exact-date model lands.
+     "salvo pacto en contrario"), recorded in the backlog for when the
+     sub-month/exact-date model lands. (It landed: ADR-023, below.)
 - **Rationale:** A dumb day count (< 365 days, no leap-year math) is easy to
   reason about and audit, sits safely inside the reform's 12-month ceiling, and
   removes the whole-month rounding bug that rejected legal sub-year bookings.
@@ -549,8 +550,8 @@ projection, and deleted with the photo.
 - **Status:** ✅ locked 2026-07-26 (product owner: Raphael). **Supersedes the
   billing rule of v1 ADR-005** (whole-month, round-up, min 1) and **replaces
   point 4 of ADR-022** ("billing stays monthly"). Amends **ADR-004**'s
-  commission cap wording. Closes the `[P][M]` billing-method item in
-  [../BACKLOG.md](../BACKLOG.md), including its open sub-decision on the
+  commission cap wording. Closes the `[P][M]` billing-method backlog item
+  (appendix at the end of this file), including its open sub-decision on the
   daily-rate basis. Duration limits (≥31 days, <365 days) are **unchanged**.
 - **Context:** whole-month billing rounds *up*, so 10 Jul → 11 Aug — a 32-day
   stay — was billed as **two full months**. In a mid-term market where stays
@@ -3423,7 +3424,8 @@ and one part of the design that is not built yet.
   `LocationPicker` (`app/components/host/fields/LocationPicker.tsx`) is
   unchanged by this design — it still shows only the exact pin, never the
   band — and there is no admin review surface for it to appear on either
-  (the admin queue itself is still 🔜, `docs/BACKLOG.md`). The band derives
+  (the admin queue itself was still 🔜 when this was written; it shipped
+  2026-08-08, and the band preview it lacks is KAN-48). The band derives
   and takes effect regardless: an owner who wants to see it today has only
   the public preview of their own listing (§2.2, ADR-029) to look at. Left
   as a backlog item rather than reopening the ADR.
@@ -3492,7 +3494,7 @@ double-clicked *Retry* costs three queries and not six. `bandAttemptedAt` is
 stamped whether or not it succeeded, so the panel can say when it last tried.
 
 **What this does not fix.** The dependency itself. Self-hosting the OSM query
-service is in `docs/BACKLOG.md` (Infra & ops); the retry button is the
+service is KAN-73; the retry button is the
 mitigation until then. ORS cannot take this over — it has no named-way
 geometry, and its quota is already spent on routing.
 
@@ -3520,7 +3522,7 @@ authenticated users, so the visitor passed the auth check and landed on the
 404 page. Opening your own account menu and clicking the first item was a dead
 end, for every user, for the whole of v2. It is the second half of the bug
 ADR-037 fixed on `/about`'s owner CTA, and it was recorded in
-`docs/BACKLOG.md` from 2026-08-01 with the honest interim ("hide the menu
+the backlog from 2026-08-01 with the honest interim ("hide the menu
 entry") never taken.
 
 §3.7 already assigned this page its work — it is where
@@ -3659,8 +3661,9 @@ request in the users tab and acts out of band.
 ## Open decisions
 
 The v2 residue — items locked decisions deliberately left open, with their
-resolution paths. Mirrored (with the craft/ops/content items that are not
-spec-level decisions) in [`docs/BACKLOG.md`](../BACKLOG.md).
+resolution paths. The craft, ops and content items that are not spec-level
+decisions used to be mirrored in `docs/BACKLOG.md`; since 2026-08-09 they are
+Jira tickets in **KAN** — see the appendix at the end of this file.
 
 | # | Decision | Status | Question | Resolution path |
 | --- | --- | --- | --- | --- |
@@ -3674,3 +3677,33 @@ spec-level decisions) in [`docs/BACKLOG.md`](../BACKLOG.md).
 | OD-8 | **Import failure-state design** | 🔜 | The failure *codes* are a closed set and their behaviour is specified (login wall, 404, withdrawn, unreadable, timeout, pipeline error — each lands the owner in a blank wizard, never on a dead end). The reading card's failure layout is not designed. | Design alongside the first real pipeline, when the actual failure mix is known rather than guessed. Until then the reading card shows the named reason plus the blank-form route, which is correct if plain. Raised with ADR-033. |
 | OD-9 | **Exact-address release moment** | 🔜 | ADR-041 hides the exact address pre-booking. When does the guest receive it: on confirmed booking, or only on signed contract? | Decide with the first real booking under the street-band design; the delivery channel (WhatsApp/email) exists either way. The safer default until decided: signed contract. Raised with ADR-041. |
 | OD-10 | **Public naming scheme for listings** | ✅ decided 2026-08-07 | Today a listing's title *is* its address plus unit ("Pedro II el Católico 3 - 1 IZQ"). ADR-041 needs neutral public names. What is the scheme? | **Decided: formula by default, owner override on top.** The public name is generated: street without number + neighbourhood ("Pedro II el Católico — Universidad"). Language-neutral, calm, zero work per listing. The editor **prefills** this formula; the owner may replace it with a custom name, which passes the existing content-review queue like any content edit. Two listings on one street get a quiet disambiguator — its exact form is an implementation detail. URLs use ids, so names never break links. Raised with and unblocks ADR-041. |
+
+---
+
+## Appendix — resolved backlog items (folded in 2026-08-09)
+
+`docs/BACKLOG.md` was the living "later" list from the v2 rebuild. On
+2026-08-09 its **62 open items** moved to Jira — project **KAN** on
+<https://ebrostay.atlassian.net>, under eleven `v2 ·` epics, every issue
+labelled `v2` and `from-backlog`. The file was then deleted; its full text is
+in git history at commit `dd4250f`.
+
+What did **not** move is below. These twelve entries were already struck
+through as done, and they are not tasks — they record *why* something is the
+way it is, which is what this file is for. Each one is a pointer to the ADR
+that actually decided it; the ADR remains the authority.
+
+| Was | Outcome |
+| --- | --- |
+| **Honest negatives in Conditions** — state what a home lacks instead of omitting it | ✅ **2026-08-09**, in the Amenities section rather than Conditions. The nine baseline amenities (`BASELINE_KEYS`, `app/lib/amenities.ts`) are asked outright in the wizard and the ones a listing does not claim are named under "Not available". Parking did **not** get a field of its own — it is one of the nine. Bills are still not stated as an absence: KAN. |
+| **Implement the street-band design** | ✅ **Built 2026-08-07** — ADR-041. The public listing no longer discloses the door: street name without number, a river-blue street band on the map (no pin), travel times as server-merged best–worst ranges routed from both segment ends plus the true door, route rendering split at the fork, exact address only after booking. Geometry derives from OSM at save/approval (`StreetBandService`) and lazily backfills on first read of a published pre-ADR-041 listing. Full detail: spec §2.2 / §4.2.1 / §4.2.2. |
+| **Exact-date / sub-month stays** | ✅ **Done in substance — ADR-022/023** (2026-07-22/26). Stays are any duration **≥31 and <365 days**, booked by exact dates on the property page, billed by the day. Search granularity remained open and is now KAN. |
+| **Duration limits: ≥31 days and ≤12 months** | ✅ **Decided 2026-07-22 — ADR-022:** ≥31 and <365 days, enforced as a day count in `pricing.ts`; UI framing "1–12 months". Research in [`07-legal-notes.md`](07-legal-notes.md). Ops-side rule the app does not enforce: state the temporality cause; do not chain >2 temporary contracts per guest. |
+| **Live bug at the month boundary** | ✅ **Fixed by ADR-022 point 2:** the over-limit trigger is the actual day count (`end >= start + 365 days`), never the rounded-up billed months, so a legal ~11½-month stay no longer trips it. |
+| **Billing method — whole-month vs. daily proration** | ✅ **Decided 2026-07-26 — ADR-023: daily proration, rate = price ÷ 30, fixed.** The daily-rate basis was settled in the same ADR. Collected per calendar month; built in `app/lib/pricing.ts`. |
+| **SWA resource cleanup at cutover** | ✅ **Done.** Verified 2026-08-01 with `az staticwebapp list` across both subscriptions: `ebrostay-home` (Standard, westeurope) is the only Static Web App that exists. |
+| **`infra/main.bicep` missing the four ADR-035 auth settings** | ✅ **Fixed 2026-08-01.** `swaName` now defaults to `ebrostay-home`; the four OIDC client id/secret params are `@secure()` and wired into `swaAppSettings`, so the whole-collection PUT can no longer wipe them; header/region comments corrected. Compiles. Still **never deployed**. Two residues went to KAN: the `PIPELINE_WAKEUP_URL` nit, and the fact that `what-if` cannot preview the app settings at all. |
+| **Region split: SWA in `eastus2`, data in `spaincentral`** | ✅ **Resolved 2026-07-31 by ADR-035** — the Standard-tier recreation landed the SWA in westeurope, so both compute and data are European. ADR-021 records the original constraint. |
+| **Self-service deactivation** | ✅ **Answered 2026-08-08 by ADR-042 — with a different mechanism than the item assumed.** The plan was "a user-initiated deactivation endpoint is the same flag set by self". ADR-042 rejected that: `isDeactivated` is done *to* an account by an admin and locks it out, while a closure is asked for *by* its owner and must leave them able to reach the page that cancels it. Closure is its own field (`profiles.deletionRequestedAt`), its own guard (`RequireWritableAsync`), its own pair of endpoints. Hard deletion is still open: KAN. |
+| **`/about`'s "List my home" CTA is a 404** | ✅ **Fixed 2026-08-01.** It linked to `/account`, a route that has never existed, so the one CTA aimed at owners on that page was dead for the whole of v2. Now `/host`, which answers it in either state — the owner pitch signed out, the portfolio signed in (ADR-037). |
+| **The account menu points at two pages that do not exist** | ✅ **Fixed 2026-08-08: both pages shipped.** `components/site/AuthMenu.tsx` linked `/account` and, for admins, `/admin`; neither route was built, and both are gated in `staticwebapp.config.json`, so a signed-in user who opened their own menu and clicked "Account" passed the auth check and landed on the 404 page — for the whole of v2. `/admin` is the admin console (spec §4.5); `/account` is spec §3.7's page (ADR-042). The interim never had to be taken. |

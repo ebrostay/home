@@ -513,7 +513,8 @@ then repeat §3 and §5.
   `infra/provision.sh` kept as history.
 - **A full CI test gate.** The three suites in §9 exist and run locally; CI
   currently gates deploys on the vitest unit suite only (see
-  [BACKLOG](BACKLOG.md) — wiring e2e + dotnet tests into `swa-v2.yml` is
-  open, and the full gate is part of OD-1's cutover checklist).
+  [KAN-99](https://ebrostay.atlassian.net/browse/KAN-99) — wiring e2e +
+  dotnet tests into `swa-v2.yml` is open, and the full gate is part of OD-1's
+  cutover checklist).
 - **The DeepSeek key.** The AI assistant (ADR-020) is not built; when it is, a
   missing key degrades to `503 ai_not_configured` and the editor keeps working.

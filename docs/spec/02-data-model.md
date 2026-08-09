@@ -288,7 +288,7 @@ listing saved before the band existed. The host enters nothing to produce
 it — the editor's `LocationPicker` still shows only the exact pin (owner
 views stay exact, per §5's ADR-041 "Settled with the lock" section); no
 editor or admin band preview is built yet (ADR-041's 2026-08-07 amendment,
-`docs/spec/05-decision-log.md`; tracked in `docs/BACKLOG.md`). **Derivation
+`docs/spec/05-decision-log.md`; tracked in KAN-49). **Derivation
 failure (or a listing not yet re-saved/re-read) leaves `band: null` —
 degraded:** the
 summary point falls back to the door rounded to 3 decimal places, and the

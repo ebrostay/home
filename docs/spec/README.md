@@ -38,6 +38,30 @@ decisions and everything an implementer needs that *differs* from v1.
 | [07-legal-notes.md](07-legal-notes.md) | Spanish rental-law research (LAU, 2026 reform, deposits, NRA) behind ADR-022/023 — not legal advice |
 | [08-carried-v1-rules.md](08-carried-v1-rules.md) | Rules carried verbatim from the retired v1 spec: requirement IDs, money/date formatting, the booking-draft format, Nominatim/Leaflet/DeepSeek/Umami — plus the v1→v2 disposition table |
 
+## Where the backlog lives
+
+**Jira, not this repo.** Craft, ops, legal and follow-up work is tracked in
+project **KAN** on <https://ebrostay.atlassian.net>.
+
+- Everything from the v2 rebuild carries the label **`v2`**, grouped under
+  eleven epics named `v2 · …` (remaining build, design & frontend, listing
+  page, search & stay model, infra & ops, host & listing editor, auth &
+  accounts, legal & content, testing & quality, and two residue epics).
+- The 62 items migrated out of the old `docs/BACKLOG.md` on 2026-08-09 also
+  carry **`from-backlog`**. Find them with:
+
+  ```
+  project = KAN AND labels = v2 ORDER BY created DESC
+  ```
+
+- `docs/BACKLOG.md` no longer exists. Its twelve already-completed entries were
+  folded into the appendix at the end of
+  [05-decision-log.md](05-decision-log.md); the full original file is in git
+  history at commit `dd4250f`.
+
+**Spec-level** open questions are not in Jira — they stay in this directory,
+as OD-1…OD-10 at the end of the decision log.
+
 ## v2 in one paragraph
 
 Ebrostay v2 rebuilds ebrostay.com (mid-term corporate rentals, stays **≥31

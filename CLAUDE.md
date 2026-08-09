@@ -64,6 +64,14 @@ own as-built spec; rules v2 carries from v1 are restated in
   as amended); stay **≥31 and <365 days** (ADR-022); a per-stay cleaning fee
   outside the commission base (ADR-026).
 - Secrets never in the client or repo: Functions app settings only.
+- **The backlog is in Jira, not the repo.** Project **KAN** on
+  <https://ebrostay.atlassian.net> — label `v2`, grouped under eleven `v2 · …`
+  epics; JQL `project = KAN AND labels = v2`. Reach it with the `atlassian`
+  MCP tools (`mcp__atlassian__*`; cloudId
+  `f802775e-fd43-401d-b1d5-ff6ad2248882`). `docs/BACKLOG.md` was removed on
+  2026-08-09 — its completed entries are the appendix at the end of
+  `docs/spec/05-decision-log.md`, the file itself is in git history at
+  `dd4250f`. Spec-level open questions stay in the repo as OD-1…OD-10.
 
 ## Skills & plugins
 

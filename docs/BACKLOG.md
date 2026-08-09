@@ -482,3 +482,55 @@ the page is dead weight; every real gap is contractual or a one-line fact.
   sees "could not be read. Reload the page" on every panel and reloading never
   helps. Pre-dates ADR-042 — the closing half is now caught by `RequireAdmin`'s
   gate, which is what makes the deactivated half the only one left.
+
+## Amenity catalogue — review residues (`7d844a2`, built 2026-08-09)
+
+Found reviewing the baseline-amenities commit, none of them blocking: the
+change ships correct, and typecheck plus all 346 frontend and 283 API tests
+were green on it. Ordered by what a user would notice first. The two product
+residues that commit logged for itself (bills, and a room's shared kitchen)
+are in the listing-page section above, not here.
+
+- **[P][S]** **The filter chip row lost its only bound.** `AMENITY_FILTERS`
+  (`app/components/search/FilterBar.tsx`) is now the whole catalogue rather
+  than six hand-picked keys, and the bar still draws one removable chip per
+  selected amenity that is not in `QUICK_KEYS`. That used to be at most three
+  chips; it is now at most fifty-seven. The bar is `sticky` under the header,
+  so a guest who picks a dozen amenities pushes the results they were
+  filtering off their own screen. The old cap was the size of the vocabulary,
+  which is exactly the thing that changed. Either cap the row with a
+  "+N more" chip or collapse the amenities into a single count chip — the
+  dialog is where they are removed one by one anyway.
+- **[P][S]** **The property page's amenities section is gated on the claims,
+  so a listing with none states no absences.** The property page
+  (`app/app/[locale]/property/page.tsx`) renders the section — and with it the
+  new "Not available" block —
+  only `{p.amenities.length > 0 && …}`. On a listing that claims nothing,
+  `statedAbsent` returns all nine baseline keys and not one of them is drawn:
+  the page falls back to exactly the silence this feature exists to remove,
+  in the case where a reader is most likely to fill it in wrongly.
+  Unreachable today, and only because an unrelated rule two layers away
+  happens to forbid it — `p.Amenities.Length > 0` is one of the eleven submit
+  sections in `HostProjection.Sections` (`api/Models/HostModels.cs`), so no
+  document can publish empty. Nothing states that the render depends on it.
+  Drop the guard, or gate on both arrays.
+- **[P][S]** **Synonym search folds one side of the comparison.**
+  `searchAmenities` (`app/lib/amenities.ts`) runs the query and the label
+  through `foldSearch` but tests synonyms raw, with `s.includes(q)`. Two
+  consequences. An accented synonym would never match anything — the
+  `AmenityDef` comment says the lists are "lowercase and unaccented" and
+  nothing enforces it, so the first accented entry someone adds fails
+  silently, which is the failure mode this whole module was built to prevent.
+  And with no word boundary, a two-letter query matches mid-word: `te` pulls
+  in `internet`, `terraza` and `estacionamiento` as rank-2 hits. Fold the
+  synonym lists once at module load, and consider requiring a word prefix for
+  rank 2. The existing "finds a key by a synonym from the OTHER language"
+  test passes only because every synonym in the catalogue is already
+  unaccented — worth one accented case to pin it.
+- **[P][S]** **Admin review guards one amenity list and not the other.** In
+  `app/app/[locale]/admin/review/page.tsx` the claimed amenities render
+  through `ta.has(a) ? ta(a) : a` — the right thing, since an older listing
+  can carry a key that left the catalogue — but the absences call `ta(a)`
+  bare. Safe today because absences only ever come from `BASELINE_KEYS`, all
+  nine of which are translated. It is one line, and the asymmetry is the kind
+  that outlives the reason for it.

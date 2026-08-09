@@ -19,7 +19,7 @@ Two providers, wired in `staticwebapp.config.json`:
 
 | Provider | Backed by | Offers |
 | --- | --- | --- |
-| `ebrostay` | **Entra External ID** external tenant `ebrostay` (EU; sign-in pages at `ebrostay.ciamlogin.com`, Ebrostay-branded) | **Ebrostay account** (email + password, hosted by Entra — reset/verification/lockout are the platform's; we store no credential) and **Microsoft account** via the tenant's custom OIDC federation. Google 🔜 planned; Apple 🗑️ not carried. |
+| `ebrostay` | **Entra External ID** external tenant `ebrostay` (EU; sign-in pages at `ebrostay.ciamlogin.com`, Ebrostay-branded) | **Ebrostay account** (email + password, hosted by Entra — reset/verification/lockout are the platform's; we store no credential) and **Microsoft account** via the tenant's custom OIDC federation. Google 🔜 planned; Apple 🔜 deferred (ADR-035 Consequences: $99/year plus a manual 6-month secret rotation whose failure mode is silent). |
 | `ebrostay-msa` | `login.microsoftonline.com/consumers` directly (no Entra in the path) | **One-hop Microsoft sign-in** from the Microsoft button on `/sign-in` (ADR-036 amendment). |
 
 **The two doors mint two identities.** A Microsoft-door `userId` is the MSA

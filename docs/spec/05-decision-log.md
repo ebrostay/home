@@ -2627,7 +2627,9 @@ object with the wrong key.
   Ebrostay-branded page:
   - **Ebrostay account** — email + password, hosted by Entra
   - **Microsoft account** — personal MSAs, via custom OIDC federation
-  - Google 🔜 planned; Apple 🗑️ not carried
+  - Google 🔜 planned; Apple 🔜 deferred (see Consequences for the cost that
+    defers it — decided 2026-08-09, replacing an earlier "not carried" here
+    that contradicted the Consequences bullet below)
 
   SWA moves to the **Standard** plan (custom auth requires it) and the app is
   recreated as `ebrostay-home` in **West Europe**.
